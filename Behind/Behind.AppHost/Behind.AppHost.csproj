@@ -1,0 +1,21 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.2.1">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>2f84f4ff-bef6-4ac1-b2f8-46f9c5d8488f</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Behind.Web\Behind.Web.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Aspire.Hosting.Docker" Version="13.2.1" />
+      <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.2.1" />
+      <PackageReference Include="Aspire.Hosting.Valkey" Version="13.2.1" />
+    </ItemGroup>
+
+</Project>

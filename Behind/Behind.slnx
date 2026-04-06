@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Core/">
+    <Project Path="Core/Behind.Core.Common/Behind.Core.Common.csproj" />
+    <Project Path="Core/Behind.Core.WebApi/Behind.Core.WebApi.csproj" />
+  </Folder>
+  <Project Path="Behind.AppHost/Behind.AppHost.csproj" />
+  <Project Path="Behind.Web/Behind.Web.csproj" />
+</Solution>

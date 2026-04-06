@@ -1,0 +1,35 @@
+{
+  "name": "Aspire .NET 10 & NvChad Dev",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "runArgs": [
+    "--security-opt",
+    "label=disable",
+    "--privileged"
+  ],
+  "containerEnv": {
+    "DOTNET_ROOT": "/root/.local/share/mise/installs/dotnet/10.0",
+    "PATH": "/root/.local/bin:/root/.local/share/mise/shims:/root/.local/share/mise/bin:/root/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "ASPIRE_CONTAINER_RUNTIME": "podman",
+    "HOST_WORKSPACE_PATH": "${localWorkspaceFolder}"
+  },
+  "remoteUser": "root",
+  "updateRemoteUserUID": false,
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,Z",
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "nu"
+      },
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit"
+      ]
+    },
+    "jetbrains": {
+      "backend": "Rider"
+    }
+  }
+}

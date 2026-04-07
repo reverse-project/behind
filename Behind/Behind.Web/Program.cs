@@ -1,14 +1,10 @@
-var builder = WebApplication.CreateSlimBuilder(args);
+using Behind.Core.WebApi;
+using Behind.Web;
 
-builder.Services.AddOpenApi();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.MapGet("/hello", () => "Hello, world!");
-
-await app.RunAsync();
+await WebApplication
+    .CreateSlimBuilder(args)
+    .AddCore()
+    .Build()
+    .UseCore()
+    .UseWeb()
+    .RunAsync();

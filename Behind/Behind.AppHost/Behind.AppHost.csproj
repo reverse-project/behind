@@ -13,9 +13,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Aspire.Hosting.Docker" Version="13.2.1" />
-      <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.2.1" />
-      <PackageReference Include="Aspire.Hosting.Valkey" Version="13.2.1" />
+      <PackageReference Include="Aspire.Hosting.Docker" />
+      <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+      <PackageReference Include="Aspire.Hosting.Valkey" />
     </ItemGroup>
 
 </Project>

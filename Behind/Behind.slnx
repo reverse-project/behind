@@ -1,7 +1,14 @@
 <Solution>
+  <Folder Name="/Common/">
+    <Project Path="Behind.Common.WebApi/Behind.Common.WebApi.csproj" />
+    <Project Path="Behind.Common/Behind.Common.csproj" />
+  </Folder>
   <Folder Name="/Core/">
     <Project Path="Core/Behind.Core.Common/Behind.Core.Common.csproj" />
     <Project Path="Core/Behind.Core.WebApi/Behind.Core.WebApi.csproj" />
+  </Folder>
+  <Folder Name="/Global/">
+    <File Path="Directory.Packages.props" />
   </Folder>
   <Project Path="Behind.AppHost/Behind.AppHost.csproj" />
   <Project Path="Behind.Web/Behind.Web.csproj" />

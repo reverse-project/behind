@@ -6,13 +6,20 @@
   "runArgs": [
     "--security-opt",
     "label=disable",
-    "--privileged"
+    "--privileged",
+    "-p", "5000:5000",
+    "-p", "5001:5001",
+    "-p", "5002:5002",
+    "-p", "5003:5003",
+    "-p", "5004:5004",
+    "-p", "5005:5005",
   ],
   "containerEnv": {
     "DOTNET_ROOT": "/root/.local/share/mise/installs/dotnet/10.0",
     "PATH": "/root/.local/bin:/root/.local/share/mise/shims:/root/.local/share/mise/bin:/root/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     "ASPIRE_CONTAINER_RUNTIME": "podman",
-    "HOST_WORKSPACE_PATH": "${localWorkspaceFolder}"
+    "HOST_WORKSPACE_PATH": "${localWorkspaceFolder}",
+    "ASPIRE_ENDPOINTS_BIND_ADDRESS": "0.0.0.0"
   },
   "remoteUser": "root",
   "updateRemoteUserUID": false,

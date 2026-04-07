@@ -89,5 +89,14 @@ EOF
 
 RUN nvim --headless -c "Lazy! sync" -c "qa" || true
 
+RUN mkdir -p /etc/containers && \
+    cat <<'EOF' > /etc/containers/containers.conf
+[containers]
+log_driver = "json-file"
+
+[engine]
+events_logger = "file"
+EOF
+
 USER root
 WORKDIR /workspace

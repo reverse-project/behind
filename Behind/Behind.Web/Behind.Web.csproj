@@ -9,11 +9,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5"/>
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
     </ItemGroup>
-
+    
+    <ItemGroup>
+        <PackageReference Include="Scalar.AspNetCore" />
+    </ItemGroup>
+    
 </Project>

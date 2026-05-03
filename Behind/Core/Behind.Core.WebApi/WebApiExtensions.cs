@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Scalar.AspNetCore;
 
 namespace Behind.Core.WebApi;
 
@@ -37,7 +36,6 @@ public static class WebApiExtensions
         {
             application.UseExceptionHandler(_ => { });
             application.MapOpenApi();
-            application.MapScalarApiReference();
             
             application.MapGet("/config", ConfigEndpoint.ExecuteGet);
             application.MapGet("/auditLog", AuditLogEntryEndpoints.Get)

@@ -8,6 +8,11 @@
 
     <ItemGroup>
       <PackageReference Include="LaYumba.Functional" />
+      <PackageReference Include="OpenTelemetry" />
+      <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+      <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
       <PackageReference Include="System.Linq.Dynamic.Core" />
     </ItemGroup>
 

@@ -11,12 +11,18 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Behind.Common.WebApi\Behind.Common.WebApi.csproj" />
+      <ProjectReference Include="..\..\Common\Behind.Common.WebApi\Behind.Common.WebApi.csproj" />
       <ProjectReference Include="..\Behind.Core.Common\Behind.Core.Common.csproj" />
+      <ProjectReference Include="..\Behind.Core.Database.Sqlite\Behind.Core.Database.Sqlite.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Scalar.AspNetCore" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="security.json" />
     </ItemGroup>
 
 </Project>

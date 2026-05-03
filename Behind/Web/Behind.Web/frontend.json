@@ -1,0 +1,10 @@
+{
+  "Frontend": {
+    "Url": "http://localhost:5000/",
+    "Site": {
+      "Title": "Behind Development Build",
+      "Copyright": "© 2026 Reverse Project",
+      "DefaultLocale": "en-US"
+    }
+  }
+}

@@ -1,5 +1,15 @@
+using Behind.Common.WebApi.Handlers;
+using Behind.Core.Database;
+using Behind.Core.Database.Queries;
+using Behind.Core.Database.Sqlite;
+using Behind.Core.Domain;
+using Behind.Core.WebApi.Endpoints;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Scalar.AspNetCore;
 
 namespace Behind.Core.WebApi;
 
@@ -9,7 +19,14 @@ public static class WebApiExtensions
     {
         public WebApplicationBuilder AddCore()
         {
+            builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
             builder.Services.AddOpenApi();
+            builder.Services.AddTransient<IAuditLogEntryQueries, AuditLogEntryQueries>();
+            builder.Services.AddDbContext<AbstractCoreContext, CoreContextSqlite>(
+                options => options.UseSqlite("Data Source=/workspace/Data/core.db")
+            );
+            builder.Configuration.AddJsonFile("security.json", true, true);
+            builder.Configuration.AddJsonFile("frontend.json", true, true);
             return builder;
         }
     }
@@ -18,9 +35,16 @@ public static class WebApiExtensions
     {
         public WebApplication UseCore()
         {
+            application.UseExceptionHandler(_ => { });
             application.MapOpenApi();
+            application.MapScalarApiReference();
             
-            application.MapGet("/hello", () => "Hello World!");
+            application.MapGet("/config", ConfigEndpoint.ExecuteGet);
+            application.MapGet("/auditLog", AuditLogEntryEndpoints.Get)
+                .Produces<IEnumerable<AuditLogEntry>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(500);
             
             return application;
         }

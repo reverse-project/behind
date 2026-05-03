@@ -1,5 +1,5 @@
 {
-  "name": "Aspire .NET 10 & NvChad Dev",
+  "name": "Behind",
   "build": {
     "dockerfile": "Dockerfile"
   },

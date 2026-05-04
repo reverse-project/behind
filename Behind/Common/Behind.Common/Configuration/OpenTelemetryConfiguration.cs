@@ -1,4 +1,3 @@
-using LaYumba.Functional;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 
@@ -7,9 +6,9 @@ namespace Behind.Common.Configuration;
 public sealed record OpenTelemetryConfiguration(
     string ServiceName,
     bool IsEnabled,
-    OpenTelemetryConfiguration.OtlpExporterConfiguration Traces,
-    OpenTelemetryConfiguration.OtlpExporterConfiguration Metrics,
-    OpenTelemetryConfiguration.LoggingConfiguration Logging
+    OpenTelemetryConfiguration.OtlpExporterConfiguration? Traces,
+    OpenTelemetryConfiguration.OtlpExporterConfiguration? Metrics,
+    OpenTelemetryConfiguration.LoggingConfiguration? Logging
 )
 {
     public const string SectionName = "OpenTelemetry";
@@ -66,9 +65,10 @@ public static class OpenTelemetryConfigurationExtensions
         }
 
         public OpenTelemetryConfiguration? ApplyTraces(
-            Action<OpenTelemetryConfiguration.OtlpExporterConfiguration, List<OpenTelemetryConfiguration.Instrumentation>> action)
+            Action<OpenTelemetryConfiguration.OtlpExporterConfiguration,
+                List<OpenTelemetryConfiguration.Instrumentation>> action)
         {
-            if (configuration is not null && configuration.Traces.IsEnabled)
+            if (configuration is not null && configuration.Traces?.IsEnabled == true)
             {
                 action(configuration.Traces, configuration.Traces.Instruments?.Distinct().ToList() ?? []);
             }
@@ -80,7 +80,7 @@ public static class OpenTelemetryConfigurationExtensions
             Action<OpenTelemetryConfiguration.OtlpExporterConfiguration,
                 List<OpenTelemetryConfiguration.Instrumentation>> action)
         {
-            if (configuration is not null && configuration.Metrics.IsEnabled)
+            if (configuration is not null && configuration.Metrics?.IsEnabled == true)
             {
                 action(configuration.Metrics, configuration.Metrics.Instruments?.Distinct().ToList() ?? []);
             }
@@ -88,9 +88,11 @@ public static class OpenTelemetryConfigurationExtensions
             return configuration;
         }
 
-        public OpenTelemetryConfiguration? ApplyLogging(Action<OpenTelemetryConfiguration.LoggingConfiguration,List<OpenTelemetryConfiguration.Instrumentation>> action)
+        public OpenTelemetryConfiguration? ApplyLogging(
+            Action<OpenTelemetryConfiguration.LoggingConfiguration, List<OpenTelemetryConfiguration.Instrumentation>>
+                action)
         {
-            if (configuration is not null && configuration.Logging.IsEnabled)
+            if (configuration is not null && configuration.Logging?.IsEnabled == true)
             {
                 action(configuration.Logging, configuration.Logging.Instruments?.Distinct().ToList() ?? []);
             }
@@ -99,6 +101,17 @@ public static class OpenTelemetryConfigurationExtensions
         }
     }
 
+    extension(OpenTelemetryConfiguration.OtlpExporterConfiguration oec)
+    {
+        public void Apply(Action<OpenTelemetryConfiguration.OtlpExporterConfiguration> action)
+        {
+            if (oec.IsEnabled)
+            {
+                action(oec);
+            }
+        }
+    }
+    
     extension(OpenTelemetryConfiguration.LoggingConfiguration lc)
     {
         public void Apply(Action<OpenTelemetryConfiguration.LoggingConfiguration> action)
@@ -107,6 +120,13 @@ public static class OpenTelemetryConfigurationExtensions
             {
                 action(lc);
             }
+        }
+        
+        public OpenTelemetryConfiguration.LoggingConfiguration Apply<T>(T value ,Action<T> action)
+        {
+            lc.NotNull(_ => action(value));
+
+            return lc;
         }
     }
 

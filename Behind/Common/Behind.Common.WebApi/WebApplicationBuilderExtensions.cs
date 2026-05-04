@@ -17,9 +17,8 @@ public static class WebApplicationBuilderExtensions
             builder.Configuration.GetSection(OpenTelemetryConfiguration.SectionName)
                 .Get<OpenTelemetryConfiguration>()
                 .Apply((c, b) =>
-                    {
                         c.ApplyTraces((oec, i) =>
-                                b.WithTracing(t =>
+                                oec.Apply(_ => b.WithTracing(t =>
                                 {
                                     OpenTelemetryConfiguration.Instrumentation.AspNetCoreInstrumentation.Apply(
                                         i,
@@ -31,7 +30,7 @@ public static class WebApplicationBuilderExtensions
                                     );
                                     OpenTelemetryConfiguration.Instrumentation.OtlpExporter.Apply(
                                         i,
-                                        () => c.Traces.Endpoint.NotNull(e =>
+                                        () => oec.Endpoint.NotNull(e =>
                                         {
                                             t.AddOtlpExporter(options =>
                                             {
@@ -40,40 +39,40 @@ public static class WebApplicationBuilderExtensions
                                             });
                                         })
                                     );
-                                })
-                            )
+                                })))
                             .ApplyMetrics((oec, i) =>
-                                b.WithMetrics(m =>
-                                {
-                                    OpenTelemetryConfiguration.Instrumentation.AspNetCoreInstrumentation.Apply(
-                                        i,
-                                        () => m.AddAspNetCoreInstrumentation()
-                                    );
-                                    OpenTelemetryConfiguration.Instrumentation.HttpClientInstrumentation.Apply(
-                                        i,
-                                        () => m.AddHttpClientInstrumentation()
-                                    );
-                                    OpenTelemetryConfiguration.Instrumentation.RuntimeInstrumentation.Apply(
-                                        i,
-                                        () => m.AddRuntimeInstrumentation()
-                                    );
-                                    OpenTelemetryConfiguration.Instrumentation.OtlpExporter.Apply(
-                                        i,
-                                        () =>
-                                        {
-                                            oec.Endpoint.NotNull(e =>
+                                oec.Apply(_ =>
+                                    b.WithMetrics(m =>
+                                    {
+                                        OpenTelemetryConfiguration.Instrumentation.AspNetCoreInstrumentation.Apply(
+                                            i,
+                                            () => m.AddAspNetCoreInstrumentation()
+                                        );
+                                        OpenTelemetryConfiguration.Instrumentation.HttpClientInstrumentation.Apply(
+                                            i,
+                                            () => m.AddHttpClientInstrumentation()
+                                        );
+                                        OpenTelemetryConfiguration.Instrumentation.RuntimeInstrumentation.Apply(
+                                            i,
+                                            () => m.AddRuntimeInstrumentation()
+                                        );
+                                        OpenTelemetryConfiguration.Instrumentation.OtlpExporter.Apply(
+                                            i,
+                                            () =>
                                             {
-                                                m.AddOtlpExporter(options =>
+                                                oec.Endpoint.NotNull(e =>
                                                 {
-                                                    options.Endpoint = e;
-                                                    oec.Protocol.NotNull(p => options.Protocol = p);
+                                                    m.AddOtlpExporter(options =>
+                                                    {
+                                                        options.Endpoint = e;
+                                                        oec.Protocol.NotNull(p => options.Protocol = p);
+                                                    });
                                                 });
-                                            });
-                                        }
-                                    );
-                                }))
+                                            }
+                                        );
+                                    })))
                             .ApplyLogging((lc, i) =>
-                                b.WithLogging(l =>
+                                lc.Apply(_ => b.WithLogging(l =>
                                 {
                                     OpenTelemetryConfiguration.Instrumentation.OtlpExporter.Apply(
                                         i,
@@ -86,8 +85,22 @@ public static class WebApplicationBuilderExtensions
                                             });
                                         })
                                     );
-                                }));
-                    }, builder.Services.AddOpenTelemetry()
+                                }, logging =>
+                                {
+                                    lc
+                                        .Apply(
+                                            lc.IncludeFormattedMessage,
+                                            v => logging.IncludeFormattedMessage = v.IsTrue()
+                                        )
+                                        .Apply(
+                                            lc.IncludeScopes,
+                                            v => logging.IncludeScopes = v.IsTrue()
+                                        )
+                                        .Apply(
+                                            lc.ParseStateValues,
+                                            v => logging.ParseStateValues = v.IsTrue()
+                                        );
+                                }))), builder.Services.AddOpenTelemetry()
                 );
 
             return builder;

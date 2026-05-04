@@ -1,3 +1,5 @@
+using LaYumba.Functional;
+using static LaYumba.Functional.F;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 
@@ -103,7 +105,9 @@ public static class OpenTelemetryConfigurationExtensions
 
     extension(OpenTelemetryConfiguration.OtlpExporterConfiguration oec)
     {
-        public void Apply(Action<OpenTelemetryConfiguration.OtlpExporterConfiguration> action)
+        public void Apply(
+            Action<OpenTelemetryConfiguration.OtlpExporterConfiguration> action
+        )
         {
             if (oec.IsEnabled)
             {
@@ -111,18 +115,20 @@ public static class OpenTelemetryConfigurationExtensions
             }
         }
     }
-    
+
     extension(OpenTelemetryConfiguration.LoggingConfiguration lc)
     {
-        public void Apply(Action<OpenTelemetryConfiguration.LoggingConfiguration> action)
+        public void Apply(
+            Action<OpenTelemetryConfiguration.LoggingConfiguration> action
+        )
         {
             if (lc.IsEnabled)
             {
                 action(lc);
             }
         }
-        
-        public OpenTelemetryConfiguration.LoggingConfiguration Apply<T>(T value ,Action<T> action)
+
+        public OpenTelemetryConfiguration.LoggingConfiguration Apply<T>(T value, Action<T> action)
         {
             lc.NotNull(_ => action(value));
 
@@ -130,14 +136,32 @@ public static class OpenTelemetryConfigurationExtensions
         }
     }
 
-    extension<T>(T instrumentation) where T : OpenTelemetryConfiguration.Instrumentation
+    extension<T>(T instrumentation) where T : OpenTelemetryConfiguration.Instrumentation?
     {
-        public void Apply(IEnumerable<T> instruments, Action action)
+        public  void Apply(
+            IEnumerable<T> instruments,
+            Action action
+        )
         {
             if (instruments.Contains(instrumentation))
             {
                 action();
             }
+        }
+    }
+
+    extension<T>(T? instrumentation) where T : OpenTelemetryConfiguration.Instrumentation
+    {
+        public OpenTelemetryConfiguration.Instrumentation? ApplyChain(
+            IEnumerable<T> instruments,
+            Action action,
+            OpenTelemetryConfiguration.Instrumentation? next = null
+        )
+        {
+            OpenTelemetryConfiguration.Instrumentation? result = null;
+            instrumentation.Apply(instruments, action);
+            next.NotNull(x => result = x);
+            return result;
         }
     }
 }

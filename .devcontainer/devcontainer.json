@@ -12,7 +12,7 @@
     "-p", "5002:5002",
     "-p", "5003:5003",
     "-p", "5004:5004",
-    "-p", "5005:5005",
+    "-p", "5005:5005"
   ],
   "containerEnv": {
     "DOTNET_ROOT": "/root/.local/share/mise/installs/dotnet/10.0",

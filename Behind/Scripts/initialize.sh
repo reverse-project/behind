@@ -7,7 +7,7 @@ rm -rf ~/.local/share/netcoredbg ~/.local/bin/netcoredbg
 rm -rf ~/.config/nushell ~/.cache/carapace
 
 curl https://mise.run | sh
-export PATH="$HOME/.local/bin:$PATH"
+export PATH=/root/.local/bin:/root/.local/share/mise/shims:/root/.local/share/mise/bin:/root/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 eval "$(~/.local/bin/mise activate bash)"
 
 mise use --global aqua:nushell/nushell@latest \

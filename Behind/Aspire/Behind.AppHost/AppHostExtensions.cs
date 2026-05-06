@@ -9,7 +9,6 @@ public static class AppHostExtensions
             builder
                 .AddDockerCompose()
                 .AddProject<Projects.Behind_Web>("web")
-                //.WithReference(builder.AddDatabase())
                 .WithReference(builder.AddCache());
 
             return builder;
@@ -25,11 +24,5 @@ public static class AppHostExtensions
             builder
                 .AddValkey("cache")
                 .WithImage("valkey/valkey", "latest");
-
-        IResourceBuilder<PostgresDatabaseResource> AddDatabase() =>
-            builder
-                .AddPostgres("database")
-                .WithImage("postgres", "18-alpine")
-                .AddDatabase("behind");
     }
 }

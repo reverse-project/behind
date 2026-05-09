@@ -36,7 +36,9 @@
       ]
     },
     "jetbrains": {
-      "backend": "Rider"
+      "backend": "Rider",
+      "plugins": [
+      ]
     }
   }
 }

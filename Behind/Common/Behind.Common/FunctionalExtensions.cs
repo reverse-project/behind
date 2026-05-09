@@ -92,6 +92,6 @@ public static class FunctionalExtensions
 
     extension(bool? b)
     {
-        public bool IsTrue() => b.HasValue && b.Value;
+        public bool IsTrue() => b is true;
     }
 }

@@ -1,4 +1,5 @@
 using Behind.Common.WebApi.Handlers;
+using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Database.Queries;
 using Behind.Core.Database.Sqlite;
@@ -24,8 +25,17 @@ public static class WebApiExtensions
             builder.Services.AddDbContext<AbstractCoreContext, CoreContextSqlite>(
                 options => options.UseSqlite("Data Source=/workspace/Data/core.db")
             );
+            
             builder.Configuration.AddJsonFile("security.json", true, true);
+            builder.Services.Configure<SecurityConfiguration>(
+                builder.Configuration.GetSection(SecurityConfiguration.SectionName)
+            );
+            
             builder.Configuration.AddJsonFile("frontend.json", true, true);
+            builder.Services.Configure<FrontendConfiguration>(
+                builder.Configuration.GetSection(FrontendConfiguration.SectionName)
+            );
+            
             return builder;
         }
     }

@@ -58,7 +58,7 @@ public static class OpenTelemetryConfigurationExtensions
 {
     extension(OpenTelemetryConfiguration? configuration)
     {
-        public void Apply(Action<OpenTelemetryConfiguration, OpenTelemetryBuilder> action, OpenTelemetryBuilder builder)
+        public void ApplyIfEnabled(Action<OpenTelemetryConfiguration, OpenTelemetryBuilder> action, OpenTelemetryBuilder builder)
         {
             if (configuration is not null && configuration.IsEnabled)
             {

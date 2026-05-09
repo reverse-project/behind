@@ -1,3 +1,5 @@
 {
-  "TotpSecretKey": "YO7XF76XLQKJOMQ4FDAQXAESBI2CVOUL"
+  "Security": {
+    "SecretKey": "totp://YO7XF76XLQKJOMQ4FDAQXAESBI2CVOUL"
+  }
 }

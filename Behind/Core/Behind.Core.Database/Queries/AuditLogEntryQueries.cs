@@ -1,8 +1,7 @@
 using Behind.Common;
 using Behind.Core.Domain;
-using LaYumba.Functional;
+using static Behind.Common.FunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
-using static LaYumba.Functional.F;
 
 namespace Behind.Core.Database.Queries;
 

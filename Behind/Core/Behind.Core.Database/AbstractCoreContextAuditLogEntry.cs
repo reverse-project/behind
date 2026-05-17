@@ -1,9 +1,7 @@
-using System.Linq.Expressions;
 using Behind.Common;
 using Behind.Common.Database;
+using static Behind.Common.FunctionalExtensions;
 using Behind.Core.Domain;
-using LaYumba.Functional;
-using static LaYumba.Functional.F;
 using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Core.Database;

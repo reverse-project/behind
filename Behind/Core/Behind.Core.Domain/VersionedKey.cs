@@ -1,4 +1,4 @@
-using static LaYumba.Functional.F;
+using static Behind.Common.FunctionalExtensions;
 using System.Text.Json;
 
 namespace Behind.Core.Domain;

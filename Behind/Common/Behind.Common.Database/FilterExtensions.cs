@@ -1,8 +1,7 @@
+using static Behind.Common.FunctionalExtensions;
 using System.Linq.Dynamic.Core;
 using System.Linq.Dynamic.Core.CustomTypeProviders;
 using System.Text.RegularExpressions;
-using LaYumba.Functional;
-using static LaYumba.Functional.F;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 

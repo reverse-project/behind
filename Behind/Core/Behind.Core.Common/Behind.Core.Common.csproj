@@ -7,8 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Otp.NET" />
-        <PackageReference Include="LaYumba.Functional" />
+        <PackageReference Include="Otp.NET"/>
     </ItemGroup>
 
 </Project>

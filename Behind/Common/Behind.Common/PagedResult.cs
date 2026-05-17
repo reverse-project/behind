@@ -1,5 +1,3 @@
-using LaYumba.Functional;
-
 namespace Behind.Common;
 
 public sealed record PagedResult<TAggregate>(

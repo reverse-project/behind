@@ -1,5 +1,3 @@
-using LaYumba.Functional;
-using static LaYumba.Functional.F;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 

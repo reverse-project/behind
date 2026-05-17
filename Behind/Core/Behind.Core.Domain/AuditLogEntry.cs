@@ -1,5 +1,5 @@
-using LaYumba.Functional;
-using static LaYumba.Functional.F;
+using Behind.Common;
+using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Domain;
 

@@ -1,6 +1,5 @@
 using Behind.Common;
 using Behind.Core.Domain;
-using LaYumba.Functional;
 
 namespace Behind.Core.Database;
 

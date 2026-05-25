@@ -28,13 +28,13 @@ public static class CommonExtensions
                 var lambda = Expression.Lambda(property, parameter);
 
                 string methodName = first
-                    ? (orderBy.Direction == Direction.Descending ? "OrderByDescending" : "OrderBy")
-                    : (orderBy.Direction == Direction.Descending ? "ThenByDescending" : "ThenBy");
+                    ? orderBy.Direction == Direction.Descending ? "OrderByDescending" : "OrderBy"
+                    : orderBy.Direction == Direction.Descending ? "ThenByDescending" : "ThenBy";
 
                 expression = Expression.Call(
                     typeof(Queryable),
                     methodName,
-                    new[] { typeof(T), property.Type },
+                    [typeof(T), property.Type],
                     expression,
                     Expression.Quote(lambda));
 
@@ -42,6 +42,22 @@ public static class CommonExtensions
             }
 
             return query.Provider.CreateQuery<T>(expression);
+        }
+    }
+
+    extension(Guid guid)
+    {
+        public DateTimeOffset GetTimestamp()
+        {
+            Span<byte> bytes = stackalloc byte[16];
+            guid.TryWriteBytes(bytes, bigEndian: true, out _);
+
+            long unixMs = 0;
+            for (int i = 0; i < 6; i++)
+            {
+                unixMs = (unixMs << 8) | bytes[i];
+            }
+            return DateTimeOffset.FromUnixTimeMilliseconds(unixMs);
         }
     }
 }

@@ -12,6 +12,7 @@ public sealed class SecretKeyTypeConverter : TypeConverter
     {
         return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
     }
+
     public override object? ConvertFrom(
         ITypeDescriptorContext? context,
         CultureInfo? culture,
@@ -40,6 +41,12 @@ public sealed class SecretKeyTypeConverter : TypeConverter
 
             _ when string.Equals(type, nameof(Totp), StringComparison.OrdinalIgnoreCase) =>
                 throw new FormatException("The configured TOTP secret key is not a valid Base32 value."),
+
+            _ when string.Equals(type, nameof(Uuid), StringComparison.OrdinalIgnoreCase) &&
+                   Uuid.TryCreate(secretValue, out var uuid) => uuid,
+            
+            _ when string.Equals(type, nameof(Uuid), StringComparison.OrdinalIgnoreCase) =>
+                throw new FormatException("The configured UUID secret key is not a valid UUID value."),
 
             _ => throw new FormatException($"Unsupported secret key type '{type}'.")
         };

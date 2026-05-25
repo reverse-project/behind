@@ -5,9 +5,9 @@ using OtpNet;
 
 namespace Behind.Core.Common.Configuration;
 
-public record SecurityConfiguration(bool ReadOnlyConfiguration, SecretKey? SecretKey)
+public record SecurityConfiguration(bool ReadOnlyConfiguration, SecretKey? SecretKey, JwtSettings? Jwt, MagicLinkSettings? MagicLink)
 {
-    public SecurityConfiguration() : this(false, null)
+    public SecurityConfiguration() : this(false, null, null, null)
     {
         
     }
@@ -42,3 +42,28 @@ public sealed record Totp : SecretKey
         }
     }
 }
+
+public sealed record Uuid : SecretKey
+{
+    public static readonly Uuid Empty = new(Guid.Empty);
+    
+    public Guid Value { get; init; }
+    
+    private Uuid(Guid value) => Value = value;
+
+    public static bool TryCreate(string value, out Uuid result)
+    {
+        if (Guid.TryParse(value, out var guid))
+        {
+            result = new Uuid(guid);
+            return true;
+        }
+
+        result = Empty;
+        return false;
+    }
+}
+
+public sealed record JwtSettings(string Issuer, string Audience, string SigningKey);
+
+public sealed record MagicLinkSettings(Uuid ActualSecret, Uuid? OldSecret);

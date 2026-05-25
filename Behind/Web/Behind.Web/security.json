@@ -1,5 +1,13 @@
 {
   "Security": {
-    "SecretKey": "totp://YO7XF76XLQKJOMQ4FDAQXAESBI2CVOUL"
+    "SecretKey": "totp://YO7XF76XLQKJOMQ4FDAQXAESBI2CVOUL",
+    "Jwt": {
+      "Issuer": "Behind Backend",
+      "Audience": "Behind Frontend",
+      "SigningKey": "hpFPS7Uz7BHTSWyZylBbjxnHlAU3FoIa"
+    },
+    "MagicLink": {
+      "ActualSecret": "uuid://019e5f3b-dc22-7d66-8cd3-9cb754d0fd28"
+    }
   }
 }

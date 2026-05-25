@@ -47,6 +47,7 @@ public sealed class SecretKeyJsonConverter : JsonConverter<SecretKey>
         string serialized = value switch
         {
             Totp totp => $"totp://{totp.Value}",
+            Uuid uuid => $"uuid://{uuid.Value}",
             _ => throw new JsonException($"Unsupported secret key type '{value.GetType().Name}'.")
         };
 

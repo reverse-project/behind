@@ -15,7 +15,7 @@ public sealed record HumanUser : User
 
     public HumanUser(IEnumerable<Email> emails, Option<IEnumerable<Role>> Roles) : base(Roles)
     {
-        var emailList = emails?.ToList() ?? [];
+        var emailList = emails.ToList();
 
         if (emailList.Count == 0)
         {

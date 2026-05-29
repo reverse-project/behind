@@ -14,13 +14,13 @@ public static class OrderByCollectionExtensions
             {
                 return new OrderByCollection();
             }
-            
+
             orderBy = orderBy.Trim();
-            
+
             var fields = orderBy.Split(',');
 
             List<OrderBy> list = new();
-            
+
             foreach (var field in fields)
             {
                 var parts = field.Split(' ');
@@ -29,7 +29,7 @@ public static class OrderByCollectionExtensions
                 {
                     continue;
                 }
-                
+
                 if (parts.Length == 2)
                 {
                     list.Add(new OrderBy(parts[0], parts[1] switch
@@ -43,32 +43,32 @@ public static class OrderByCollectionExtensions
                     list.Add(new OrderBy(parts[0]));
                 }
             }
-            
+
             return new OrderByCollection(list);
         }
     }
 
     extension(OrderByCollection collection)
     {
-        public string ToString()
+        public string ToQueryString()
         {
             var sb = new StringBuilder();
             var onlyOnce = new OnlyOnce();
-            
+
             foreach (var orderBy in collection.Collection)
             {
                 if (!onlyOnce.Apply())
                 {
                     sb.Append(',');
                 }
-                
-                sb.AppendFormat("{0} {1}",  orderBy.FieldName, orderBy.Direction switch
+
+                sb.AppendFormat("{0} {1}", orderBy.FieldName, orderBy.Direction switch
                 {
                     Direction.Descending => "DESC",
                     _ => "ASC"
                 });
             }
-            
+
             return sb.ToString();
         }
     }

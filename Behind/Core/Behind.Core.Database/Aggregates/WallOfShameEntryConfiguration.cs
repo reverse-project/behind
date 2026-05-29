@@ -18,18 +18,18 @@ public sealed class WallOfShameEntryConfiguration : IEntityTypeConfiguration<Wal
         builder.HasIndex("ExpiresAt");
 
         builder.Property(w => w.Reason).HasConversion<ReasonConverter>().IsRequired();
-        
+
         builder.Ignore(w => w.User);
         builder.Property<Guid>("UserId").IsRequired();
         builder.HasMany<User>()
             .WithOne()
             .HasForeignKey("UserId")
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         builder.Ignore(w => w.GivenBy);
         builder.Property<Guid>("GivenById").IsRequired();
-        builder.HasMany<User>()
-            .WithOne()
+        builder.HasOne<User>()
+            .WithMany()
             .HasForeignKey("GivenById")
             .OnDelete(DeleteBehavior.Cascade);
     }

@@ -9,13 +9,13 @@ public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
     public void Configure(EntityTypeBuilder<Role> builder)
     {
         builder.UseTpcMappingStrategy();
-        
+
         builder.Property<Guid>("Id").ValueGeneratedOnAdd();
         builder.HasKey("Id");
 
         builder.Ignore(r => r.Grants);
     }
-    
+
     public static void ApplyRoleGrants(ModelBuilder modelBuilder) =>
         modelBuilder.Entity("RoleGrants", rg =>
         {
@@ -28,7 +28,7 @@ public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
                 .WithMany()
                 .HasForeignKey("RoleId")
                 .OnDelete(DeleteBehavior.Cascade);
-            
+
             rg.HasOne(typeof(Grant))
                 .WithMany()
                 .HasForeignKey("GrantId")

@@ -9,15 +9,15 @@ namespace Behind.Core.Database;
 public partial class AbstractCoreContext(DbContextOptions options) : DbContext(options), IUnitOfWork
 {
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
-    
+
     public DbSet<HumanUser> Users => Set<HumanUser>();
-    
+
     public DbSet<Email> Emails => Set<Email>();
-    
+
     public DbSet<UserRole> Roles => Set<UserRole>();
-    
-    public DbSet<Grant>  Grants => Set<Grant>();
-    
+
+    public DbSet<Grant> Grants => Set<Grant>();
+
     public DbSet<WallOfShameEntry> WallOfShameEntries => Set<WallOfShameEntry>();
     public IRepository<TAggregate, TKey> GetRepository<TAggregate, TKey>() => (IRepository<TAggregate, TKey>)this;
 
@@ -27,12 +27,12 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
         UserConfiguration.ApplyUserRoles(modelBuilder);
         RoleConfiguration.ApplyRoleGrants(modelBuilder);
     }
-    
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
-    
-        optionsBuilder.ConfigureWarnings(warnings => 
+
+        optionsBuilder.ConfigureWarnings(warnings =>
             warnings.Ignore(new EventId(20609))
         );
     }

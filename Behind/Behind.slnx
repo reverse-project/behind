@@ -31,6 +31,9 @@
     <File Path="Scripts\initialize.sh" />
     <File Path="Scripts\nuget-cleanup.nu" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Behind.Tests/Behind.Tests.csproj" />
+  </Folder>
   <Folder Name="/Web/">
     <Project Path="Web/Behind.Web/Behind.Web.csproj" />
   </Folder>

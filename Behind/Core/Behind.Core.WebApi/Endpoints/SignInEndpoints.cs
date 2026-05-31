@@ -21,24 +21,24 @@ public sealed class SignInEndpoints
     public static async Task<IResult> SignInPassword(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, PasswordRequest request)
     {
-        if (securityConfiguration.Value.Jwt is null)
-        {
-            return Results.InternalServerError();
-        }
+        return await securityConfiguration.Value.Jwt.Match(
+            none: () => Task.FromResult(Results.InternalServerError()),
+            async jwtSettings =>
+            {
+                var user = await userManager.FindByEmailAsync(request.Email);
+                if (user is null || user.Password?.Verify(request.Password) != true)
+                {
+                    return Results.Unauthorized();
+                }
 
-        var user = await userManager.FindByEmailAsync(request.Email);
-        if (user is null || user.Password?.Verify(request.Password) != true)
-        {
-            return Results.Unauthorized();
-        }
-
-        var accessToken = AccessToken.Create(new HumanUser([new Email(user.NormalizedUserName)], None));
-        return Results.Json(new SignInResponse(
-            accessToken.ToJwtToken(user, securityConfiguration.Value.Jwt),
-            accessToken.ExpiresAt,
-            RefreshToken
-                .Create(new HumanUser([new Email(user.NormalizedUserName)], None))
-                .ToJwtToken(user, securityConfiguration.Value.Jwt)
-        ));
+                var accessToken = AccessToken.Create(new HumanUser([new Email(user.NormalizedUserName)], None));
+                return Results.Json(new SignInResponse(
+                    accessToken.ToJwtToken(user, jwtSettings),
+                    accessToken.ExpiresAt,
+                    RefreshToken
+                        .Create(new HumanUser([new Email(user.NormalizedUserName)], None))
+                        .ToJwtToken(user, jwtSettings)
+                ));
+            });
     }
 }

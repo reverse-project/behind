@@ -1,3 +1,6 @@
+using System.ComponentModel;
+using System.Text.Json.Serialization;
+using Behind.Common.Converters;
 using Unit = System.ValueTuple;
 using Behind.Common.Option;
 
@@ -11,6 +14,7 @@ namespace Behind.Common
         public static None None => None.Default; // the None value
     }
 
+    [JsonConverter(typeof(OptionJsonConverterFactory))]
     public readonly struct Option<T> : IEquatable<None>, IEquatable<Option<T>>
     {
         public override bool Equals(object? obj)
@@ -63,7 +67,7 @@ namespace Behind.Common
 
     namespace Option
     {
-        public struct None
+        public record struct None
         {
             internal static readonly None Default = new None();
         }

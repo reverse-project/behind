@@ -1,13 +1,20 @@
 using System.ComponentModel;
 using System.Text.Json.Serialization;
+using Behind.Common;
 using Behind.Core.Common.Converters;
+using static Behind.Common.FunctionalExtensions;
 using OtpNet;
 
 namespace Behind.Core.Common.Configuration;
 
-public record SecurityConfiguration(bool ReadOnlyConfiguration, SecretKey? SecretKey, JwtSettings? Jwt, MagicLinkSettings? MagicLink)
+public record SecurityConfiguration(
+    bool ReadOnlyConfiguration,
+    Option<SecretKey> SecretKey,
+    Option<JwtSettings> Jwt,
+    Option<MagicLinkSettings> MagicLink
+)
 {
-    public SecurityConfiguration() : this(false, null, null, null)
+    public SecurityConfiguration() : this(false, None, None, None)
     {
         
     }
@@ -66,4 +73,4 @@ public sealed record Uuid : SecretKey
 
 public sealed record JwtSettings(string Issuer, string Audience, string SigningKey);
 
-public sealed record MagicLinkSettings(Uuid ActualSecret, Uuid? OldSecret);
+public sealed record MagicLinkSettings(Uuid ActualSecret, Option<Uuid> OldSecret);

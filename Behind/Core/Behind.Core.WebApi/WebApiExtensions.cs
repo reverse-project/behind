@@ -1,4 +1,7 @@
 using System.Text;
+using Behind.Common.Configuration;
+using Behind.Common.Converters;
+using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Handlers;
 using Behind.Core.Common.Configuration;
@@ -15,6 +18,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Behind.Core.WebApi;
@@ -26,17 +30,28 @@ public static class WebApiExtensions
         public WebApplicationBuilder AddCore()
         {
             builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
-            builder.Services.AddOpenApi();
+            OptionTypeConverterRegistration.Register<SecretKey>();
+            OptionTypeConverterRegistration.Register<Uuid>();
+            OptionTypeConverterRegistration.Register<JwtSettings>();
+            OptionTypeConverterRegistration.Register<MagicLinkSettings>();
+            
+            builder.AddOpenApi();
+            
             builder.Services.AddTransient<IAuditLogEntryQueries, AuditLogEntryQueries>();
             builder.Services.AddDbContext<AbstractCoreContext, CoreContextSqlite>(options =>
                 options.UseSqlite("Data Source=/workspace/Data/core.db")
             );
 
             builder.Configuration.AddJsonFile("security.json", true, true);
-            builder.Services.Configure<SecurityConfiguration>(
-                builder.Configuration.GetSection(SecurityConfiguration.SectionName)
-            );
+            
+            SecurityConfiguration securityConfiguration = builder.Configuration
+                .GetSection(SecurityConfiguration.SectionName)
+                .GetOptionAware<SecurityConfiguration>() ?? new SecurityConfiguration();
 
+            builder.Services.AddSingleton(
+                Options.Create(securityConfiguration)
+            );
+            
             builder.Configuration.AddJsonFile("frontend.json", true, true);
             builder.Services.Configure<FrontendConfiguration>(
                 builder.Configuration.GetSection(FrontendConfiguration.SectionName)
@@ -58,38 +73,34 @@ public static class WebApiExtensions
                 .AddSignInManager()
                 .AddDefaultTokenProviders();
 
-            var securityConfiguration = builder.Configuration.GetSection(SecurityConfiguration.SectionName)
-                .Get<SecurityConfiguration>();
-
-            if (securityConfiguration is null or { Jwt: null })
-            {
-                return builder;
-            }
-            
-            var signingKey = Encoding.UTF8.GetBytes(securityConfiguration.Jwt.SigningKey);
-
-            builder.Services.AddAuthentication(options =>
+            return securityConfiguration.Jwt.Match(
+                none: () => builder,
+                jwtSettings =>
                 {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(options =>
-                {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = securityConfiguration.Jwt.Issuer,
-                        ValidAudience = securityConfiguration.Jwt.Audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(signingKey)
-                    };
+                    var signingKey = Encoding.UTF8.GetBytes(jwtSettings.SigningKey);
+
+                    builder.Services.AddAuthentication(options =>
+                        {
+                            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                        })
+                        .AddJwtBearer(options =>
+                        {
+                            options.TokenValidationParameters = new TokenValidationParameters
+                            {
+                                ValidateIssuer = true,
+                                ValidateAudience = true,
+                                ValidateLifetime = true,
+                                ValidateIssuerSigningKey = true,
+                                ValidIssuer = jwtSettings.Issuer,
+                                ValidAudience = jwtSettings.Audience,
+                                IssuerSigningKey = new SymmetricSecurityKey(signingKey)
+                            };
+                        });
+
+                    builder.Services.AddAuthorization();
+                    return builder;
                 });
-
-            builder.Services.AddAuthorization();
-
-            return builder;
         }
     }
 
@@ -106,7 +117,7 @@ public static class WebApiExtensions
                 .Produces(204)
                 .Produces(400)
                 .Produces(500);
-            
+
             application.UseAuthentication();
             application.UseAuthorization();
 
@@ -116,7 +127,7 @@ public static class WebApiExtensions
                 .Produces(400)
                 .Produces(409)
                 .Produces(500);
-            
+
             application.MapPost("/sign/in/password", SignInEndpoints.SignInPassword)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.PasswordRequest>>()
                 .Produces(200)

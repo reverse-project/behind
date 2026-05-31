@@ -11,4 +11,8 @@
         <PackageReference Include="Otp.NET"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\Common\Behind.Common\Behind.Common.csproj" />
+    </ItemGroup>
+
 </Project>

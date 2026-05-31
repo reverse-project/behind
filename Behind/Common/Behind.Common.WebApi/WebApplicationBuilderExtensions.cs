@@ -1,4 +1,7 @@
+using System.ComponentModel;
 using Behind.Common.Configuration;
+using Behind.Common.Converters;
+using Behind.Common.WebApi.OpenApi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +16,15 @@ public static class WebApplicationBuilderExtensions
 {
     extension(WebApplicationBuilder builder)
     {
+        public WebApplicationBuilder AddOpenApi()
+        {
+            builder.Services.AddOpenApi(options =>
+            {
+                options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+            });
+            return builder;
+        }
+        
         public WebApplicationBuilder AddOpenTelemetry()
         {
             builder.Configuration.GetSection(OpenTelemetryConfiguration.SectionName)

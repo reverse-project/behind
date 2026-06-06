@@ -4,17 +4,13 @@ namespace Behind.Core.Database.Commands;
 
 public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
 {
-    public Task CreateWithId(Guid id, HumanUser user, CancellationToken cancellationToken = default)
+    public async Task CreateWithId(Guid id, HumanUser user, CancellationToken cancellationToken = default)
     {
-        if (user is null)
-        {
-            throw new ArgumentNullException(nameof(user));
-        }
-        
-        var repository = context.GetRepository<HumanUser, Guid>();
-        repository.AddAsync(user, cancellationToken);
-        context.Entry(user).Property<Guid>("Id").CurrentValue = id;
+        ArgumentNullException.ThrowIfNull(user);
 
-        return Task.CompletedTask;
+        var repository = context.GetRepository<HumanUser, Guid>();
+        await repository.AddAsync(user, cancellationToken);
+        context.Entry(user).Property<Guid>("Id").CurrentValue = id;
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

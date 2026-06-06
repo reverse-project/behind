@@ -19,7 +19,7 @@ public sealed class EmailQueries(AbstractCoreContext context) : IEmailQueries
     }
 
     public Task<IEnumerable<Email>> GetEmailsByUser(User user, CancellationToken cancellationToken = default) =>
-        GetEmailsByUserId(EF.Property<Guid>(user, "Id"), cancellationToken);
+        GetEmailsByUserId(context.GetKey((HumanUser)user), cancellationToken);
 
     public async Task<IEnumerable<Email>> GetEmailsByUserId(Guid id, CancellationToken cancellationToken = default)
     {

@@ -81,4 +81,13 @@ public static class IdentityExtensions
             _ => throw new ArgumentException($"Invalid user type {user.GetType().Name}")
         };
     }
+
+    extension(Role role)
+    {
+        public ApplicationRole ToApplicationRole(Guid id) => new()
+        {
+            Id = id,
+            Name = role.Name
+        };
+    }
 }

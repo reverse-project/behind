@@ -8,6 +8,8 @@ public partial class IdentityStore(
     IUserQueries userQueries,
     IEmailQueries emailQueries,
     IPasswordQueries passwordQueries,
+    IRoleQueries roleQueries,
     IPasswordCommands passwordCommands,
-    IUserCommands userCommands
+    IUserCommands userCommands,
+    IRoleCommands roleCommands
 );

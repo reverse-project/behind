@@ -1,4 +1,3 @@
-using Behind.Common;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +6,7 @@ namespace Behind.Core.Database.Commands;
 public sealed class PasswordCommands(AbstractCoreContext context) : IPasswordCommands
 {
     public Task InactivateForUser(User user, CancellationToken cancellationToken = default) =>
-        InactivateFromUserId(EF.Property<Guid>(user, "Id"), cancellationToken);
+        InactivateFromUserId(context.GetKey((HumanUser)user), cancellationToken);
 
     public async Task InactivateFromUserId(Guid id, CancellationToken cancellationToken = default)
     {
@@ -27,7 +26,7 @@ public sealed class PasswordCommands(AbstractCoreContext context) : IPasswordCom
     }
 
     public Task CreateForUser(User user, Password password, CancellationToken cancellationToken = default) =>
-        CreateFromUserId(EF.Property<Guid>(user, "Id"), password, cancellationToken);
+        CreateFromUserId(context.GetKey((HumanUser)user), password, cancellationToken);
 
     public Task CreateFromUserId(Guid id, Password password, CancellationToken cancellationToken = default)
     {

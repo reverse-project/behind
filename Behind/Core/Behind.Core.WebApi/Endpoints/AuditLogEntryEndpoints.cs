@@ -3,6 +3,7 @@ using Behind.Common;
 using Behind.Common.Database;
 using Behind.Core.Database;
 using Behind.Core.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,6 +11,7 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public static class AuditLogEntryEndpoints
 {
+    [Authorize]
     public static async Task<IResult> Get(
         AbstractCoreContext context,
         IAuditLogEntryQueries queries,

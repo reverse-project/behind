@@ -40,9 +40,11 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IUserQueries, UserQueries>();
             builder.Services.AddScoped<IEmailQueries, EmailQueries>();
             builder.Services.AddScoped<IPasswordQueries, PasswordQueries>();
+            builder.Services.AddScoped<IRoleQueries, RoleQueries>();
             builder.Services.AddScoped<IEmailCommands, EmailCommands>();
             builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
             builder.Services.AddScoped<IUserCommands, UserCommands>();
+            builder.Services.AddScoped<IRoleCommands, RoleCommands>();
             
             builder.Configuration.AddJsonFile("database.json", false, true);
             
@@ -73,7 +75,7 @@ public static class WebApiExtensions
 
             builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, DomainPasswordHasher<ApplicationUser>>();
             builder.Services.AddScoped<IUserStore<ApplicationUser>, IdentityStore>();
-            builder.Services.AddSingleton<IRoleStore<ApplicationRole>, InMemoryRoleStore>();
+            builder.Services.AddSingleton<IRoleStore<ApplicationRole>, IdentityStore>();
 
             builder.Services.AddIdentityCore<ApplicationUser>(options =>
                 {

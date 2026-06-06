@@ -22,7 +22,7 @@ public sealed class AuditLogEntryConfiguration : IEntityTypeConfiguration<AuditL
 
         builder.Property<Guid?>("UserId");
 
-        builder.HasOne<User>()
+        builder.HasOne<HumanUser>()
             .WithMany()
             .HasForeignKey("UserId")
             .IsRequired(false)
@@ -30,7 +30,7 @@ public sealed class AuditLogEntryConfiguration : IEntityTypeConfiguration<AuditL
 
         builder.Property<Guid?>("BehalfOfId");
 
-        builder.HasOne<User>()
+        builder.HasOne<HumanUser>()
             .WithMany()
             .HasForeignKey("BehalfOfId")
             .IsRequired(false)

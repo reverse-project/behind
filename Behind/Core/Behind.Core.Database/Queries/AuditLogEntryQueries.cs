@@ -17,7 +17,7 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLo
         var baseQuery = request.Filter is EmptyFilter<AuditLogEntry>
             ? context.AuditLogEntries.Where(x => x.Timestamp >= fromDate && x.Timestamp < toDate)
             : request.Filter.Apply(
-            context.AuditLogEntries.Where(x => x.Timestamp >= fromDate && x.Timestamp < toDate)
+                context.AuditLogEntries.Where(x => x.Timestamp >= fromDate && x.Timestamp < toDate)
             );
 
         var total = await baseQuery.CountAsync(cancellationToken);
@@ -28,18 +28,18 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLo
                 equals EF.Property<Guid?>(user, "Id")
                 into userGroups
             from dbUser in userGroups.DefaultIfEmpty()
-
             join behalfOfUser in context.Users
                 on EF.Property<Guid?>(audit, "BehalfOfId")
                 equals EF.Property<Guid?>(behalfOfUser, "Id")
                 into behalfOfGroups
             from dbBehalfOf in behalfOfGroups.DefaultIfEmpty()
-
             select new
             {
                 Audit = audit,
                 UserId = EF.Property<Guid?>(audit, "UserId"),
+                dbUser.DisplayName,
                 BehalfOfId = EF.Property<Guid?>(audit, "BehalfOfId"),
+                BehalfOfDisplayName = dbBehalfOf.DisplayName,
                 PrimaryEmails = context.Emails
                     .Where(e => EF.Property<Guid?>(e, "UserId") == EF.Property<Guid?>(audit, "UserId"))
                     .Select(e => e.Value).ToList(),
@@ -53,7 +53,7 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLo
         {
             request = request with { OrderByCollection = new OrderByCollection([new OrderBy("audit.Timestamp")]) };
         }
-        
+
         var items = await request.Flipper.Apply(
             request.OrderByCollection.Apply(projectionQuery)
         ).ToListAsync(cancellationToken);
@@ -63,11 +63,12 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLo
             var user = item.UserId.HasValue
                 ? item.UserId == DomainConstants.SystemUserId
                     ? (User)new SystemUser(None)
-                    : new HumanUser(item.PrimaryEmails.Select(v => new Email(v)).ToList(), None)
+                    : new HumanUser(item.DisplayName, item.PrimaryEmails.Select(v => new Email(v)).ToList(), None)
                 : new GuestUser(None);
 
             var behalfOf = item.BehalfOfId.HasValue
-                ? Some((User)new HumanUser(item.BehalfOfEmails.Select(v => new Email(v)).ToList(), None))
+                ? Some((User)new HumanUser(item.BehalfOfDisplayName,
+                    item.BehalfOfEmails.Select(v => new Email(v)).ToList(), None))
                 : None;
 
             return item.Audit with { User = user, BehalfOf = behalfOf };

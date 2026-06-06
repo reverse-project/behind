@@ -57,7 +57,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("EntityName", "EntityKey");
 
-                    b.ToTable("AuditLogEntries", (string)null);
+                    b.ToTable("AuditLogEntries");
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Email", b =>
@@ -66,8 +66,8 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("HumanUserId")
-                        .HasColumnType("TEXT");
+                    b.Property<bool>("IsConfirmed")
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
@@ -79,11 +79,9 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("HumanUserId");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("Emails", (string)null);
+                    b.ToTable("Emails");
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Grant", b =>
@@ -101,7 +99,31 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasAlternateKey("Name");
 
-                    b.ToTable("Grants", (string)null);
+                    b.ToTable("Grants");
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.Password", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Passwords");
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Role", b =>
@@ -127,17 +149,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("GivenById")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("GivenById");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable((string)null);
 
@@ -167,7 +179,11 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("ExpiresAt");
 
-                    b.ToTable("WallOfShameEntries", (string)null);
+                    b.HasIndex("GivenById");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WallOfShameEntries");
                 });
 
             modelBuilder.Entity("RoleGrants", b =>
@@ -182,7 +198,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("GrantId");
 
-                    b.ToTable("RoleGrants", (string)null);
+                    b.ToTable("RoleGrants");
                 });
 
             modelBuilder.Entity("UserRoles", b =>
@@ -197,7 +213,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserRoles", (string)null);
+                    b.ToTable("UserRoles");
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.UserRole", b =>
@@ -213,17 +229,24 @@ namespace Behind.Core.Database.Sqlite.Migrations
                 {
                     b.HasBaseType("Behind.Core.Domain.User");
 
-                    b.ToTable("Users", (string)null);
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasIndex("DisplayName");
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.AuditLogEntry", b =>
                 {
-                    b.HasOne("Behind.Core.Domain.User", null)
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("BehalfOfId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("Behind.Core.Domain.User", null)
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction);
@@ -233,26 +256,33 @@ namespace Behind.Core.Database.Sqlite.Migrations
                 {
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany("Emails")
-                        .HasForeignKey("HumanUserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 
-                    b.HasOne("Behind.Core.Domain.User", null)
+            modelBuilder.Entity("Behind.Core.Domain.Password", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Behind.Core.Domain.User", b =>
+            modelBuilder.Entity("Behind.Core.Domain.WallOfShameEntry", b =>
                 {
-                    b.HasOne("Behind.Core.Domain.WallOfShameEntry", null)
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("GivenById")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.HasOne("Behind.Core.Domain.WallOfShameEntry", null)
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("RoleGrants", b =>
@@ -278,7 +308,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Behind.Core.Domain.User", null)
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

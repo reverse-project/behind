@@ -29,4 +29,7 @@ public class ImmutableEntityRepository<TEntity>(DbContext dbContext, DbSet<TEnti
 
     public void UpdateImmutable(TEntity entity) =>
         dbContext.UpdateImmutable(entity);
+    
+    public void UpdateImmutable(object[] keyValues, TEntity entity) =>
+        dbContext.UpdateImmutable(keyValues, entity);
 }

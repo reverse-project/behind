@@ -1,0 +1,9 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=/workspace/Data/web.db"
+  },
+  "Database": {
+    "Provider": "Sqlite",
+    "Key": "DefaultConnection"
+  }
+}

@@ -6,4 +6,5 @@ public interface IImmutableEntityRepository<TEntity> where TEntity : class
     Task AddImmutableAsync(TEntity entity);
     void RemoveImmutable(TEntity entity);
     void UpdateImmutable(TEntity entity);
+    void UpdateImmutable(object[] keyValues, TEntity entity);
 }

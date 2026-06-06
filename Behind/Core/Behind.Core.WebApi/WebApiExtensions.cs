@@ -6,8 +6,8 @@ using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Handlers;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
+using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
-using Behind.Core.Database.Sqlite;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -34,16 +33,31 @@ public static class WebApiExtensions
             OptionTypeConverterRegistration.Register<Uuid>();
             OptionTypeConverterRegistration.Register<JwtSettings>();
             OptionTypeConverterRegistration.Register<MagicLinkSettings>();
-            
+
             builder.AddOpenApi();
+
+            builder.Services.AddScoped<IAuditLogEntryQueries, AuditLogEntryQueries>();
+            builder.Services.AddScoped<IUserQueries, UserQueries>();
+            builder.Services.AddScoped<IEmailQueries, EmailQueries>();
+            builder.Services.AddScoped<IPasswordQueries, PasswordQueries>();
+            builder.Services.AddScoped<IEmailCommands, EmailCommands>();
+            builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
+            builder.Services.AddScoped<IUserCommands, UserCommands>();
             
-            builder.Services.AddTransient<IAuditLogEntryQueries, AuditLogEntryQueries>();
-            builder.Services.AddDbContext<AbstractCoreContext, CoreContextSqlite>(options =>
-                options.UseSqlite("Data Source=/workspace/Data/core.db")
+            builder.Configuration.AddJsonFile("database.json", false, true);
+            
+            DatabaseConfiguration databaseConfiguration = builder.Configuration
+                .GetSection(DatabaseConfiguration.SectionName)
+                .GetOptionAware<DatabaseConfiguration>() ?? new DatabaseConfiguration();
+
+            builder.Services.AddSingleton(
+                Options.Create(databaseConfiguration)
             );
+            
+            databaseConfiguration.Register(builder);
 
             builder.Configuration.AddJsonFile("security.json", true, true);
-            
+
             SecurityConfiguration securityConfiguration = builder.Configuration
                 .GetSection(SecurityConfiguration.SectionName)
                 .GetOptionAware<SecurityConfiguration>() ?? new SecurityConfiguration();
@@ -51,14 +65,14 @@ public static class WebApiExtensions
             builder.Services.AddSingleton(
                 Options.Create(securityConfiguration)
             );
-            
+
             builder.Configuration.AddJsonFile("frontend.json", true, true);
             builder.Services.Configure<FrontendConfiguration>(
                 builder.Configuration.GetSection(FrontendConfiguration.SectionName)
             );
 
             builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, DomainPasswordHasher<ApplicationUser>>();
-            builder.Services.AddSingleton<IUserStore<ApplicationUser>, InMemoryUserStore>();
+            builder.Services.AddScoped<IUserStore<ApplicationUser>, IdentityStore>();
             builder.Services.AddSingleton<IRoleStore<ApplicationRole>, InMemoryRoleStore>();
 
             builder.Services.AddIdentityCore<ApplicationUser>(options =>

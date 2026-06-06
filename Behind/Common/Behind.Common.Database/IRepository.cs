@@ -10,6 +10,8 @@ public interface IRepository<TAggregate, TKey>
     
     void Update(TAggregate aggregate);
     
+    void Update(TKey key, TAggregate aggregate);
+    
     void Delete(TAggregate aggregate);
 
     public async Task DeleteAsync(TKey key, CancellationToken cancellationToken = default)

@@ -8,6 +8,8 @@ namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext : IRepository<UserRole, Guid>
 {
+    public DbSet<UserRole> Roles => Set<UserRole>();
+    
     public Guid GetKey(UserRole entity) => Entry(entity).Property<Guid>("Id").CurrentValue;
 
     async Task<Option<UserRole>> IRepository<UserRole, Guid>.TryFindAsync(
@@ -46,8 +48,11 @@ public partial class AbstractCoreContext : IRepository<UserRole, Guid>
         await Roles.AddAsync(aggregate, cancellationToken);
 
     void IRepository<UserRole, Guid>.Update(UserRole aggregate) =>
-        Roles.ToImmutableEntityRepository(this).UpdateImmutable(aggregate);
+        Roles.ToImmutableEntityRepository(this).UpdateImmutable([GetKey(aggregate)], aggregate);
 
+    void IRepository<UserRole, Guid>.Update(Guid key, UserRole aggregate) =>
+        Roles.ToImmutableEntityRepository(this).UpdateImmutable([key], aggregate);
+    
     void IRepository<UserRole, Guid>.Delete(UserRole aggregate) =>
         Roles.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
 }

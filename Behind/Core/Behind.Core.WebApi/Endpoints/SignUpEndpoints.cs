@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Behind.Core.Common;
+using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -19,8 +19,8 @@ public sealed class SignUpEndpoints
 
         var user = new ApplicationUser
         {
-            UserName = request.Email, NormalizedUserName = request.Email.ToUpperInvariant(),
-            Password = PasswordHash.Create(request.Password)
+            DisplayName = request.Email,
+            Emails = [new Email(request.Email)]
         };
         
         var result = await userManager.CreateAsync(user, request.Password);

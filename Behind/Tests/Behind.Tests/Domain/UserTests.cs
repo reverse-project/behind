@@ -14,14 +14,14 @@ public class UserTests
     public void HumanUser_EmptyEmailCollection_ThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>
-            new HumanUser(Array.Empty<Email>(), None));
+            new HumanUser(string.Empty, Array.Empty<Email>(), None));
     }
 
     [Fact]
     public void HumanUser_WithOneEmail_Succeeds()
     {
         var email = new Email("user@example.com");
-        var user = new HumanUser([email], None);
+        var user = new HumanUser("Test User", [email], None);
         Assert.NotNull(user);
     }
 
@@ -29,7 +29,7 @@ public class UserTests
     public void HumanUser_ContainsSuppliedEmail()
     {
         var email = new Email("user@example.com");
-        var user = new HumanUser([email], None);
+        var user = new HumanUser("Test User", [email], None);
         Assert.Contains(email, user.Emails);
     }
 
@@ -38,7 +38,7 @@ public class UserTests
     {
         var e1 = new Email("a@example.com");
         var e2 = new Email("b@example.com");
-        var user = new HumanUser([e1, e2], None);
+        var user = new HumanUser("Test User", [e1, e2], None);
         Assert.Contains(e1, user.Emails);
         Assert.Contains(e2, user.Emails);
     }
@@ -48,7 +48,7 @@ public class UserTests
     {
         var email = new Email("user@example.com");
         var role = new UserRole("Admin");
-        var user = new HumanUser([email], Some<IEnumerable<Role>>([role]));
+        var user = new HumanUser("Test User", [email], Some<IEnumerable<Role>>([role]));
         bool isSome = user.Roles.Match(() => false, _ => true);
         Assert.True(isSome);
     }
@@ -57,7 +57,7 @@ public class UserTests
     public void HumanUser_WithNoneRoles_RolesIsNone()
     {
         var email = new Email("user@example.com");
-        var user = new HumanUser([email], None);
+        var user = new HumanUser("Test User", [email], None);
         Option<IEnumerable<Role>> none = None;
         Assert.Equal(none, user.Roles);
     }

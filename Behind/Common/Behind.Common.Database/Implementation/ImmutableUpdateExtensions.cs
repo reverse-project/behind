@@ -34,6 +34,57 @@ public static class ImmutableUpdateExtensions
                 }
             }
         }
+        
+        public void UpdateImmutable<T>(object[] keyValues, T modified) where T : class
+        {
+            var entityType = dbContext.Model.FindEntityType(typeof(T))
+                             ?? throw new InvalidOperationException($"Entity type {typeof(T).FullName} not found.");
+
+            var primaryKey = entityType.FindPrimaryKey()
+                             ?? throw new InvalidOperationException($"Entity type {typeof(T).FullName} has no primary key.");
+
+            if (primaryKey.Properties.Count != keyValues.Length)
+            {
+                throw new InvalidOperationException(
+                    $"Expected {primaryKey.Properties.Count} key values but received {keyValues.Length}.");
+            }
+
+            var entry = dbContext.Set<T>().Local.FindEntry(primaryKey.Properties, keyValues);
+
+            if (entry is null)
+            {
+                throw new InvalidOperationException("Original entity must be tracked.");
+            }
+
+            var navigations = entry.Navigations.ToList();
+
+            entry.State = EntityState.Detached;
+
+            dbContext.Attach(modified);
+
+            var modifiedEntry = dbContext.Entry(modified);
+
+            for (int i = 0; i < primaryKey.Properties.Count; i++)
+            {
+                modifiedEntry.Property(primaryKey.Properties[i].Name).CurrentValue = keyValues[i];
+            }
+
+            modifiedEntry.State = EntityState.Modified;
+
+            // Align navigation graphs with the immutable copy
+            foreach (var navigation in navigations)
+            {
+                switch (navigation)
+                {
+                    case CollectionEntry collectionEntry:
+                        dbContext.UpdateCollection(collectionEntry, modified);
+                        break;
+                    case ReferenceEntry referenceEntry:
+                        dbContext.UpdateReference(referenceEntry, modified);
+                        break;
+                }
+            }
+        }
 
         private void UpdateCollection(CollectionEntry collectionEntry,
             object modifiedEntity)

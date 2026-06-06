@@ -20,7 +20,7 @@ public static class DatabaseSeedHelper
         CoreContextSqlite context,
         string emailValue = "user@test.com")
     {
-        var user = new HumanUser([new Email(emailValue)], None);
+        var user = new HumanUser("Test User", [new Email(emailValue)], None);
         await context.Users.AddAsync(user);
 
         // Uuid7ValueGenerator.GeneratesTemporaryValues == false → ID is final immediately after Add

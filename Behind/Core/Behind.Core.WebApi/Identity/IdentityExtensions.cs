@@ -18,7 +18,7 @@ public static class IdentityExtensions
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity([
-                    new Claim(ClaimTypes.Email, user.UserName)
+                    new Claim(ClaimTypes.Email, user.Emails.First().Value)
                 ]),
                 Expires = accessToken.ExpiresAt.DateTime,
                 Issuer = settings.Issuer,
@@ -42,7 +42,7 @@ public static class IdentityExtensions
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity([
-                    new Claim(ClaimTypes.Email, user.UserName)
+                    new Claim(ClaimTypes.Email, user.Emails.First().Value)
                 ]),
                 Expires = refreshToken.ExpiresAt.DateTime,
                 Issuer = settings.Issuer,
@@ -55,5 +55,30 @@ public static class IdentityExtensions
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+    }
+
+    extension(User user)
+    {
+        public ApplicationUser ToApplicationUser(Guid id) => user switch
+        {
+            HumanUser human => new ApplicationUser
+            {
+                Id = id,
+                DisplayName = human.DisplayName,
+                Emails = human.Emails,
+                Password = null
+            },
+            GuestUser => new ApplicationUser
+            {
+                Id = DomainConstants.GuestUserId,
+                DisplayName = "Guest"
+            },
+            SystemUser => new ApplicationUser
+            {
+                Id = DomainConstants.SystemUserId,
+                DisplayName = "System"
+            },
+            _ => throw new ArgumentException($"Invalid user type {user.GetType().Name}")
+        };
     }
 }

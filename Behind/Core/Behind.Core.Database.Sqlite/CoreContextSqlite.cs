@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Core.Database.Sqlite;
 
-public sealed class CoreContextSqlite(DbContextOptions options) : AbstractCoreContext(options)
+public sealed class CoreContextSqlite(DbContextOptions<CoreContextSqlite> options) : AbstractCoreContext(options)
 {
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,5 +18,6 @@ public sealed class CoreContextSqlite(DbContextOptions options) : AbstractCoreCo
         modelBuilder.Entity<Grant>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<WallOfShameEntry>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<Role>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
+        modelBuilder.Entity<Password>().Property<Guid>("Id").HasValueGenerator<Uuid7ValueGenerator>();
     }
 }

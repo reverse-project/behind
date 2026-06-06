@@ -31,12 +31,12 @@ public sealed class SignInEndpoints
                     return Results.Unauthorized();
                 }
 
-                var accessToken = AccessToken.Create(new HumanUser([new Email(user.NormalizedUserName)], None));
+                var accessToken = AccessToken.Create(new HumanUser(user.DisplayName, user.Emails, None));
                 return Results.Json(new SignInResponse(
                     accessToken.ToJwtToken(user, jwtSettings),
                     accessToken.ExpiresAt,
                     RefreshToken
-                        .Create(new HumanUser([new Email(user.NormalizedUserName)], None))
+                        .Create(new HumanUser(user.DisplayName, user.Emails, None))
                         .ToJwtToken(user, jwtSettings)
                 ));
             });

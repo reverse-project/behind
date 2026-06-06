@@ -112,7 +112,7 @@ public sealed class UserRepositoryTests : IDisposable
         Guid userId;
         using (var ctx = _factory.CreateContext())
         {
-            var user = new HumanUser([new Email("add-persist@test.com")], None);
+            var user = new HumanUser("Test User", [new Email("add-persist@test.com")], None);
             await ctx.Users.AddAsync(user);
             userId = ctx.Entry(user).Property<Guid>("Id").CurrentValue;
 
@@ -138,7 +138,7 @@ public sealed class UserRepositoryTests : IDisposable
     public async Task GetKey_AfterAdd_ReturnsNonEmptyGuid()
     {
         using var ctx = _factory.CreateContext();
-        var user = new HumanUser([new Email("gk@test.com")], None);
+        var user = new HumanUser("Test User", [new Email("gk@test.com")], None);
         await ctx.Users.AddAsync(user);
         var key = ((IRepository<HumanUser, Guid>)ctx).GetKey(user);
         Assert.NotEqual(Guid.Empty, key);
@@ -165,7 +165,7 @@ public sealed class UserRepositoryTests : IDisposable
                 $"DELETE FROM Emails WHERE UserId = {userId}");
 
             // Attach a valid stub purely so the IRepository.Delete pattern works.
-            var stub = new HumanUser([new Email("stub@stub.com")], None);
+            var stub = new HumanUser("Test User", [new Email("stub@stub.com")], None);
             var entry = ctx.Entry(stub);
             entry.Property<Guid>("Id").CurrentValue = userId;
             // Detach any stub emails EF Core picked up via the navigation

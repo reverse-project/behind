@@ -22,6 +22,8 @@ public class IRepositoryDefaultMethodTests
         public Task<Option<Email>> TryFindAsync(Guid key, CancellationToken ct) => inner.TryFindAsync(key, ct);
         public Task AddAsync(Email aggregate, CancellationToken ct) => inner.AddAsync(aggregate, ct);
         public void Update(Email aggregate) => inner.Update(aggregate);
+        public void Update(Guid key, Email aggregate) => inner.Update(key, aggregate);
+
         public void Delete(Email aggregate) => inner.Delete(aggregate);
         // DeleteAsync deliberately absent → interface default implementation is used
     }

@@ -8,13 +8,18 @@ public abstract record User(Option<IEnumerable<Role>> Roles);
 public sealed record HumanUser : User
 {
     public IEnumerable<Email> Emails { get; init; }
+    
+    public string DisplayName { get; init; }
 
-    public HumanUser() : this([], None)
+    public HumanUser() : base(None)
     {
+        Emails = Enumerable.Empty<Email>();
+        DisplayName = string.Empty;
     }
 
-    public HumanUser(IEnumerable<Email> emails, Option<IEnumerable<Role>> Roles) : base(Roles)
+    public HumanUser(string displayName, IEnumerable<Email> emails, Option<IEnumerable<Role>> Roles) : base(Roles)
     {
+        DisplayName = displayName;
         var emailList = emails.ToList();
 
         if (emailList.Count == 0)

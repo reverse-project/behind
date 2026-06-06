@@ -3,7 +3,7 @@ using Behind.Web;
 
 await WebApplication
     .CreateSlimBuilder(args)
-    .AddCore()
+    .AddWebApi()
     .Build()
     .UseCore()
     .UseWeb()

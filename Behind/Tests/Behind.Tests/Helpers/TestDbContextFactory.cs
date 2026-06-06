@@ -1,3 +1,4 @@
+using Behind.Core.Database;
 using Behind.Core.Database.Sqlite;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

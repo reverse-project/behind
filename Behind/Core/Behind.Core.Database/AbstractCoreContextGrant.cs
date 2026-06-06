@@ -8,6 +8,8 @@ namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext : IRepository<Grant, Guid>
 {
+    public DbSet<Grant> Grants => Set<Grant>();
+    
     public Guid GetKey(Grant entity) => Entry(entity).Property<Guid>("Id").CurrentValue;
 
     async Task<Option<Grant>> IRepository<Grant, Guid>.TryFindAsync(
@@ -27,7 +29,10 @@ public partial class AbstractCoreContext : IRepository<Grant, Guid>
         await Grants.AddAsync(aggregate, cancellationToken);
 
     void IRepository<Grant, Guid>.Update(Grant aggregate) =>
-        Grants.ToImmutableEntityRepository(this).UpdateImmutable(aggregate);
+        Grants.ToImmutableEntityRepository(this).UpdateImmutable([GetKey(aggregate)], aggregate);
+    
+    void IRepository<Grant, Guid>.Update(Guid key, Grant aggregate) =>
+        Grants.ToImmutableEntityRepository(this).UpdateImmutable([key], aggregate);
 
     void IRepository<Grant, Guid>.Delete(Grant aggregate) =>
         Grants.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);

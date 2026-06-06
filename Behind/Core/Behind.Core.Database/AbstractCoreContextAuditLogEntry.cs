@@ -8,6 +8,8 @@ namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
 {
+    public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
+    
     public Guid GetKey(AuditLogEntry entity) => Entry(entity).Property<Guid>("Id").CurrentValue;
 
     async Task<Option<AuditLogEntry>> IRepository<AuditLogEntry, Guid>.TryFindAsync(
@@ -28,7 +30,9 @@ public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
             {
                 Audit = audit,
                 UserId = EF.Property<Guid?>(audit, "UserId"),
+                dbUser.DisplayName,
                 BehalfOfId = EF.Property<Guid?>(audit, "BehalfOfId"),
+                BehalfOfDisplayName = dbBehalfOf.DisplayName,
                 PrimaryEmails = Emails
                     .Where(e => EF.Property<Guid>(e, "UserId") == EF.Property<Guid?>(audit, "UserId"))
                     .Select(e => e.Value)
@@ -50,6 +54,7 @@ public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
             ? result.UserId == DomainConstants.SystemUserId
                 ? new SystemUser(None)
                 : new HumanUser(
+                    result.DisplayName,
                     result.PrimaryEmails.Select(val => new Email(val)),
                     None
                 )
@@ -57,6 +62,7 @@ public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
 
         Option<User> behalfOf = result.BehalfOfId.HasValue
             ? new HumanUser(
+                result.BehalfOfDisplayName,
                 result.BehalfOfEmails.Select(val => new Email(val)),
                 None
             )
@@ -64,14 +70,16 @@ public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
 
         return Some(result.Audit with { User = user, BehalfOf = behalfOf });
     }
-
     async Task IRepository<AuditLogEntry, Guid>.
         AddAsync(AuditLogEntry aggregate, CancellationToken cancellationToken) =>
         await AuditLogEntries.AddAsync(aggregate, cancellationToken);
 
     void IRepository<AuditLogEntry, Guid>.Update(AuditLogEntry aggregate) =>
-        AuditLogEntries.ToImmutableEntityRepository(this).UpdateImmutable(aggregate);
+        AuditLogEntries.ToImmutableEntityRepository(this).UpdateImmutable([GetKey(aggregate)], aggregate);
 
+    void IRepository<AuditLogEntry, Guid>.Update(Guid key, AuditLogEntry aggregate) =>
+        AuditLogEntries.ToImmutableEntityRepository(this).UpdateImmutable([key], aggregate);
+    
     void IRepository<AuditLogEntry, Guid>.Delete(AuditLogEntry aggregate) =>
         AuditLogEntries.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
 }

@@ -8,6 +8,8 @@ namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext : IRepository<Email, Guid>
 {
+    public DbSet<Email> Emails => Set<Email>();
+    
     public Guid GetKey(Email entity) => Entry(entity).Property<Guid>("Id").CurrentValue;
 
     async Task<Option<Email>> IRepository<Email, Guid>.TryFindAsync(
@@ -27,8 +29,11 @@ public partial class AbstractCoreContext : IRepository<Email, Guid>
         await Emails.AddAsync(aggregate, cancellationToken);
 
     void IRepository<Email, Guid>.Update(Email aggregate) =>
-        Emails.ToImmutableEntityRepository(this).UpdateImmutable(aggregate);
+        Emails.ToImmutableEntityRepository(this).UpdateImmutable([GetKey(aggregate)], aggregate);
 
+    void IRepository<Email, Guid>.Update(Guid key, Email aggregate) =>
+        Emails.ToImmutableEntityRepository(this).UpdateImmutable([key], aggregate);
+    
     void IRepository<Email, Guid>.Delete(Email aggregate) =>
         Emails.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
 }

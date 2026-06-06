@@ -15,8 +15,8 @@ public sealed class EmailConfiguration : IEntityTypeConfiguration<Email>
 
         builder.Property<Guid>("UserId");
 
-        builder.HasOne<User>()
-            .WithMany()
+        builder.HasOne<HumanUser>()
+            .WithMany(u => u.Emails)
             .HasForeignKey("UserId")
             .OnDelete(DeleteBehavior.Cascade);
     }

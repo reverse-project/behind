@@ -8,6 +8,8 @@ namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
 {
+    public DbSet<HumanUser> Users => Set<HumanUser>();
+    
     public Guid GetKey(HumanUser entity) => Entry(entity).Property<Guid>("Id").CurrentValue;
 
     async Task<Option<HumanUser>> IRepository<HumanUser, Guid>.TryFindAsync(
@@ -19,6 +21,7 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
                     where EF.Property<Guid>(user, "Id") == key
                     select new
                     {
+                        user.DisplayName,
                         Emails = Emails
                             .Where(e => EF.Property<Guid>(e, "UserId") == EF.Property<Guid>(user, "Id"))
                             .Select(e => e.Value)
@@ -78,6 +81,7 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
         }
 
         return Some(new HumanUser(
+            userResult.DisplayName,
             userResult.Emails.Select(v => new Email(v)),
             roles
         ));
@@ -87,7 +91,10 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
         await Users.AddAsync(aggregate, cancellationToken);
 
     void IRepository<HumanUser, Guid>.Update(HumanUser aggregate) =>
-        Users.ToImmutableEntityRepository(this).UpdateImmutable(aggregate);
+        Users.ToImmutableEntityRepository(this).UpdateImmutable([GetKey(aggregate)], aggregate);
+    
+    void IRepository<HumanUser, Guid>.Update(Guid key, HumanUser aggregate) =>
+        Users.ToImmutableEntityRepository(this).UpdateImmutable([key], aggregate);
 
     void IRepository<HumanUser, Guid>.Delete(HumanUser aggregate) =>
         Users.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);

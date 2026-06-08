@@ -57,7 +57,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("EntityName", "EntityKey");
 
-                    b.ToTable("AuditLogEntries");
+                    b.ToTable("AuditLogEntries", (string)null);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Email", b =>
@@ -81,7 +81,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Emails");
+                    b.ToTable("Emails", (string)null);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Grant", b =>
@@ -99,7 +99,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasAlternateKey("Name");
 
-                    b.ToTable("Grants");
+                    b.ToTable("Grants", (string)null);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Password", b =>
@@ -123,7 +123,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Passwords");
+                    b.ToTable("Passwords", (string)null);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Role", b =>
@@ -183,7 +183,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("WallOfShameEntries");
+                    b.ToTable("WallOfShameEntries", (string)null);
                 });
 
             modelBuilder.Entity("RoleGrants", b =>
@@ -198,7 +198,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("GrantId");
 
-                    b.ToTable("RoleGrants");
+                    b.ToTable("RoleGrants", (string)null);
                 });
 
             modelBuilder.Entity("UserRoles", b =>
@@ -213,7 +213,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.UserRole", b =>
@@ -236,7 +236,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasIndex("DisplayName");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.AuditLogEntry", b =>

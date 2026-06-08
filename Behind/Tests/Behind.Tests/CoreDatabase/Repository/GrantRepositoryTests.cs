@@ -14,10 +14,10 @@ public sealed class GrantRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_ExistingId_ReturnsSomeWithCorrectName()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedGrantAsync(seed, "grant-find");
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<Grant, Guid>)ctx).TryFindAsync(id);
 
         var found = false;
@@ -28,7 +28,7 @@ public sealed class GrantRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_UnknownId_ReturnsNone()
     {
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<Grant, Guid>)ctx).TryFindAsync(Guid.NewGuid());
         var isNone = true;
         result.Match(() => { }, _ => isNone = false);
@@ -39,7 +39,7 @@ public sealed class GrantRepositoryTests : IDisposable
     public async Task AddAsync_Persists_Grant()
     {
         Guid id;
-        using (var ctx = _factory.CreateContext())
+        await using (var ctx = _factory.CreateContext())
         {
             var grant = new Grant("persisted-grant");
             var repo = (IRepository<Grant, Guid>)ctx;
@@ -48,7 +48,7 @@ public sealed class GrantRepositoryTests : IDisposable
             await ctx.SaveChangesAsync();
         }
 
-        using var read = _factory.CreateContext();
+        await using var read = _factory.CreateContext();
         var found = false;
         (await ((IRepository<Grant, Guid>)read).TryFindAsync(id))
             .Match(() => { }, g => { found = true; Assert.Equal("persisted-grant", g.Name); });
@@ -58,7 +58,7 @@ public sealed class GrantRepositoryTests : IDisposable
     [Fact]
     public async Task GetKey_AfterAdd_ReturnsNonEmptyGuid()
     {
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var grant = new Grant("getkey-grant");
         await ctx.Grants.AddAsync(grant);
         var key = ((IRepository<Grant, Guid>)ctx).GetKey(grant);
@@ -69,10 +69,10 @@ public sealed class GrantRepositoryTests : IDisposable
     public async Task Delete_RemovesGrant_FromDatabase()
     {
         Guid id;
-        using (var seed = _factory.CreateContext())
+        await using (var seed = _factory.CreateContext())
             id = await DatabaseSeedHelper.SeedGrantAsync(seed, "del-grant");
 
-        using (var ctx = _factory.CreateContext())
+        await using (var ctx = _factory.CreateContext())
         {
             var tracked = await ctx.Grants
                 .Where(g => EF.Property<Guid>(g, "Id") == id)
@@ -81,7 +81,7 @@ public sealed class GrantRepositoryTests : IDisposable
             await ctx.SaveChangesAsync();
         }
 
-        using var verify = _factory.CreateContext();
+        await using var verify = _factory.CreateContext();
         var isNone = true;
         (await ((IRepository<Grant, Guid>)verify).TryFindAsync(id))
             .Match(() => { }, _ => isNone = false);

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using Behind.Common.Configuration;
 using Behind.Common.Converters;
@@ -7,6 +8,7 @@ using Behind.Common.WebApi.Handlers;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
+using Behind.Core.Database.Converters;
 using Behind.Core.Database.Queries;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
@@ -33,6 +35,9 @@ public static class WebApiExtensions
             OptionTypeConverterRegistration.Register<Uuid>();
             OptionTypeConverterRegistration.Register<JwtSettings>();
             OptionTypeConverterRegistration.Register<MagicLinkSettings>();
+            TypeDescriptor.AddAttributes(
+                typeof(AuditLogEntry.AuditAction),
+                new TypeConverterAttribute(typeof(AuditLogEntryAuditActionTypeConverter)));
 
             builder.AddOpenApi();
 

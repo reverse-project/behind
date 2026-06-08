@@ -10,42 +10,45 @@ public class AuditLogEntryTests
     [Fact]
     public void FourArgCtor_SetsEntityName()
     {
-        var entry = new AuditLogEntry("MyEntity", "Key1", "Create", TestTimestamp);
+        var entry = new AuditLogEntry("MyEntity", "Key1", new AuditLogEntry.Created(), TestTimestamp);
         Assert.Equal("MyEntity", entry.EntityName);
     }
 
     [Fact]
     public void FourArgCtor_SetsEntityKey()
     {
-        var entry = new AuditLogEntry("MyEntity", "Key1", "Create", TestTimestamp);
+        var entry = new AuditLogEntry("MyEntity", "Key1", new AuditLogEntry.Created(), TestTimestamp);
         Assert.Equal("Key1", entry.EntityKey);
     }
 
     [Fact]
     public void FourArgCtor_SetsAction()
     {
-        var entry = new AuditLogEntry("MyEntity", "Key1", "Create", TestTimestamp);
-        Assert.Equal("Create", entry.Action);
+        var action = new AuditLogEntry.Created();
+        var entry = new AuditLogEntry("MyEntity", "Key1", action, TestTimestamp);
+
+        Assert.Equal(action, entry.Action);
+        Assert.IsType<AuditLogEntry.Created>(entry.Action);
     }
 
     [Fact]
     public void FourArgCtor_SetsTimestamp()
     {
-        var entry = new AuditLogEntry("MyEntity", "Key1", "Create", TestTimestamp);
+        var entry = new AuditLogEntry("MyEntity", "Key1", new AuditLogEntry.Created(), TestTimestamp);
         Assert.Equal(TestTimestamp, entry.Timestamp);
     }
 
     [Fact]
     public void FourArgCtor_SetsUserToGuestUser()
     {
-        var entry = new AuditLogEntry("Entity", "Key1", "Create", TestTimestamp);
+        var entry = new AuditLogEntry("Entity", "Key1", new AuditLogEntry.Created(), TestTimestamp);
         Assert.IsType<GuestUser>(entry.User);
     }
 
     [Fact]
     public void FourArgCtor_SetsBehalfOfToNone()
     {
-        var entry = new AuditLogEntry("Entity", "Key1", "Create", TestTimestamp);
+        var entry = new AuditLogEntry("Entity", "Key1", new AuditLogEntry.Created(), TestTimestamp);
         Option<User> none = None;
         Assert.Equal(none, entry.BehalfOf);
     }
@@ -57,14 +60,16 @@ public class AuditLogEntryTests
     {
         var user = new SystemUser(None);
         var behalfOf = new GuestUser(None);
+        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+
         var entry = new AuditLogEntry(
-            "Ent", "K", "Update",
+            "Ent", "K", action,
             user, TestTimestamp,
             Some<User>(behalfOf));
 
         Assert.Equal("Ent", entry.EntityName);
         Assert.Equal("K", entry.EntityKey);
-        Assert.Equal("Update", entry.Action);
+        Assert.Equal(action, entry.Action);
         Assert.Equal(user, entry.User);
         Assert.Equal(TestTimestamp, entry.Timestamp);
     }
@@ -74,7 +79,7 @@ public class AuditLogEntryTests
     {
         var behalfOf = new GuestUser(None);
         var entry = new AuditLogEntry(
-            "E", "K", "A",
+            "E", "K", new AuditLogEntry.Created(),
             new SystemUser(None), TestTimestamp,
             Some<User>(behalfOf));
 
@@ -87,7 +92,7 @@ public class AuditLogEntryTests
     [Fact]
     public void CopyCtor_KeepsEntityName()
     {
-        var original = new AuditLogEntry("OrigName", "K", "A",
+        var original = new AuditLogEntry("OrigName", "K", new AuditLogEntry.Created(),
             new SystemUser(None), TestTimestamp, None);
         var copy = new AuditLogEntry(original);
         Assert.Equal("OrigName", copy.EntityName);
@@ -96,7 +101,7 @@ public class AuditLogEntryTests
     [Fact]
     public void CopyCtor_KeepsEntityKey()
     {
-        var original = new AuditLogEntry("E", "OrigKey", "A",
+        var original = new AuditLogEntry("E", "OrigKey", new AuditLogEntry.Created(),
             new SystemUser(None), TestTimestamp, None);
         var copy = new AuditLogEntry(original);
         Assert.Equal("OrigKey", copy.EntityKey);
@@ -105,16 +110,22 @@ public class AuditLogEntryTests
     [Fact]
     public void CopyCtor_KeepsAction()
     {
-        var original = new AuditLogEntry("E", "K", "OrigAction",
+        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var original = new AuditLogEntry("E", "K", action,
             new SystemUser(None), TestTimestamp, None);
+
         var copy = new AuditLogEntry(original);
-        Assert.Equal("OrigAction", copy.Action);
+
+        Assert.Equal(action, copy.Action);
+        var updated = Assert.IsType<AuditLogEntry.Updated>(copy.Action);
+        Assert.Equal("""{"Name":"Old"}""", updated.OldValues);
+        Assert.Equal("""{"Name":"New"}""", updated.NewValues);
     }
 
     [Fact]
     public void CopyCtor_KeepsTimestamp()
     {
-        var original = new AuditLogEntry("E", "K", "A",
+        var original = new AuditLogEntry("E", "K", new AuditLogEntry.Created(),
             new SystemUser(None), TestTimestamp, None);
         var copy = new AuditLogEntry(original);
         Assert.Equal(TestTimestamp, copy.Timestamp);
@@ -123,7 +134,7 @@ public class AuditLogEntryTests
     [Fact]
     public void CopyCtor_ResetsUserToGuestUser()
     {
-        var original = new AuditLogEntry("E", "K", "A",
+        var original = new AuditLogEntry("E", "K", new AuditLogEntry.Created(),
             new SystemUser(None), TestTimestamp, None);
         var copy = new AuditLogEntry(original);
         Assert.IsType<GuestUser>(copy.User);
@@ -133,7 +144,7 @@ public class AuditLogEntryTests
     public void CopyCtor_ResetsBehalfOfToNone()
     {
         var user = new SystemUser(None);
-        var original = new AuditLogEntry("E", "K", "A",
+        var original = new AuditLogEntry("E", "K", new AuditLogEntry.Created(),
             user, TestTimestamp, Some<User>(user));
         var copy = new AuditLogEntry(original);
         Option<User> none = None;
@@ -145,7 +156,7 @@ public class AuditLogEntryTests
     [Fact]
     public void WithUser_ReturnsEntryWithNewUser()
     {
-        var entry = new AuditLogEntry("E", "K", "A", TestTimestamp);
+        var entry = new AuditLogEntry("E", "K", new AuditLogEntry.Created(), TestTimestamp);
         var newUser = new SystemUser(None);
         var updated = entry.WithUser(newUser);
         Assert.Equal(newUser, updated.User);
@@ -154,7 +165,7 @@ public class AuditLogEntryTests
     [Fact]
     public void WithUser_DoesNotMutateOriginal()
     {
-        var entry = new AuditLogEntry("E", "K", "A", TestTimestamp);
+        var entry = new AuditLogEntry("E", "K", new AuditLogEntry.Created(), TestTimestamp);
         var newUser = new SystemUser(None);
         _ = entry.WithUser(newUser);
         Assert.IsType<GuestUser>(entry.User);
@@ -163,7 +174,7 @@ public class AuditLogEntryTests
     [Fact]
     public void WithBehalfOf_SetsBehalfOfToSomeWithProvidedUser()
     {
-        var entry = new AuditLogEntry("E", "K", "A", TestTimestamp);
+        var entry = new AuditLogEntry("E", "K", new AuditLogEntry.Created(), TestTimestamp);
         var behalfOf = new GuestUser(None);
         var updated = entry.WithBehalfOf(behalfOf);
 
@@ -174,7 +185,7 @@ public class AuditLogEntryTests
     [Fact]
     public void WithBehalfOf_BehalfOfIsSome()
     {
-        var entry = new AuditLogEntry("E", "K", "A", TestTimestamp);
+        var entry = new AuditLogEntry("E", "K", new AuditLogEntry.Created(), TestTimestamp);
         var behalfOf = new GuestUser(None);
         var updated = entry.WithBehalfOf(behalfOf);
 

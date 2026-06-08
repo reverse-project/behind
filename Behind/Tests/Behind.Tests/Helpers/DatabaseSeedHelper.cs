@@ -1,6 +1,5 @@
 using Behind.Core.Database.Sqlite;
-using Behind.Core.Domain;
-using static Behind.Common.FunctionalExtensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Tests.Helpers;
 
@@ -15,20 +14,54 @@ public static class DatabaseSeedHelper
     // User / Email
     // -------------------------------------------------------------------------
 
+    public static async Task EnsureBuiltInUsersAsync(CoreContextSqlite context)
+    {
+        await EnsureBuiltInUserAsync(
+            context,
+            DomainConstants.SystemUserId,
+            "System",
+            "system@behind.local");
+
+        await EnsureBuiltInUserAsync(
+            context,
+            DomainConstants.GuestUserId,
+            "Guest",
+            "guest@behind.local");
+    }
+
+    private static async Task EnsureBuiltInUserAsync(
+        CoreContextSqlite context,
+        Guid id,
+        string displayName,
+        string emailValue)
+    {
+        bool exists = await context.Users
+            .AnyAsync(user => EF.Property<Guid>(user, "Id") == id);
+
+        if (exists)
+        {
+            return;
+        }
+
+        var user = new HumanUser(displayName, [new Email(emailValue)], None);
+
+        await context.Users.AddAsync(user);
+        context.Entry(user).Property<Guid>("Id").CurrentValue = id;
+
+        await context.SaveChangesAsync();
+    }
+
     /// <summary>Inserts a HumanUser row and one Email row for it.</summary>
     public static async Task<Guid> SeedHumanUserAsync(
         CoreContextSqlite context,
         string emailValue = "user@test.com")
     {
         var user = new HumanUser("Test User", [new Email(emailValue)], None);
+
         await context.Users.AddAsync(user);
 
         // Uuid7ValueGenerator.GeneratesTemporaryValues == false → ID is final immediately after Add
         var userId = context.Entry(user).Property<Guid>("Id").CurrentValue;
-
-        var email = new Email(emailValue);
-        await context.Emails.AddAsync(email);
-        context.Entry(email).Property("UserId").CurrentValue = userId;
 
         await context.SaveChangesAsync();
         return userId;
@@ -42,7 +75,8 @@ public static class DatabaseSeedHelper
     {
         var email = new Email(emailValue);
         await context.Emails.AddAsync(email);
-        context.Entry(email).Property("UserId").CurrentValue = userId;
+        context.Entry(email).Property<Guid>("UserId").CurrentValue = userId;
+
         await context.SaveChangesAsync();
         return context.Entry(email).Property<Guid>("Id").CurrentValue;
     }
@@ -86,6 +120,7 @@ public static class DatabaseSeedHelper
                 ["UserId"] = userId,
                 ["RoleId"] = roleId
             });
+
         await context.SaveChangesAsync();
     }
 
@@ -100,6 +135,7 @@ public static class DatabaseSeedHelper
                 ["RoleId"] = roleId,
                 ["GrantId"] = grantId
             });
+
         await context.SaveChangesAsync();
     }
 
@@ -113,15 +149,24 @@ public static class DatabaseSeedHelper
         Guid? behalfOfId = null,
         DateTimeOffset? timestamp = null)
     {
+        if (userId is not null || behalfOfId is not null)
+        {
+            await EnsureBuiltInUsersAsync(context);
+        }
+
         var ts = timestamp ?? DateTimeOffset.UtcNow;
-        var entry = new AuditLogEntry("Entity", "key-1", "Create", ts);
+        var entry = new AuditLogEntry("Entity", "key-1", new AuditLogEntry.Created(), ts);
         await context.AuditLogEntries.AddAsync(entry);
 
         if (userId.HasValue)
+        {
             context.Entry(entry).Property("UserId").CurrentValue = userId.Value;
+        }
 
         if (behalfOfId.HasValue)
+        {
             context.Entry(entry).Property("BehalfOfId").CurrentValue = behalfOfId.Value;
+        }
 
         await context.SaveChangesAsync();
         return context.Entry(entry).Property<Guid>("Id").CurrentValue;
@@ -132,8 +177,8 @@ public static class DatabaseSeedHelper
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Inserts a WallOfShameEntry.  The UserId / GivenById shadow columns are plain
-    /// Guid columns with no FK constraint, so any Guid (including SystemUserId) is valid.
+    /// Inserts a WallOfShameEntry. UserId and GivenById must reference existing users.
+    /// Built-in users are seeded automatically for the constant system/guest ids.
     /// </summary>
     public static async Task<Guid> SeedWallOfShameEntryAsync(
         CoreContextSqlite context,
@@ -142,6 +187,8 @@ public static class DatabaseSeedHelper
         string reason = "spam",
         DateTimeOffset? expiresAt = null)
     {
+        await EnsureBuiltInUsersAsync(context);
+
         var entry = new WallOfShameEntry(new Reason(reason));
         await context.WallOfShameEntries.AddAsync(entry);
 
@@ -149,7 +196,9 @@ public static class DatabaseSeedHelper
         context.Entry(entry).Property("GivenById").CurrentValue = givenById;
 
         if (expiresAt.HasValue)
+        {
             context.Entry(entry).Property("ExpiresAt").CurrentValue = expiresAt.Value;
+        }
 
         await context.SaveChangesAsync();
         return context.Entry(entry).Property<Guid>("Id").CurrentValue;

@@ -18,13 +18,13 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_SystemUserIdAsUserId_UserIsSystemUser()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
             seed,
             userId: DomainConstants.SystemUserId,
             givenById: DomainConstants.SystemUserId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<WallOfShameEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -34,14 +34,14 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_HumanUserIdAsUserId_UserIsHumanUserWithEmail()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "banned@test.com");
         var id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
             seed,
             userId: userId,
             givenById: DomainConstants.SystemUserId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<WallOfShameEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -54,13 +54,13 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_SystemUserIdAsGivenById_GivenByIsSystemUser()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
             seed,
             userId: DomainConstants.SystemUserId,
             givenById: DomainConstants.SystemUserId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<WallOfShameEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -70,14 +70,14 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_HumanUserIdAsGivenById_GivenByIsHumanUserWithEmail()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var adminId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "admin@test.com");
         var id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
             seed,
             userId: DomainConstants.SystemUserId,
             givenById: adminId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<WallOfShameEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -95,14 +95,14 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     public async Task TryFindAsync_WithExpiresAt_ExpiresIsSome()
     {
         var expiry = new DateTimeOffset(2030, 6, 1, 0, 0, 0, TimeSpan.Zero);
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
             seed,
             userId: DomainConstants.SystemUserId,
             givenById: DomainConstants.SystemUserId,
             expiresAt: expiry);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<WallOfShameEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -120,13 +120,13 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_NoExpiresAt_ExpiresIsNone()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
             seed,
             userId: DomainConstants.SystemUserId,
             givenById: DomainConstants.SystemUserId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<WallOfShameEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -144,14 +144,14 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_PreservesReason()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
             seed,
             userId: DomainConstants.SystemUserId,
             givenById: DomainConstants.SystemUserId,
             reason: "flooding");
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<WallOfShameEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -165,7 +165,7 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_UnknownId_ReturnsNone()
     {
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<WallOfShameEntry, Guid>)ctx).TryFindAsync(Guid.NewGuid());
         var isNone = true;
         result.Match(() => { }, _ => isNone = false);
@@ -180,8 +180,10 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     public async Task AddAsync_Persists_WallOfShameEntry()
     {
         Guid id;
-        using (var ctx = _factory.CreateContext())
+        await using (var ctx = _factory.CreateContext())
         {
+            await DatabaseSeedHelper.EnsureBuiltInUsersAsync(ctx);
+
             var entry = new WallOfShameEntry(new Reason("spamming"));
             var repo = (IRepository<WallOfShameEntry, Guid>)ctx;
             await repo.AddAsync(entry);
@@ -191,7 +193,7 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
             await ctx.SaveChangesAsync();
         }
 
-        using var read = _factory.CreateContext();
+        await using var read = _factory.CreateContext();
         var found = false;
         (await ((IRepository<WallOfShameEntry, Guid>)read).TryFindAsync(id))
             .Match(() => { }, e =>
@@ -209,9 +211,15 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     [Fact]
     public async Task GetKey_AfterAdd_ReturnsNonEmptyGuid()
     {
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
+
+        await DatabaseSeedHelper.EnsureBuiltInUsersAsync(ctx);
+
         var entry = new WallOfShameEntry(new Reason("test"));
         await ctx.WallOfShameEntries.AddAsync(entry);
+        ctx.Entry(entry).Property("UserId").CurrentValue = DomainConstants.SystemUserId;
+        ctx.Entry(entry).Property("GivenById").CurrentValue = DomainConstants.SystemUserId;
+
         var key = ((IRepository<WallOfShameEntry, Guid>)ctx).GetKey(entry);
         Assert.NotEqual(Guid.Empty, key);
     }
@@ -224,13 +232,13 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     public async Task Delete_RemovesEntry_FromDatabase()
     {
         Guid id;
-        using (var seed = _factory.CreateContext())
+        await using (var seed = _factory.CreateContext())
             id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
                 seed,
                 userId: DomainConstants.SystemUserId,
                 givenById: DomainConstants.SystemUserId);
 
-        using (var ctx = _factory.CreateContext())
+        await using (var ctx = _factory.CreateContext())
         {
             var tracked = await ctx.WallOfShameEntries
                 .Where(e => EF.Property<Guid>(e, "Id") == id)
@@ -239,7 +247,7 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
             await ctx.SaveChangesAsync();
         }
 
-        using var verify = _factory.CreateContext();
+        await using var verify = _factory.CreateContext();
         var isNone = true;
         (await ((IRepository<WallOfShameEntry, Guid>)verify).TryFindAsync(id))
             .Match(() => { }, _ => isNone = false);

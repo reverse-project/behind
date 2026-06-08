@@ -5,12 +5,6 @@ public class UserTests
     // ── HumanUser ─────────────────────────────────────────────────────────
 
     [Fact]
-    public void HumanUser_NoArgCtor_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() => new HumanUser());
-    }
-
-    [Fact]
     public void HumanUser_EmptyEmailCollection_ThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>

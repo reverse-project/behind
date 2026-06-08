@@ -1,5 +1,4 @@
-using Behind.Core.Database;
-using Behind.Core.Database.Sqlite;
+using System.Text.Json;
 using Behind.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,10 +17,10 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_NoUserId_UserIsGuestUser()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<AuditLogEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -31,10 +30,10 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_SystemUserId_UserIsSystemUser()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, userId: DomainConstants.SystemUserId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<AuditLogEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -44,11 +43,11 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_HumanUserId_UserIsHumanUserWithEmail()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "audit-user@test.com");
         var id = await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, userId: userId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<AuditLogEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -65,11 +64,11 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_BehalfOfSet_BehalfOfIsSomeHumanUser()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var behalfUserId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "behalf@test.com");
         var id = await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, behalfOfId: behalfUserId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<AuditLogEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -88,10 +87,10 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_NoBehalfOf_BehalfOfIsNone()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<AuditLogEntry, Guid>)ctx).TryFindAsync(id);
 
         result.Match(() => Assert.Fail("Expected Some"), entry =>
@@ -109,7 +108,7 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_UnknownId_ReturnsNone()
     {
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<AuditLogEntry, Guid>)ctx).TryFindAsync(Guid.NewGuid());
         var isNone = true;
         result.Match(() => { }, _ => isNone = false);
@@ -125,27 +124,121 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     {
         var ts = DateTimeOffset.UtcNow;
         Guid id;
-        using (var ctx = _factory.CreateContext())
+        await using (var ctx = _factory.CreateContext())
         {
-            var entry = new AuditLogEntry("User", "u-1", "Login", ts);
+            var entry = new AuditLogEntry("User", "u-1", new AuditLogEntry.Created(), ts);
             var repo = (IRepository<AuditLogEntry, Guid>)ctx;
             await repo.AddAsync(entry);
             id = ctx.Entry(entry).Property<Guid>("Id").CurrentValue;
             await ctx.SaveChangesAsync();
         }
 
-        using var read = _factory.CreateContext();
+        await using var read = _factory.CreateContext();
         var found = false;
         (await ((IRepository<AuditLogEntry, Guid>)read).TryFindAsync(id))
             .Match(() => { }, e =>
             {
                 found = true;
                 Assert.Equal("User", e.EntityName);
-                Assert.Equal("Login", e.Action);
+                Assert.IsType<AuditLogEntry.Created>(e.Action);
             });
         Assert.True(found);
     }
+    
+    [Fact]
+    public async Task AddAsync_PersistsUpdatedAuditAction()
+    {
+        var ts = DateTimeOffset.UtcNow;
+        Guid id;
+        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
 
+        await using (var ctx = _factory.CreateContext())
+        {
+            var entry = new AuditLogEntry("User", "u-1", action, ts);
+            var repo = (IRepository<AuditLogEntry, Guid>)ctx;
+            await repo.AddAsync(entry);
+            id = ctx.Entry(entry).Property<Guid>("Id").CurrentValue;
+            await ctx.SaveChangesAsync();
+        }
+
+        await using var read = _factory.CreateContext();
+        var found = false;
+        (await ((IRepository<AuditLogEntry, Guid>)read).TryFindAsync(id))
+            .Match(() => { }, e =>
+            {
+                found = true;
+                var updated = Assert.IsType<AuditLogEntry.Updated>(e.Action);
+                Assert.Equal("""{"Name":"Old"}""", updated.OldValues);
+                Assert.Equal("""{"Name":"New"}""", updated.NewValues);
+            });
+
+        Assert.True(found);
+    }
+
+    [Fact]
+    public async Task AddAsync_StoresCreatedAuditActionAsPlainText()
+    {
+        Guid id;
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            var entry = new AuditLogEntry("User", "u-1", new AuditLogEntry.Created(), DateTimeOffset.UtcNow);
+            await ctx.AuditLogEntries.AddAsync(entry);
+            id = ctx.Entry(entry).Property<Guid>("Id").CurrentValue;
+            await ctx.SaveChangesAsync();
+        }
+
+        await using var read = _factory.CreateContext();
+
+        string storedAction = await read.Database
+            .SqlQueryRaw<string>(
+                """
+                SELECT Action AS Value
+                FROM AuditLogEntries
+                WHERE Id = {0}
+                """,
+                id)
+            .SingleAsync();
+
+        Assert.Equal(nameof(AuditLogEntry.Created), storedAction);
+    }
+
+    [Fact]
+    public async Task AddAsync_StoresUpdatedAuditActionAsJson()
+    {
+        Guid id;
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+            var entry = new AuditLogEntry("User", "u-1", action, DateTimeOffset.UtcNow);
+            await ctx.AuditLogEntries.AddAsync(entry);
+            id = ctx.Entry(entry).Property<Guid>("Id").CurrentValue;
+            await ctx.SaveChangesAsync();
+        }
+
+        await using var read = _factory.CreateContext();
+
+        string storedAction = await read.Database
+            .SqlQueryRaw<string>(
+                """
+                SELECT Action AS Value
+                FROM AuditLogEntries
+                WHERE Id = {0}
+                """,
+                id)
+            .SingleAsync();
+
+        Assert.StartsWith("{", storedAction.TrimStart());
+
+        using JsonDocument document = JsonDocument.Parse(storedAction);
+        JsonElement root = document.RootElement;
+
+        Assert.Equal(nameof(AuditLogEntry.Updated), root.GetProperty("value").GetString());
+        Assert.Equal("""{"Name":"Old"}""", root.GetProperty("oldValues").GetString());
+        Assert.Equal("""{"Name":"New"}""", root.GetProperty("newValues").GetString());
+    }
+    
     // -----------------------------------------------------------------------
     // GetKey
     // -----------------------------------------------------------------------
@@ -153,8 +246,8 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     [Fact]
     public async Task GetKey_AfterAdd_ReturnsNonEmptyGuid()
     {
-        using var ctx = _factory.CreateContext();
-        var entry = new AuditLogEntry("E", "k", "A", DateTimeOffset.UtcNow);
+        await using var ctx = _factory.CreateContext();
+        var entry = new AuditLogEntry("E", "k", new AuditLogEntry.Created(), DateTimeOffset.UtcNow);
         await ctx.AuditLogEntries.AddAsync(entry);
         var key = ((IRepository<AuditLogEntry, Guid>)ctx).GetKey(entry);
         Assert.NotEqual(Guid.Empty, key);
@@ -168,10 +261,10 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     public async Task Delete_RemovesEntry_FromDatabase()
     {
         Guid id;
-        using (var seed = _factory.CreateContext())
+        await using (var seed = _factory.CreateContext())
             id = await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed);
 
-        using (var ctx = _factory.CreateContext())
+        await using (var ctx = _factory.CreateContext())
         {
             var tracked = await ctx.AuditLogEntries
                 .Where(e => EF.Property<Guid>(e, "Id") == id)
@@ -180,7 +273,7 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
             await ctx.SaveChangesAsync();
         }
 
-        using var verify = _factory.CreateContext();
+        await using var verify = _factory.CreateContext();
         var isNone = true;
         (await ((IRepository<AuditLogEntry, Guid>)verify).TryFindAsync(id))
             .Match(() => { }, _ => isNone = false);

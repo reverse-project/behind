@@ -1,3 +1,4 @@
+using Behind.Core.Database.Converters;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -13,7 +14,9 @@ public sealed class AuditLogEntryConfiguration : IEntityTypeConfiguration<AuditL
 
         builder.Property(a => a.EntityKey).HasMaxLength(255);
         builder.Property(a => a.EntityName).HasMaxLength(100);
-        builder.Property(a => a.Action).HasMaxLength(255);
+        builder.Property(a => a.Action)
+            .HasConversion<AuditLogEntryAuditActionConverter>()
+            .HasMaxLength(4000);
 
         builder.HasIndex(e => new { e.EntityName, e.EntityKey });
         builder.HasIndex(e => e.Timestamp);

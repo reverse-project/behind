@@ -1,6 +1,5 @@
 using Behind.Core.Database;
 using Behind.Core.Database.Queries;
-using Behind.Core.Database.Sqlite;
 using Behind.Tests.Helpers;
 
 namespace Behind.Tests.CoreDatabase.Queries;
@@ -29,7 +28,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     [Fact]
     public async Task GetAuditLog_NoEntries_ReturnsNone()
     {
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var queries = new AuditLogEntryQueries(ctx);
         var result = await queries.GetAuditLog(TodayRequest());
 
@@ -45,10 +44,10 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     [Fact]
     public async Task GetAuditLog_OneEntry_ReturnsSomeWithTotal1()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
 
         result.Match(
@@ -69,11 +68,11 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     [Fact]
     public async Task GetAuditLog_EntryWithHumanUser_ItemHasHumanUserWithEmail()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "q-human@test.com");
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, userId: userId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
@@ -90,10 +89,10 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     [Fact]
     public async Task GetAuditLog_EntryWithSystemUser_ItemHasSystemUser()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, userId: DomainConstants.SystemUserId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
@@ -106,11 +105,11 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     [Fact]
     public async Task GetAuditLog_EntryWithBehalfOf_ItemHasSomeBehalfOf()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var behalfId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "q-behalf@test.com");
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, behalfOfId: behalfId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
@@ -133,11 +132,11 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     public async Task GetAuditLog_EntryOutsideDateRange_IsExcluded()
     {
         var oldTimestamp = DateTimeOffset.UtcNow.AddDays(-30);
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, timestamp: oldTimestamp);
 
         // Request covers yesterday to tomorrow — old entry should be excluded
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
 
         var isNone = true;
@@ -151,11 +150,11 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         var nowTs = DateTimeOffset.UtcNow;
         var oldTs = DateTimeOffset.UtcNow.AddDays(-30);
 
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, timestamp: nowTs);
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, timestamp: oldTs);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
@@ -172,13 +171,13 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     public async Task GetAuditLog_Pagination_Page2Returns2Items()
     {
         var baseTs = DateTimeOffset.UtcNow;
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         for (int i = 0; i < 5; i++)
             await DatabaseSeedHelper.SeedAuditLogEntryAsync(
                 seed, timestamp: baseTs.AddSeconds(i));
 
         var request = TodayRequest(flipper: new Flipper(2, 2));
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(request);
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
@@ -195,13 +194,13 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     public async Task GetAuditLog_LastPage_ReturnsRemainingItems()
     {
         var baseTs = DateTimeOffset.UtcNow;
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         for (int i = 0; i < 5; i++)
             await DatabaseSeedHelper.SeedAuditLogEntryAsync(
                 seed, timestamp: baseTs.AddSeconds(i));
 
         var request = TodayRequest(flipper: new Flipper(3, 2));
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(request);
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
@@ -220,13 +219,13 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     public async Task GetAuditLog_DefaultOrder_ReturnsEntriesOrderedByTimestamp()
     {
         var baseTs = DateTimeOffset.UtcNow;
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         // Insert in reverse chronological order
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, timestamp: baseTs.AddSeconds(2));
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, timestamp: baseTs);
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, timestamp: baseTs.AddSeconds(1));
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
@@ -240,5 +239,25 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
                     Assert.True(list[i].Timestamp >= list[i - 1].Timestamp);
             });
         });
+    }
+    
+    [Fact]
+    public async Task SeedAuditLogEntryAsync_WithSystemUserId_SeedsRequiredBuiltInUser()
+    {
+        Guid id;
+
+        await using (var seed = _factory.CreateContext())
+        {
+            id = await DatabaseSeedHelper.SeedAuditLogEntryAsync(
+                seed,
+                userId: DomainConstants.SystemUserId);
+        }
+
+        await using var ctx = _factory.CreateContext();
+        var result = await ((IRepository<AuditLogEntry, Guid>)ctx).TryFindAsync(id);
+
+        result.Match(
+            () => Assert.Fail("Expected audit log entry."),
+            entry => Assert.IsType<SystemUser>(entry.User));
     }
 }

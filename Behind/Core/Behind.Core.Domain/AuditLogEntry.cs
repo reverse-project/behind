@@ -6,16 +6,24 @@ namespace Behind.Core.Domain;
 public sealed record AuditLogEntry(
     string EntityName,
     string EntityKey,
-    string Action,
+    AuditLogEntry.AuditAction Action,
     User User,
     DateTimeOffset Timestamp,
     Option<User> BehalfOf
 )
 {
+    public abstract record AuditAction;
+
+    public sealed record Created : AuditAction;
+    public sealed record Deleted : AuditAction;
+    public sealed record Updated(string OldValues, string NewValues) : AuditAction;
+    public sealed record ChangeOwnership(Guid OldOwnerId, Guid NewOwnerId) : AuditAction;
+    public sealed record Moved(Guid OldParentId, Guid NewParentId) : AuditAction;
+    
     public AuditLogEntry(
         string entityName,
         string entityKey,
-        string action,
+        AuditAction action,
         DateTimeOffset timestamp
     ) : this(entityName,  entityKey, action, new GuestUser(None), timestamp, None)
     {

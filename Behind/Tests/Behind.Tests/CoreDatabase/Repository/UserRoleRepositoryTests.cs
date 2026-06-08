@@ -14,10 +14,10 @@ public sealed class UserRoleRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_RoleWithNoGrants_ReturnsSomeWithGrantsNone()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var roleId = await DatabaseSeedHelper.SeedUserRoleAsync(seed, "no-grants-role");
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<UserRole, Guid>)ctx).TryFindAsync(roleId);
 
         var found = false;
@@ -35,12 +35,12 @@ public sealed class UserRoleRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_RoleWithOneGrant_ReturnsPopulatedGrant()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var roleId = await DatabaseSeedHelper.SeedUserRoleAsync(seed, "one-grant-role");
         var grantId = await DatabaseSeedHelper.SeedGrantAsync(seed, "write");
         await DatabaseSeedHelper.AssignGrantToRoleAsync(seed, roleId, grantId);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<UserRole, Guid>)ctx).TryFindAsync(roleId);
 
         var found = false;
@@ -62,14 +62,14 @@ public sealed class UserRoleRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_RoleWithMultipleGrants_ReturnsAllGrants()
     {
-        using var seed = _factory.CreateContext();
+        await using var seed = _factory.CreateContext();
         var roleId = await DatabaseSeedHelper.SeedUserRoleAsync(seed, "multi-grant-role");
         var g1 = await DatabaseSeedHelper.SeedGrantAsync(seed, "read-mg");
         var g2 = await DatabaseSeedHelper.SeedGrantAsync(seed, "write-mg");
         await DatabaseSeedHelper.AssignGrantToRoleAsync(seed, roleId, g1);
         await DatabaseSeedHelper.AssignGrantToRoleAsync(seed, roleId, g2);
 
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<UserRole, Guid>)ctx).TryFindAsync(roleId);
 
         result.Match(() => Assert.Fail("Expected Some"), role =>
@@ -85,7 +85,7 @@ public sealed class UserRoleRepositoryTests : IDisposable
     [Fact]
     public async Task TryFindAsync_UnknownId_ReturnsNone()
     {
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var result = await ((IRepository<UserRole, Guid>)ctx).TryFindAsync(Guid.NewGuid());
         var isNone = true;
         result.Match(() => { }, _ => isNone = false);
@@ -96,7 +96,7 @@ public sealed class UserRoleRepositoryTests : IDisposable
     public async Task AddAsync_Persists_Role()
     {
         Guid id;
-        using (var ctx = _factory.CreateContext())
+        await using (var ctx = _factory.CreateContext())
         {
             var role = new UserRole("persisted-role");
             var repo = (IRepository<UserRole, Guid>)ctx;
@@ -105,7 +105,7 @@ public sealed class UserRoleRepositoryTests : IDisposable
             await ctx.SaveChangesAsync();
         }
 
-        using var read = _factory.CreateContext();
+        await using var read = _factory.CreateContext();
         var found = false;
         (await ((IRepository<UserRole, Guid>)read).TryFindAsync(id))
             .Match(() => { }, r => { found = true; Assert.Equal("persisted-role", r.Name); });
@@ -115,7 +115,7 @@ public sealed class UserRoleRepositoryTests : IDisposable
     [Fact]
     public async Task GetKey_AfterAdd_ReturnsNonEmptyGuid()
     {
-        using var ctx = _factory.CreateContext();
+        await using var ctx = _factory.CreateContext();
         var role = new UserRole("gk-role");
         await ctx.Roles.AddAsync(role);
         var key = ((IRepository<UserRole, Guid>)ctx).GetKey(role);
@@ -126,10 +126,10 @@ public sealed class UserRoleRepositoryTests : IDisposable
     public async Task Delete_RemovesRole_FromDatabase()
     {
         Guid id;
-        using (var seed = _factory.CreateContext())
+        await using (var seed = _factory.CreateContext())
             id = await DatabaseSeedHelper.SeedUserRoleAsync(seed, "del-role");
 
-        using (var ctx = _factory.CreateContext())
+        await using (var ctx = _factory.CreateContext())
         {
             var tracked = await ctx.Roles
                 .Where(r => EF.Property<Guid>(r, "Id") == id)
@@ -138,7 +138,7 @@ public sealed class UserRoleRepositoryTests : IDisposable
             await ctx.SaveChangesAsync();
         }
 
-        using var verify = _factory.CreateContext();
+        await using var verify = _factory.CreateContext();
         var isNone = true;
         (await ((IRepository<UserRole, Guid>)verify).TryFindAsync(id))
             .Match(() => { }, _ => isNone = false);

@@ -50,6 +50,7 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
             builder.Services.AddScoped<IUserCommands, UserCommands>();
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
+            builder.Services.AddHttpContextAccessor();
             
             builder.Configuration.AddJsonFile("database.json", false, true);
             

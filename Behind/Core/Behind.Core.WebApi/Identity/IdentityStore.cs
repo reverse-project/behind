@@ -1,5 +1,6 @@
 using Behind.Common.Database;
 using Behind.Core.Database;
+using Microsoft.AspNetCore.Http;
 
 namespace Behind.Core.WebApi.Identity;
 
@@ -11,5 +12,6 @@ public partial class IdentityStore(
     IRoleQueries roleQueries,
     IPasswordCommands passwordCommands,
     IUserCommands userCommands,
-    IRoleCommands roleCommands
+    IRoleCommands roleCommands,
+    IHttpContextAccessor httpContextAccessor
 );

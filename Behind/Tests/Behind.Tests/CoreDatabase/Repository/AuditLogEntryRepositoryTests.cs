@@ -150,7 +150,9 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     {
         var ts = DateTimeOffset.UtcNow;
         Guid id;
-        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var action = new AuditLogEntry.Updated([
+            new PropertyDifference("Name", "Old", "New")
+        ]);
 
         await using (var ctx = _factory.CreateContext())
         {
@@ -168,8 +170,10 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
             {
                 found = true;
                 var updated = Assert.IsType<AuditLogEntry.Updated>(e.Action);
-                Assert.Equal("""{"Name":"Old"}""", updated.OldValues);
-                Assert.Equal("""{"Name":"New"}""", updated.NewValues);
+                var difference = Assert.Single(updated.Differences);
+                Assert.Equal("Name", difference.PropertyName);
+                Assert.Equal("Old", difference.OldValue?.ToString());
+                Assert.Equal("New", difference.NewValue?.ToString());
             });
 
         Assert.True(found);
@@ -210,7 +214,9 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
 
         await using (var ctx = _factory.CreateContext())
         {
-            var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+            var action = new AuditLogEntry.Updated([
+                new PropertyDifference("Name", "Old", "New")
+            ]);
             var entry = new AuditLogEntry("User", "u-1", action, DateTimeOffset.UtcNow);
             await ctx.AuditLogEntries.AddAsync(entry);
             id = ctx.Entry(entry).Property<Guid>("Id").CurrentValue;
@@ -233,10 +239,12 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
 
         using JsonDocument document = JsonDocument.Parse(storedAction);
         JsonElement root = document.RootElement;
+        JsonElement difference = root.GetProperty("differences")[0];
 
         Assert.Equal(nameof(AuditLogEntry.Updated), root.GetProperty("value").GetString());
-        Assert.Equal("""{"Name":"Old"}""", root.GetProperty("oldValues").GetString());
-        Assert.Equal("""{"Name":"New"}""", root.GetProperty("newValues").GetString());
+        Assert.Equal("Name", difference.GetProperty("propertyName").GetString());
+        Assert.Equal("Old", difference.GetProperty("oldValue").GetString());
+        Assert.Equal("New", difference.GetProperty("newValue").GetString());
     }
     
     // -----------------------------------------------------------------------

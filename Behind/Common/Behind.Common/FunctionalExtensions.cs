@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Reflection;
 using Unit = System.ValueTuple;
 
 namespace Behind.Common;
@@ -137,6 +138,57 @@ public static partial class FunctionalExtensions
         }
     }
 
+
+    extension<T>(T t)
+    {
+        public bool AreEqual(T other)
+        {
+            if (ReferenceEquals(t, other))
+            {
+                return true;
+            }
+
+            if (t is null || other is null)
+            {
+                return false;
+            }
+
+            return t.Equals(other);
+        }
+    }
+    
+    extension<T>(T t) where T : notnull
+    {
+        public IReadOnlyList<PropertyDifference> GetDifferences(T other)
+        {
+            var properties = typeof(T)
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(property => property.CanRead);
+
+            return properties
+                .Select(property =>
+                {
+                    var oldPropertyValue = property.GetValue(t);
+                    var newPropertyValue = property.GetValue(other);
+
+                    return new
+                    {
+                        property.Name,
+                        OldValue = oldPropertyValue,
+                        NewValue = newPropertyValue,
+                        IsDifferent = !oldPropertyValue.AreEqual(newPropertyValue)
+                    };
+                })
+                .Where(x => x.IsDifferent)
+                .Select(x => new PropertyDifference(
+                    x.Name,
+                    x.OldValue,
+                    x.NewValue
+                ))
+                .ToList();
+        }
+    }
+    
     extension<T>(T? t) where T : class
     {
         public void Null(Action nullAction, Action<T>? notNullAction = null)

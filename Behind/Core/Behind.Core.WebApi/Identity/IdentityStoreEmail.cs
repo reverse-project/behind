@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using static Behind.Common.FunctionalExtensions;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Identity;
@@ -37,6 +38,16 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                         new HumanUser(user.DisplayName, user.Emails, None),
                         cancellationToken
                     );
+                    await unitOfWork.GetRepository<AuditLogEntry, Guid>().AddAsync(new AuditLogEntry(
+                            nameof(User),
+                            user.Id.ToString(),
+                            new AuditLogEntry.Created(),
+                            new SystemUser(None),
+                            TimeProvider.System.GetUtcNow(),
+                            None
+                        ),
+                        cancellationToken
+                    );
                     await unitOfWork.SaveChangesAsync(cancellationToken);
                     return IdentityResult.Success;
                 },
@@ -60,13 +71,38 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
             var repository = unitOfWork.GetRepository<HumanUser, Guid>();
             var dbUser = await repository.TryFindAsync(user.Id, cancellationToken);
 
-            return dbUser.Match(
-                none: () => IdentityResult.Failed(),
-                some: u =>
+            return await dbUser.Match(
+                none: () => Task.FromResult(IdentityResult.Failed()),
+                some: async u =>
                 {
-                    var updatedUser = u with { DisplayName = user.DisplayName, Emails = user.Emails };
-                    repository.Update(updatedUser);
-                    return IdentityResult.Success;
+                    var authenticatedUserId = httpContextAccessor.HttpContext?.User.Claims
+                        .Where(c => c.Type == ClaimTypes.NameIdentifier).Select(c => c.Value).FirstOrDefault();
+                    if (!Guid.TryParse(authenticatedUserId, out var id))
+                    {
+                        return IdentityResult.Failed();
+                    }
+
+                    var authenticatedUser = await repository.TryFindAsync(id, cancellationToken);
+
+                    return await authenticatedUser.Match(
+                        none: () => Task.FromResult(IdentityResult.Failed()),
+                        some: async a =>
+                        {
+                            var updatedUser = u with { DisplayName = user.DisplayName, Emails = user.Emails };
+                            repository.Update(updatedUser);
+                            await unitOfWork.GetRepository<AuditLogEntry, Guid>().AddAsync(
+                                new AuditLogEntry(
+                                    nameof(User),
+                                    user.Id.ToString(),
+                                    new AuditLogEntry.Updated(u.GetDifferences(updatedUser)),
+                                    a,
+                                    TimeProvider.System.GetUtcNow(),
+                                    None
+                                )
+                                , cancellationToken);
+                            return IdentityResult.Success;
+                        }
+                    );
                 });
         }
         catch
@@ -157,13 +193,15 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
     {
         var user = await userQueries.GetUserByEmail(normalizedEmail, cancellationToken);
         var repository = unitOfWork.GetRepository<HumanUser, Guid>();
-        
+
         return await user.Match(
             none: () => Task.FromResult<ApplicationUser?>(null)!,
             some: async u =>
             {
-                var password = (await passwordQueries.GetPasswordsFromUserId(u.Id, cancellationToken)).FirstOrDefault(x => x.IsActive);
-                
+                var password =
+                    (await passwordQueries.GetPasswordsFromUserId(u.Id, cancellationToken)).FirstOrDefault(x =>
+                        x.IsActive);
+
                 var au = u.User.ToApplicationUser(repository.GetKey((HumanUser)u.User));
                 if (password is not null)
                 {

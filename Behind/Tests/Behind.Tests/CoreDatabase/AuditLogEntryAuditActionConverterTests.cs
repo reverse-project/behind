@@ -28,7 +28,9 @@ public sealed class AuditLogEntryAuditActionConverterTests
     [Fact]
     public void ToStorageValue_Updated_ReturnsJson()
     {
-        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var action = new AuditLogEntry.Updated([
+            new PropertyDifference("Name", "Old", "New")
+        ]);
 
         string value = AuditLogEntryAuditActionJsonConverter.ToStorageValue(action);
 
@@ -38,7 +40,9 @@ public sealed class AuditLogEntryAuditActionConverterTests
     [Fact]
     public void ToStorageValue_Updated_WritesValueDiscriminator()
     {
-        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var action = new AuditLogEntry.Updated([
+            new PropertyDifference("Name", "Old", "New")
+        ]);
 
         string value = AuditLogEntryAuditActionJsonConverter.ToStorageValue(action);
 
@@ -47,25 +51,20 @@ public sealed class AuditLogEntryAuditActionConverterTests
     }
 
     [Fact]
-    public void ToStorageValue_Updated_WritesOldValues()
+    public void ToStorageValue_Updated_WritesDifferences()
     {
-        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var action = new AuditLogEntry.Updated([
+            new PropertyDifference("Name", "Old", "New")
+        ]);
 
         string value = AuditLogEntryAuditActionJsonConverter.ToStorageValue(action);
 
         using JsonDocument document = JsonDocument.Parse(value);
-        Assert.Equal("""{"Name":"Old"}""", document.RootElement.GetProperty("oldValues").GetString());
-    }
+        JsonElement difference = document.RootElement.GetProperty("differences")[0];
 
-    [Fact]
-    public void ToStorageValue_Updated_WritesNewValues()
-    {
-        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
-
-        string value = AuditLogEntryAuditActionJsonConverter.ToStorageValue(action);
-
-        using JsonDocument document = JsonDocument.Parse(value);
-        Assert.Equal("""{"Name":"New"}""", document.RootElement.GetProperty("newValues").GetString());
+        Assert.Equal("Name", difference.GetProperty("propertyName").GetString());
+        Assert.Equal("Old", difference.GetProperty("oldValue").GetString());
+        Assert.Equal("New", difference.GetProperty("newValue").GetString());
     }
 
     [Fact]
@@ -90,12 +89,17 @@ public sealed class AuditLogEntryAuditActionConverterTests
     public void FromStorageValue_UpdatedJson_ReturnsUpdated()
     {
         string value = """
-        {
-          "value": "Updated",
-          "oldValues": "{\"Name\":\"Old\"}",
-          "newValues": "{\"Name\":\"New\"}"
-        }
-        """;
+                       {
+                         "value": "Updated",
+                         "differences": [
+                           {
+                             "propertyName": "Name",
+                             "oldValue": "Old",
+                             "newValue": "New"
+                           }
+                         ]
+                       }
+                       """;
 
         AuditLogEntry.AuditAction action =
             AuditLogEntryAuditActionJsonConverter.FromStorageValue(value);
@@ -104,37 +108,28 @@ public sealed class AuditLogEntryAuditActionConverterTests
     }
 
     [Fact]
-    public void FromStorageValue_UpdatedJson_PreservesOldValues()
+    public void FromStorageValue_UpdatedJson_PreservesDifferences()
     {
         string value = """
-        {
-          "value": "Updated",
-          "oldValues": "{\"Name\":\"Old\"}",
-          "newValues": "{\"Name\":\"New\"}"
-        }
-        """;
+                       {
+                         "value": "Updated",
+                         "differences": [
+                           {
+                             "propertyName": "Name",
+                             "oldValue": "Old",
+                             "newValue": "New"
+                           }
+                         ]
+                       }
+                       """;
 
         var action = Assert.IsType<AuditLogEntry.Updated>(
             AuditLogEntryAuditActionJsonConverter.FromStorageValue(value));
 
-        Assert.Equal("""{"Name":"Old"}""", action.OldValues);
-    }
-
-    [Fact]
-    public void FromStorageValue_UpdatedJson_PreservesNewValues()
-    {
-        string value = """
-        {
-          "value": "Updated",
-          "oldValues": "{\"Name\":\"Old\"}",
-          "newValues": "{\"Name\":\"New\"}"
-        }
-        """;
-
-        var action = Assert.IsType<AuditLogEntry.Updated>(
-            AuditLogEntryAuditActionJsonConverter.FromStorageValue(value));
-
-        Assert.Equal("""{"Name":"New"}""", action.NewValues);
+        var difference = Assert.Single(action.Differences);
+        Assert.Equal("Name", difference.PropertyName);
+        Assert.Equal("Old", difference.OldValue?.ToString());
+        Assert.Equal("New", difference.NewValue?.ToString());
     }
 
     [Fact]
@@ -168,14 +163,20 @@ public sealed class AuditLogEntryAuditActionConverterTests
     [Fact]
     public void ToStorageValue_Updated_RoundTrips()
     {
-        var original = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var original = new AuditLogEntry.Updated([
+            new PropertyDifference("Name", "Old", "New")
+        ]);
 
         string storageValue = AuditLogEntryAuditActionJsonConverter.ToStorageValue(original);
         var result = Assert.IsType<AuditLogEntry.Updated>(
             AuditLogEntryAuditActionJsonConverter.FromStorageValue(storageValue));
 
-        Assert.Equal(original.OldValues, result.OldValues);
-        Assert.Equal(original.NewValues, result.NewValues);
+        var originalDifference = Assert.Single(original.Differences);
+        var resultDifference = Assert.Single(result.Differences);
+
+        Assert.Equal(originalDifference.PropertyName, resultDifference.PropertyName);
+        Assert.Equal(originalDifference.OldValue?.ToString(), resultDifference.OldValue?.ToString());
+        Assert.Equal(originalDifference.NewValue?.ToString(), resultDifference.NewValue?.ToString());
     }
 
     [Fact]
@@ -210,12 +211,17 @@ public sealed class AuditLogEntryAuditActionConverterTests
         var converter = new AuditLogEntryAuditActionTypeConverter();
 
         object? action = converter.ConvertFromInvariantString("""
-        {
-          "value": "Updated",
-          "oldValues": "{\"Name\":\"Old\"}",
-          "newValues": "{\"Name\":\"New\"}"
-        }
-        """);
+                                                              {
+                                                                "value": "Updated",
+                                                                "differences": [
+                                                                  {
+                                                                    "propertyName": "Name",
+                                                                    "oldValue": "Old",
+                                                                    "newValue": "New"
+                                                                  }
+                                                                ]
+                                                              }
+                                                              """);
 
         Assert.IsType<AuditLogEntry.Updated>(action);
     }
@@ -234,7 +240,9 @@ public sealed class AuditLogEntryAuditActionConverterTests
     public void TypeConverter_ConvertTo_Updated_ReturnsJson()
     {
         var converter = new AuditLogEntryAuditActionTypeConverter();
-        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var action = new AuditLogEntry.Updated([
+            new PropertyDifference("Name", "Old", "New")
+        ]);
 
         string? value = converter.ConvertToInvariantString(action);
 

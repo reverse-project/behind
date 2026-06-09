@@ -60,7 +60,9 @@ public class AuditLogEntryTests
     {
         var user = new SystemUser(None);
         var behalfOf = new GuestUser(None);
-        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var action = new AuditLogEntry.Updated([
+            new PropertyDifference("Name", "Old", "New")
+        ]);
 
         var entry = new AuditLogEntry(
             "Ent", "K", action,
@@ -110,7 +112,9 @@ public class AuditLogEntryTests
     [Fact]
     public void CopyCtor_KeepsAction()
     {
-        var action = new AuditLogEntry.Updated("""{"Name":"Old"}""", """{"Name":"New"}""");
+        var action = new AuditLogEntry.Updated([
+            new PropertyDifference("Name", "Old", "New")
+        ]);
         var original = new AuditLogEntry("E", "K", action,
             new SystemUser(None), TestTimestamp, None);
 
@@ -118,8 +122,10 @@ public class AuditLogEntryTests
 
         Assert.Equal(action, copy.Action);
         var updated = Assert.IsType<AuditLogEntry.Updated>(copy.Action);
-        Assert.Equal("""{"Name":"Old"}""", updated.OldValues);
-        Assert.Equal("""{"Name":"New"}""", updated.NewValues);
+        var difference = Assert.Single(updated.Differences);
+        Assert.Equal("Name", difference.PropertyName);
+        Assert.Equal("Old", difference.OldValue);
+        Assert.Equal("New", difference.NewValue);
     }
 
     [Fact]

@@ -81,7 +81,7 @@ public static class WebApiExtensions
 
             builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, DomainPasswordHasher<ApplicationUser>>();
             builder.Services.AddScoped<IUserStore<ApplicationUser>, IdentityStore>();
-            builder.Services.AddSingleton<IRoleStore<ApplicationRole>, IdentityStore>();
+            builder.Services.AddScoped<IRoleStore<ApplicationRole>, IdentityStore>();
 
             builder.Services.AddIdentityCore<ApplicationUser>(options =>
                 {

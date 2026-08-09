@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\Core\Behind.Core.Common\Behind.Core.Common.csproj" />
     <ProjectReference Include="..\..\Common\Behind.Common\Behind.Common.csproj" />
     <ProjectReference Include="..\..\Common\Behind.Common.Database\Behind.Common.Database.csproj" />
+    <ProjectReference Include="..\..\Common\Behind.Common.WebApi\Behind.Common.WebApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>

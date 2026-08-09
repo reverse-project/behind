@@ -71,6 +71,6 @@ public sealed record Uuid : SecretKey
     }
 }
 
-public sealed record JwtSettings(string Issuer, string Audience, string SigningKey);
+public sealed record JwtSettings(string Issuer, string Audience, [property: Sensible] string SigningKey);
 
 public sealed record MagicLinkSettings(Uuid ActualSecret, Option<Uuid> OldSecret);

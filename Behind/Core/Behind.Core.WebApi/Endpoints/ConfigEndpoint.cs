@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Behind.Common;
 using Behind.Common.WebApi;
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Http;
@@ -29,20 +30,31 @@ public static class ConfigEndpoint
 
                     var totpVerifier = new Totp(Base32Encoding.ToBytes(totpValue.Value));
 
-                    var options = new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    };
-
-                    return
-                        !totpVerifier.VerifyTotp(
+                    if (!totpVerifier.VerifyTotp(
                             TimeProvider.System.GetUtcNow().DateTime,
                             totp.ToString(),
                             out _,
                             new VerificationWindow()
-                        )
-                            ? Results.StatusCode(403)
-                            : Results.Json(configuration.Serialize(), options);
+                        ))
+                    {
+                        return Results.StatusCode(403);
+                    }
+
+                    using (var sensitiveContext = new SensitiveContext())
+                    {
+                        var options = new JsonSerializerOptions
+                        {
+                            WriteIndented = true
+                        }.WithSensitiveContext(sensitiveContext);
+                    
+                        return Results.Json(
+                            configuration.Serialize()
+                                .MaskSensitiveConfigurationValues("ConnectionStrings")
+                                .MaskFields("Security", "SecretKey")
+                                .MaskNestedFields(new[] { "Security", "MagicLink" }, "ActualSecret", "OldSecret")
+                                .MaskNestedFields(new[] { "Security", "Jwt" }, "SigningKey"),
+                            options);
+                    }
                 });
             
         }

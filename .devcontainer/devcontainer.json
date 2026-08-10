@@ -14,7 +14,8 @@
       "extensions": [
         "ms-dotnettools.csharp",
         "ms-dotnettools.csdevkit",
-        "ms-dotnettools.vscode-dotnet-runtime"
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "Continue.continue"
       ]
     }
   },
@@ -23,7 +24,7 @@
       "version": "lts"
     }
   },
-  "updateContentCommand": "apt-get update && apt-get install -y ffmpeg podman && dotnet workload install aspire",
+  "updateContentCommand": "apt-get update && apt-get install -y ffmpeg podman",
   "postCreateCommand": "dotnet --info && dotnet new list && ffmpeg -version",
   "remoteEnv": {
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",

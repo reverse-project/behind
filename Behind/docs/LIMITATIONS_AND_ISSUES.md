@@ -501,7 +501,7 @@ public interface IRepository<T> where T : record  // Not supported
 
 If you discover security vulnerabilities:
 1. **DO NOT** open public GitHub issues
-2. Email security@behind.dev with details
+2. Email zoltan@abel.co.hu with details
 3. Allow 48 hours for acknowledgment
 4. Coordinate disclosure timeline
 

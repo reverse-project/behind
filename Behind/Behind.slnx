@@ -1,20 +1,20 @@
 <Solution>
-  <Folder Name="/Aspire/">
-    <Project Path="Aspire/Behind.AppHost/Behind.AppHost.csproj" />
+  <Folder Name="/src/Aspire/">
+    <Project Path="src/Aspire/Behind.AppHost/Behind.AppHost.csproj" />
   </Folder>
-  <Folder Name="/Common/">
-    <Project Path="Common/Behind.Common.Database/Behind.Common.Database.csproj" />
-    <Project Path="Common/Behind.Common.WebApi/Behind.Common.WebApi.csproj" />
-    <Project Path="Common/Behind.Common/Behind.Common.csproj" />
+  <Folder Name="/src/Common/">
+    <Project Path="src/Common/Behind.Common.Database/Behind.Common.Database.csproj" />
+    <Project Path="src/Common/Behind.Common.WebApi/Behind.Common.WebApi.csproj" />
+    <Project Path="src/Common/Behind.Common/Behind.Common.csproj" />
   </Folder>
-  <Folder Name="/Core/">
-    <Project Path="Core/Behind.Core.Common/Behind.Core.Common.csproj" />
-    <Project Path="Core/Behind.Core.Database.Migrator/Behind.Core.Database.Migrator.csproj" />
-    <Project Path="Core/Behind.Core.Database.Sqlite/Behind.Core.Database.Sqlite.csproj" />
-    <Project Path="Core/Behind.Core.Database/Behind.Core.Database.csproj" />
-    <Project Path="Core/Behind.Core.Domain/Behind.Core.Domain.csproj" />
-    <Project Path="Core/Behind.Core.Tools/Behind.Core.Tools.csproj" />
-    <Project Path="Core/Behind.Core.WebApi/Behind.Core.WebApi.csproj" />
+  <Folder Name="/src/Core/">
+    <Project Path="src/Core/Behind.Core.Common/Behind.Core.Common.csproj" />
+    <Project Path="src/Core/Behind.Core.Database.Migrator/Behind.Core.Database.Migrator.csproj" />
+    <Project Path="src/Core/Behind.Core.Database.Sqlite/Behind.Core.Database.Sqlite.csproj" />
+    <Project Path="src/Core/Behind.Core.Database/Behind.Core.Database.csproj" />
+    <Project Path="src/Core/Behind.Core.Domain/Behind.Core.Domain.csproj" />
+    <Project Path="src/Core/Behind.Core.Tools/Behind.Core.Tools.csproj" />
+    <Project Path="src/Core/Behind.Core.WebApi/Behind.Core.WebApi.csproj" />
   </Folder>
   <Folder Name="/DevContainer/">
     <File Path="..\.devcontainer\devcontainer.json" />
@@ -27,14 +27,10 @@
   <Folder Name="/Global/Behind/">
     <File Path=".gitignore" />
   </Folder>
-  <Folder Name="/Scripts/">
-    <File Path="Scripts\initialize.sh" />
-    <File Path="Scripts\nuget-cleanup.nu" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Behind.Tests/Behind.Tests.csproj" />
   </Folder>
-  <Folder Name="/Tests/">
-    <Project Path="Tests/Behind.Tests/Behind.Tests.csproj" />
-  </Folder>
-  <Folder Name="/Web/">
-    <Project Path="Web/Behind.Web/Behind.Web.csproj" />
+  <Folder Name="/src/Web/">
+    <Project Path="src/Web/Behind.Web/Behind.Web.csproj" />
   </Folder>
 </Solution>

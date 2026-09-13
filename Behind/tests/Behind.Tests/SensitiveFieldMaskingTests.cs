@@ -69,7 +69,7 @@ public sealed class SensitiveFieldMaskingTests
     public void MaskSensitiveValue_WithNullString_ReturnsNull()
     {
         string? value = null;
-        var result = value.MaskSensitiveValue();
+        var result = value?.MaskSensitiveValue();
         Assert.Null(result);
     }
 

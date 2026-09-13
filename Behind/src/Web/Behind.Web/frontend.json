@@ -4,7 +4,8 @@
     "Site": {
       "Title": "Behind Development Build",
       "Copyright": "© 2026 Reverse Project",
-      "DefaultLocale": "en-US"
+      "DefaultLocale": "en-US",
+      "ContactEmail": "system@zwebnt.hu"
     }
   }
 }

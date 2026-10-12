@@ -8,7 +8,7 @@ public static class WebApiExtensions
 {
     extension(WebApplicationBuilder builder)
     {
-        public WebApplicationBuilder AddWebApi() => builder
+        public WebApplicationBuilder AddWeb() => builder
             .AddOpenTelemetry()
             .AddCore();
     }
@@ -17,6 +17,7 @@ public static class WebApiExtensions
     {
         public WebApplication UseWeb()
         {
+            application.UseCore();
             application.MapScalarApiReference();
             
             return application;

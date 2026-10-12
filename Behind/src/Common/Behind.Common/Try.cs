@@ -21,7 +21,7 @@ public static class TryExtensions
             => @try.Run()
                 .Match<Exceptional<R>>(
                     ex => ex,
-                    t => f(t));
+                    t => f(t!));
 
     public static Try<Func<T2, R>> Map<T1, T2, R>
         (this Try<T1> @try, Func<T1, T2, R> func) 
@@ -32,7 +32,7 @@ public static class TryExtensions
         => ()
             => @try.Run().Match(
                 exception: ex => ex,
-                success: t => f(t).Run());
+                success: t => f(t!).Run());
       
     // LINQ
 
@@ -43,9 +43,9 @@ public static class TryExtensions
         => () 
             => @try.Run().Match(
                 ex => ex,
-                t => bind(t).Run()
+                t => bind(t!).Run()
                     .Match<Exceptional<RR>>(
                         ex => ex,
-                        r => project(t, r))
+                        r => project(t!, r!))
             );
 }

@@ -64,35 +64,35 @@ public static class Exceptional
 
     public static Exceptional<Func<T2, TR>> Apply<T1, T2, TR>
         (this Exceptional<Func<T1, T2, TR>> @this, Exceptional<T1> arg)
-        => Apply(@this.Map(FunctionalExtensions.Curry), arg);
+        => Apply(@this.Map(FunctionalExtensions.Curry!), arg);
 
     public static Exceptional<Func<T2, T3, TR>> Apply<T1, T2, T3, TR>
         (this Exceptional<Func<T1, T2, T3, TR>> @this, Exceptional<T1> arg)
-        => Apply(@this.Map(FunctionalExtensions.CurryFirst), arg);
+        => Apply(@this.Map(FunctionalExtensions.CurryFirst!), arg);
 
     public static Exceptional<Func<T2, T3, T4, TR>> Apply<T1, T2, T3, T4, TR>
         (this Exceptional<Func<T1, T2, T3, T4, TR>> @this, Exceptional<T1> arg)
-        => Apply(@this.Map(FunctionalExtensions.CurryFirst), arg);
+        => Apply(@this.Map(FunctionalExtensions.CurryFirst!), arg);
 
     public static Exceptional<Func<T2, T3, T4, T5, TR>> Apply<T1, T2, T3, T4, T5, TR>
         (this Exceptional<Func<T1, T2, T3, T4, T5, TR>> @this, Exceptional<T1> arg)
-        => Apply(@this.Map(FunctionalExtensions.CurryFirst), arg);
+        => Apply(@this.Map(FunctionalExtensions.CurryFirst!), arg);
 
     public static Exceptional<Func<T2, T3, T4, T5, T6, TR>> Apply<T1, T2, T3, T4, T5, T6, TR>
         (this Exceptional<Func<T1, T2, T3, T4, T5, T6, TR>> @this, Exceptional<T1> arg)
-        => Apply(@this.Map(FunctionalExtensions.CurryFirst), arg);
+        => Apply(@this.Map(FunctionalExtensions.CurryFirst!), arg);
 
     public static Exceptional<Func<T2, T3, T4, T5, T6, T7, TR>> Apply<T1, T2, T3, T4, T5, T6, T7, TR>
         (this Exceptional<Func<T1, T2, T3, T4, T5, T6, T7, TR>> @this, Exceptional<T1> arg)
-        => Apply(@this.Map(FunctionalExtensions.CurryFirst), arg);
+        => Apply(@this.Map(FunctionalExtensions.CurryFirst!), arg);
 
     public static Exceptional<Func<T2, T3, T4, T5, T6, T7, T8, TR>> Apply<T1, T2, T3, T4, T5, T6, T7, T8, TR>
         (this Exceptional<Func<T1, T2, T3, T4, T5, T6, T7, T8, TR>> @this, Exceptional<T1> arg)
-        => Apply(@this.Map(FunctionalExtensions.CurryFirst), arg);
+        => Apply(@this.Map(FunctionalExtensions.CurryFirst!), arg);
 
     public static Exceptional<Func<T2, T3, T4, T5, T6, T7, T8, T9, TR>> Apply<T1, T2, T3, T4, T5, T6, T7, T8, T9, TR>
         (this Exceptional<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TR>> @this, Exceptional<T1> arg)
-        => Apply(@this.Map(FunctionalExtensions.CurryFirst), arg);
+        => Apply(@this.Map(FunctionalExtensions.CurryFirst!), arg);
 
     // functor
 

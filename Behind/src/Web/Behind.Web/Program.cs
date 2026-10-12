@@ -1,10 +1,8 @@
-using Behind.Core.WebApi;
 using Behind.Web;
 
 await WebApplication
     .CreateSlimBuilder(args)
-    .AddWebApi()
+    .AddWeb()
     .Build()
-    .UseCore()
     .UseWeb()
     .RunAsync();

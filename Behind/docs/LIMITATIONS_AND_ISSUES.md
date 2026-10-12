@@ -4,7 +4,7 @@ This document outlines known limitations, issues, and dependency vulnerabilities
 
 ## Known Dependency Vulnerabilities
 
-As of the latest update, there are transitive dependency vulnerabilities that cannot be immediately resolved due to upstream library limitations.
+As of the latest update, all known transitive dependency vulnerabilities have been resolved via explicit version overrides in `Directory.Packages.props`. `dotnet list package --vulnerable --include-transitive` reports no vulnerable packages across the solution.
 
 ### Current Status
 
@@ -16,59 +16,17 @@ As of the latest update, there are transitive dependency vulnerabilities that ca
 
 ### Unfixable Vulnerabilities
 
-#### 1. Microsoft.OpenApi 2.1.0 (GHSA-v5pm-xwqc-g5wc)
-
-**Severity**: Moderate  
-**Type**: Security vulnerability in OpenAPI handling  
-**Source**: Scalar.AspNetCore 2.14.11 (latest available)  
-**Status**: **No patched version available yet**
-
-**Details**:
-- Microsoft.OpenApi is a transitive dependency of Scalar.AspNetCore
-- Scalar.AspNetCore has not been updated with patched Microsoft.OpenApi
-- Scalar is used for OpenAPI documentation UI
-
-**Instances**: ~8 across projects
-
-**Workaround**:
-- Monitor Scalar.AspNetCore releases for patches
-- Use in development only; consider alternative for production UI
-- Disable OpenAPI endpoints in production if not needed
-
-**Timeline**: Expected patch Q4 2026
-
-#### 2. MessagePack 2.5.192
-
-**Severity**: Moderate to High  
-**Type**: Multiple CVE advisories  
-**Source**: StreamJsonRpc 2.22.23 (required by Aspire.Hosting)  
-**Status**: **No patched version available yet**
-
-**Details**:
-- MessagePack is a transitive dependency of StreamJsonRpc
-- StreamJsonRpc is required by Aspire.Hosting for service coordination
-- Aspire.Hosting 13.4.6 is the latest version with no updates available
-
-**Instances**: 20+ across projects
-
-**CVEs**:
-- Potential deserialization issues
-- Format string vulnerabilities (theoretical)
-
-**Workaround**:
-- Limit Aspire usage to development/staging only
-- Ensure tight network security around Aspire orchestration
-- Monitor StreamJsonRpc and Aspire releases
-
-**Risk Assessment**: Low in production since Aspire is typically dev-time only
-
-**Timeline**: Awaiting upstream fixes
+None currently known.
 
 ### Fixed Vulnerabilities
 
 ✅ **SQLitePCLRaw.lib.e_sqlite3**: Fixed by updating to 2.1.12
 
 ✅ **Entity Framework Core packages**: Updated to 10.0.10 (latest)
+
+✅ **Microsoft.OpenApi (GHSA-v5pm-xwqc-g5wc)**: Transitive dependency pulled in via Scalar.AspNetCore 2.14.11. Fixed by pinning `Microsoft.OpenApi` to version 2.11.0 in `Directory.Packages.props` (patched in 2.7.5+ for the 2.X line).
+
+✅ **MessagePack**: Transitive dependency pulled in via StreamJsonRpc (required by Aspire.Hosting). Fixed by pinning `MessagePack` to version 3.1.8 in `Directory.Packages.props`.
 
 ## Architectural Limitations
 
@@ -82,11 +40,9 @@ As of the latest update, there are transitive dependency vulnerabilities that ca
 - Harder to scale horizontally at database level
 
 **Mitigation**:
-- Use repository pattern abstraction for potential future split
+- Use repository pattern abstraction for scaling considerations
 - Plan for context split if scaling requirements change
 - Current design sufficient for typical workloads
-
-**Future Enhancement**: Support multiple DbContext for CQRS scenarios
 
 ### 2. In-Memory Caching
 
@@ -117,8 +73,6 @@ As of the latest update, there are transitive dependency vulnerabilities that ca
 - Detailed AuditLogEntry records with before/after values
 - Archival strategy for old audit logs
 - Manual audit log review for compliance
-
-**Future Enhancement**: Implement event sourcing for audit trail
 
 ### 4. Limited Search Capabilities
 
@@ -474,28 +428,6 @@ public interface IRepository<T> where T : record  // Not supported
 - ✅ Firefox 88+
 - ✅ Safari 14+
 - ✅ Edge 90+
-
-## Roadmap for Fixes
-
-### Q4 2026
-- Monitor Microsoft.OpenApi patch release
-- Evaluate MessagePack alternatives
-- Plan vulnerability response
-
-### Q1 2027
-- Add Redis caching layer
-- Implement rate limiting
-- Add E2E tests
-
-### Q2 2027
-- Event sourcing for audit trail
-- Multi-database context support
-- Admin dashboard
-
-### Q3 2027
-- Kubernetes deployment guide
-- Blue-green deployment strategy
-- Comprehensive monitoring setup
 
 ## Reporting Issues
 

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Behind.Common.WebApi.Middleware;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +11,7 @@ public sealed class SignUpEndpoints
 {
     public sealed record PasswordRequest([Required, DataType(DataType.EmailAddress)] string Email, [Required] string Password);
 
+    [IgnoreETag]
     public static async Task<IResult> SignUpPassword(UserManager<ApplicationUser> userManager, PasswordRequest request)
     {
         if (await userManager.FindByEmailAsync(request.Email) is not null)

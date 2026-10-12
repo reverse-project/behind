@@ -5,6 +5,7 @@ using Behind.Common.Converters;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Handlers;
+using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
@@ -131,6 +132,7 @@ public static class WebApiExtensions
         public WebApplication UseCore()
         {
             application.UseExceptionHandler(_ => { });
+            application.UseETag();
             application.MapOpenApi();
 
             application.MapGet("/config", ConfigEndpoint.ExecuteGet);

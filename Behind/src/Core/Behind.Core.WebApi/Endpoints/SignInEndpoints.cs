@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using static Behind.Common.FunctionalExtensions;
+using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
@@ -18,6 +19,7 @@ public sealed class SignInEndpoints
 
     public sealed record SignInResponse(string AccessToken, DateTimeOffset Expires, string RefreshToken);
 
+    [IgnoreETag]
     public static async Task<IResult> SignInPassword(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, PasswordRequest request)
     {

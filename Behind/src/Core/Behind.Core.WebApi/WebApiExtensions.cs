@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Behind.Common.Configuration;
 using Behind.Common.Converters;
@@ -11,6 +12,7 @@ using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Converters;
 using Behind.Core.Database.Queries;
+using Behind.Core.Database.Sqlite;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
@@ -27,6 +29,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Behind.Core.WebApi;
 
+[ExcludeFromCodeCoverage]
 public static class WebApiExtensions
 {
     extension(WebApplicationBuilder builder)
@@ -56,7 +59,7 @@ public static class WebApiExtensions
                 Options.Create(databaseConfiguration)
             );
             
-            databaseConfiguration.Register(builder);
+            databaseConfiguration.RegisterSqlite(builder);
 
             return builder;
         }

@@ -15,7 +15,9 @@
         "ms-dotnettools.csharp",
         "ms-dotnettools.csdevkit",
         "ms-dotnettools.vscode-dotnet-runtime",
-        "Continue.continue"
+        "Continue.continue",
+        "ryanluker.vscode-coverage-gutters",
+        "formulahendry.dotnet-test-explorer"
       ]
     }
   },

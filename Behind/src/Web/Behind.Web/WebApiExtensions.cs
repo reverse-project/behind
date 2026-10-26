@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Behind.Common.WebApi;
 using Behind.Core.WebApi;
 using Scalar.AspNetCore;
 
 namespace Behind.Web;
 
+[ExcludeFromCodeCoverage]
 public static class WebApiExtensions
 {
     extension(WebApplicationBuilder builder)

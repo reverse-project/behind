@@ -11,6 +11,18 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Update="database.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="email.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
       <Content Update="security.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

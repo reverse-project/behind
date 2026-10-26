@@ -12,12 +12,14 @@ using Behind.Core.Database.Commands;
 using Behind.Core.Database.Converters;
 using Behind.Core.Database.Queries;
 using Behind.Core.Domain;
+using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -29,9 +31,8 @@ public static class WebApiExtensions
 {
     extension(WebApplicationBuilder builder)
     {
-        public WebApplicationBuilder AddCore()
+        WebApplicationBuilder AddTypeDescriptors()
         {
-            builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
             OptionTypeConverterRegistration.Register<SecretKey>();
             OptionTypeConverterRegistration.Register<Uuid>();
             OptionTypeConverterRegistration.Register<JwtSettings>();
@@ -40,19 +41,11 @@ public static class WebApiExtensions
                 typeof(AuditLogEntry.AuditAction),
                 new TypeConverterAttribute(typeof(AuditLogEntryAuditActionTypeConverter)));
 
-            builder.AddOpenApi();
+            return builder;
+        }
 
-            builder.Services.AddScoped<IAuditLogEntryQueries, AuditLogEntryQueries>();
-            builder.Services.AddScoped<IUserQueries, UserQueries>();
-            builder.Services.AddScoped<IEmailQueries, EmailQueries>();
-            builder.Services.AddScoped<IPasswordQueries, PasswordQueries>();
-            builder.Services.AddScoped<IRoleQueries, RoleQueries>();
-            builder.Services.AddScoped<IEmailCommands, EmailCommands>();
-            builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
-            builder.Services.AddScoped<IUserCommands, UserCommands>();
-            builder.Services.AddScoped<IRoleCommands, RoleCommands>();
-            builder.Services.AddHttpContextAccessor();
-            
+        WebApplicationBuilder AddDatabase()
+        {
             builder.Configuration.AddJsonFile("database.json", false, true);
             
             DatabaseConfiguration databaseConfiguration = builder.Configuration
@@ -65,6 +58,29 @@ public static class WebApiExtensions
             
             databaseConfiguration.Register(builder);
 
+            return builder;
+        }
+
+        WebApplicationBuilder AddEmail()
+        {
+            builder.Configuration.AddJsonFile("email.json", false, true);
+
+            EmailConfiguration emailConfiguration = builder.Configuration
+                .GetSection(EmailConfiguration.SectionName)
+                .GetOptionAware<EmailConfiguration>() ?? new LoggerEmailConfiguration();
+
+            builder.Services.AddSingleton(
+                Options.Create(emailConfiguration)
+            );
+
+            builder.Services.AddTransient<IEmailSender>(emailConfiguration.GetInstance);
+            builder.Services.AddTransient<IEmailSender<ApplicationUser>>(emailConfiguration.GetInstance);
+
+            return builder;
+        }
+
+        WebApplicationBuilder AddSecurity()
+        {
             builder.Configuration.AddJsonFile("security.json", true, true);
 
             SecurityConfiguration securityConfiguration = builder.Configuration
@@ -124,6 +140,35 @@ public static class WebApiExtensions
                     builder.Services.AddAuthorization();
                     return builder;
                 });
+        }
+
+        WebApplicationBuilder AddServices()
+        {
+            builder.Services.AddScoped<IAuditLogEntryQueries, AuditLogEntryQueries>();
+            builder.Services.AddScoped<IUserQueries, UserQueries>();
+            builder.Services.AddScoped<IEmailQueries, EmailQueries>();
+            builder.Services.AddScoped<IPasswordQueries, PasswordQueries>();
+            builder.Services.AddScoped<IRoleQueries, RoleQueries>();
+            builder.Services.AddScoped<IEmailCommands, EmailCommands>();
+            builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
+            builder.Services.AddScoped<IUserCommands, UserCommands>();
+            builder.Services.AddScoped<IRoleCommands, RoleCommands>();
+
+            return builder;
+        }
+
+        public WebApplicationBuilder AddCore()
+        {
+            builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
+            builder.Services.AddHttpContextAccessor();
+                        
+            return builder
+                .AddTypeDescriptors()
+                .AddOpenApi()
+                .AddDatabase()
+                .AddEmail()
+                .AddServices()
+                .AddSecurity();
         }
     }
 

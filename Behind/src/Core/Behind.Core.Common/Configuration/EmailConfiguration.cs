@@ -7,7 +7,10 @@ namespace Behind.Core.Common.Configuration;
 
 [TypeConverter(typeof(EmailConfigurationTypeConverter))]
 [JsonConverter(typeof(EmailConfigurationJsonConverter))]
-public abstract record EmailConfiguration(string Provider);
+public abstract record EmailConfiguration(string Provider)
+{
+    public const string SectionName = "Email";
+}
 
 public sealed record SmtpEmailConfiguration(string SmtpServer, int Port, Ssl Ssl, Option<Authentication> Authentication) : EmailConfiguration("Smtp");
 

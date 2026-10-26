@@ -1,7 +1,5 @@
 {
     "Email": {
-        "Provider": "Basic",
-        "Username": "your-username",
-        "Password": "your-password"
+        "Provider": "Logger"
     }
 }

@@ -14,6 +14,7 @@ Comprehensive documentation for the Behind project - a modern, clean architectur
 - **[DATABASE_ARCHITECTURE.md](./DATABASE_ARCHITECTURE.md)** - Database layer, Entity Framework patterns, and repository design
 - **[WEBAPI_CONVENTIONS.md](./WEBAPI_CONVENTIONS.md)** - Web API configuration, middleware, and OpenAPI documentation
 - **[DOMAIN_MODEL.md](./DOMAIN_MODEL.md)** - Domain models, aggregates, and entity design
+- **[EMAIL_SENDER_IMPLEMENTATION.md](./EMAIL_SENDER_IMPLEMENTATION.md)** - Email sender configuration, implementation details, and usage guide
 
 ### Operational Guides
 - **[LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md)** - Known limitations, current issues, and dependency vulnerabilities

@@ -803,3 +803,4 @@ public async Task<IActionResult> CreateAsync(CreateDto dto)
 - Review DOMAIN_MODEL.md for entity design
 - Check FUNCTIONAL_PROGRAMMING.md for error handling patterns
 - See DATABASE_ARCHITECTURE.md for data access
+- Configure Email Services with [EMAIL_SENDER_IMPLEMENTATION.md](./EMAIL_SENDER_IMPLEMENTATION.md) for user notifications and account management

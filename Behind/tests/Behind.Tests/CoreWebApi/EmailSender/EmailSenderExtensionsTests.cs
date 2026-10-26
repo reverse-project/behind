@@ -32,7 +32,8 @@ public class EmailSenderExtensionsTests
             "smtp.example.com",
             587,
             new Ssl(true),
-            Some((Authentication)new BasicAuthentication("user@example.com", "password"))
+            Some((Authentication)new BasicAuthentication("user@example.com", "password")),
+            None
         );
         var logger = Substitute.For<ILogger<SmtpEmailSender>>();
         var options = Options.Create(smtpConfig);

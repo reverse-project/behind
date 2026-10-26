@@ -18,7 +18,7 @@ public sealed class EmailConfigurationTypeConverter : TypeConverter
             {
                 "Smtp" => context?.Instance is SmtpEmailConfiguration smtpConfig
                     ? smtpConfig
-                    : new SmtpEmailConfiguration("", 0, new Ssl(false), new NoAuthentication()),
+                    : new SmtpEmailConfiguration("", 0, new Ssl(false), new NoAuthentication(), new()),
                 "Logger" => new LoggerEmailConfiguration(),
                 _ => throw new NotSupportedException($"Unsupported email configuration type: {stringValue}")
             };

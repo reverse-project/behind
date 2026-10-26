@@ -48,7 +48,8 @@ public class EmailConfigurationTypeConverterTests
             "smtp.example.com",
             587,
             new Ssl(true),
-            new BasicAuthentication("user", "pass")
+            new BasicAuthentication("user", "pass"),
+            None
         );
 
         var typeDescriptorContext = new TestTypeDescriptorContext(existingConfig);

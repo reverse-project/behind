@@ -60,7 +60,8 @@ public class WebApiExtensionsEmailTests
             "smtp.example.com",
             587,
             new Ssl(true),
-            new NoAuthentication()
+            new NoAuthentication(),
+            None
         );
         services.AddSingleton(Options.Create((EmailConfiguration)emailConfiguration));
         services.AddSingleton(Options.Create(emailConfiguration));

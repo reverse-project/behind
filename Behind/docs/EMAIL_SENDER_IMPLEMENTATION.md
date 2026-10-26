@@ -7,47 +7,149 @@ This document summarizes the implementation of the EmailSender functionality and
 
 ### Components
 
-#### 1. EmailSender Base Class (`EmailSender.cs`)
+#### 1. Templates Class (`Behind.Common.Templating.Templates`)
+A collection-like container for managing email templates with the following features:
+
+**Core Functionality:**
+- `Add(Template template)` - Add a Template instance to the collection
+- `Add(string name, string content)` - Convenience method to add a SimpleTemplate
+- `Remove(string name)` - Remove template(s) by name
+- `Remove(Template template)` - Remove specific template instance
+- `Get(string name) → Option<Template>` - Retrieve template by name (returns Option)
+- `GetOrDefault(string name, Template defaultTemplate) → Template` - Retrieve or fallback
+- `IEnumerable<Template>` - Full enumeration support
+
+**Example Usage:**
+```csharp
+var templates = new Templates();
+
+templates.Add("ConfirmationEmail", "<p>Please confirm {{Email}}</p>");
+templates.Add("PasswordReset", "<p>Reset your password {{ResetLink}}</p>");
+
+var template = templates.GetOrDefault("ConfirmationEmail", 
+    new SimpleTemplate("default", "No template"));
+
+var isSome = templates.Get("ConfirmationEmail")
+    .Match(
+        none: () => false,
+        some: t => true
+    );
+```
+
+**Key Design Decisions:**
+- Immutable operations: `Remove`, `Get`, `Add` maintain thread-safe semantics
+- Option-based retrieval: `Get` returns `Option<Template>` to handle missing templates elegantly
+- Enumerable interface: Enables LINQ operations and collections patterns
+- Null validation: All public methods validate arguments with `ArgumentNullException`
+
+#### 2. SimpleTemplate Record (`Behind.Common.Templating.Template`)
+Template base type with two implementations:
+- **Template (abstract record)**: Base type with Name and Content
+- **SimpleTemplate (sealed record)**: Full template implementation with parameter rendering
+
+**Features:**
+```csharp
+var template = new SimpleTemplate("greeting", "Hello {{name}}, welcome {{greeting}}!");
+
+var rendered = template
+    .AddParameter(new Parameter("name", "Alice"))
+    .AddParameter(new Parameter("greeting", "aboard"))
+    .Render();
+
+// Result: "Hello Alice, welcome aboard!"
+```
+
+**Parameter Mechanics:**
+- Placeholders use `{{PropertyName}}` syntax
+- Parameters replaced sequentially via `string.Replace`
+- Immutable chain: `AddParameter` returns new SimpleTemplate instance
+- Unmatched placeholders left in rendered content
+
+#### 3. EmailSender Base Class (`EmailSender.cs`)
 - **Abstract class** implementing `IEmailSender` and `IEmailSender<ApplicationUser>`
 - Provides template-based email generation for common scenarios:
   - Email confirmation links
   - Password reset codes
   - Password reset links
+- Uses `DefaultEmailTemplates` for out-of-box template content
 
 #### 2. Implementations
 - **LoggerEmailSender**: Logs email content (for development/testing)
-- **SmtpEmailSender**: Sends emails via SMTP with configurable authentication
+- **SmtpEmailSender**: Sends emails via SMTP with:
+  - Configurable authentication (Basic or No auth)
+  - Optional custom Templates override via `SmtpEmailConfiguration.Templates`
+  - Fallback to `DefaultEmailTemplates` when no custom templates provided
+  - Per-email-type template resolution with `GetOrDefault` fallback
 
 #### 3. Extension Method (`EmailSenderExtensions.cs`)
 ```csharp
 extension(EmailConfiguration configuration)
 {
-    public EmailSender GetInstance(IServiceProvider serviceProvider) => ...
+    public EmailSender GetInstance(IServiceProvider serviceProvider) => configuration switch
+    {
+        LoggerEmailConfiguration _ => new LoggerEmailSender(...),
+        SmtpEmailConfiguration _ => new SmtpEmailSender(...),
+        _ => throw new NotSupportedException(...)
+    };
 }
 ```
 - Creates appropriate EmailSender instance based on EmailConfiguration type
 - Resolves dependencies from the service provider
 - Supports:
   - `LoggerEmailConfiguration` → `LoggerEmailSender`
-  - `SmtpEmailConfiguration` → `SmtpEmailSender`
+  - `SmtpEmailConfiguration` → `SmtpEmailSender` with optional Templates support
   - Throws `NotSupportedException` for unknown types
 
-#### 4. WebApiExtensions Integration
+#### 4. DefaultEmailTemplates (`DefaultEmailTemplates.cs`)
+Static class providing default email templates:
+```csharp
+public static class DefaultEmailTemplates
+{
+    public static readonly SimpleTemplate ConfirmationEmail = 
+        new("ConfirmationEmail", "<p>Please confirm your email ({{Email}}) ...</p>");
+    
+    public static readonly SimpleTemplate PasswordResetCodeEmail = 
+        new("PasswordResetCodeEmail", "<p>Your code: {{ResetCode}}</p>");
+    
+    public static readonly SimpleTemplate PasswordResetLinkEmail = 
+        new("PasswordResetLinkEmail", "<p>Reset password: {{ResetLink}}</p>");
+}
+```
+
+#### 5. SmtpEmailConfiguration Extension
+Updated record with optional Templates parameter:
+```csharp
+public sealed record SmtpEmailConfiguration(
+    string SmtpServer, 
+    int Port, 
+    Ssl Ssl, 
+    Option<Authentication> Authentication,
+    Option<Templates> Templates  // NEW: Optional custom templates
+) : EmailConfiguration("Smtp");
+```
+
+**Template Resolution Flow (SmtpEmailSender):**
+1. Check if `Templates` option has value
+2. If present (Some): Use `GetOrDefault` to fetch template or fallback to default
+3. If absent (None): Use default template directly
+4. Apply parameters and render
+
+#### 6. WebApiExtensions Integration
 The `AddEmail()` method in `WebApiExtensions.cs`:
 ```csharp
 WebApplicationBuilder AddEmail()
 {
-    // Load configuration
+    // Load configuration (email.json)
     builder.Configuration.AddJsonFile("email.json", false, true);
     
     EmailConfiguration emailConfiguration = builder.Configuration
         .GetSection(EmailConfiguration.SectionName)
         .GetOptionAware<EmailConfiguration>() ?? new LoggerEmailConfiguration();
     
-    // Register configuration as singleton
+    // Register as singleton (immutable & environment-specific)
     builder.Services.AddSingleton(Options.Create(emailConfiguration));
     
-    // Register IEmailSender implementations as transient
+    // Register implementations as transient (per-request, thread-safe)
     builder.Services.AddTransient<IEmailSender>(emailConfiguration.GetInstance);
     builder.Services.AddTransient<IEmailSender<ApplicationUser>>(emailConfiguration.GetInstance);
     
@@ -63,7 +165,51 @@ WebApplicationBuilder AddEmail()
 
 ## Test Suite
 
-### Test Files
+### Templates Tests (`TemplatesTests.cs`)
+Comprehensive test coverage for the Templates collection class (22 tests):
+
+**Add(Template) Tests:**
+- `Add_Template_MakesItRetrievableByName` - Verify add-then-get pattern
+- `Add_Template_Null_ThrowsArgumentNullException` - Null validation
+- `Add_Template_MultipleTemplates_AreAllEnumerable` - LINQ/collection support
+
+**Add(name, content) Tests:**
+- `Add_NameAndContent_CreatesSimpleTemplate` - Convenience method works
+- `Add_NameAndContent_NullName_ThrowsArgumentNullException` - Name validation
+- `Add_NameAndContent_NullContent_ThrowsArgumentNullException` - Content validation
+
+**Remove(name) Tests:**
+- `Remove_Name_RemovesMatchingTemplate` - Successful removal
+- `Remove_Name_LeavesOtherTemplatesUntouched` - No side effects
+- `Remove_Name_NonExistentName_DoesNothing` - Idempotent
+- `Remove_Name_Null_ThrowsArgumentNullException` - Null validation
+
+**Remove(Template) Tests:**
+- `Remove_Template_RemovesExactInstance` - Reference equality
+- `Remove_Template_NotAdded_DoesNothing` - Safe if not present
+- `Remove_Template_Null_ThrowsArgumentNullException` - Null validation
+
+**Enumeration Tests:**
+- `GetEnumerator_NoTemplates_YieldsNothing` - Empty collection
+- `GetEnumerator_Generic_MatchesNonGeneric` - IEnumerable compliance
+
+**Get Tests:**
+- `Get_ExistingName_ReturnsSomeWithTemplate` - Happy path (Option)
+- `Get_UnknownName_ReturnsNone` - Missing template handling
+- `Get_DuplicateNames_ThrowsInvalidOperationException` - Duplicate detection
+
+**GetOrDefault Tests:**
+- `GetOrDefault_ExistingName_ReturnsMatchingTemplate` - Happy path
+- `GetOrDefault_UnknownName_ReturnsDefaultTemplate` - Fallback works
+- `GetOrDefault_NullName_ThrowsArgumentNullException` - Argument validation
+- `GetOrDefault_NullDefaultTemplate_ThrowsArgumentNullException` - Argument validation
+
+**Test Results:**
+- **Total**: 22 tests
+- **Passed**: 22 ✓
+- **Failed**: 0
+
+### Email Integration Tests
 
 #### 1. `EmailSenderExtensionsTests.cs`
 Tests the extension method factory logic:
@@ -102,10 +248,12 @@ Integration tests for DI configuration:
 - **Failed**: 0
 - **Duration**: ~251ms
 
+**Total Email + Templates Tests**: 43 tests, all passing
+
 ## Configuration
 
 ### EmailConfiguration Options
-The email configuration supports two providers:
+The email configuration supports two providers with optional template customization:
 
 #### Logger Configuration (Development)
 ```json
@@ -116,7 +264,7 @@ The email configuration supports two providers:
 }
 ```
 
-#### SMTP Configuration (Production)
+#### SMTP Configuration (Production) - With Default Templates
 ```json
 {
   "Email": {
@@ -135,9 +283,83 @@ The email configuration supports two providers:
 }
 ```
 
+#### SMTP Configuration - With Custom Templates
+```json
+{
+  "Email": {
+    "Provider": "Smtp",
+    "SmtpServer": "smtp.example.com",
+    "Port": 587,
+    "Ssl": {
+      "Enabled": true
+    },
+    "Authentication": {
+      "Type": "No"
+    },
+    "Templates": {
+      "ConfirmationEmail": "<html><body>Confirm {{Email}} at <a href=\"{{ConfirmationLink}}\">here</a></body></html>",
+      "PasswordResetCodeEmail": "<html><body>Your code is {{ResetCode}}</body></html>",
+      "PasswordResetLinkEmail": "<html><body>Click <a href=\"{{ResetLink}}\">here</a> to reset</body></html>"
+    }
+  }
+}
+```
+
+**Template Override Behavior:**
+- If `Templates` is provided in config, SmtpEmailSender uses those templates
+- Missing templates in `Templates` fall back to `DefaultEmailTemplates`
+- LoggerEmailSender always uses `DefaultEmailTemplates` (no override support)
+- Parameter substitution works identically in both default and custom templates
+
+### Parameter Reference
+
+**ConfirmationEmail Parameters:**
+- `{{Email}}` - User's email address
+- `{{ConfirmationLink}}` - URL with confirmation token
+
+**PasswordResetCodeEmail Parameters:**
+- `{{Email}}` - User's email address
+- `{{ResetCode}}` - Numeric or alphanumeric reset code
+
+**PasswordResetLinkEmail Parameters:**
+- `{{Email}}` - User's email address
+- `{{ResetLink}}` - URL with reset token
+
 ## Design Patterns Used
 
-### 1. Extension Methods
+### 1. Templates Collection Pattern
+The `Templates` class provides a specialized collection for managing immutable email templates:
+- **Option-based API**: `Get(string)` returns `Option<Template>` for functional error handling
+- **Default-aware retrieval**: `GetOrDefault` enables safe fallback patterns
+- **Immutable operations**: Templates are read-only; collection maintains reference integrity
+- **IEnumerable compliance**: Full LINQ support while protecting internal list
+
+**Example Pattern:**
+```csharp
+var customTemplates = new Templates();
+customTemplates.Add("WelcomeEmail", "<p>Welcome {{Name}}!</p>");
+
+var template = customTemplates
+    .Get("WelcomeEmail")
+    .Match(
+        none: () => DefaultEmailTemplates.ConfirmationEmail,
+        some: t => t
+    );
+```
+
+### 2. Parameter Substitution via Immutable Chain
+The `SimpleTemplate.AddParameter` method returns a new template instance:
+```csharp
+var rendered = template
+    .AddParameter(new Parameter("field1", "value1"))
+    .AddParameter(new Parameter("field2", "value2"))
+    .Render();
+```
+- Each `AddParameter` creates new immutable SimpleTemplate
+- Original template remains unchanged (functional purity)
+- Parameters applied sequentially in call order
+
+### 3. Extension Methods
 The `extension(T)` syntax provides a clean DSL for adding configuration to types:
 ```csharp
 extension(EmailConfiguration configuration)
@@ -146,18 +368,95 @@ extension(EmailConfiguration configuration)
 }
 ```
 
-### 2. Factory Pattern
-The `GetInstance` extension method acts as a factory, creating the appropriate EmailSender based on configuration type.
+### 4. Factory Pattern
+The `GetInstance` extension method acts as a factory, creating appropriate EmailSender instances based on configuration type with dependency resolution.
 
-### 3. Dependency Injection
+### 5. Dependency Injection
 - Configuration-driven instantiation
 - Service provider injection for resolving dependencies
 - Transient lifetime for stateless services
+- Optional Templates override at configuration level
 
-### 4. Template Method Pattern
-The abstract `EmailSender` class provides template methods for common email scenarios while allowing subclasses to implement the actual sending logic.
+### 6. Template Method Pattern
+The abstract `EmailSender` class provides template methods for common email scenarios while allowing subclasses to implement actual sending logic and customize template resolution.
 
-## Future Extensibility
+### 7. Strategy Pattern (Configuration-Based)
+Template resolution strategies via `Option<Templates>`:
+- **Default strategy**: Use `DefaultEmailTemplates` directly
+- **Override strategy**: Use custom Templates with fallback to defaults
+
+## Usage Examples
+
+### Example 1: Using Default Templates with Logger
+```csharp
+// Configuration (development/appsettings.Development.json)
+// No custom templates - uses DefaultEmailTemplates
+
+// In your code
+var emailSender = serviceProvider.GetRequiredService<IEmailSender>();
+var user = new ApplicationUser { DisplayName = "Alice" };
+
+await emailSender.SendConfirmationLinkAsync(
+    user, 
+    "alice@example.com", 
+    "https://app.example.com/confirm?token=abc123"
+);
+// Output: Logger writes confirmation email to console
+```
+
+### Example 2: Custom Templates via Configuration
+```csharp
+// Configuration (email.json)
+{
+  "Email": {
+    "Provider": "Smtp",
+    "SmtpServer": "smtp.gmail.com",
+    "Port": 587,
+    "Ssl": { "Enabled": true },
+    "Authentication": { "Type": "Basic", "Username": "...", "Password": "..." },
+    "Templates": {
+      "ConfirmationEmail": "<h1>Welcome!</h1><p>Confirm <a href='{{ConfirmationLink}}'>here</a></p>"
+    }
+  }
+}
+
+// SmtpEmailSender automatically uses custom template if present,
+// falls back to DefaultEmailTemplates for missing templates
+```
+
+### Example 3: Programmatic Template Management
+```csharp
+var templates = new Templates();
+
+templates.Add("WelcomeEmail", "<p>Welcome {{Name}}!</p>");
+templates.Add("OrderConfirmation", "<p>Order #{{OrderId}} confirmed</p>");
+
+var template = templates.GetOrDefault(
+    "WelcomeEmail",
+    new SimpleTemplate("fallback", "Default message")
+);
+
+var html = template
+    .AddParameter(new Parameter("Name", "Bob"))
+    .Render();
+```
+
+### Example 4: Safe Template Retrieval with Option
+```csharp
+var templates = new Templates();
+templates.Add("greeting", "Hello {{name}}!");
+
+var greeting = templates
+    .Get("greeting")
+    .Match(
+        none: () => new SimpleTemplate("default", "No greeting available"),
+        some: t => t
+    )
+    .AddParameter(new Parameter("name", "World"))
+    .Render();
+
+// Result: "Hello World!"
+```
 
 The implementation is designed for easy extension:
 
@@ -186,22 +485,28 @@ The implementation is designed for easy extension:
 
 ## Best Practices
 
-✅ **Immutable Configuration**: EmailConfiguration is a sealed record (immutable)
+✅ **Immutable Configuration**: EmailConfiguration and Templates are sealed records/classes (immutable)
+✅ **Functional Templates API**: Option-based retrieval with Match for safe error handling
 ✅ **Dependency Injection**: All dependencies resolved through DI container
 ✅ **Template Pattern**: Common functionality in base class, specifics in subclasses
-✅ **Error Handling**: SmtpEmailSender logs errors without throwing
-✅ **Thread Safety**: Transient lifetime ensures no shared state between requests
-✅ **Testing**: Comprehensive test coverage with NSubstitute mocking
-✅ **Configuration Flexibility**: Multiple providers with environment-specific settings
+✅ **Error Handling**: SmtpEmailSender logs errors without throwing; ArgumentNullException for invalid inputs
+✅ **Thread Safety**: Transient lifetime ensures no shared state between requests; immutable templates
+✅ **Testing**: Comprehensive test coverage (43 tests) with NSubstitute mocking and xUnit
+✅ **Configuration Flexibility**: Multiple providers with optional per-provider template overrides
+✅ **Functional Purity**: `AddParameter` returns new template instance; original unchanged
 
 ## Verification Checklist
 
-- [x] All tests compile and run successfully
+- [x] Templates class tests all pass (22/22)
+- [x] Email sender tests all pass (21/21)
+- [x] All email-related tests compile and run successfully (43/43 total)
 - [x] Extension method implementation is correct
 - [x] WebApiExtensions DI registration is properly scoped
 - [x] Both LoggerEmailSender and SmtpEmailSender work correctly
 - [x] Configuration loading from email.json works
-- [x] Default fallback to LoggerEmailConfiguration works
-- [x] Email templates are generated correctly
+- [x] Default fallback to DefaultEmailTemplates works
+- [x] Custom template overrides work via SmtpEmailConfiguration.Templates
+- [x] Email templates are generated correctly with parameter substitution
 - [x] Service provider resolution works for transient services
-- [x] Application builds and runs successfully
+- [x] Option-based template retrieval is safe and functional
+- [x] Application builds and runs successfully with no warnings

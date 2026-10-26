@@ -12,9 +12,9 @@ namespace Behind.Core.WebApi.EmailSender;
 
 public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>
 {
-    public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
+    public virtual Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
     {
-        var template = new SimpleTemplate("ConfirmationEmail", "<p>Please confirm your email ({{Email}}) by clicking <a href=\"{{ConfirmationLink}}\">here</a>.</p>")
+        var template = DefaultEmailTemplates.ConfirmationEmail
             .AddParameter(new Parameter("Email", email))
             .AddParameter(new Parameter("ConfirmationLink", confirmationLink))
             .Render();
@@ -22,9 +22,9 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>
         return SendEmailAsync(email, "Confirm your email", template);
     }
 
-    public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
+    public virtual Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
     {
-        var template = new SimpleTemplate("PasswordResetCodeEmail", "<p>Your password reset code for email ({{Email}}) is: <b>{{ResetCode}}</b></p>")
+        var template = DefaultEmailTemplates.PasswordResetCodeEmail
             .AddParameter(new Parameter("Email", email))
             .AddParameter(new Parameter("ResetCode", resetCode))
             .Render();
@@ -32,9 +32,9 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>
         return SendEmailAsync(email, "Password reset code", template);
     }
 
-    public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
+    public virtual Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
     {
-        var template = new SimpleTemplate("PasswordResetLinkEmail", "<p>Please reset your password for email ({{Email}}) by clicking <a href=\"{{ResetLink}}\">here</a>.</p>")
+        var template = DefaultEmailTemplates.PasswordResetLinkEmail
             .AddParameter(new Parameter("Email", email))
             .AddParameter(new Parameter("ResetLink", resetLink))
             .Render();
@@ -70,6 +70,45 @@ public sealed class SmtpEmailSender : EmailSender
     {
         _logger = logger;
         _emailOptions = emailOptions;
+    }
+
+    public override Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
+    {
+        var template = _emailOptions.Value.Templates.Match(
+                none: () => DefaultEmailTemplates.ConfirmationEmail,
+                some: t => (SimpleTemplate)t.GetOrDefault("ConfirmationEmail", DefaultEmailTemplates.ConfirmationEmail)
+            )
+            .AddParameter(new Parameter("Email", email))
+            .AddParameter(new Parameter("ConfirmationLink", confirmationLink))
+            .Render();
+
+        return SendEmailAsync(email, "Confirm your email", template);
+    }
+
+    public override Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
+    {
+        var template = _emailOptions.Value.Templates.Match(
+                none: () => DefaultEmailTemplates.PasswordResetCodeEmail,
+                some: t => (SimpleTemplate)t.GetOrDefault("PasswordResetCodeEmail", DefaultEmailTemplates.PasswordResetCodeEmail)
+            )
+            .AddParameter(new Parameter("Email", email))
+            .AddParameter(new Parameter("ResetCode", resetCode))
+            .Render();
+
+        return SendEmailAsync(email, "Password reset code", template);
+    }
+
+    public override Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
+    {
+        var template = _emailOptions.Value.Templates.Match(
+                none: () => DefaultEmailTemplates.PasswordResetLinkEmail,
+                some: t => (SimpleTemplate)t.GetOrDefault("PasswordResetLinkEmail", DefaultEmailTemplates.PasswordResetLinkEmail)
+            )
+            .AddParameter(new Parameter("Email", email))
+            .AddParameter(new Parameter("ResetLink", resetLink))
+            .Render();
+
+        return SendEmailAsync(email, "Password reset link", template);
     }
 
     public override async Task SendEmailAsync(string email, string subject, string htmlMessage)

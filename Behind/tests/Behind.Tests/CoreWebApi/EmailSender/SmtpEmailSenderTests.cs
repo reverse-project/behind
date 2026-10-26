@@ -17,7 +17,8 @@ public class SmtpEmailSenderTests
             "smtp.example.com",
             587,
             new Ssl(true),
-            Some((Authentication)new BasicAuthentication("user@example.com", "password"))
+            Some((Authentication)new BasicAuthentication("user@example.com", "password")),
+            None
         );
         var options = Options.Create(configuration);
         var sender = new SmtpEmailSender(logger, options);
@@ -48,7 +49,8 @@ public class SmtpEmailSenderTests
             "smtp.example.com",
             587,
             new Ssl(true),
-            new NoAuthentication()
+            new NoAuthentication(),
+            None
         );
         var options = Options.Create(configuration);
         var sender = new SmtpEmailSender(logger, options);
@@ -79,7 +81,8 @@ public class SmtpEmailSenderTests
             "smtp.example.com",
             587,
             new Ssl(true),
-            Some((Authentication)new BasicAuthentication("user@example.com", "password"))
+            Some((Authentication)new BasicAuthentication("user@example.com", "password")),
+            None
         );
         var options = Options.Create(configuration);
         var sender = new SmtpEmailSender(logger, options);
@@ -108,7 +111,8 @@ public class SmtpEmailSenderTests
             "smtp.example.com",
             587,
             new Ssl(true),
-            Some((Authentication)new BasicAuthentication("user@example.com", "password"))
+            Some((Authentication)new BasicAuthentication("user@example.com", "password")),
+            None
         );
         var options = Options.Create(configuration);
         var sender = new SmtpEmailSender(logger, options);
@@ -137,7 +141,8 @@ public class SmtpEmailSenderTests
             "smtp.example.com",
             587,
             new Ssl(true),
-            Some((Authentication)new BasicAuthentication("user@example.com", "password"))
+            Some((Authentication)new BasicAuthentication("user@example.com", "password")),
+            None
         );
         var options = Options.Create(configuration);
         var sender = new SmtpEmailSender(logger, options);

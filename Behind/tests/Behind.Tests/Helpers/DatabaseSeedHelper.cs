@@ -203,4 +203,28 @@ public static class DatabaseSeedHelper
         await context.SaveChangesAsync();
         return context.Entry(entry).Property<Guid>("Id").CurrentValue;
     }
+
+    // -------------------------------------------------------------------------
+    // Session
+    // -------------------------------------------------------------------------
+
+    public static async Task<Guid> SeedSessionAsync(
+        CoreContextSqlite context,
+        ValidSession session,
+        Guid userId,
+        Guid? invalidatedById = null,
+        DateTimeOffset? invalidatedAt = null)
+    {
+        await EnsureBuiltInUsersAsync(context);
+
+        await ((IRepository<Session, Guid>)context).AddAsync(session);
+
+        var entry = context.Entry(session);
+        entry.Property("UserId").CurrentValue = userId;
+        entry.Property("InvalidatedById").CurrentValue = invalidatedById;
+        entry.Property("InvalidatedAt").CurrentValue = invalidatedAt;
+
+        await context.SaveChangesAsync();
+        return entry.Property<Guid>("Id").CurrentValue;
+    }
 }

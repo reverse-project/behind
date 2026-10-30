@@ -1,11 +1,16 @@
+using static Behind.Common.FunctionalExtensions;
+
 namespace Behind.Core.Domain;
 
 public sealed record RefreshToken
 {
-    public Guid Nonce { get; init; }
+    public TokenNonce Nonce { get; init; }
     public User User { get; init; }
     public DateTimeOffset IssuedAt { get; init; }
     public DateTimeOffset ExpiresAt { get; init; }
+
+    private RefreshToken() =>
+        (Nonce, User, IssuedAt, ExpiresAt) = (Guid.Empty, new GuestUser(None), default, default);
 
     private RefreshToken(Guid nonce, User user, DateTimeOffset issuedAt, TimeSpan duration) =>
         (Nonce, User, IssuedAt, ExpiresAt) = (nonce, user, issuedAt, issuedAt.Add(duration));

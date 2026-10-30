@@ -17,6 +17,7 @@ using Behind.Core.Domain;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +25,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -156,6 +158,9 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
             builder.Services.AddScoped<IUserCommands, UserCommands>();
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
+            builder.Services.AddScoped<ISessionQueries, SessionQueries>();
+            builder.Services.AddScoped<ISessionCommands, SessionCommands>();
+            builder.Services.TryAddSingleton(TimeProvider.System);
 
             return builder;
         }
@@ -192,6 +197,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.UseAuthentication();
+            application.UseSessionValidation();
             application.UseAuthorization();
 
             application.MapPost("/sign/up/password", SignUpEndpoints.SignUpPassword)
@@ -205,6 +211,7 @@ public static class WebApiExtensions
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.PasswordRequest>>()
                 .Produces(200)
                 .Produces(400)
+                .Produces(401)
                 .Produces(500);
 
             return application;

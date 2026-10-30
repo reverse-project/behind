@@ -1,11 +1,16 @@
+using static Behind.Common.FunctionalExtensions;
+
 namespace Behind.Core.Domain;
 
 public sealed record AccessToken
 {
-    public Guid Nonce { get; init; }
+    public TokenNonce Nonce { get; init; }
     public User User { get; init; }
     public DateTimeOffset IssuedAt { get; init; }
     public DateTimeOffset ExpiresAt { get; init; }
+
+    private AccessToken() =>
+        (Nonce, User, IssuedAt, ExpiresAt) = (Guid.Empty, new GuestUser(None), default, default);
 
     private AccessToken(Guid nonce, User user, DateTimeOffset issuedAt, TimeSpan duration) =>
         (Nonce, User, IssuedAt, ExpiresAt) = (nonce, user, issuedAt, issuedAt.Add(duration));

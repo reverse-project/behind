@@ -10,7 +10,7 @@ public class AccessTokenTests
     public void Create_NonceIsNotEmpty()
     {
         var token = AccessToken.Create(TestUser);
-        Assert.NotEqual(Guid.Empty, token.Nonce);
+        Assert.NotEqual(Guid.Empty, token.Nonce.Nonce);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class AccessTokenTests
     public void Create_WithDuration_NonceIsNotEmpty()
     {
         var token = AccessToken.Create(TestUser, TimeSpan.FromMinutes(5));
-        Assert.NotEqual(Guid.Empty, token.Nonce);
+        Assert.NotEqual(Guid.Empty, token.Nonce.Nonce);
     }
 
     // ── Create(user, issuedAt, duration) ──────────────────────────────────
@@ -81,7 +81,7 @@ public class AccessTokenTests
         var issuedAt = DateTimeOffset.UtcNow;
         var token = AccessToken.CreateExisting(nonce, TestUser, issuedAt,
                            DomainConstants.AccessTokenDuration);
-        Assert.Equal(nonce, token.Nonce);
+        Assert.Equal(nonce, token.Nonce.Nonce);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class RefreshTokenTests
     public void Create_NonceIsNotEmpty()
     {
         var token = RefreshToken.Create(TestUser);
-        Assert.NotEqual(Guid.Empty, token.Nonce);
+        Assert.NotEqual(Guid.Empty, token.Nonce.Nonce);
     }
 
     [Fact]
@@ -187,7 +187,7 @@ public class RefreshTokenTests
         var issuedAt = DateTimeOffset.UtcNow;
         var token = RefreshToken.CreateExisting(nonce, TestUser, issuedAt,
                            DomainConstants.RefreshTokenDuration);
-        Assert.Equal(nonce, token.Nonce);
+        Assert.Equal(nonce, token.Nonce.Nonce);
     }
 
     [Fact]

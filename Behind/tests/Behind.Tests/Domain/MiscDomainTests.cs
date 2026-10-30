@@ -99,39 +99,51 @@ public class TokenNonceTests
 
 public class SessionTests
 {
+    private static readonly User TestUser = new GuestUser(None);
+
     [Fact]
     public void ValidSession_StoresUser()
     {
-        var user = new GuestUser(None);
-        var access = new TokenNonce(Guid.NewGuid());
-        var refresh = new TokenNonce(Guid.NewGuid());
-
-        var session = new ValidSession(user, access, refresh);
-        Assert.Equal(user, session.User);
+        var session = new ValidSession(
+            TestUser,
+            AccessToken.Create(TestUser),
+            RefreshToken.Create(TestUser),
+            "127.0.0.1",
+            "agent");
+        Assert.Equal(TestUser, session.User);
     }
 
     [Fact]
     public void ValidSession_StoresAccessToken()
     {
-        var access = new TokenNonce(Guid.NewGuid());
-        var refresh = new TokenNonce(Guid.NewGuid());
-        var session = new ValidSession(new GuestUser(None), access, refresh);
+        var access = AccessToken.Create(TestUser);
+        var session = new ValidSession(TestUser, access, RefreshToken.Create(TestUser), "127.0.0.1", "agent");
         Assert.Equal(access, session.AccessToken);
     }
 
     [Fact]
     public void ValidSession_StoresRefreshToken()
     {
-        var access = new TokenNonce(Guid.NewGuid());
-        var refresh = new TokenNonce(Guid.NewGuid());
-        var session = new ValidSession(new GuestUser(None), access, refresh);
+        var refresh = RefreshToken.Create(TestUser);
+        var session = new ValidSession(TestUser, AccessToken.Create(TestUser), refresh, "127.0.0.1", "agent");
         Assert.Equal(refresh, session.RefreshToken);
+    }
+
+    [Fact]
+    public void ValidSession_WithoutUser_DefaultsToGuestUser()
+    {
+        var session = new ValidSession(
+            AccessToken.Create(TestUser),
+            RefreshToken.Create(TestUser),
+            "127.0.0.1",
+            "agent");
+        Assert.IsType<GuestUser>(session.User);
     }
 
     [Fact]
     public void InvalidSession_CanBeCreated()
     {
-        var session = new InvalidSession();
+        var session = new InvalidSession(None, None);
         Assert.NotNull(session);
     }
 
@@ -139,16 +151,18 @@ public class SessionTests
     public void ValidSession_IsSession()
     {
         Session session = new ValidSession(
-            new GuestUser(None),
-            new TokenNonce(Guid.NewGuid()),
-            new TokenNonce(Guid.NewGuid()));
+            TestUser,
+            AccessToken.Create(TestUser),
+            RefreshToken.Create(TestUser),
+            "127.0.0.1",
+            "agent");
         Assert.IsType<ValidSession>(session);
     }
 
     [Fact]
     public void InvalidSession_IsSession()
     {
-        Session session = new InvalidSession();
+        Session session = new InvalidSession(None, None);
         Assert.IsType<InvalidSession>(session);
     }
 }

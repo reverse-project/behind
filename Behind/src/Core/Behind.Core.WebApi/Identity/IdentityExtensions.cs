@@ -11,50 +11,14 @@ public static class IdentityExtensions
 {
     extension(AccessToken accessToken)
     {
-        public string ToJwtToken(ApplicationUser user, JwtSettings settings)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var keyBytes = Encoding.UTF8.GetBytes(settings.SigningKey);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity([
-                    new Claim(ClaimTypes.Email, user.Emails.First().Value)
-                ]),
-                Expires = accessToken.ExpiresAt.DateTime,
-                Issuer = settings.Issuer,
-                Audience = settings.Audience,
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(keyBytes),
-                    SecurityAlgorithms.HmacSha256Signature
-                )
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
+        public string ToJwtToken(ApplicationUser user, Guid sessionId, JwtSettings settings) =>
+            CreateJwtToken(user, sessionId, accessToken.Nonce, accessToken.ExpiresAt, settings);
     }
-    
+
     extension(RefreshToken refreshToken)
     {
-        public string ToJwtToken(ApplicationUser user, JwtSettings settings)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var keyBytes = Encoding.UTF8.GetBytes(settings.SigningKey);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity([
-                    new Claim(ClaimTypes.Email, user.Emails.First().Value)
-                ]),
-                Expires = refreshToken.ExpiresAt.DateTime,
-                Issuer = settings.Issuer,
-                Audience = settings.Audience,
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(keyBytes),
-                    SecurityAlgorithms.HmacSha256Signature
-                )
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
+        public string ToJwtToken(ApplicationUser user, Guid sessionId, JwtSettings settings) =>
+            CreateJwtToken(user, sessionId, refreshToken.Nonce, refreshToken.ExpiresAt, settings);
     }
 
     extension(User user)
@@ -89,5 +53,31 @@ public static class IdentityExtensions
             Id = id,
             Name = role.Name
         };
+    }
+
+    private static string CreateJwtToken(
+        ApplicationUser user,
+        Guid sessionId,
+        TokenNonce nonce,
+        DateTimeOffset expiresAt,
+        JwtSettings settings)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity([
+                new Claim(ClaimTypes.Email, user.Emails.First().Value),
+                new Claim(SessionClaimTypes.SessionId, sessionId.ToString()),
+                new Claim(SessionClaimTypes.TokenNonce, nonce)
+            ]),
+            Expires = expiresAt.DateTime,
+            Issuer = settings.Issuer,
+            Audience = settings.Audience,
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SigningKey)),
+                SecurityAlgorithms.HmacSha256Signature
+            )
+        };
+        return tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
     }
 }

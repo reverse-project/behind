@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using static Behind.Common.FunctionalExtensions;
+using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Http;
@@ -21,7 +23,8 @@ public sealed class SignInEndpoints
 
     [IgnoreETag]
     public static async Task<IResult> SignInPassword(UserManager<ApplicationUser> userManager,
-        IOptions<SecurityConfiguration> securityConfiguration, PasswordRequest request)
+        IOptions<SecurityConfiguration> securityConfiguration, ISessionCommands sessionCommands,
+        HttpContext httpContext, PasswordRequest request)
     {
         return await securityConfiguration.Value.Jwt.Match(
             none: () => Task.FromResult(Results.InternalServerError()),
@@ -33,13 +36,23 @@ public sealed class SignInEndpoints
                     return Results.Unauthorized();
                 }
 
-                var accessToken = AccessToken.Create(new HumanUser(user.DisplayName, user.Emails, None));
+                var humanUser = new HumanUser(user.DisplayName, user.Emails, None);
+                var accessToken = AccessToken.Create(humanUser);
+                var refreshToken = RefreshToken.Create(humanUser);
+
+                var sessionId = await sessionCommands.CreateForUserId(
+                    user.Id,
+                    new ValidSession(
+                        accessToken,
+                        refreshToken,
+                        httpContext.ClientAddress(RemoteAddress.MaxLength),
+                        httpContext.ClientUserAgent(UserAgent.MaxLength)),
+                    httpContext.RequestAborted);
+
                 return Results.Json(new SignInResponse(
-                    accessToken.ToJwtToken(user, jwtSettings),
+                    accessToken.ToJwtToken(user, sessionId, jwtSettings),
                     accessToken.ExpiresAt,
-                    RefreshToken
-                        .Create(new HumanUser(user.DisplayName, user.Emails, None))
-                        .ToJwtToken(user, jwtSettings)
+                    refreshToken.ToJwtToken(user, sessionId, jwtSettings)
                 ));
             });
     }

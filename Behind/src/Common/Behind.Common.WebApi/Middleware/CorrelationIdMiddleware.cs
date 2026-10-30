@@ -1,3 +1,4 @@
+using Behind.Common.Logging;
 using Microsoft.AspNetCore.Http;
 
 namespace Behind.Common.WebApi.Middleware;
@@ -10,6 +11,8 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next, CorrelationIdO
 
         context.Features.Set(new CorrelationIdFeature(correlationId));
         context.Response.Headers[options.HeaderName] = correlationId;
+
+        using var _ = CorrelationContext.Begin(correlationId);
 
         await next(context);
     }

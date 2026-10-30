@@ -12,7 +12,15 @@
       <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
       <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
       <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+      <PackageReference Include="Serilog.Extensions.Hosting" />
+      <PackageReference Include="Serilog.Settings.Configuration" />
+      <PackageReference Include="Serilog.Sinks.Console" />
       <PackageReference Include="System.Linq.Dynamic.Core" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Logging\serilog.defaults.json" />
     </ItemGroup>
 
 </Project>

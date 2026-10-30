@@ -1,4 +1,5 @@
 using Behind.Common.Configuration;
+using Behind.Common.Logging;
 using Behind.Common.WebApi.OpenApi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,7 @@ public static class WebApplicationBuilderExtensions
                         configuration.ApplyTraces((exporter, instrumentation) =>
                                 exporter.Apply(_ => openTelemetry.WithTracing(tracing =>
                                 {
+                                    tracing.AddProcessor<CorrelationIdActivityProcessor>();
                                     Instrumentation.AspNetCoreInstrumentation.Apply(
                                         instrumentation,
                                         () => tracing.AddAspNetCoreInstrumentation()
@@ -81,6 +83,8 @@ public static class WebApplicationBuilderExtensions
                                                     ))))))
                             .ApplyLogging((loggingConfiguration, instrumentation) =>
                                 loggingConfiguration.Apply(_ => openTelemetry.WithLogging(loggingBuilder =>
+                                    {
+                                        loggingBuilder.AddProcessor<CorrelationIdLogRecordProcessor>();
                                         Instrumentation.OtlpExporter.Apply(
                                             instrumentation,
                                             () => loggingConfiguration.Endpoint.NotNull(e =>
@@ -92,7 +96,8 @@ public static class WebApplicationBuilderExtensions
                                                     }),
                                                 () => throw new InvalidOperationException(
                                                     "OpenTelemetry Logging OTLP exporter endpoint is required when OTLP exporter is enabled."
-                                                ))),
+                                                )));
+                                    },
                                     logging => loggingConfiguration
                                         .Apply(
                                             loggingConfiguration.IncludeFormattedMessage,

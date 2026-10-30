@@ -1,4 +1,5 @@
 using Behind.Common.Configuration;
+using Behind.Common.Logging;
 using Behind.Core.Common.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,7 @@ public static class HostApplicationBuilderExtensions
     {
         public HostApplicationBuilder AddMigrator() =>
             builder
+                .AddSerilog()
                 .AddConfiguration()
                 .AddHostedServices();
         

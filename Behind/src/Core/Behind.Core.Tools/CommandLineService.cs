@@ -31,6 +31,7 @@ public sealed class CommandLineService(IHost host) : BackgroundService
         });
         secretCommand.Add(generateSecretCommand);
         rootCommand.Add(secretCommand);
+        rootCommand.AddDataProtectionCommands();
 
         var parameters = Environment.GetCommandLineArgs()[1..];
         

@@ -131,6 +131,7 @@ Core business logic and domain implementation.
 
 - **Behind.Core.Tools**
   - CLI tools and utilities
+  - `dataprotection create`: creates the data protection certificate (random or prompted password) and a `security.json` with the `Security:DataProtection` section
 
 ### /src/Web
 Web application (frontend or web-specific backend features).

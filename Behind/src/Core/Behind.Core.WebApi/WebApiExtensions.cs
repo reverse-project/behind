@@ -7,6 +7,7 @@ using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Handlers;
 using Behind.Common.WebApi.Middleware;
+using Behind.Common.WebApi.Security;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
@@ -42,6 +43,7 @@ public static class WebApiExtensions
             OptionTypeConverterRegistration.Register<Uuid>();
             OptionTypeConverterRegistration.Register<JwtSettings>();
             OptionTypeConverterRegistration.Register<MagicLinkSettings>();
+            OptionTypeConverterRegistration.Register<DataProtectionSettings>();
             TypeDescriptor.AddAttributes(
                 typeof(AuditLogEntry.AuditAction),
                 new TypeConverterAttribute(typeof(AuditLogEntryAuditActionTypeConverter)));
@@ -100,6 +102,19 @@ public static class WebApiExtensions
             builder.Services.Configure<FrontendConfiguration>(
                 builder.Configuration.GetSection(FrontendConfiguration.SectionName)
             );
+
+            securityConfiguration.DataProtection.Match(
+                none: () => builder,
+                settings =>
+                {
+                    builder.Services.AddCertificateProtectedDataProtection(
+                        builder.Environment.ApplicationName,
+                        settings.KeysPath,
+                        settings.CertificatePath,
+                        settings.CertificatePassword
+                    );
+                    return builder;
+                });
 
             builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, DomainPasswordHasher<ApplicationUser>>();
             builder.Services.AddScoped<IUserStore<ApplicationUser>, IdentityStore>();

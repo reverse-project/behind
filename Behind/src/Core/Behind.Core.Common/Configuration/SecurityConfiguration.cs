@@ -11,7 +11,8 @@ public record SecurityConfiguration(
     bool ReadOnlyConfiguration,
     Option<SecretKey> SecretKey,
     Option<JwtSettings> Jwt,
-    Option<MagicLinkSettings> MagicLink
+    Option<MagicLinkSettings> MagicLink,
+    Option<DataProtectionSettings> DataProtection = default
 )
 {
     public SecurityConfiguration() : this(false, None, None, None)
@@ -74,3 +75,10 @@ public sealed record Uuid : SecretKey
 public sealed record JwtSettings(string Issuer, string Audience, [property: Sensible] string SigningKey);
 
 public sealed record MagicLinkSettings(Uuid ActualSecret, Option<Uuid> OldSecret);
+
+
+public sealed record DataProtectionSettings(
+    string KeysPath,
+    string CertificatePath,
+    [property: Sensible] string CertificatePassword
+);

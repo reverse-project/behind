@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Common\Behind.Common.Database\Behind.Common.Database.csproj" />
     <ProjectReference Include="..\..\src\Common\Behind.Common.WebApi\Behind.Common.WebApi.csproj" />
     <ProjectReference Include="..\..\src\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
+    <ProjectReference Include="..\..\src\Core\Behind.Core.Tools\Behind.Core.Tools.csproj" />
   </ItemGroup>
 
   <ItemGroup>

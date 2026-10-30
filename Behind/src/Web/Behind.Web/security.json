@@ -6,6 +6,11 @@
       "Audience": "Behind Frontend",
       "SigningKey": "hpFPS7Uz7BHTSWyZylBbjxnHlAU3FoIa"
     },
+    "DataProtection": {
+      "KeysPath": "/workspaces/behind/Data/DataProtection-Keys",
+      "CertificatePath": "/workspaces/behind/Data/dataprotection.pfx",
+      "CertificatePassword": "change-me-dev-only"
+    },
     "MagicLink": {
       "ActualSecret": "uuid://019e5f3b-dc22-7d66-8cd3-9cb754d0fd28"
     }

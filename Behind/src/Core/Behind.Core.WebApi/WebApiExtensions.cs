@@ -179,6 +179,7 @@ public static class WebApiExtensions
     {
         public WebApplication UseCore()
         {
+            application.UseCorrelationId();
             application.UseExceptionHandler(_ => { });
             application.UseETag();
             application.MapOpenApi();

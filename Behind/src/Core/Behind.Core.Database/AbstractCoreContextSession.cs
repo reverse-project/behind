@@ -46,7 +46,12 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
 
         return row.InvalidatedById.HasValue || row.InvalidatedAt.HasValue
             ? Some(await ToInvalidSessionAsync(row.InvalidatedById, row.InvalidatedAt, cancellationToken))
-            : Some(await ToValidSessionAsync(row.Session, row.UserId, row.UserAgent, cancellationToken));
+            : Some(
+                await ToValidSessionAsync(
+                    row.Session,
+                    row.UserId,
+                    row.UserAgent ?? throw new InvalidOperationException("The session user agent does not exist."),
+                    cancellationToken));
     }
 
     async Task IRepository<Session, Guid>.AddAsync(Session aggregate, CancellationToken cancellationToken)

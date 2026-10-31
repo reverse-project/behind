@@ -5,8 +5,8 @@ namespace Behind.Core.Database.Commands;
 
 public sealed class PasswordCommands(AbstractCoreContext context) : IPasswordCommands
 {
-    public Task InactivateForUser(User user, CancellationToken cancellationToken = default) =>
-        InactivateFromUserId(context.GetKey((HumanUser)user), cancellationToken);
+    public async Task InactivateForUser(User user, CancellationToken cancellationToken = default) =>
+        await InactivateFromUserId(await context.GetUserKeyAsync(user, cancellationToken), cancellationToken);
 
     public async Task InactivateFromUserId(Guid id, CancellationToken cancellationToken = default)
     {
@@ -23,15 +23,12 @@ public sealed class PasswordCommands(AbstractCoreContext context) : IPasswordCom
         }
     }
 
-    public Task CreateForUser(User user, Password password, CancellationToken cancellationToken = default) =>
-        CreateFromUserId(context.GetKey((HumanUser)user), password, cancellationToken);
+    public async Task CreateForUser(User user, Password password, CancellationToken cancellationToken = default) =>
+        await CreateFromUserId(await context.GetUserKeyAsync(user, cancellationToken), password, cancellationToken);
 
-    public Task CreateFromUserId(Guid id, Password password, CancellationToken cancellationToken = default)
+    public async Task CreateFromUserId(Guid id, Password password, CancellationToken cancellationToken = default)
     {
-        var repository = context.GetRepository<Password, Guid>();
-        
-        repository.AddAsync(password, cancellationToken);
+        await context.GetRepository<Password, Guid>().AddAsync(password, cancellationToken);
         context.Entry(password).Property<Guid>("UserId").CurrentValue = id;
-        return Task.CompletedTask;
     }
 }

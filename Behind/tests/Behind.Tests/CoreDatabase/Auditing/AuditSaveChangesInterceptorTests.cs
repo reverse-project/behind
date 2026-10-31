@@ -158,14 +158,14 @@ public sealed class AuditSaveChangesInterceptorTests : IDisposable
         {
             var repository = ctx.GetRepository<Email, Guid>();
             var email = await LoadAsync(repository, emailId);
-            repository.Update(emailId, email with { IsConfirmed = true });
+            repository.Update(emailId, email with { ConfirmedAt = DateTimeOffset.UtcNow });
             await ctx.SaveChangesAsync();
         }
 
         var row = Assert.Single(await AuditRowsAsync(nameof(Email), emailId.ToString()), r => r.Action is AuditLogEntry.Updated);
         var updated = Assert.IsType<AuditLogEntry.Updated>(row.Action);
         var difference = Assert.Single(updated.Differences);
-        Assert.Equal(nameof(Email.IsConfirmed), difference.PropertyName);
+        Assert.Equal(nameof(Email.ConfirmedAt), difference.PropertyName);
         Assert.Equal(_actorId, row.UserId);
     }
 
@@ -178,7 +178,7 @@ public sealed class AuditSaveChangesInterceptorTests : IDisposable
         {
             var repository = ctx.GetRepository<Email, Guid>();
             var email = await LoadAsync(repository, emailId);
-            repository.Update(emailId, email with { IsConfirmed = true });
+            repository.Update(emailId, email with { ConfirmedAt = DateTimeOffset.UtcNow });
             await ctx.SaveChangesAsync();
         }
 

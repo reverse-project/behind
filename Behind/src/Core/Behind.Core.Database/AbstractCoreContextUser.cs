@@ -12,6 +12,29 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
     
     public Guid GetKey(HumanUser entity) => Entry(entity).Property<Guid>("Id").CurrentValue;
 
+    public async Task<Guid> GetUserKeyAsync(User user, CancellationToken cancellationToken = default)
+    {
+        if (user is not HumanUser human)
+        {
+            throw new ArgumentException("Only a human user has a key.", nameof(user));
+        }
+
+        var tracked = GetKey(human);
+
+        if (tracked != Guid.Empty)
+        {
+            return tracked;
+        }
+
+        var values = human.Emails.Select(email => email.Value.ToLowerInvariant()).ToList();
+
+        return await Emails
+                   .Where(email => values.Contains(email.Value))
+                   .Select(email => (Guid?)EF.Property<Guid>(email, "UserId"))
+                   .FirstOrDefaultAsync(cancellationToken)
+               ?? throw new InvalidOperationException("The user does not exist.");
+    }
+
     async Task<Option<HumanUser>> IRepository<HumanUser, Guid>.TryFindAsync(
         Guid key,
         CancellationToken cancellationToken

@@ -125,19 +125,7 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
             return;
         }
 
-        var dbEmail = (await emailQueries.GetEmailsByUserId(user.Id, cancellationToken)).ToList();
-
-        var exists = dbEmail.FirstOrDefault(x => string.Equals(x.Value, email, StringComparison.OrdinalIgnoreCase));
-
-        if (exists is null)
-        {
-            return;
-        }
-
-        var repository = unitOfWork.GetRepository<Email, Guid>();
-        var key = repository.GetKey(exists);
-        var updated = exists with { Value = email.ToLowerInvariant() };
-        repository.Update(key, updated);
+        await emailCommands.ChangePrimary(user.Id, email, cancellationToken);
     }
 
     public Task<string?> GetEmailAsync(ApplicationUser user, CancellationToken cancellationToken) =>
@@ -145,13 +133,13 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
 
     public async Task<bool> GetEmailConfirmedAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
-        var emails = (await emailQueries.GetEmailsByUserId(user.Id, cancellationToken)).ToList();
+        var emails = await emailQueries.GetEmailsByUserId(user.Id, cancellationToken);
 
-        return emails.Any(x => x.IsConfirmed);
+        return emails.FirstOrDefault()?.ConfirmedAt is not null;
     }
 
     public Task SetEmailConfirmedAsync(ApplicationUser user, bool confirmed, CancellationToken cancellationToken) =>
-        Task.CompletedTask;
+        emailCommands.SetConfirmed(user.Id, confirmed, cancellationToken);
 
     public async Task<ApplicationUser?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
     {

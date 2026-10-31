@@ -1,3 +1,4 @@
+using Behind.Core.Database.Converters;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,6 +13,7 @@ public sealed class EmailConfiguration : IEntityTypeConfiguration<Email>
         builder.HasKey("Id");
 
         builder.Property(e => e.Value).HasMaxLength(255).IsRequired();
+        builder.Property(e => e.ConfirmedAt).HasConversion<DateTimeOffsetConverter>();
 
         builder.Property<Guid>("UserId");
 

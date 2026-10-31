@@ -7,6 +7,7 @@ public partial class IdentityStore(
     IUnitOfWork unitOfWork,
     IUserQueries userQueries,
     IEmailQueries emailQueries,
+    IEmailCommands emailCommands,
     IPasswordQueries passwordQueries,
     IRoleQueries roleQueries,
     IPasswordCommands passwordCommands,

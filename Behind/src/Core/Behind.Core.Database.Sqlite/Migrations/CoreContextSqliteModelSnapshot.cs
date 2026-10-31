@@ -67,7 +67,7 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsConfirmed")
+                    b.Property<long?>("ConfirmedAt")
                         .HasColumnType("INTEGER");
 
                     b.Property<Guid>("UserId")

@@ -5,8 +5,8 @@ namespace Behind.Core.Database.Queries;
 
 public sealed class PasswordQueries(AbstractCoreContext context) : IPasswordQueries
 {
-    public Task<IEnumerable<Password>> GetPasswordsForUser(User user, CancellationToken cancellationToken = default) =>
-        GetPasswordsFromUserId(context.GetKey((HumanUser)user), cancellationToken);
+    public async Task<IEnumerable<Password>> GetPasswordsForUser(User user, CancellationToken cancellationToken = default) =>
+        await GetPasswordsFromUserId(await context.GetUserKeyAsync(user, cancellationToken), cancellationToken);
 
     public async Task<IEnumerable<Password>> GetPasswordsFromUserId(Guid id,
         CancellationToken cancellationToken = default)

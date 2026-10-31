@@ -5,15 +5,18 @@ namespace Behind.Core.WebApi.Identity;
 
 public partial class IdentityStore : IUserPasswordStore<ApplicationUser>
 {
-    public Task SetPasswordHashAsync(ApplicationUser user, string? passwordHash, CancellationToken cancellationToken)
+    public async Task SetPasswordHashAsync(
+        ApplicationUser user,
+        string? passwordHash,
+        CancellationToken cancellationToken
+    )
     {
+        await passwordCommands.InactivateFromUserId(user.Id, cancellationToken);
+
         if (!string.IsNullOrWhiteSpace(passwordHash))
         {
-            passwordCommands.InactivateFromUserId(user.Id, cancellationToken);
-            passwordCommands.CreateFromUserId(user.Id, new Password(passwordHash, true), cancellationToken);
+            await passwordCommands.CreateFromUserId(user.Id, new Password(passwordHash, true), cancellationToken);
         }
-
-        return Task.CompletedTask;
     }
 
     public Task<string?> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken) =>

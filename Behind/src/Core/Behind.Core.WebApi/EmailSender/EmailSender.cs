@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Behind.Core.WebApi.EmailSender;
 
-public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>
+public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>, IMagicLinkEmailSender
 {
     public virtual Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
     {
@@ -40,6 +40,16 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>
             .Render();
 
         return SendEmailAsync(email, "Password reset link", template);
+    }
+
+    public virtual Task SendMagicLinkAsync(ApplicationUser user, string email, string magicLink)
+    {
+        var template = DefaultEmailTemplates.MagicLinkEmail
+            .AddParameter(new Parameter("Email", email))
+            .AddParameter(new Parameter("MagicLink", magicLink))
+            .Render();
+
+        return SendEmailAsync(email, "Your sign in link", template);
     }
 
     public abstract Task SendEmailAsync(string email, string subject, string htmlMessage);
@@ -109,6 +119,19 @@ public sealed class SmtpEmailSender : EmailSender
             .Render();
 
         return SendEmailAsync(email, "Password reset link", template);
+    }
+
+    public override Task SendMagicLinkAsync(ApplicationUser user, string email, string magicLink)
+    {
+        var template = _emailOptions.Value.Templates.Match(
+                none: () => DefaultEmailTemplates.MagicLinkEmail,
+                some: t => (SimpleTemplate)t.GetOrDefault("MagicLinkEmail", DefaultEmailTemplates.MagicLinkEmail)
+            )
+            .AddParameter(new Parameter("Email", email))
+            .AddParameter(new Parameter("MagicLink", magicLink))
+            .Render();
+
+        return SendEmailAsync(email, "Your sign in link", template);
     }
 
     public override async Task SendEmailAsync(string email, string subject, string htmlMessage)

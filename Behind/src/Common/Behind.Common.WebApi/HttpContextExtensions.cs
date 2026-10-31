@@ -13,6 +13,8 @@ public static class HttpContextExtensions
 
         public string ClientUserAgent(int maxLength) =>
             (context.Request.Headers.UserAgent.FirstOrDefault() ?? UnknownClient).Truncate(maxLength);
+
+        public Uri BaseUri() => new($"{context.Request.Scheme}://{context.Request.Host}{context.Request.PathBase}/");
     }
 
     extension(string value)

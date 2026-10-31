@@ -107,6 +107,38 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.MagicLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("ConsumedAtValue")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("ConsumedAt");
+
+                    b.Property<long>("ExpiresAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("IssuedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("Nonce")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nonce")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MagicLinks", (string)null);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.Password", b =>
                 {
                     b.Property<Guid>("Id")
@@ -352,6 +384,15 @@ namespace Behind.Core.Database.Sqlite.Migrations
                 {
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany("Emails")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.MagicLink", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

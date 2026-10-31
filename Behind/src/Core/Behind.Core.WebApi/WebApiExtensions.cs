@@ -20,6 +20,7 @@ using Behind.Core.WebApi.Auditing;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.MagicLinks;
 using Behind.Core.WebApi.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -84,6 +85,7 @@ public static class WebApiExtensions
 
             builder.Services.AddTransient<IEmailSender>(emailConfiguration.GetInstance);
             builder.Services.AddTransient<IEmailSender<ApplicationUser>>(emailConfiguration.GetInstance);
+            builder.Services.AddTransient<IMagicLinkEmailSender>(emailConfiguration.GetInstance);
 
             return builder;
         }
@@ -98,6 +100,11 @@ public static class WebApiExtensions
 
             builder.Services.AddSingleton(
                 Options.Create(securityConfiguration)
+            );
+
+            builder.Services.AddMagicLink(
+                securityConfiguration,
+                new FileInfo(Path.Combine(builder.Environment.ContentRootPath, "security.json"))
             );
 
             builder.Configuration.AddJsonFile("frontend.json", true, true);
@@ -177,6 +184,8 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
             builder.Services.AddScoped<ISessionQueries, SessionQueries>();
             builder.Services.AddScoped<ISessionCommands, SessionCommands>();
+            builder.Services.AddScoped<IMagicLinkCommands, MagicLinkCommands>();
+            builder.Services.AddScoped<IMagicLinkQueries, MagicLinkQueries>();
             builder.Services.AddScoped<IAuditActorProvider, HttpAuditActorProvider>();
             builder.Services.TryAddSingleton(TimeProvider.System);
 
@@ -214,6 +223,7 @@ public static class WebApiExtensions
                 .Produces(400)
                 .Produces(500);
 
+            application.UseRateLimiter();
             application.UseAuthentication();
             application.UseSessionValidation();
             application.UseAuthorization();
@@ -231,6 +241,23 @@ public static class WebApiExtensions
                 .Produces(200)
                 .Produces(400)
                 .Produces(401)
+                .Produces(500);
+
+            application.MapPost("/sign/in/magiclink", SignInEndpoints.RequestMagicLink)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkRequest>>()
+                .RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy)
+                .Produces(204)
+                .Produces(400)
+                .Produces(404)
+                .Produces(429)
+                .Produces(500);
+
+            application.MapPost("/sign/in/magiclink/redeem", SignInEndpoints.SignInMagicLink)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkSignInRequest>>()
+                .Produces(200)
+                .Produces(400)
+                .Produces(401)
+                .Produces(404)
                 .Produces(500);
 
             application.MapPost("/sign/out", SignOutEndpoints.SignOut)

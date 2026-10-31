@@ -59,6 +59,12 @@ public sealed record Uuid : SecretKey
     
     private Uuid(Guid value) => Value = value;
 
+    public static Uuid CreateVersion7(DateTimeOffset timestamp) => new(Guid.CreateVersion7(timestamp));
+
+    public string ToConfigurationValue() => $"uuid://{Value}";
+
+    public Option<DateTimeOffset> CreatedAt => Value.Version == 7 ? Some(Value.GetTimestamp()) : None;
+
     public static bool TryCreate(string value, out Uuid result)
     {
         if (Guid.TryParse(value, out var guid))
@@ -74,8 +80,24 @@ public sealed record Uuid : SecretKey
 
 public sealed record JwtSettings(string Issuer, string Audience, [property: Sensible] string SigningKey);
 
-public sealed record MagicLinkSettings(Uuid ActualSecret, Option<Uuid> OldSecret);
-
+public sealed record MagicLinkSettings(
+    Uuid ActualSecret,
+    Option<Uuid> OldSecret,
+    Option<TimeSpan> RotationInterval = default,
+    Option<TimeSpan> RotationOverlap = default,
+    Option<TimeSpan> LinkLifetime = default,
+    Option<TimeSpan> RequestCooldown = default,
+    Option<int> RequestLimit = default,
+    Option<TimeSpan> RequestWindow = default
+)
+{
+    public static readonly TimeSpan DefaultRotationInterval = TimeSpan.FromDays(30);
+    public static readonly TimeSpan DefaultRotationOverlap = TimeSpan.FromDays(1);
+    public static readonly TimeSpan DefaultLinkLifetime = TimeSpan.FromMinutes(15);
+    public static readonly TimeSpan DefaultRequestCooldown = TimeSpan.FromMinutes(1);
+    public const int DefaultRequestLimit = 5;
+    public static readonly TimeSpan DefaultRequestWindow = TimeSpan.FromMinutes(10);
+}
 
 public sealed record DataProtectionSettings(
     string KeysPath,

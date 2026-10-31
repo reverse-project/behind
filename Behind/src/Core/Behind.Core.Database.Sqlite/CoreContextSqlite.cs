@@ -20,6 +20,7 @@ public sealed class CoreContextSqlite(DbContextOptions<CoreContextSqlite> option
         modelBuilder.Entity<Role>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<UserAgent>().Property<Guid>("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<ValidSession>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
+        modelBuilder.Entity<MagicLink>().Property<Guid>("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<Password>().Property<Guid>("Id").HasValueGenerator<Uuid7ValueGenerator>();
     }
 }

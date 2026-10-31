@@ -144,7 +144,6 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
     public async Task<ApplicationUser?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
     {
         var user = await userQueries.GetUserByEmail(normalizedEmail, cancellationToken);
-        var repository = unitOfWork.GetRepository<HumanUser, Guid>();
 
         return await user.Match(
             none: () => Task.FromResult<ApplicationUser?>(null)!,
@@ -154,7 +153,7 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                     (await passwordQueries.GetPasswordsFromUserId(u.Id, cancellationToken)).FirstOrDefault(x =>
                         x.IsActive);
 
-                var au = u.User.ToApplicationUser(repository.GetKey((HumanUser)u.User));
+                var au = u.User.ToApplicationUser(u.Id);
                 if (password is not null)
                 {
                     au.Password = password.Value;

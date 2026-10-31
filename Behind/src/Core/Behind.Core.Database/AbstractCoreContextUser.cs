@@ -94,11 +94,14 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
         await Users.AddAsync(aggregate, cancellationToken);
 
     void IRepository<HumanUser, Guid>.Update(HumanUser aggregate) =>
-        Users.ToImmutableEntityRepository(this).UpdateImmutable([GetKey(aggregate)], aggregate);
+        this.UpdateValuesByKey([GetKey(aggregate)], aggregate);
     
     void IRepository<HumanUser, Guid>.Update(Guid key, HumanUser aggregate) =>
-        Users.ToImmutableEntityRepository(this).UpdateImmutable([key], aggregate);
+        this.UpdateValuesByKey([key], aggregate);
 
     void IRepository<HumanUser, Guid>.Delete(HumanUser aggregate) =>
         Users.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
+
+    Task IRepository<HumanUser, Guid>.DeleteAsync(Guid key, CancellationToken cancellationToken) =>
+        this.DeleteByKeyAsync<HumanUser>([key], cancellationToken);
 }

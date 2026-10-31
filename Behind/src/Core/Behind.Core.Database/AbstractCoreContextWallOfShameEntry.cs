@@ -82,4 +82,7 @@ public partial class AbstractCoreContext : IRepository<WallOfShameEntry, Guid>
     
     void IRepository<WallOfShameEntry, Guid>.Delete(WallOfShameEntry aggregate) =>
         WallOfShameEntries.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
+
+    Task IRepository<WallOfShameEntry, Guid>.DeleteAsync(Guid key, CancellationToken cancellationToken) =>
+        this.DeleteByKeyAsync<WallOfShameEntry>([key], cancellationToken);
 }

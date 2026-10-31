@@ -280,14 +280,26 @@ public sealed class SessionRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task Update_NotTracked_Throws()
+    public async Task Update_UnknownSession_Throws()
     {
-        var id = await SeedAsync(NewSession());
-
         await using var ctx = _factory.CreateContext();
 
         Assert.Throws<InvalidOperationException>(() =>
-            Repo(ctx).Update(id, new InvalidSession(None, Some(IssuedAt))));
+            Repo(ctx).Update(Guid.NewGuid(), new InvalidSession(None, Some(IssuedAt))));
+    }
+
+    [Fact]
+    public async Task Update_NotTracked_LoadsStoredSessionAndInvalidatesIt()
+    {
+        var id = await SeedAsync(NewSession());
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            Repo(ctx).Update(id, new InvalidSession(None, Some(IssuedAt)));
+            await ctx.SaveChangesAsync();
+        }
+
+        Assert.IsType<InvalidSession>(await FindAsync(id));
     }
 
     [Fact]

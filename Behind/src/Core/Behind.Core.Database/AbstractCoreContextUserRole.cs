@@ -58,4 +58,7 @@ public partial class AbstractCoreContext : IRepository<UserRole, Guid>
     
     void IRepository<UserRole, Guid>.Delete(UserRole aggregate) =>
         Roles.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
+
+    Task IRepository<UserRole, Guid>.DeleteAsync(Guid key, CancellationToken cancellationToken) =>
+        this.DeleteByKeyAsync<UserRole>([key], cancellationToken);
 }

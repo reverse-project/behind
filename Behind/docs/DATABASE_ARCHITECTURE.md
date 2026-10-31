@@ -575,6 +575,19 @@ public async Task<PagedResult<UserDto>> GetUsersAsync(int page = 1, int pageSize
 }
 ```
 
+## Automatic Audit Logging
+
+Every `SaveChangesAsync` on the core context writes `AuditLogEntry` rows for all non-audit entities in the same transaction, through `AuditSaveChangesInterceptor` (Behind.Core.Database/Auditing):
+
+- **Created / Deleted** for added and removed entities, **Updated** with the changed properties (old and new values read from the database) for modified ones. Updates without real changes are not logged.
+- `EntityName` is the root entity type (`User`, `Role`, `Email`, `ValidSession`, ...) and `EntityKey` is the primary key.
+- Properties marked `[Sensible]` (password hash, token nonces) are stored as `***`.
+- The actor (`UserId` / `BehalfOfId`) comes from `IAuditActorProvider`: `HttpAuditActorProvider` resolves it from the session claim of the current request, anonymous requests are logged without a user and code running outside a request is logged as the system user.
+- `AuditLogEntry` rows are never audited themselves and synchronous `SaveChanges` is not supported.
+- The system and guest users are seeded by the migrator (`EnsureBuiltInUsersAsync`), and audit rows keep their history when the referenced user is deleted (`ON DELETE SET NULL`).
+
+Do not add `AuditLogEntry` rows manually for these entities.
+
 ## Migrations
 
 ### Creating Migrations

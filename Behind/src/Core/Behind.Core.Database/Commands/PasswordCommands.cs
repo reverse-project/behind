@@ -12,16 +12,14 @@ public sealed class PasswordCommands(AbstractCoreContext context) : IPasswordCom
     {
         var passwords = from password in context.Passwords
             where EF.Property<Guid>(password, "UserId") == id
-            select password;
+            select new { Id = EF.Property<Guid>(password, "Id"), Password = password };
 
         var passwordList = await passwords.AsNoTracking().ToListAsync(cancellationToken);
 
         var repository = context.GetRepository<Password, Guid>();
         foreach (var userPassword in passwordList)
         {
-            var key = repository.GetKey(userPassword);
-            var updated = userPassword with { IsActive = false };
-            repository.Update(key, updated);
+            repository.Update(userPassword.Id, userPassword.Password with { IsActive = false });
         }
     }
 

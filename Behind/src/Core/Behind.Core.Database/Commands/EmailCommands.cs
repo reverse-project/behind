@@ -8,8 +8,8 @@ public class EmailCommands(AbstractCoreContext context) : IEmailCommands
     public async Task Confirm(string email, CancellationToken cancellationToken = default)
     {
         var query = from _email in context.Emails
-            where email.Equals(_email.Value, StringComparison.InvariantCultureIgnoreCase)
-            select _email;
+            where _email.Value == email.ToLowerInvariant()
+            select new { Id = EF.Property<Guid>(_email, "Id"), Email = _email };
 
         var dbEmail = await query.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
@@ -18,9 +18,7 @@ public class EmailCommands(AbstractCoreContext context) : IEmailCommands
             return;
         }
 
-        var repository = context.GetRepository<Email, Guid>();
-        var updated = dbEmail with { IsConfirmed = true };
-        var key = repository.GetKey(dbEmail);
-        repository.Update(key, updated);
+        context.GetRepository<Email, Guid>().Update(dbEmail.Id, dbEmail.Email with { IsConfirmed = true });
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

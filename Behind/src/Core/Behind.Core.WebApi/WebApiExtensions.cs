@@ -10,11 +10,13 @@ using Behind.Common.WebApi.Middleware;
 using Behind.Common.WebApi.Security;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
+using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Converters;
 using Behind.Core.Database.Queries;
 using Behind.Core.Database.Sqlite;
 using Behind.Core.Domain;
+using Behind.Core.WebApi.Auditing;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
@@ -175,6 +177,7 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
             builder.Services.AddScoped<ISessionQueries, SessionQueries>();
             builder.Services.AddScoped<ISessionCommands, SessionCommands>();
+            builder.Services.AddScoped<IAuditActorProvider, HttpAuditActorProvider>();
             builder.Services.TryAddSingleton(TimeProvider.System);
 
             return builder;

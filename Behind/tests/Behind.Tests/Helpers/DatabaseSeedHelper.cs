@@ -1,3 +1,4 @@
+using Behind.Core.Database;
 using Behind.Core.Database.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,42 +15,8 @@ public static class DatabaseSeedHelper
     // User / Email
     // -------------------------------------------------------------------------
 
-    public static async Task EnsureBuiltInUsersAsync(CoreContextSqlite context)
-    {
-        await EnsureBuiltInUserAsync(
-            context,
-            DomainConstants.SystemUserId,
-            "System",
-            "system@behind.local");
-
-        await EnsureBuiltInUserAsync(
-            context,
-            DomainConstants.GuestUserId,
-            "Guest",
-            "guest@behind.local");
-    }
-
-    private static async Task EnsureBuiltInUserAsync(
-        CoreContextSqlite context,
-        Guid id,
-        string displayName,
-        string emailValue)
-    {
-        bool exists = await context.Users
-            .AnyAsync(user => EF.Property<Guid>(user, "Id") == id);
-
-        if (exists)
-        {
-            return;
-        }
-
-        var user = new HumanUser(displayName, [new Email(emailValue)], None);
-
-        await context.Users.AddAsync(user);
-        context.Entry(user).Property<Guid>("Id").CurrentValue = id;
-
-        await context.SaveChangesAsync();
-    }
+    public static Task EnsureBuiltInUsersAsync(CoreContextSqlite context) =>
+        context.EnsureBuiltInUsersAsync();
 
     /// <summary>Inserts a HumanUser row and one Email row for it.</summary>
     public static async Task<Guid> SeedHumanUserAsync(

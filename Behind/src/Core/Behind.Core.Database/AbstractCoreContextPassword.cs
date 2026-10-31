@@ -36,4 +36,7 @@ public partial class AbstractCoreContext : IRepository<Password, Guid>
 
     void IRepository<Password, Guid>.Delete(Password aggregate) =>
         Passwords.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
+
+    Task IRepository<Password, Guid>.DeleteAsync(Guid key, CancellationToken cancellationToken) =>
+        this.DeleteByKeyAsync<Password>([key], cancellationToken);
 }

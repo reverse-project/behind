@@ -39,12 +39,12 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
             var repository = unitOfWork.GetRepository<UserRole, Guid>();
             var dbRole = await repository.TryFindAsync(role.Id, cancellationToken);
 
-            return dbRole.Match(
-                none: () => IdentityResult.Failed(),
-                some: r =>
+            return await dbRole.Match(
+                none: () => Task.FromResult(IdentityResult.Failed()),
+                some: async r =>
                 {
-                    var updatedRole = r with { Name = role.Name };
-                    repository.Update(updatedRole);
+                    repository.Update(role.Id, r with { Name = role.Name });
+                    await unitOfWork.SaveChangesAsync(cancellationToken);
                     return IdentityResult.Success;
                 }
             );
@@ -60,6 +60,7 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
         try
         {
             await unitOfWork.GetRepository<UserRole, Guid>().DeleteAsync(role.Id, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
         catch

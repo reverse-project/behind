@@ -29,7 +29,7 @@ public sealed class AuditLogEntryConfiguration : IEntityTypeConfiguration<AuditL
             .WithMany()
             .HasForeignKey("UserId")
             .IsRequired(false)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.Property<Guid?>("BehalfOfId");
 
@@ -37,7 +37,7 @@ public sealed class AuditLogEntryConfiguration : IEntityTypeConfiguration<AuditL
             .WithMany()
             .HasForeignKey("BehalfOfId")
             .IsRequired(false)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.Ignore(a => a.BehalfOf);
     }

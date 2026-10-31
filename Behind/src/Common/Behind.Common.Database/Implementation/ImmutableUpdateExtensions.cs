@@ -52,20 +52,29 @@ public static class ImmutableUpdateExtensions
                     $"Expected {primaryKey.Properties.Count} key values but received {keyValues.Length}.");
             }
 
-            var entry = dbContext.Set<T>().Local.FindEntry(primaryKey.Properties, keyValues);
+            var original = dbContext.Set<T>().Find(keyValues);
 
-            if (entry is null)
+            if (original is null)
             {
-                throw new InvalidOperationException("Original entity must be tracked.");
+                throw new InvalidOperationException("Original entity must exist.");
             }
 
+            var entry = dbContext.Entry(original);
             var navigations = entry.Navigations.ToList();
+            var shadowValues = entityType.GetProperties()
+                .Where(property => property.IsShadowProperty() && !property.IsPrimaryKey())
+                .ToDictionary(property => property.Name, property => entry.Property(property.Name).CurrentValue);
 
             entry.State = EntityState.Detached;
 
             dbContext.Attach(modified);
 
             var modifiedEntry = dbContext.Entry(modified);
+
+            foreach (var (name, value) in shadowValues)
+            {
+                modifiedEntry.Property(name).CurrentValue = value;
+            }
 
             for (int i = 0; i < primaryKey.Properties.Count; i++)
             {

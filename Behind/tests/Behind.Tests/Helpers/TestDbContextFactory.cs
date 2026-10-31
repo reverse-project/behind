@@ -1,4 +1,5 @@
 using Behind.Core.Database;
+using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Sqlite;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,21 @@ public sealed class TestDbContextFactory : IDisposable
     {
         var options = new DbContextOptionsBuilder<CoreContextSqlite>()
             .UseSqlite(_connection)
+            .Options;
+
+        return new CoreContextSqlite(options);
+    }
+
+    public CoreContextSqlite CreateAuditedContext(AuditActor actor)
+    {
+        var interceptor = new AuditSaveChangesInterceptor(
+            () => new FixedAuditActorProvider(actor),
+            TimeProvider.System
+        );
+
+        var options = new DbContextOptionsBuilder<CoreContextSqlite>()
+            .UseSqlite(_connection)
+            .AddInterceptors(interceptor)
             .Options;
 
         return new CoreContextSqlite(options);

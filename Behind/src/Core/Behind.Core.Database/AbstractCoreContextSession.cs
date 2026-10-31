@@ -87,6 +87,9 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         Sessions.ToImmutableEntityRepository(this).RemoveImmutable(valid);
     }
 
+    Task IRepository<Session, Guid>.DeleteAsync(Guid key, CancellationToken cancellationToken) =>
+        this.DeleteByKeyAsync<ValidSession>([key], cancellationToken);
+
     private async Task<Session> ToValidSessionAsync(
         ValidSession session,
         Guid userId,
@@ -170,9 +173,9 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
     }
 
     private EntityEntry<ValidSession> FindTrackedSession(Guid key) =>
-        ChangeTracker.Entries<ValidSession>()
-            .FirstOrDefault(entry => entry.Property<Guid>("Id").CurrentValue == key)
-        ?? throw new InvalidOperationException("Original entity must be tracked.");
+        Sessions.Find(key) is { } session
+            ? Entry(session)
+            : throw new InvalidOperationException("Original entity must exist.");
 
     private Guid ResolveUserKey(User user) =>
         user switch

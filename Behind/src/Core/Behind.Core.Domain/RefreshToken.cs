@@ -1,9 +1,11 @@
+using Behind.Common;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Domain;
 
 public sealed record RefreshToken
 {
+    [Sensible]
     public TokenNonce Nonce { get; init; }
     public User User { get; init; }
     public DateTimeOffset IssuedAt { get; init; }

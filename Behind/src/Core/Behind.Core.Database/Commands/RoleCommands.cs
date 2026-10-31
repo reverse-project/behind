@@ -8,8 +8,7 @@ public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
     {
         ArgumentNullException.ThrowIfNull(role);
 
-        var repository = context.GetRepository<Role, Guid>();
-        await repository.AddAsync(role, cancellationToken);
+        await context.Set<Role>().AddAsync(role, cancellationToken);
         context.Entry(role).Property<Guid>("Id").CurrentValue = id;
         await context.SaveChangesAsync(cancellationToken);
     }

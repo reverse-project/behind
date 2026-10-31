@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using static Behind.Common.FunctionalExtensions;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Identity;
@@ -38,17 +37,6 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                         new HumanUser(user.DisplayName, user.Emails, None),
                         cancellationToken
                     );
-                    await unitOfWork.GetRepository<AuditLogEntry, Guid>().AddAsync(new AuditLogEntry(
-                            nameof(User),
-                            user.Id.ToString(),
-                            new AuditLogEntry.Created(),
-                            new SystemUser(None),
-                            TimeProvider.System.GetUtcNow(),
-                            None
-                        ),
-                        cancellationToken
-                    );
-                    await unitOfWork.SaveChangesAsync(cancellationToken);
                     return IdentityResult.Success;
                 },
                 some: _ => Task.FromResult(IdentityResult.Failed(new IdentityError
@@ -75,34 +63,9 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                 none: () => Task.FromResult(IdentityResult.Failed()),
                 some: async u =>
                 {
-                    var authenticatedUserId = httpContextAccessor.HttpContext?.User.Claims
-                        .Where(c => c.Type == ClaimTypes.NameIdentifier).Select(c => c.Value).FirstOrDefault();
-                    if (!Guid.TryParse(authenticatedUserId, out var id))
-                    {
-                        return IdentityResult.Failed();
-                    }
-
-                    var authenticatedUser = await repository.TryFindAsync(id, cancellationToken);
-
-                    return await authenticatedUser.Match(
-                        none: () => Task.FromResult(IdentityResult.Failed()),
-                        some: async a =>
-                        {
-                            var updatedUser = u with { DisplayName = user.DisplayName, Emails = user.Emails };
-                            repository.Update(updatedUser);
-                            await unitOfWork.GetRepository<AuditLogEntry, Guid>().AddAsync(
-                                new AuditLogEntry(
-                                    nameof(User),
-                                    user.Id.ToString(),
-                                    new AuditLogEntry.Updated(u.GetDifferences(updatedUser)),
-                                    a,
-                                    TimeProvider.System.GetUtcNow(),
-                                    None
-                                )
-                                , cancellationToken);
-                            return IdentityResult.Success;
-                        }
-                    );
+                    repository.Update(user.Id, u with { DisplayName = user.DisplayName });
+                    await unitOfWork.SaveChangesAsync(cancellationToken);
+                    return IdentityResult.Success;
                 });
         }
         catch
@@ -116,6 +79,7 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
         try
         {
             await unitOfWork.GetRepository<HumanUser, Guid>().DeleteAsync(user.Id, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
         catch

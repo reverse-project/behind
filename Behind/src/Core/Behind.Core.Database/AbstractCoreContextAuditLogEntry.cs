@@ -82,4 +82,7 @@ public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
     
     void IRepository<AuditLogEntry, Guid>.Delete(AuditLogEntry aggregate) =>
         AuditLogEntries.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
+
+    Task IRepository<AuditLogEntry, Guid>.DeleteAsync(Guid key, CancellationToken cancellationToken) =>
+        this.DeleteByKeyAsync<AuditLogEntry>([key], cancellationToken);
 }

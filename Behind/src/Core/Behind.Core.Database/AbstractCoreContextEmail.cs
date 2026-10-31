@@ -36,4 +36,7 @@ public partial class AbstractCoreContext : IRepository<Email, Guid>
     
     void IRepository<Email, Guid>.Delete(Email aggregate) =>
         Emails.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);
+
+    Task IRepository<Email, Guid>.DeleteAsync(Guid key, CancellationToken cancellationToken) =>
+        this.DeleteByKeyAsync<Email>([key], cancellationToken);
 }

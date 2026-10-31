@@ -8,4 +8,6 @@ public interface IUserQueries
     public sealed record UserResult(Guid Id, User User);
     
     Task<Option<UserResult>> GetUserByEmail(string email, CancellationToken cancellationToken = default);
+
+    Task<bool> HasGrant(string email, string grant, CancellationToken cancellationToken = default);
 }

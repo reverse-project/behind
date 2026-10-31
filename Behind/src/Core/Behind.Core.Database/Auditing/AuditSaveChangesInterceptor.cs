@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -16,6 +17,7 @@ public sealed class AuditSaveChangesInterceptor(Func<IAuditActorProvider> actorP
         {
             var actor = await actorProviderFactory().GetCurrentAsync(cancellationToken);
             await context.AddAuditEntriesAsync(actor, timeProvider.GetUtcNow(), cancellationToken);
+            context.CancelSoftDeletes();
         }
 
         return result;

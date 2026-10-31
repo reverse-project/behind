@@ -217,6 +217,7 @@ public static class WebApiExtensions
             application.UseAuthentication();
             application.UseSessionValidation();
             application.UseAuthorization();
+            application.UseDeletedRecordsVisibility();
 
             application.MapPost("/sign/up/password", SignUpEndpoints.SignUpPassword)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignUpEndpoints.PasswordRequest>>()

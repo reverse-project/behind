@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using static Behind.Common.FunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,8 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLo
     public async Task<Option<PagedResult<AuditLogEntry>>> GetAuditLog(IAuditLogEntryQueries.RequestAuditLog request,
         CancellationToken cancellationToken = default)
     {
+        using var attribution = context.SoftDelete.IncludeDeleted();
+
         DateTime fromDate = DateTime.SpecifyKind(request.FromDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
         DateTime toDate =
             DateTime.SpecifyKind(request.ToDate.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
@@ -60,15 +63,12 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLo
 
         var populatedItems = items.Select(item =>
         {
-            var user = item.UserId.HasValue
-                ? item.UserId == DomainConstants.SystemUserId
-                    ? (User)new SystemUser(None)
-                    : new HumanUser(item.DisplayName, item.PrimaryEmails.Select(v => new Email(v)).ToList(), None)
+            User user = item.UserId.HasValue
+                ? item.UserId.Value.ToUser(item.DisplayName, item.PrimaryEmails)
                 : new GuestUser(None);
 
             var behalfOf = item.BehalfOfId.HasValue
-                ? Some((User)new HumanUser(item.BehalfOfDisplayName,
-                    item.BehalfOfEmails.Select(v => new Email(v)).ToList(), None))
+                ? Some(item.BehalfOfId.Value.ToUser(item.BehalfOfDisplayName, item.BehalfOfEmails))
                 : None;
 
             return item.Audit with { User = user, BehalfOf = behalfOf };

@@ -136,7 +136,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         }
 
         var human = await ((IRepository<HumanUser, Guid>)this).TryFindAsync(userId, cancellationToken);
-        return human.Map(user => (User)user);
+        return Some(human.Match(() => new UnknownUser(userId), user => (User)user));
     }
 
     private void ReplaceSession(Guid key, ValidSession replacement)
@@ -182,6 +182,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         {
             SystemUser => DomainConstants.SystemUserId,
             GuestUser => DomainConstants.GuestUserId,
+            UnknownUser unknown => unknown.Id,
             HumanUser human => FindHumanUserKey(human),
             _ => throw new ArgumentException("The user cannot invalidate a session.", nameof(user))
         };

@@ -584,9 +584,20 @@ Every `SaveChangesAsync` on the core context writes `AuditLogEntry` rows for all
 - Properties marked `[Sensible]` (password hash, token nonces) are stored as `***`.
 - The actor (`UserId` / `BehalfOfId`) comes from `IAuditActorProvider`: `HttpAuditActorProvider` resolves it from the session claim of the current request, anonymous requests are logged without a user and code running outside a request is logged as the system user.
 - `AuditLogEntry` rows are never audited themselves and synchronous `SaveChanges` is not supported.
-- The system and guest users are seeded by the migrator (`EnsureBuiltInUsersAsync`), and audit rows keep their history when the referenced user is deleted (`ON DELETE SET NULL`).
+- The system and guest users are seeded by the migrator (`EnsureBuiltInUsersAsync`), and the `UserId` / `BehalfOfId` keys of audit rows are `NoAction`, so a user referenced by audit rows can only be soft deleted; a hard delete is rejected by the database to keep the audit trail attributable.
 
 Do not add `AuditLogEntry` rows manually for these entities.
+
+## Soft Delete, Hard Delete and Deleted Records Visibility
+
+There is no `IsDeleted` column. A record is deleted when a `Deleted` `AuditLogEntry` exists for its `EntityName` and `EntityKey`.
+
+- `User`, `Email`, `Role`, `Grant`, `Password` and `WallOfShameEntry` are soft deletable (`ApplySoftDelete` in `AbstractCoreContext`). Removing them keeps the row, writes the `Deleted` audit entry and a global query filter (`SoftDelete`) hides them. Cascading dependents are deleted the same way, dependents that are not soft deletable (sessions) are removed physically.
+- Hard delete is explicit: `IUnitOfWork.GetHardDeleteRepository<TAggregate, TKey>()` returns `IHardDeleteRepository` with `HardDelete` / `HardDeleteAsync`. The row (and its cascading dependents) is removed permanently and the audit log gets a `HardDeleted` entry for each of them, so the event stays traceable. Hard deleting an already soft deleted record is supported.
+- Soft delete relies on `AuditSaveChangesInterceptor`; a context without it removes rows physically.
+- `context.SoftDelete.IncludeDeleted()` returns an `IDisposable` scope (`SoftDeleteSwitch`, thread safe and nestable) that disables the filter on that context while it is open. `AuditLogEntryQueries` uses it so audit entries always resolve their users.
+- When a stored user id (audit `UserId` / `BehalfOfId`, wall of shame `UserId` / `GivenById`, session `InvalidatedById`) cannot be resolved to a user, for example because the user is soft deleted and the filter is active, the entity is populated with `UnknownUser(Id)` instead of failing (`UserResolutionExtensions.ToUser`).
+- `DeletedRecordsVisibilityMiddleware` opens the scope for the whole request of authenticated users holding the `ViewDeleted` grant (`DomainConstants.ViewDeletedGrant`, checked with `IUserQueries.HasGrant`), so those admins see deleted records in every query of that request.
 
 ## Migrations
 

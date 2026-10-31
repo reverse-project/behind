@@ -26,6 +26,23 @@ public sealed class AuditLogEntryAuditActionConverterTests
     }
 
     [Fact]
+    public void ToStorageValue_HardDeleted_ReturnsPlainActionName()
+    {
+        string value = AuditLogEntryAuditActionJsonConverter.ToStorageValue(new AuditLogEntry.HardDeleted());
+
+        Assert.Equal(nameof(AuditLogEntry.HardDeleted), value);
+    }
+
+    [Fact]
+    public void FromStorageValue_HardDeletedPlainText_ReturnsHardDeleted()
+    {
+        AuditLogEntry.AuditAction action =
+            AuditLogEntryAuditActionJsonConverter.FromStorageValue(nameof(AuditLogEntry.HardDeleted));
+
+        Assert.IsType<AuditLogEntry.HardDeleted>(action);
+    }
+
+    [Fact]
     public void ToStorageValue_Updated_ReturnsJson()
     {
         var action = new AuditLogEntry.Updated([

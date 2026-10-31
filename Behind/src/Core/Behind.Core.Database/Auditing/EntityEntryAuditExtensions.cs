@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -30,6 +31,7 @@ public static class EntityEntryAuditExtensions
             entry.State switch
             {
                 EntityState.Added => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Created()),
+                EntityState.Deleted when entry.IsHardDeleted => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.HardDeleted()),
                 EntityState.Deleted => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Deleted()),
                 EntityState.Modified => await entry.ToUpdatedActionAsync(cancellationToken),
                 _ => None

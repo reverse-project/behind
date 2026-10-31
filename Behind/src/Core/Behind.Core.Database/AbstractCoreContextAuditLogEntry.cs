@@ -51,21 +51,11 @@ public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
         }
 
         User user = result.UserId.HasValue
-            ? result.UserId == DomainConstants.SystemUserId
-                ? new SystemUser(None)
-                : new HumanUser(
-                    result.DisplayName,
-                    result.PrimaryEmails.Select(val => new Email(val)),
-                    None
-                )
+            ? result.UserId.Value.ToUser(result.DisplayName, result.PrimaryEmails)
             : new GuestUser(None);
 
         Option<User> behalfOf = result.BehalfOfId.HasValue
-            ? new HumanUser(
-                result.BehalfOfDisplayName,
-                result.BehalfOfEmails.Select(val => new Email(val)),
-                None
-            )
+            ? Some(result.BehalfOfId.Value.ToUser(result.BehalfOfDisplayName, result.BehalfOfEmails))
             : None;
 
         return Some(result.Audit with { User = user, BehalfOf = behalfOf });

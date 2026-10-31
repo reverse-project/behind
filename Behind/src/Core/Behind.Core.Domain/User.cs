@@ -13,7 +13,7 @@ public sealed record HumanUser : User
 
     public HumanUser() : base(None)
     {
-        Emails = Enumerable.Empty<Email>();
+        Emails = new List<Email>();
         DisplayName = string.Empty;
     }
 
@@ -36,3 +36,5 @@ public sealed record SystemUser(Option<IEnumerable<Role>> Roles) : User(Roles);
 public sealed record GuestUser(Option<IEnumerable<Role>> Roles) : User(Roles);
 
 public sealed record BannedUser() : User(None);
+
+public sealed record UnknownUser(Guid Id) : User(None);

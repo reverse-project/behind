@@ -50,13 +50,8 @@ public partial class AbstractCoreContext : IRepository<WallOfShameEntry, Guid>
             return None;
         }
 
-        User user = result.UserId == DomainConstants.SystemUserId
-            ? new SystemUser(None)
-            : new HumanUser(result.DisplayName, result.UserEmails.Select(v => new Email(v)), None);
-
-        User givenBy = result.GivenById == DomainConstants.SystemUserId
-            ? new SystemUser(None)
-            : new HumanUser(result.GivenByDisplayName, result.GivenByEmails.Select(v => new Email(v)), None);
+        var user = result.UserId.ToUser(result.DisplayName, result.UserEmails);
+        var givenBy = result.GivenById.ToUser(result.GivenByDisplayName, result.GivenByEmails);
 
         Option<DateTimeOffset> expires = result.ExpiresAt.HasValue
             ? Some(result.ExpiresAt.Value)

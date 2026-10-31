@@ -83,6 +83,8 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Emails");
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Grant", b =>
@@ -101,6 +103,8 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasAlternateKey("Name");
 
                     b.ToTable("Grants");
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Password", b =>
@@ -125,6 +129,8 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Passwords");
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Role", b =>
@@ -141,7 +147,9 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.ToTable((string)null);
 
-                    b.UseTpcMappingStrategy();
+                    b
+                        .UseTpcMappingStrategy()
+                        .HasAnnotation("Behind:SoftDeletable", true);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.User", b =>
@@ -154,7 +162,9 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.ToTable((string)null);
 
-                    b.UseTpcMappingStrategy();
+                    b
+                        .UseTpcMappingStrategy()
+                        .HasAnnotation("Behind:SoftDeletable", true);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.UserAgent", b =>
@@ -268,6 +278,8 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("WallOfShameEntries");
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
             modelBuilder.Entity("RoleGrants", b =>
@@ -328,12 +340,12 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("BehalfOfId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Email", b =>

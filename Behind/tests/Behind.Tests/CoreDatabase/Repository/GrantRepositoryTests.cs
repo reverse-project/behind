@@ -70,7 +70,9 @@ public sealed class GrantRepositoryTests : IDisposable
     {
         Guid id;
         await using (var seed = _factory.CreateContext())
+        {
             id = await DatabaseSeedHelper.SeedGrantAsync(seed, "del-grant");
+        }
 
         await using (var ctx = _factory.CreateContext())
         {

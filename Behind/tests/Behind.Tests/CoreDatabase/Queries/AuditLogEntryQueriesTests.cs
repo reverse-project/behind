@@ -173,8 +173,10 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         var baseTs = DateTimeOffset.UtcNow;
         await using var seed = _factory.CreateContext();
         for (int i = 0; i < 5; i++)
+        {
             await DatabaseSeedHelper.SeedAuditLogEntryAsync(
                 seed, timestamp: baseTs.AddSeconds(i));
+        }
 
         var request = TodayRequest(flipper: new Flipper(2, 2));
         await using var ctx = _factory.CreateContext();
@@ -196,8 +198,10 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         var baseTs = DateTimeOffset.UtcNow;
         await using var seed = _factory.CreateContext();
         for (int i = 0; i < 5; i++)
+        {
             await DatabaseSeedHelper.SeedAuditLogEntryAsync(
                 seed, timestamp: baseTs.AddSeconds(i));
+        }
 
         var request = TodayRequest(flipper: new Flipper(3, 2));
         await using var ctx = _factory.CreateContext();
@@ -236,7 +240,9 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
                 Assert.Equal(3, list.Count);
                 // After default ordering by Timestamp ascending, the ticks should be non-decreasing
                 for (int i = 1; i < list.Count; i++)
+                {
                     Assert.True(list[i].Timestamp >= list[i - 1].Timestamp);
+                }
             });
         });
     }

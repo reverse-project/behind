@@ -11,7 +11,9 @@ public static class JsonSerializationExtensions
         SensitiveContext? context)
     {
         if (context is null || !context.IsActive)
+        {
             return options;
+        }
 
         if (!options.Converters.OfType<SensibleJsonConverterFactory>().Any())
         {

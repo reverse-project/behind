@@ -10,4 +10,5 @@ MUST keep the code base clean, reuse existing code do not duplicate any of the c
 MUST use DRY, KISS and SOLID principles
 MUST follow Clean Code principles
 MUST create tests for all the new functionalities
+MUST NOT use shortened if statements or blocks (if, else, for, foreach, while, using) without braces, always use braces and put the body on its own lines, to avoid bugs like Apple's "goto fail"
 MUST use TypeDescriptor and JsonConverterFactory for JSON related serialization tasks like in Behind.Common.Converters and Behind.Core.WebApi.WebApiExtensions file

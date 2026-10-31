@@ -35,13 +35,17 @@ internal sealed class SensibleJsonConverter<T> : JsonConverter<T> where T : notn
         foreach (var prop in properties)
         {
             if (prop.GetCustomAttribute<SensibleAttribute>() is not null)
+            {
                 SensibleMembers[prop.Name] = prop;
+            }
         }
 
         foreach (var field in fields)
         {
             if (field.GetCustomAttribute<SensibleAttribute>() is not null)
+            {
                 SensibleMembers[field.Name] = field;
+            }
         }
     }
 
@@ -68,7 +72,9 @@ internal sealed class SensibleJsonConverter<T> : JsonConverter<T> where T : notn
         foreach (var prop in properties)
         {
             if (prop.GetCustomAttribute<JsonIgnoreAttribute>() is not null)
+            {
                 continue;
+            }
 
             var value_property = prop.GetValue(value);
             var propertyName = options.PropertyNamingPolicy?.ConvertName(prop.Name) ?? prop.Name;
@@ -88,7 +94,9 @@ internal sealed class SensibleJsonConverter<T> : JsonConverter<T> where T : notn
         foreach (var field in fields)
         {
             if (field.GetCustomAttribute<JsonIgnoreAttribute>() is not null)
+            {
                 continue;
+            }
 
             var value_field = field.GetValue(value);
             var fieldName = options.PropertyNamingPolicy?.ConvertName(field.Name) ?? field.Name;

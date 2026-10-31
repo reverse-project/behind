@@ -114,7 +114,10 @@ public static class Exceptional
     public static Exceptional<TRr> SelectMany<T, TR, TRr>(this Exceptional<T> @this
         , Func<T?, Exceptional<TR>> bind, Func<T?, TR?, TRr> project)
     {
-        if (@this.Exception) return new Exceptional<TRr>(@this.Ex!);
+        if (@this.Exception)
+        {
+            return new Exceptional<TRr>(@this.Ex!);
+        }
         var bound = bind(@this.Value);
         return bound.Exception
             ? new Exceptional<TRr>(bound.Ex!)

@@ -12,6 +12,8 @@ public static class SessionValidationExtensions
 {
     extension(ClaimsPrincipal principal)
     {
+        public Option<Guid> SessionId => principal.GuidClaim(SessionClaimTypes.SessionId);
+
         public Option<SessionClaims> SessionClaims =>
             from sessionId in principal.GuidClaim(SessionClaimTypes.SessionId)
             from nonce in principal.GuidClaim(SessionClaimTypes.TokenNonce)

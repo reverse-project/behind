@@ -114,7 +114,9 @@ public sealed class SessionRepositoryTests : IDisposable
     {
         Guid userId;
         await using (var seed = _factory.CreateContext())
+        {
             userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "session@test.com");
+        }
         var id = await SeedAsync(NewSession(), userId);
 
         var session = Assert.IsType<ValidSession>(await FindAsync(id));
@@ -177,7 +179,9 @@ public sealed class SessionRepositoryTests : IDisposable
     {
         Guid adminId;
         await using (var seed = _factory.CreateContext())
+        {
             adminId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "admin@test.com");
+        }
         var id = await SeedAsync(NewSession(), invalidatedById: adminId, invalidatedAt: IssuedAt);
 
         var session = Assert.IsType<InvalidSession>(await FindAsync(id));
@@ -244,7 +248,9 @@ public sealed class SessionRepositoryTests : IDisposable
     {
         Guid adminId;
         await using (var seed = _factory.CreateContext())
+        {
             adminId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "revoker@test.com");
+        }
         var id = await SeedAsync(NewSession());
         var revoker = new HumanUser("Test User", [new Email("revoker@test.com")], None);
 

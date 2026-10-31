@@ -30,7 +30,10 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
 
         var userResult = await query.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
-        if (userResult is null) return None;
+        if (userResult is null)
+        {
+            return None;
+        }
 
         var roleIds = await Set<Dictionary<string, object>>("UserRoles")
             .Where(ur => EF.Property<Guid>(ur, "UserId") == key)

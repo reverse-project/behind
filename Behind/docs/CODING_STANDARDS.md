@@ -38,6 +38,22 @@ public class UserRepository
 }
 ```
 
+### 1a. NO BRACE-LESS CONTROL STATEMENTS
+**Rule**: Never use shortened `if`, `else`, `for`, `foreach`, `while` or `using` statements without braces. Always use a braced block with the body on its own lines. This prevents bugs like Apple's "goto fail".
+
+**Bad Example** ✗
+```csharp
+if (session is null) return None;
+```
+
+**Good Example** ✓
+```csharp
+if (session is null)
+{
+    return None;
+}
+```
+
 ### 2. USE EXTENSION METHODS WITH C# 12 SYNTAX
 **Rule**: Use the new `extension(Type)` C# 12 feature for all extension methods.
 

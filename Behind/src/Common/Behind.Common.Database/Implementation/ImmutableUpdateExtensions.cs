@@ -14,7 +14,10 @@ public static class ImmutableUpdateExtensions
         {
             var key = dbContext.GetStableKey(modified);
             var entry = dbContext.Set<T>().Local.FindEntry(key.EntityKey.Properties, key.Values);
-            if (entry is null) throw new InvalidOperationException("Original entity must be tracked.");
+            if (entry is null)
+            {
+                throw new InvalidOperationException("Original entity must be tracked.");
+            }
 
             entry.State = EntityState.Detached;
             dbContext.Attach(modified);
@@ -92,13 +95,21 @@ public static class ImmutableUpdateExtensions
             var trackedCollection = collectionEntry.CurrentValue as IList;
             var modifiedCollection = GetCollectionValue(modifiedEntity, collectionEntry.Metadata);
 
-            if (trackedCollection is null || modifiedCollection is null) return;
+            if (trackedCollection is null || modifiedCollection is null)
+            {
+                return;
+            }
 
             var key = collectionEntry.Metadata.TargetEntityType.FindPrimaryKey();
             if (key is null)
+            {
                 throw new InvalidOperationException("Unable to determine key properties for collection items.");
+            }
+
             if (key.Properties.Any(x => x.IsShadowProperty()))
+            {
                 throw new InvalidOperationException("Cannot update collections with shadow key properties.");
+            }
 
             var originalEntries = trackedCollection
                 .OfType<object>()
@@ -142,7 +153,10 @@ public static class ImmutableUpdateExtensions
         private void UpdateReference(ReferenceEntry referenceEntry, object modifiedEntity)
         {
             var modifiedReference = GetNavigationValue(modifiedEntity, referenceEntry.Metadata);
-            if (modifiedReference is null) return;
+            if (modifiedReference is null)
+            {
+                return;
+            }
 
             if (referenceEntry.TargetEntry is { Entity: { } })
             {
@@ -189,9 +203,12 @@ public static class ImmutableUpdateExtensions
             var value = propertyInfo.GetValue(entity);
 
             var defaultValue = prop.ClrType.IsValueType ? Activator.CreateInstance(prop.ClrType) : null;
-            if (Equals(value, defaultValue)) return null; // key has default value
+            if (Equals(value, defaultValue))
+            {
+                return null;
+            }
 
-            values[i] = value!; // not a default, safe to use
+            values[i] = value!;
         }
 
         return new CompositeKey(key, values.ToArray());
@@ -205,7 +222,10 @@ public static class ImmutableUpdateExtensions
         public override int GetHashCode()
         {
             var hc = new HashCode();
-            foreach (var v in Values) hc.Add(v);
+            foreach (var v in Values)
+            {
+                hc.Add(v);
+            }
             return hc.ToHashCode();
         }
     }

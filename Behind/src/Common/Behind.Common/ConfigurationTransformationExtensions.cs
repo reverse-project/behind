@@ -7,7 +7,9 @@ public static class ConfigurationTransformationExtensions
     public static JsonNode? MaskSensitiveConfigurationValues(this JsonNode? node, string sectionName)
     {
         if (node is not JsonObject root)
+        {
             return node;
+        }
 
         if (root[sectionName] is JsonObject sensitiveSection)
         {

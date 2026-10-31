@@ -39,7 +39,10 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (row is null) return None;
+        if (row is null)
+        {
+            return None;
+        }
 
         return row.InvalidatedById.HasValue || row.InvalidatedAt.HasValue
             ? Some(await ToInvalidSessionAsync(row.InvalidatedById, row.InvalidatedAt, cancellationToken))
@@ -119,8 +122,15 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
 
     private async Task<Option<User>> TryResolveUserAsync(Guid userId, CancellationToken cancellationToken)
     {
-        if (userId == DomainConstants.SystemUserId) return Some<User>(new SystemUser(None));
-        if (userId == DomainConstants.GuestUserId) return Some<User>(new GuestUser(None));
+        if (userId == DomainConstants.SystemUserId)
+        {
+            return Some<User>(new SystemUser(None));
+        }
+
+        if (userId == DomainConstants.GuestUserId)
+        {
+            return Some<User>(new GuestUser(None));
+        }
 
         var human = await ((IRepository<HumanUser, Guid>)this).TryFindAsync(userId, cancellationToken);
         return human.Map(user => (User)user);

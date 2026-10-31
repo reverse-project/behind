@@ -127,7 +127,9 @@ public sealed class UserRoleRepositoryTests : IDisposable
     {
         Guid id;
         await using (var seed = _factory.CreateContext())
+        {
             id = await DatabaseSeedHelper.SeedUserRoleAsync(seed, "del-role");
+        }
 
         await using (var ctx = _factory.CreateContext())
         {

@@ -15,11 +15,15 @@ public sealed class SensitiveContext : IDisposable
     public void Dispose()
     {
         if (_disposed)
+        {
             return;
+        }
 
         _disposed = true;
         if (Current.Value == this)
+        {
             Current.Value = null;
+        }
     }
 
     public static SensitiveContext? GetCurrent() => Current.Value;
@@ -27,7 +31,9 @@ public sealed class SensitiveContext : IDisposable
     public static void VerifyContextActive()
     {
         if (Current.Value is null || !Current.Value.IsActive)
+        {
             throw new InvalidOperationException(
                 "SensitiveContext is not active. Use: using (var ctx = new SensitiveContext()) { ... }");
+        }
     }
 }

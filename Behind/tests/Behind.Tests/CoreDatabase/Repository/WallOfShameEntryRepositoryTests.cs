@@ -233,10 +233,12 @@ public sealed class WallOfShameEntryRepositoryTests : IDisposable
     {
         Guid id;
         await using (var seed = _factory.CreateContext())
+        {
             id = await DatabaseSeedHelper.SeedWallOfShameEntryAsync(
                 seed,
                 userId: DomainConstants.SystemUserId,
                 givenById: DomainConstants.SystemUserId);
+        }
 
         await using (var ctx = _factory.CreateContext())
         {

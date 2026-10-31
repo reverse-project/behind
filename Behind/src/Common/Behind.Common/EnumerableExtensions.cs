@@ -14,7 +14,10 @@ public static class EnumerableExtensions
     static IEnumerable<T> Prepend<T>(this IEnumerable<T> source, T val)
     {
         yield return val;
-        foreach (T t in source) yield return t;
+        foreach (T t in source)
+        {
+            yield return t;
+        }
     }
 
     public static Option<T> Find<T>(this IEnumerable<T> source, Func<T, bool> predicate)
@@ -58,7 +61,11 @@ public static class EnumerableExtensions
 
     public static Option<T> Head<T>(this IEnumerable<T>? list)
     {
-        if (list is null) return None;
+        if (list is null)
+        {
+            return None;
+        }
+
         using var enumerator = list.GetEnumerator();
         return enumerator.MoveNext() ? Some(enumerator.Current) : None;
     }
@@ -94,8 +101,12 @@ public static class EnumerableExtensions
     {
         foreach (var item in @this)
         {
-            if (pred(item)) yield return item;
-            else yield break;
+            if (!pred(item))
+            {
+                yield break;
+            }
+
+            yield return item;
         }
     }
 

@@ -45,7 +45,10 @@ public partial class AbstractCoreContext : IRepository<WallOfShameEntry, Guid>
 
         var result = await query.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
-        if (result is null) return None;
+        if (result is null)
+        {
+            return None;
+        }
 
         User user = result.UserId == DomainConstants.SystemUserId
             ? new SystemUser(None)

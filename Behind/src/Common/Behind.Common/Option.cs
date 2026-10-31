@@ -34,7 +34,10 @@ namespace Behind.Common
         private Option(T value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException();
+            }
+
             _isSome = true;
             _value = value;
         }
@@ -49,7 +52,10 @@ namespace Behind.Common
 
         public IEnumerable<T> AsEnumerable()
         {
-            if (_isSome) yield return _value;
+            if (_isSome)
+            {
+                yield return _value;
+            }
         }
 
         public bool Equals(Option<T> other)
@@ -79,8 +85,11 @@ namespace Behind.Common
             internal Some(T value)
             {
                 if (value == null)
+                {
                     throw new ArgumentNullException(nameof(value)
                         , "Cannot wrap a null value in a 'Some'; use 'None' instead");
+                }
+
                 Value = value;
             }
         }

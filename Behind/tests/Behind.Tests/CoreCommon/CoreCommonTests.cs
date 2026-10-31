@@ -168,7 +168,9 @@ public class SecretKeyJsonConverterTests
     public void Write_Totp_SerializesToTotpScheme()
     {
         if (!Totp.TryCreate(ValidBase32, out var totp))
+        {
             Assert.Fail("Could not create Totp for test.");
+        }
 
         var json = Serialize(totp);
         Assert.Equal($"\"totp://{ValidBase32}\"", json);
@@ -179,7 +181,9 @@ public class SecretKeyJsonConverterTests
     {
         var guid = Guid.NewGuid();
         if (!Uuid.TryCreate(guid.ToString(), out var uuid))
+        {
             Assert.Fail("Could not create Uuid for test.");
+        }
 
         var json = Serialize(uuid);
         Assert.Equal($"\"uuid://{guid}\"", json);

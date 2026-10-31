@@ -59,7 +59,10 @@ public readonly struct Validation<T> : IEquatable<Validation<T>>
 
     public IEnumerator<T?> AsEnumerable()
     {
-        if (IsValid) yield return _value;
+        if (IsValid)
+        {
+            yield return _value;
+        }
     }
 
     public override string ToString()

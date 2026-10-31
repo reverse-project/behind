@@ -78,7 +78,10 @@ public static partial class FunctionalExtensions
     public static TR Using<TDisp, TR>(TDisp disposable
         , Func<TDisp, TR> func) where TDisp : IDisposable
     {
-        using (var disp = disposable) return func(disp);
+        using (var disp = disposable)
+        {
+            return func(disp);
+        }
     }
 
     public static Unit Using<TDisp>(TDisp disposable
@@ -88,7 +91,10 @@ public static partial class FunctionalExtensions
     public static TR Using<TDisp, TR>(Func<TDisp> createDisposable
         , Func<TDisp, TR> func) where TDisp : IDisposable
     {
-        using (var disp = createDisposable()) return func(disp);
+        using (var disp = createDisposable())
+        {
+            return func(disp);
+        }
     }
 
     public static Unit Using<TDisp>(Func<TDisp> createDisposable
@@ -98,12 +104,18 @@ public static partial class FunctionalExtensions
     // Range
     public static IEnumerable<char> Range(char from, char to)
     {
-        for (var i = from; i <= to; i++) yield return i;
+        for (var i = from; i <= to; i++)
+        {
+            yield return i;
+        }
     }
 
     public static IEnumerable<int> Range(int from, int to)
     {
-        for (var i = from; i <= to; i++) yield return i;
+        for (var i = from; i <= to; i++)
+        {
+            yield return i;
+        }
     }
 
     extension<T>(Try<T> @try)

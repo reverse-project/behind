@@ -30,7 +30,10 @@ public static class FilterExtensions
                 );
 
                 var entityType = context.Model.FindEntityType(typeof(T));
-                if (entityType is null) return None;
+                if (entityType is null)
+                {
+                    return None;
+                }
 
                 string processedFormula = PreProcessFormula(entityType, expression);
 

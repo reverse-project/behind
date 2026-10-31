@@ -270,7 +270,9 @@ public sealed class AuditLogEntryRepositoryTests : IDisposable
     {
         Guid id;
         await using (var seed = _factory.CreateContext())
+        {
             id = await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed);
+        }
 
         await using (var ctx = _factory.CreateContext())
         {

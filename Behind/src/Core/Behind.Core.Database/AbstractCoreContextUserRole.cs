@@ -22,7 +22,10 @@ public partial class AbstractCoreContext : IRepository<UserRole, Guid>
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (result is null) return None;
+        if (result is null)
+        {
+            return None;
+        }
 
         var grantIds = await Set<Dictionary<string, object>>("RoleGrants")
             .Where(rg => EF.Property<Guid>(rg, "RoleId") == key)

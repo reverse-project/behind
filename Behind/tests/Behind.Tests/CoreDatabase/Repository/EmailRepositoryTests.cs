@@ -51,7 +51,9 @@ public sealed class EmailRepositoryTests : IDisposable
     {
         Guid userId;
         await using (var seed = _factory.CreateContext())
+        {
             userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "owner@test.com");
+        }
 
         Guid emailId;
         await using (var ctx = _factory.CreateContext())
@@ -80,7 +82,9 @@ public sealed class EmailRepositoryTests : IDisposable
     {
         Guid userId;
         await using (var seed = _factory.CreateContext())
+        {
             userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "gk@test.com");
+        }
 
         await using var ctx = _factory.CreateContext();
         var email = new Email("gk2@test.com");
@@ -101,11 +105,15 @@ public sealed class EmailRepositoryTests : IDisposable
     {
         Guid userId;
         await using (var seed = _factory.CreateContext())
+        {
             userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "del_owner@test.com");
+        }
 
         Guid emailId;
         await using (var seed2 = _factory.CreateContext())
+        {
             emailId = await DatabaseSeedHelper.SeedEmailAsync(seed2, userId, "del@test.com");
+        }
 
         await using (var ctx = _factory.CreateContext())
         {

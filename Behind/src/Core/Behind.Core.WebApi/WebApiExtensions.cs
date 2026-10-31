@@ -229,6 +229,16 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(500);
 
+            application.MapPost("/sign/out", SignOutEndpoints.SignOut)
+                .Produces(204)
+                .Produces(401)
+                .Produces(500);
+
+            application.MapPost("/sign/out/all", SignOutEndpoints.SignOutAll)
+                .Produces(204)
+                .Produces(401)
+                .Produces(500);
+
             return application;
         }
     }

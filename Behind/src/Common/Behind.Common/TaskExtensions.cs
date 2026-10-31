@@ -159,7 +159,11 @@ public static class TaskExtensions
         , Func<T, bool> predicate)
     {
         T t = await source;
-        if (!predicate(t)) throw new OperationCanceledException();
+        if (!predicate(t))
+        {
+            throw new OperationCanceledException();
+        }
+
         return t;
     }
 
@@ -171,7 +175,10 @@ public static class TaskExtensions
         await Task.WhenAll(source, inner);
         if (!EqualityComparer<TK>.Default.Equals(
                 outerKeySelector(source.Result), innerKeySelector(inner.Result)))
+        {
             throw new OperationCanceledException();
+        }
+
         return resultSelector(source.Result, inner.Result);
     }
 

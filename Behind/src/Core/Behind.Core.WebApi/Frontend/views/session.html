@@ -1,48 +1,46 @@
-<section class="behind-view">
-    <h1>Session</h1>
+<section>
+    <h1 class="mb-3">Session</h1>
     <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to see your session.</p>
-    <p role="alert" data-bind="visible: hasMessage, text: message"></p>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div data-bind="with: details">
-    <h2>User</h2>
-    <dl>
-        <dt>Name</dt>
-        <dd data-bind="text: displayName"></dd>
-        <dt>User id</dt>
-        <dd data-bind="text: userId"></dd>
-        <dt>Emails</dt>
-        <dd>
-            <ul data-bind="foreach: emails">
-                <li data-bind="text: $data"></li>
-            </ul>
-        </dd>
-        <dt>Roles</dt>
-        <dd>
-            <ul data-bind="foreach: roles">
-                <li><strong data-bind="text: name"></strong> <span data-bind="text: grants"></span></li>
-            </ul>
-        </dd>
-    </dl>
-    <h2>Details</h2>
-    <dl>
-        <dt>Session id</dt>
-        <dd data-bind="text: sessionId"></dd>
-        <dt>Started</dt>
-        <dd data-bind="text: startedAt"></dd>
-        <dt>Age</dt>
-        <dd data-bind="text: length"></dd>
-        <dt>Expires</dt>
-        <dd><span data-bind="text: expiresAt"></span> (<span data-bind="text: remaining"></span> left)</dd>
-        <dt>Access token issued</dt>
-        <dd data-bind="text: accessTokenIssuedAt"></dd>
-        <dt>Access token expires</dt>
-        <dd><span data-bind="text: accessTokenExpiresAt"></span> (<span data-bind="text: accessTokenRemaining"></span> left)</dd>
-        <dt>Remote address</dt>
-        <dd data-bind="text: remoteAddress"></dd>
-        <dt>User agent</dt>
-        <dd data-bind="text: userAgent"></dd>
-    </dl>
+        <h2 class="h4 mt-4">User</h2>
+        <dl class="row behind-details">
+            <dt class="col-sm-4">Name</dt>
+            <dd class="col-sm-8" data-bind="text: displayName"></dd>
+            <dt class="col-sm-4">User id</dt>
+            <dd class="col-sm-8" data-bind="text: userId"></dd>
+            <dt class="col-sm-4">Emails</dt>
+            <dd class="col-sm-8">
+                <ul class="list-unstyled mb-0" data-bind="foreach: emails">
+                    <li data-bind="text: $data"></li>
+                </ul>
+            </dd>
+            <dt class="col-sm-4">Roles</dt>
+            <dd class="col-sm-8">
+                <ul class="list-unstyled mb-0" data-bind="foreach: roles">
+                    <li><strong data-bind="text: name"></strong> <span class="text-body-secondary" data-bind="text: grants"></span></li>
+                </ul>
+            </dd>
+        </dl>
+        <h2 class="h4 mt-4">Details</h2>
+        <dl class="row behind-details">
+            <dt class="col-sm-4">Session id</dt>
+            <dd class="col-sm-8" data-bind="text: sessionId"></dd>
+            <dt class="col-sm-4">Started</dt>
+            <dd class="col-sm-8" data-bind="text: startedAt"></dd>
+            <dt class="col-sm-4">Age</dt>
+            <dd class="col-sm-8" data-bind="text: length"></dd>
+            <dt class="col-sm-4">Expires</dt>
+            <dd class="col-sm-8"><span data-bind="text: expiresAt"></span> (<span data-bind="text: remaining"></span> left)</dd>
+            <dt class="col-sm-4">Access token issued</dt>
+            <dd class="col-sm-8" data-bind="text: accessTokenIssuedAt"></dd>
+            <dt class="col-sm-4">Access token expires</dt>
+            <dd class="col-sm-8"><span data-bind="text: accessTokenExpiresAt"></span> (<span data-bind="text: accessTokenRemaining"></span> left)</dd>
+            <dt class="col-sm-4">Remote address</dt>
+            <dd class="col-sm-8" data-bind="text: remoteAddress"></dd>
+            <dt class="col-sm-4">User agent</dt>
+            <dd class="col-sm-8" data-bind="text: userAgent"></dd>
+        </dl>
     </div>
-    <div class="behind-actions">
-        <button type="button" data-bind="visible: isSignedIn, enable: !busy(), click: refresh">Refresh</button>
-    </div>
+    <button type="button" class="btn btn-primary" data-bind="visible: isSignedIn, enable: !busy(), click: refresh">Refresh</button>
 </section>

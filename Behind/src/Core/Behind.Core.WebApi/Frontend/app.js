@@ -45,8 +45,19 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], functio
         });
     });
 
+    var applyColorScheme = function () {
+        var query = window.matchMedia("(prefers-color-scheme: dark)");
+        var apply = function () {
+            document.documentElement.setAttribute("data-bs-theme", query.matches ? "dark" : "light");
+        };
+
+        apply();
+        query.addEventListener("change", apply);
+    };
+
     return {
         start: function () {
+            applyColorScheme();
             ko.applyBindings(new HeaderViewModel(context), $("#header-container")[0]);
             router.run("#/");
         }

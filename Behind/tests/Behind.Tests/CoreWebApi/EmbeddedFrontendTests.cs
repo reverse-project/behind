@@ -125,12 +125,55 @@ public class EmbeddedFrontendTests
         var index = Read(Provider.GetFileInfo("index.html"));
         var header = Read(Provider.GetFileInfo("viewmodels/header.js"));
 
-        Assert.Contains("<a href=\"#/session\" data-bind=\"visible: isSignedIn, text: label\">", index);
-        Assert.Contains("<a href=\"#/sign-in\" data-bind=\"visible: !isSignedIn()\">", index);
-        Assert.Contains("<a href=\"#/sign-up\" data-bind=\"visible: !isSignedIn()\">", index);
+        Assert.Contains("<a class=\"nav-link\" href=\"#/session\" data-bind=\"text: label\">", index);
+        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: isSignedIn\">", index);
+        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-in\">", index);
+        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-up\">", index);
         Assert.Contains("visible: isSignedIn, click: signOut", index);
         Assert.Contains("session.displayName()", header);
         Assert.Contains("auth.loadSession()", header);
+    }
+
+    [Theory]
+    [InlineData("css/bootstrap.min.css")]
+    [InlineData("libraries/bootstrap.bundle.min.js")]
+    public void Provider_ContainsBootstrapAssets(string path)
+    {
+        var content = Read(Provider.GetFileInfo(path));
+
+        Assert.Matches(@"Bootstrap\s+v5\.3", content);
+        Assert.DoesNotContain("sourceMappingURL", content);
+    }
+
+    [Fact]
+    public void IndexHtml_LoadsBootstrapStylesBeforeApplicationStyles()
+    {
+        var index = Read(Provider.GetFileInfo("index.html"));
+
+        Assert.True(index.IndexOf("css/bootstrap.min.css", StringComparison.Ordinal) < index.IndexOf("css/app.css", StringComparison.Ordinal));
+        Assert.Contains("data-bs-toggle=\"collapse\"", index);
+    }
+
+    [Fact]
+    public void Bootloader_LoadsBootstrapScripts()
+    {
+        var config = Read(Provider.GetFileInfo("config.js"));
+        var bootloader = Read(Provider.GetFileInfo("bootloader.js"));
+
+        Assert.Contains("bootstrap: \"libraries/bootstrap.bundle.min\"", config);
+        Assert.Contains("\"bootstrap\"", bootloader);
+    }
+
+    [Fact]
+    public void Views_UseBootstrapComponents()
+    {
+        var views = new[] { "signin", "signup" }.Select(name => Read(Provider.GetFileInfo($"views/{name}.html")));
+
+        Assert.All(views, view =>
+        {
+            Assert.Contains("form-control", view);
+            Assert.Contains("btn btn-primary", view);
+        });
     }
 
     [Fact]

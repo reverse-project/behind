@@ -1,11 +1,15 @@
-<section class="behind-view">
-    <h1>Sign up</h1>
+<section>
+    <h1 class="mb-3">Sign up</h1>
     <form data-bind="submit: submit">
-        <label>Email <input type="email" autocomplete="username" required data-bind="value: email"></label>
-        <label>Password <input type="password" autocomplete="new-password" required data-bind="value: password"></label>
-        <div class="behind-actions">
-            <button type="submit" data-bind="enable: !busy()">Create account</button>
+        <div class="mb-3">
+            <label class="form-label" for="signup-email">Email</label>
+            <input id="signup-email" class="form-control" type="email" autocomplete="username" required data-bind="value: email">
         </div>
+        <div class="mb-3">
+            <label class="form-label" for="signup-password">Password</label>
+            <input id="signup-password" class="form-control" type="password" autocomplete="new-password" required data-bind="value: password">
+        </div>
+        <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Create account</button>
     </form>
-    <p role="status" data-bind="visible: hasMessage, text: message"></p>
+    <p class="mt-3" role="status" data-bind="visible: hasMessage, text: message"></p>
 </section>

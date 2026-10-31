@@ -4,21 +4,33 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Behind</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/app.css">
     <script src="libraries/require.min.js" data-main="bootloader.js"></script>
 </head>
 <body>
-<header id="header-container" class="behind-header">
-    <strong>Behind</strong>
-    <nav>
-        <a href="#/">Index</a>
-        <a href="#/session" data-bind="visible: isSignedIn, text: label"></a>
-        <a href="#/sign-in" data-bind="visible: !isSignedIn()">Sign in</a>
-        <a href="#/sign-up" data-bind="visible: !isSignedIn()">Sign up</a>
-        <button type="button" data-bind="visible: isSignedIn, click: signOut">Sign out</button>
+<header id="header-container">
+    <nav class="navbar navbar-expand-md border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#/">Behind</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navigation" aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navigation">
+                <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                    <li class="nav-item"><a class="nav-link" href="#/">Index</a></li>
+                    <li class="nav-item" data-bind="visible: isSignedIn"><a class="nav-link" href="#/session" data-bind="text: label"></a></li>
+                    <li class="nav-item" data-bind="visible: !isSignedIn()"><a class="nav-link" href="#/sign-in">Sign in</a></li>
+                    <li class="nav-item" data-bind="visible: !isSignedIn()"><a class="nav-link" href="#/sign-up">Sign up</a></li>
+                </ul>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isSignedIn, click: signOut">Sign out</button>
+            </div>
+        </div>
     </nav>
 </header>
-<main id="main-container"></main>
-<noscript>This application requires JavaScript.</noscript>
+<main id="main-container" class="container my-4 behind-main"></main>
+<noscript>
+    <div class="alert alert-warning m-3" role="alert">This application requires JavaScript.</div>
+</noscript>
 </body>
 </html>

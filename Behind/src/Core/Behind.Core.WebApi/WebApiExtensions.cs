@@ -6,6 +6,7 @@ using Behind.Common.Converters;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Handlers;
+using Behind.Common.WebApi.Infrastructure.StaticFiles;
 using Behind.Common.WebApi.Middleware;
 using Behind.Common.WebApi.Security;
 using Behind.Core.Common.Configuration;
@@ -192,6 +193,16 @@ public static class WebApiExtensions
             return builder;
         }
 
+        WebApplicationBuilder AddFrontend()
+        {
+            builder.Services.AddStaticFrontend(
+                builder.Configuration
+                    .GetSection(FrontendOptions.SectionName)
+                    .Get<FrontendOptions>() ?? FrontendOptions.Default);
+
+            return builder;
+        }
+
         public WebApplicationBuilder AddCore()
         {
             builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
@@ -203,7 +214,8 @@ public static class WebApiExtensions
                 .AddDatabase()
                 .AddEmail()
                 .AddServices()
-                .AddSecurity();
+                .AddSecurity()
+                .AddFrontend();
         }
     }
 
@@ -213,6 +225,7 @@ public static class WebApiExtensions
         {
             application.UseCorrelationId();
             application.UseExceptionHandler(_ => { });
+            application.UseStaticFrontend(EmbeddedFrontend.CreateFileProvider());
             application.UseETag();
             application.MapOpenApi();
 

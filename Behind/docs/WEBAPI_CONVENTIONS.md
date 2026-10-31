@@ -37,6 +37,18 @@ extension(WebApplicationBuilder builder)
 }
 ```
 
+### Static Frontend
+
+`UseCore()` serves the JavaScript frontend embedded from `Behind.Core.WebApi/Frontend` (RequireJS, jQuery, Knockout, Sammy; controllers/models/viewmodels/views layout). `index.html` is the default file. JS, CSS and HTML are minified in memory (once per file version) and responses are Brotli/Gzip compressed by default, with ETag revalidation.
+
+Configure through the `Frontend:StaticFiles` section (for example in `frontend.json`):
+
+```json
+{ "Frontend": { "StaticFiles": { "Minify": true, "Compress": true, "DefaultFile": "index.html", "CacheControl": "no-cache" } } }
+```
+
+Files named `*.min.*` are served as-is. Third-party libraries live in `Frontend/libraries`.
+
 ### Startup Example
 
 ```csharp

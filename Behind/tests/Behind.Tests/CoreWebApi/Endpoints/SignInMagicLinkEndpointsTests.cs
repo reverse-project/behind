@@ -169,7 +169,7 @@ public class SignInMagicLinkEndpointsTests
         Assert.Equal(Now.AddMinutes(15), issued.ExpiresAt);
         var mail = Assert.Single(QueuedMails());
         Assert.Equal("user@test.com", mail.Email);
-        Assert.StartsWith($"https://app.test/{MagicLinkExtensions.SignInPath}?{MagicLinkExtensions.TokenParameter}=", mail.Link);
+        Assert.StartsWith($"https://app.test/#{MagicLinkExtensions.SignInRoute}?{MagicLinkExtensions.TokenParameter}=", mail.Link);
         var token = Uri.UnescapeDataString(mail.Link[(mail.Link.IndexOf('=') + 1)..]);
         var credential = MagicLinkCredential.TryParse(token).Match(() => throw new InvalidOperationException(), parsed => parsed);
         Assert.Equal(issued.Nonce, credential.Nonce);
@@ -182,7 +182,7 @@ public class SignInMagicLinkEndpointsTests
         await RequestLink(NewUser(), Some(Settings()));
 
         var mail = Assert.Single(QueuedMails());
-        Assert.StartsWith($"https://api.test/{MagicLinkExtensions.SignInPath}?", mail.Link);
+        Assert.StartsWith($"https://api.test/#{MagicLinkExtensions.SignInRoute}?", mail.Link);
     }
 
     [Fact]

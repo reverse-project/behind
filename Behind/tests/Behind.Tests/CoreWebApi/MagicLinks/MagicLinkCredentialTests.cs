@@ -98,14 +98,26 @@ public class MagicLinkCredentialTests
     }
 
     [Fact]
-    public void ToLink_AppendsEscapedTokenToSignInPath()
+    public void ToLink_AppendsEscapedTokenToFrontendHashRoute()
     {
         var credential = MagicLinkCredential.Create(Guid.NewGuid(), Actual, Pepper);
 
         var link = credential.ToLink(new Uri("https://example.com/app/"));
 
         Assert.Equal(
-            $"https://example.com/app/{MagicLinkExtensions.SignInPath}?{MagicLinkExtensions.TokenParameter}={Uri.EscapeDataString(credential.Token)}",
+            $"https://example.com/app/#{MagicLinkExtensions.SignInRoute}?{MagicLinkExtensions.TokenParameter}={Uri.EscapeDataString(credential.Token)}",
             link);
+    }
+
+    [Fact]
+    public void ToLink_BaseUriWithQueryAndFragment_DropsThemSoTokenStaysInHash()
+    {
+        var credential = MagicLinkCredential.Create(Guid.NewGuid(), Actual, Pepper);
+
+        var link = credential.ToLink(new Uri("https://example.com/app?x=1#old"));
+
+        Assert.StartsWith($"https://example.com/app#{MagicLinkExtensions.SignInRoute}?", link);
+        Assert.DoesNotContain("x=1", link);
+        Assert.Equal(1, link.Count(character => character == '#'));
     }
 }

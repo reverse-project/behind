@@ -11,7 +11,7 @@ namespace Behind.Core.WebApi.MagicLinks;
 
 public static class MagicLinkExtensions
 {
-    public const string SignInPath = "sign/in/magiclink";
+    public const string SignInRoute = "/sign/in/magiclink";
     public const string TokenParameter = "token";
     public const string RequestRateLimitPolicy = "magic-link-request";
 
@@ -20,7 +20,7 @@ public static class MagicLinkExtensions
     extension(MagicLinkCredential credential)
     {
         public string ToLink(Uri baseUri) =>
-            QueryHelpers.AddQueryString(new Uri(baseUri, SignInPath).ToString(), TokenParameter, credential.Token);
+            $"{baseUri.GetLeftPart(UriPartial.Path)}#{QueryHelpers.AddQueryString(SignInRoute, TokenParameter, credential.Token)}";
     }
 
     extension(IServiceCollection services)

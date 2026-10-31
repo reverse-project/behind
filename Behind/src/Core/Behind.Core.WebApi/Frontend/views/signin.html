@@ -1,0 +1,12 @@
+<section class="behind-view">
+    <h1>Sign in</h1>
+    <form data-bind="submit: submit">
+        <label>Email <input type="email" autocomplete="username" required data-bind="value: email"></label>
+        <label>Password <input type="password" autocomplete="current-password" data-bind="value: password"></label>
+        <div class="behind-actions">
+            <button type="submit" data-bind="enable: !busy()">Sign in</button>
+            <button type="button" data-bind="enable: !busy(), click: requestMagicLink">Email me a sign in link</button>
+        </div>
+    </form>
+    <p role="status" data-bind="visible: hasMessage, text: message"></p>
+</section>

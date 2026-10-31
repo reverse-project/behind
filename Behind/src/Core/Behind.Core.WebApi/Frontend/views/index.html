@@ -1,0 +1,6 @@
+<section class="behind-view">
+    <h1>Welcome</h1>
+    <p data-bind="visible: isSignedIn">You are signed in.</p>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> or <a href="#/sign-up">create an account</a>.</p>
+    <button type="button" data-bind="visible: isSignedIn, click: signOut">Sign out</button>
+</section>

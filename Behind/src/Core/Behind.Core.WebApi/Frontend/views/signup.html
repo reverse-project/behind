@@ -1,0 +1,11 @@
+<section class="behind-view">
+    <h1>Sign up</h1>
+    <form data-bind="submit: submit">
+        <label>Email <input type="email" autocomplete="username" required data-bind="value: email"></label>
+        <label>Password <input type="password" autocomplete="new-password" required data-bind="value: password"></label>
+        <div class="behind-actions">
+            <button type="submit" data-bind="enable: !busy()">Create account</button>
+        </div>
+    </form>
+    <p role="status" data-bind="visible: hasMessage, text: message"></p>
+</section>

@@ -1,8 +1,9 @@
-define(["jquery", "jquery-migrate", "ko", "sammy"], function ($, migrate, ko, Sammy) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], function ($, migrate, ko, Sammy, HeaderViewModel) {
     var routes = {
         "#/": "controllers/index",
         "#/sign-in": "controllers/signin",
         "#/sign-up": "controllers/signup",
+        "#/session": "controllers/session",
         "#/sign/in/magiclink": "controllers/magiclink"
     };
 
@@ -46,6 +47,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy"], function ($, migrate, ko, Sa
 
     return {
         start: function () {
+            ko.applyBindings(new HeaderViewModel(context), $("#header-container")[0]);
             router.run("#/");
         }
     };

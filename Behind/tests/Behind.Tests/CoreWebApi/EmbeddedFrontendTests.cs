@@ -37,6 +37,10 @@ public class EmbeddedFrontendTests
     [InlineData("controllers/magiclink.js")]
     [InlineData("viewmodels/magiclink.js")]
     [InlineData("views/magiclink.html")]
+    [InlineData("controllers/session.js")]
+    [InlineData("viewmodels/session.js")]
+    [InlineData("views/session.html")]
+    [InlineData("viewmodels/header.js")]
     public void Provider_ContainsFile(string path)
     {
         Assert.True(Provider.GetFileInfo(path).Exists);
@@ -104,5 +108,81 @@ public class EmbeddedFrontendTests
         Assert.Contains("http.post(\"/sign/in/magiclink/redeem\"", auth);
         Assert.DoesNotContain("magiclink?token=", auth);
         Assert.Contains("context.scrub(", viewModel);
+    }
+
+    [Fact]
+    public void SessionRoute_IsRegistered()
+    {
+        var app = Read(Provider.GetFileInfo("app.js"));
+
+        Assert.Contains("\"#/session\": \"controllers/session\"", app);
+        Assert.Contains("viewmodels/header", app);
+    }
+
+    [Fact]
+    public void Header_ShowsUserNameAndSignOutWhenSignedIn_AndSignInLinksOtherwise()
+    {
+        var index = Read(Provider.GetFileInfo("index.html"));
+        var header = Read(Provider.GetFileInfo("viewmodels/header.js"));
+
+        Assert.Contains("<a href=\"#/session\" data-bind=\"visible: isSignedIn, text: label\">", index);
+        Assert.Contains("<a href=\"#/sign-in\" data-bind=\"visible: !isSignedIn()\">", index);
+        Assert.Contains("<a href=\"#/sign-up\" data-bind=\"visible: !isSignedIn()\">", index);
+        Assert.Contains("visible: isSignedIn, click: signOut", index);
+        Assert.Contains("session.displayName()", header);
+        Assert.Contains("auth.loadSession()", header);
+    }
+
+    [Fact]
+    public void SessionPageLink_IsOnlyInTheHeader()
+    {
+        var links = Walk("/")
+            .Where(file => file.Name.EndsWith(".html"))
+            .Where(file => Read(file).Contains("href=\"#/session\""))
+            .Select(file => file.Name)
+            .ToList();
+
+        Assert.Equal(["index.html"], links);
+    }
+
+    [Fact]
+    public void SessionLoading_SendsRefreshTokenAndStoresRefreshedAccessToken()
+    {
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+        var http = Read(Provider.GetFileInfo("models/http.js"));
+        var session = Read(Provider.GetFileInfo("models/session.js"));
+
+        Assert.Contains("http.get(\"/session\"", auth);
+        Assert.Contains("session.refreshHeaders()", auth);
+        Assert.Contains("session.renew(response.data.refreshed)", auth);
+        Assert.Contains("session.end()", auth);
+        Assert.Contains("session.identify(response.data.user.displayName)", auth);
+        Assert.Contains("extraHeaders", http);
+        Assert.Contains("renew:", session);
+    }
+
+    [Fact]
+    public void SessionView_BindsUserRolesAndSessionDetails()
+    {
+        var view = Read(Provider.GetFileInfo("views/session.html"));
+
+        Assert.All(
+            new[] { "displayName", "emails", "roles", "grants", "startedAt", "expiresAt", "accessTokenExpiresAt", "remoteAddress", "userAgent", "click: refresh" },
+            binding => Assert.Contains(binding, view));
+        Assert.DoesNotContain("<!--", view);
+    }
+
+    [Fact]
+    public void Http_RenewsSessionOnceAndRetriesUnauthorizedRequests()
+    {
+        var http = Read(Provider.GetFileInfo("models/http.js"));
+        var session = Read(Provider.GetFileInfo("models/session.js"));
+
+        Assert.Contains("response.status !== 401", http);
+        Assert.Contains("pendingRenewal", http);
+        Assert.Contains("session.refreshHeaders()", http);
+        Assert.Contains("url === sessionUrl", http);
+        Assert.Contains("session.renew(response.data.refreshed)", http);
+        Assert.Contains("\"X-Refresh-Token\"", session);
     }
 }

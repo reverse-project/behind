@@ -1,0 +1,48 @@
+<section class="behind-view">
+    <h1>Session</h1>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to see your session.</p>
+    <p role="alert" data-bind="visible: hasMessage, text: message"></p>
+    <div data-bind="with: details">
+    <h2>User</h2>
+    <dl>
+        <dt>Name</dt>
+        <dd data-bind="text: displayName"></dd>
+        <dt>User id</dt>
+        <dd data-bind="text: userId"></dd>
+        <dt>Emails</dt>
+        <dd>
+            <ul data-bind="foreach: emails">
+                <li data-bind="text: $data"></li>
+            </ul>
+        </dd>
+        <dt>Roles</dt>
+        <dd>
+            <ul data-bind="foreach: roles">
+                <li><strong data-bind="text: name"></strong> <span data-bind="text: grants"></span></li>
+            </ul>
+        </dd>
+    </dl>
+    <h2>Details</h2>
+    <dl>
+        <dt>Session id</dt>
+        <dd data-bind="text: sessionId"></dd>
+        <dt>Started</dt>
+        <dd data-bind="text: startedAt"></dd>
+        <dt>Age</dt>
+        <dd data-bind="text: length"></dd>
+        <dt>Expires</dt>
+        <dd><span data-bind="text: expiresAt"></span> (<span data-bind="text: remaining"></span> left)</dd>
+        <dt>Access token issued</dt>
+        <dd data-bind="text: accessTokenIssuedAt"></dd>
+        <dt>Access token expires</dt>
+        <dd><span data-bind="text: accessTokenExpiresAt"></span> (<span data-bind="text: accessTokenRemaining"></span> left)</dd>
+        <dt>Remote address</dt>
+        <dd data-bind="text: remoteAddress"></dd>
+        <dt>User agent</dt>
+        <dd data-bind="text: userAgent"></dd>
+    </dl>
+    </div>
+    <div class="behind-actions">
+        <button type="button" data-bind="visible: isSignedIn, enable: !busy(), click: refresh">Refresh</button>
+    </div>
+</section>

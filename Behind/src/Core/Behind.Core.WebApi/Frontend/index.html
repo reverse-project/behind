@@ -8,12 +8,14 @@
     <script src="libraries/require.min.js" data-main="bootloader.js"></script>
 </head>
 <body>
-<header class="behind-header">
+<header id="header-container" class="behind-header">
     <strong>Behind</strong>
     <nav>
         <a href="#/">Index</a>
-        <a href="#/sign-in">Sign in</a>
-        <a href="#/sign-up">Sign up</a>
+        <a href="#/session" data-bind="visible: isSignedIn, text: label"></a>
+        <a href="#/sign-in" data-bind="visible: !isSignedIn()">Sign in</a>
+        <a href="#/sign-up" data-bind="visible: !isSignedIn()">Sign up</a>
+        <button type="button" data-bind="visible: isSignedIn, click: signOut">Sign out</button>
     </nav>
 </header>
 <main id="main-container"></main>

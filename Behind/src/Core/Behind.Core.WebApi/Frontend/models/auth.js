@@ -63,6 +63,29 @@ define(["models/http", "models/session"], function (http, session) {
             });
         },
 
+        loadSession: function () {
+            return http.get("/session", session.refreshHeaders()).then(function (response) {
+                if (response.ok) {
+                    if (response.data.refreshed) {
+                        session.renew(response.data.refreshed);
+                    }
+
+                    session.identify(response.data.user.displayName);
+
+                    return { ok: true, message: "", data: response.data };
+                }
+
+                if (response.status === 401) {
+                    session.end();
+                }
+
+                return failure(response, {
+                    401: "Your session has expired. Please sign in again.",
+                    409: "Your session was changed elsewhere. Please try again."
+                });
+            });
+        },
+
         signOut: function () {
             return http.post("/sign/out").then(function () {
                 session.end();

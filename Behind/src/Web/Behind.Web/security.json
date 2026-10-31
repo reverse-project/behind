@@ -12,7 +12,8 @@
       "CertificatePassword": "change-me-dev-only"
     },
     "MagicLink": {
-      "ActualSecret": "uuid://019e5f3b-dc22-7d66-8cd3-9cb754d0fd28"
+      "ActualSecret": "uuid://01a19375-e2a2-7b3e-a484-7cc04013c5f6",
+      "OldSecret": "uuid://019e5f3b-dc22-7d66-8cd3-9cb754d0fd28"
     }
   }
 }

@@ -95,7 +95,7 @@ public class SignInMagicLinkEndpointsTests
             _sessions,
             _time,
             NewHttpContext(),
-            new SignInEndpoints.MagicLinkSignInRequest(token!));
+            token);
 
     private static string TokenFor(Uuid secret, TokenNonce? nonce = null) =>
         MagicLinkCredential.Create(nonce ?? Guid.NewGuid(), secret, Jwt.SigningKey).Token;
@@ -292,6 +292,24 @@ public class SignInMagicLinkEndpointsTests
         var result = await Redeem(user, Some(Settings(Some(Old))), TokenFor(Old));
 
         Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_DisablesCachingOfTheTokenResponse()
+    {
+        var httpContext = NewHttpContext();
+
+        await SignInEndpoints.SignInMagicLink(
+            UserManagerFor(NewUser()),
+            Security(Some(Jwt)),
+            StoreOf(Some(Settings())),
+            _magicLinks,
+            _sessions,
+            _time,
+            httpContext,
+            null);
+
+        Assert.Equal("no-store", httpContext.Response.Headers.CacheControl.ToString());
     }
 
     [Fact]

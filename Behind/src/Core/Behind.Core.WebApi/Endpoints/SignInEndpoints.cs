@@ -11,6 +11,7 @@ using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.MagicLinks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -18,6 +19,8 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class SignInEndpoints
 {
+    private const string NoStore = "no-store";
+
     public sealed record PasswordRequest(
         [Required, DataType(DataType.EmailAddress)]
         string Email,
@@ -28,8 +31,6 @@ public sealed class SignInEndpoints
     public sealed record MagicLinkRequest(
         [Required, DataType(DataType.EmailAddress)]
         string Email);
-
-    public sealed record MagicLinkSignInRequest([Required] string Token);
 
     [IgnoreETag]
     public static async Task<IResult> SignInPassword(UserManager<ApplicationUser> userManager,
@@ -87,8 +88,10 @@ public sealed class SignInEndpoints
     public static async Task<IResult> SignInMagicLink(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, IMagicLinkSettingsStore settingsStore,
         IMagicLinkCommands magicLinkCommands, ISessionCommands sessionCommands, TimeProvider timeProvider,
-        HttpContext httpContext, MagicLinkSignInRequest request)
+        HttpContext httpContext, [FromQuery] string? token)
     {
+        httpContext.Response.Headers.CacheControl = NoStore;
+
         return await securityConfiguration.Value.Jwt.Match(
             none: () => Task.FromResult(Results.InternalServerError()),
             jwtSettings => settingsStore.Current.Match(
@@ -96,7 +99,7 @@ public sealed class SignInEndpoints
                 async settings =>
                 {
                     var now = timeProvider.GetUtcNow();
-                    var credential = MagicLinkCredential.TryParse(request.Token)
+                    var credential = MagicLinkCredential.TryParse(token)
                         .Where(c => c.IsSignedBy(settings.ValidSecrets(now), jwtSettings.SigningKey));
 
                     var userId = await credential.Match(

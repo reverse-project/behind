@@ -6,6 +6,8 @@ define(["ko", "models/auth"], function (ko, auth) {
         self.failed = ko.observable(false);
 
         self.activate = function () {
+            context.scrub("#/sign/in/magiclink");
+
             return auth.signInWithMagicLink(context.params.token).then(function (result) {
                 if (result.ok) {
                     context.replace("#/");

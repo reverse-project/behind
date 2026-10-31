@@ -95,7 +95,7 @@ public class SignInMagicLinkEndpointsTests
             _sessions,
             _time,
             NewHttpContext(),
-            token);
+            new SignInEndpoints.MagicLinkSignInRequest(token!));
 
     private static string TokenFor(Uuid secret, TokenNonce? nonce = null) =>
         MagicLinkCredential.Create(nonce ?? Guid.NewGuid(), secret, Jwt.SigningKey).Token;
@@ -307,7 +307,7 @@ public class SignInMagicLinkEndpointsTests
             _sessions,
             _time,
             httpContext,
-            null);
+            new SignInEndpoints.MagicLinkSignInRequest(string.Empty));
 
         Assert.Equal("no-store", httpContext.Response.Headers.CacheControl.ToString());
     }

@@ -45,6 +45,31 @@ public sealed class MagicLinkProtectionTests
     }
 
     [Fact]
+    public async Task RedeemRateLimit_RejectsAttemptsOverTheLimitWith429AndIsIndependentOfRequestLimit()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseSetting(WebHostDefaults.ServerUrlsKey, "http://127.0.0.1:0");
+        builder.Logging.ClearProviders();
+        builder.Services.AddMagicLinkRateLimiting(Settings(1) with { RedeemLimit = Some(2) });
+        await using var app = builder.Build();
+        app.UseRateLimiter();
+        app.MapPost("/redeem", () => Results.NoContent()).RequireRateLimiting(MagicLinkExtensions.RedeemRateLimitPolicy);
+        app.MapPost("/request", () => Results.NoContent()).RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy);
+        await app.StartAsync();
+        using var client = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+
+        var statuses = new List<HttpStatusCode>();
+        foreach (var _ in Enumerable.Range(0, 3))
+        {
+            statuses.Add((await client.PostAsync("/redeem", null)).StatusCode);
+        }
+
+        Assert.Equal([HttpStatusCode.NoContent, HttpStatusCode.NoContent, HttpStatusCode.TooManyRequests], statuses);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync("/request", null)).StatusCode);
+        await app.StopAsync();
+    }
+
+    [Fact]
     public async Task Cleanup_DeletesExpiredLinksUsingTheClock()
     {
         var commands = Substitute.For<IMagicLinkCommands>();

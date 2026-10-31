@@ -88,7 +88,9 @@ public sealed record MagicLinkSettings(
     Option<TimeSpan> LinkLifetime = default,
     Option<TimeSpan> RequestCooldown = default,
     Option<int> RequestLimit = default,
-    Option<TimeSpan> RequestWindow = default
+    Option<TimeSpan> RequestWindow = default,
+    Option<int> RedeemLimit = default,
+    Option<TimeSpan> RedeemWindow = default
 )
 {
     public static readonly TimeSpan DefaultRotationInterval = TimeSpan.FromDays(30);
@@ -97,6 +99,8 @@ public sealed record MagicLinkSettings(
     public static readonly TimeSpan DefaultRequestCooldown = TimeSpan.FromMinutes(1);
     public const int DefaultRequestLimit = 5;
     public static readonly TimeSpan DefaultRequestWindow = TimeSpan.FromMinutes(10);
+    public const int DefaultRedeemLimit = 10;
+    public static readonly TimeSpan DefaultRedeemWindow = TimeSpan.FromMinutes(10);
 }
 
 public sealed record DataProtectionSettings(

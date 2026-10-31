@@ -11,7 +11,6 @@ using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.MagicLinks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -31,6 +30,8 @@ public sealed class SignInEndpoints
     public sealed record MagicLinkRequest(
         [Required, DataType(DataType.EmailAddress)]
         string Email);
+
+    public sealed record MagicLinkSignInRequest([Required] string Token);
 
     [IgnoreETag]
     public static async Task<IResult> SignInPassword(UserManager<ApplicationUser> userManager,
@@ -88,7 +89,7 @@ public sealed class SignInEndpoints
     public static async Task<IResult> SignInMagicLink(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, IMagicLinkSettingsStore settingsStore,
         IMagicLinkCommands magicLinkCommands, ISessionCommands sessionCommands, TimeProvider timeProvider,
-        HttpContext httpContext, [FromQuery] string? token)
+        HttpContext httpContext, MagicLinkSignInRequest request)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
 
@@ -99,7 +100,7 @@ public sealed class SignInEndpoints
                 async settings =>
                 {
                     var now = timeProvider.GetUtcNow();
-                    var credential = MagicLinkCredential.TryParse(token)
+                    var credential = MagicLinkCredential.TryParse(request.Token)
                         .Where(c => c.IsSignedBy(settings.ValidSecrets(now), jwtSettings.SigningKey));
 
                     var userId = await credential.Match(

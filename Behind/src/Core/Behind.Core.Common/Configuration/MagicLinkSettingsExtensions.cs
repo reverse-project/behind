@@ -25,6 +25,12 @@ public static class MagicLinkSettingsExtensions
         public TimeSpan EffectiveRequestWindow =>
             settings.RequestWindow.GetOrElse(MagicLinkSettings.DefaultRequestWindow);
 
+        public int EffectiveRedeemLimit =>
+            settings.RedeemLimit.GetOrElse(MagicLinkSettings.DefaultRedeemLimit);
+
+        public TimeSpan EffectiveRedeemWindow =>
+            settings.RedeemWindow.GetOrElse(MagicLinkSettings.DefaultRedeemWindow);
+
         public bool IsRotationDue(DateTimeOffset now) =>
             settings.ActualSecret.CreatedAt
                 .Map(createdAt => now >= createdAt + settings.EffectiveRotationInterval)

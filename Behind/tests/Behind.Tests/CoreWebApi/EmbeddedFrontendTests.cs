@@ -94,4 +94,15 @@ public class EmbeddedFrontendTests
         Assert.True(minified.Length < original.Length);
         Assert.Contains("data-bind", minified);
     }
+
+    [Fact]
+    public void MagicLinkRedemption_PostsTokenInBodyAndScrubsItFromTheUrl()
+    {
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/magiclink.js"));
+
+        Assert.Contains("http.post(\"/sign/in/magiclink/redeem\"", auth);
+        Assert.DoesNotContain("magiclink?token=", auth);
+        Assert.Contains("context.scrub(", viewModel);
+    }
 }

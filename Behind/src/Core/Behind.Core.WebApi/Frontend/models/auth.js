@@ -28,15 +28,17 @@ define(["models/http", "models/session"], function (http, session) {
                 return Promise.resolve({ ok: false, message: "This sign in link is incomplete." });
             }
 
-            return http.get("/sign/in/magiclink?token=" + encodeURIComponent(token)).then(function (response) {
+            return http.post("/sign/in/magiclink/redeem", { token: token }).then(function (response) {
                 if (response.ok) {
                     session.start(response.data);
                     return success("Signed in.");
                 }
 
                 return failure(response, {
+                    400: "This sign in link is incomplete.",
                     401: "This sign in link is invalid or has expired.",
-                    404: "Magic link sign in is not available."
+                    404: "Magic link sign in is not available.",
+                    429: "Too many attempts. Please wait before trying again."
                 });
             });
         },

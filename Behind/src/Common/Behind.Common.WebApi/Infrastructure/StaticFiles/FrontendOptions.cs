@@ -14,6 +14,12 @@ public sealed record FrontendOptions
 
     public string CacheControl { get; init; } = "no-cache";
 
+    public string ContentSecurityPolicy { get; init; } =
+        "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self'; img-src 'self' data:; " +
+        "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+
+    public string ReferrerPolicy { get; init; } = "no-referrer";
+
     public IReadOnlyList<string> CompressedMimeTypes { get; init; } =
     [
         "text/html",

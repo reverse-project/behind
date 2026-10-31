@@ -14,6 +14,7 @@ public static class MagicLinkExtensions
     public const string SignInRoute = "/sign/in/magiclink";
     public const string TokenParameter = "token";
     public const string RequestRateLimitPolicy = "magic-link-request";
+    public const string RedeemRateLimitPolicy = "magic-link-redeem";
 
     private const string UnknownClient = "unknown";
 
@@ -49,16 +50,29 @@ public static class MagicLinkExtensions
             services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-                options.AddPolicy(
+                options.AddClientPolicy(
                     RequestRateLimitPolicy,
-                    context => RateLimitPartition.GetFixedWindowLimiter(
-                        context.Connection.RemoteIpAddress?.ToString() ?? UnknownClient,
-                        _ => new FixedWindowRateLimiterOptions
-                        {
-                            PermitLimit = settings.EffectiveRequestLimit,
-                            Window = settings.EffectiveRequestWindow,
-                            QueueLimit = 0
-                        }));
+                    settings.EffectiveRequestLimit,
+                    settings.EffectiveRequestWindow);
+                options.AddClientPolicy(
+                    RedeemRateLimitPolicy,
+                    settings.EffectiveRedeemLimit,
+                    settings.EffectiveRedeemWindow);
             });
+    }
+
+    extension(RateLimiterOptions options)
+    {
+        private RateLimiterOptions AddClientPolicy(string name, int limit, TimeSpan window) =>
+            options.AddPolicy(
+                name,
+                context => RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? UnknownClient,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = limit,
+                        Window = window,
+                        QueueLimit = 0
+                    }));
     }
 }

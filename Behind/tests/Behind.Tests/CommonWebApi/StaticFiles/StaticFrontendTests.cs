@@ -134,6 +134,38 @@ public class StaticFrontendTests
 
         Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
         Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
+        Assert.Equal("no-referrer", Assert.Single(response.Headers.GetValues("Referrer-Policy")));
+
+        var policy = Assert.Single(response.Headers.GetValues("Content-Security-Policy"));
+        Assert.Contains("default-src 'self'", policy);
+        Assert.Contains("object-src 'none'", policy);
+        Assert.Contains("frame-ancestors 'none'", policy);
+    }
+
+    [Fact]
+    public async Task Assets_UseConfiguredContentSecurityPolicy()
+    {
+        using var directory = CreateFrontend();
+        await using var host = await StaticFrontendHost.StartAsync(
+            directory.Provider,
+            new FrontendOptions { ContentSecurityPolicy = "default-src 'none'" });
+
+        var response = await host.Client.SendAsync(Get("/"));
+
+        Assert.Equal("default-src 'none'", Assert.Single(response.Headers.GetValues("Content-Security-Policy")));
+    }
+
+    [Fact]
+    public async Task Assets_UseConfiguredReferrerPolicy()
+    {
+        using var directory = CreateFrontend();
+        await using var host = await StaticFrontendHost.StartAsync(
+            directory.Provider,
+            new FrontendOptions { ReferrerPolicy = "same-origin" });
+
+        var response = await host.Client.SendAsync(Get("/"));
+
+        Assert.Equal("same-origin", Assert.Single(response.Headers.GetValues("Referrer-Policy")));
     }
 
     [Fact]

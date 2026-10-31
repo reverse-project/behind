@@ -63,13 +63,19 @@ public class MagicLinkSettingsTests
         {
             RequestCooldown = Some(TimeSpan.FromSeconds(30)),
             RequestLimit = Some(3),
-            RequestWindow = Some(TimeSpan.FromMinutes(1))
+            RequestWindow = Some(TimeSpan.FromMinutes(1)),
+            RedeemLimit = Some(7),
+            RedeemWindow = Some(TimeSpan.FromMinutes(2))
         };
 
         Assert.Equal(MagicLinkSettings.DefaultRequestCooldown, defaults.EffectiveRequestCooldown);
         Assert.Equal(MagicLinkSettings.DefaultRequestLimit, defaults.EffectiveRequestLimit);
         Assert.Equal(MagicLinkSettings.DefaultRequestWindow, defaults.EffectiveRequestWindow);
         Assert.Equal(TimeSpan.FromSeconds(30), configured.EffectiveRequestCooldown);
+        Assert.Equal(MagicLinkSettings.DefaultRedeemLimit, defaults.EffectiveRedeemLimit);
+        Assert.Equal(MagicLinkSettings.DefaultRedeemWindow, defaults.EffectiveRedeemWindow);
+        Assert.Equal(7, configured.EffectiveRedeemLimit);
+        Assert.Equal(TimeSpan.FromMinutes(2), configured.EffectiveRedeemWindow);
         Assert.Equal(3, configured.EffectiveRequestLimit);
         Assert.Equal(TimeSpan.FromMinutes(1), configured.EffectiveRequestWindow);
     }

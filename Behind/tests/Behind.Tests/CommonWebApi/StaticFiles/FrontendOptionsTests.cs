@@ -18,6 +18,8 @@ public class FrontendOptionsTests
         Assert.True(FrontendOptions.Default.Minify);
         Assert.True(FrontendOptions.Default.Compress);
         Assert.Equal("index.html", FrontendOptions.Default.DefaultFile);
+        Assert.Equal("no-referrer", FrontendOptions.Default.ReferrerPolicy);
+        Assert.DoesNotContain("'unsafe-inline'", FrontendOptions.Default.ContentSecurityPolicy);
     }
 
     [Fact]

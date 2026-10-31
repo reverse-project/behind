@@ -22,6 +22,9 @@ define(["jquery", "jquery-migrate", "ko", "sammy"], function ($, migrate, ko, Sa
         },
         replace: function (hash) {
             window.location.replace(hash);
+        },
+        scrub: function (hash) {
+            window.history.replaceState(null, "", window.location.pathname + window.location.search + hash);
         }
     };
 

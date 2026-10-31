@@ -265,10 +265,14 @@ public static class WebApiExtensions
                 .Produces(429)
                 .Produces(500);
 
-            application.MapGet("/sign/in/magiclink", SignInEndpoints.SignInMagicLink)
+            application.MapPost("/sign/in/magiclink/redeem", SignInEndpoints.SignInMagicLink)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkSignInRequest>>()
+                .RequireRateLimiting(MagicLinkExtensions.RedeemRateLimitPolicy)
                 .Produces(200)
+                .Produces(400)
                 .Produces(401)
                 .Produces(404)
+                .Produces(429)
                 .Produces(500);
 
             application.MapPost("/sign/out", SignOutEndpoints.SignOut)

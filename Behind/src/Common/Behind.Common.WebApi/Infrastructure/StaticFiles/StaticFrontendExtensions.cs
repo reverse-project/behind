@@ -9,6 +9,7 @@ namespace Behind.Common.WebApi.Infrastructure.StaticFiles;
 public static class StaticFrontendExtensions
 {
     private const string NoSniff = "nosniff";
+    private const string ReferrerPolicyHeader = "Referrer-Policy";
 
     extension(IServiceCollection services)
     {
@@ -50,6 +51,8 @@ public static class StaticFrontendExtensions
                     {
                         context.Context.Response.Headers.CacheControl = options.CacheControl;
                         context.Context.Response.Headers.XContentTypeOptions = NoSniff;
+                        context.Context.Response.Headers.Append(ReferrerPolicyHeader, options.ReferrerPolicy);
+                        context.Context.Response.Headers.ContentSecurityPolicy = options.ContentSecurityPolicy;
                     }
                 });
         }

@@ -4,7 +4,7 @@ namespace Behind.Tests.Helpers;
 
 public sealed class TempFrontendDirectory : IDisposable
 {
-    private readonly string _path = Directory.CreateTempSubdirectory("behind-frontend-").FullName;
+    public string Root { get; } = Directory.CreateTempSubdirectory("behind-frontend-").FullName;
 
     public PhysicalFileProvider Provider { get; }
 
@@ -15,14 +15,20 @@ public sealed class TempFrontendDirectory : IDisposable
             Write(name, content);
         }
 
-        Provider = new PhysicalFileProvider(_path);
+        Provider = new PhysicalFileProvider(Root);
     }
 
-    public void Write(string name, string content, DateTime? lastWriteUtc = null)
+    public void Write(string name, string content, DateTime? lastWriteUtc = null) =>
+        Write(name, File.WriteAllText, content, lastWriteUtc);
+
+    public void WriteBytes(string name, byte[] content, DateTime? lastWriteUtc = null) =>
+        Write(name, File.WriteAllBytes, content, lastWriteUtc);
+
+    private void Write<T>(string name, Action<string, T> write, T content, DateTime? lastWriteUtc)
     {
-        var fullPath = Path.Combine(_path, name);
+        var fullPath = Path.Combine(Root, name);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-        File.WriteAllText(fullPath, content);
+        write(fullPath, content);
 
         if (lastWriteUtc is { } stamp)
         {
@@ -33,6 +39,6 @@ public sealed class TempFrontendDirectory : IDisposable
     public void Dispose()
     {
         Provider.Dispose();
-        Directory.Delete(_path, recursive: true);
+        Directory.Delete(Root, recursive: true);
     }
 }

@@ -12,3 +12,4 @@ MUST follow Clean Code principles
 MUST create tests for all the new functionalities
 MUST NOT use shortened if statements or blocks (if, else, for, foreach, while, using) without braces, always use braces and put the body on its own lines, to avoid bugs like Apple's "goto fail"
 MUST use TypeDescriptor and JsonConverterFactory for JSON related serialization tasks like in Behind.Common.Converters and Behind.Core.WebApi.WebApiExtensions file
+MUST ask the user whether to fix the identified bugs or not (list them and use the ask_user tool), and do exactly as answered

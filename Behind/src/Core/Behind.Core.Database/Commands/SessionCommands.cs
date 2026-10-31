@@ -19,6 +19,32 @@ public sealed class SessionCommands(AbstractCoreContext context) : ISessionComma
         return entry.Property<Guid>("Id").CurrentValue;
     }
 
+    public async Task<bool> RenewAccessToken(
+        Guid sessionId,
+        TokenNonce expectedNonce,
+        AccessToken accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        var session = await context.Sessions
+            .Where(s => EF.Property<Guid>(s, "Id") == sessionId
+                        && EF.Property<Guid?>(s, "InvalidatedById") == null
+                        && EF.Property<DateTimeOffset?>(s, "InvalidatedAt") == null
+                        && s.AccessToken.Nonce == expectedNonce)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (session is null)
+        {
+            return false;
+        }
+
+        var token = context.Entry(session).ComplexProperty(s => s.AccessToken);
+        token.Property(t => t.Nonce).CurrentValue = accessToken.Nonce;
+        token.Property(t => t.IssuedAt).CurrentValue = accessToken.IssuedAt;
+        token.Property(t => t.ExpiresAt).CurrentValue = accessToken.ExpiresAt;
+
+        return await context.SaveChangesAsync(cancellationToken) > 0;
+    }
+
     public Task InvalidateSession(
         Guid sessionId,
         Guid invalidatedBy,

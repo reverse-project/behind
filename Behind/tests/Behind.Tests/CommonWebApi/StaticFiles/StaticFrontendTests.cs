@@ -182,6 +182,52 @@ public class StaticFrontendTests
         Assert.Equal(HttpStatusCode.NotModified, second.StatusCode);
     }
 
+    [Theory]
+    [InlineData("logo.png", "image/png")]
+    [InlineData("photo.jpg", "image/jpeg")]
+    [InlineData("anim.gif", "image/gif")]
+    [InlineData("pic.webp", "image/webp")]
+    [InlineData("pic.avif", "image/avif")]
+    [InlineData("favicon.ico", "image/x-icon")]
+    [InlineData("img/logo.svg", "image/svg+xml")]
+    public async Task Images_AreServedUnchangedWithImageContentType(string path, string contentType)
+    {
+        byte[] bytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0xFF, 0xFE, 0x00, 0x80];
+        using var directory = CreateFrontend();
+        directory.WriteBytes(path, bytes);
+        await using var host = await StaticFrontendHost.StartAsync(directory.Provider);
+
+        var response = await host.Client.SendAsync(Get($"/{path}"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(contentType, response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(bytes, await response.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public async Task RasterImages_AreNotCompressed()
+    {
+        using var directory = CreateFrontend();
+        directory.WriteBytes("logo.png", [1, 2, 3]);
+        await using var host = await StaticFrontendHost.StartAsync(directory.Provider);
+
+        var response = await host.Client.SendAsync(Get("/logo.png", "br, gzip"));
+
+        Assert.Empty(response.Content.Headers.ContentEncoding);
+    }
+
+    [Fact]
+    public async Task Images_CarrySecurityHeaders()
+    {
+        using var directory = CreateFrontend();
+        directory.WriteBytes("logo.png", [1, 2, 3]);
+        await using var host = await StaticFrontendHost.StartAsync(directory.Provider);
+
+        var response = await host.Client.SendAsync(Get("/logo.png"));
+
+        Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
+    }
+
     [Fact]
     public async Task UnknownPath_Returns404()
     {

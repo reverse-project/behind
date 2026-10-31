@@ -49,6 +49,8 @@ Configure through the `Frontend:StaticFiles` section (for example in `frontend.j
 
 Files named `*.min.*` are served as-is. Third-party libraries live in `Frontend/libraries`.
 
+Images (png, jpg, gif, webp, avif, ico, svg) are served unchanged with the correct content type and the same cache/security headers; only SVG is compressed. If a `wwwroot` directory exists in the content root, its files are served in addition to the embedded frontend and take precedence over embedded files with the same path.
+
 ### Startup Example
 
 ```csharp

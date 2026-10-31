@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Behind.Common.Configuration;
 using Behind.Common.Converters;
 using Behind.Common.WebApi;
@@ -32,7 +31,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Behind.Core.WebApi;
 
@@ -146,8 +144,6 @@ public static class WebApiExtensions
                 none: () => builder,
                 jwtSettings =>
                 {
-                    var signingKey = Encoding.UTF8.GetBytes(jwtSettings.SigningKey);
-
                     builder.Services.AddAuthentication(options =>
                         {
                             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -155,16 +151,7 @@ public static class WebApiExtensions
                         })
                         .AddJwtBearer(options =>
                         {
-                            options.TokenValidationParameters = new TokenValidationParameters
-                            {
-                                ValidateIssuer = true,
-                                ValidateAudience = true,
-                                ValidateLifetime = true,
-                                ValidateIssuerSigningKey = true,
-                                ValidIssuer = jwtSettings.Issuer,
-                                ValidAudience = jwtSettings.Audience,
-                                IssuerSigningKey = new SymmetricSecurityKey(signingKey)
-                            };
+                            options.TokenValidationParameters = jwtSettings.ValidationParameters;
                         });
 
                     builder.Services.AddAuthorization();
@@ -225,7 +212,8 @@ public static class WebApiExtensions
         {
             application.UseCorrelationId();
             application.UseExceptionHandler(_ => { });
-            application.UseStaticFrontend(EmbeddedFrontend.CreateFileProvider());
+            application.UseStaticFrontend(
+                EmbeddedFrontend.CreateFileProvider().WithWebRoot(application.Environment.WebRootPath));
             application.UseETag();
             application.MapOpenApi();
 
@@ -241,6 +229,12 @@ public static class WebApiExtensions
             application.UseSessionValidation();
             application.UseAuthorization();
             application.UseDeletedRecordsVisibility();
+
+            application.MapGet("/session", SessionEndpoints.Get)
+                .Produces<SessionResponse>()
+                .Produces(401)
+                .Produces(409)
+                .Produces(500);
 
             application.MapPost("/sign/up/password", SignUpEndpoints.SignUpPassword)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignUpEndpoints.PasswordRequest>>()

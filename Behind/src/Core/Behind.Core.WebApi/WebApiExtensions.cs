@@ -174,6 +174,8 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
             builder.Services.AddScoped<IUserCommands, UserCommands>();
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
+            builder.Services.AddScoped<IAccessQueries, AccessQueries>();
+            builder.Services.AddScoped<IAccessCommands, AccessCommands>();
             builder.Services.AddScoped<ISessionQueries, SessionQueries>();
             builder.Services.AddScoped<ISessionCommands, SessionCommands>();
             builder.Services.AddScoped<IUserManagementQueries, UserManagementQueries>();
@@ -330,6 +332,61 @@ public static class WebApiExtensions
                 .Produces(403)
                 .Produces(404)
                 .Produces(409)
+                .Produces(500);
+
+            application.MapGet("/users/{id:guid}/access", UserAccessEndpoints.Get)
+                .RequireAuthorization(userManagement)
+                .Produces<UserAccessResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPut("/users/{id:guid}/access", UserAccessEndpoints.Set)
+                .RequireAuthorization(userManagement)
+                .AddEndpointFilter<DataAnnotationValidationFilter<UserAccessEndpoints.UserAccessRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            var roleManagement = GrantName.Of(GrantArea.Role, GrantAction.Manage);
+
+            application.MapGet("/roles", RoleManagementEndpoints.Get)
+                .RequireAuthorization(roleManagement)
+                .Produces<RoleListResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
+            application.MapPost("/roles", RoleManagementEndpoints.Create)
+                .RequireAuthorization(roleManagement)
+                .AddEndpointFilter<DataAnnotationValidationFilter<RoleManagementEndpoints.CreateRoleRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(409)
+                .Produces(500);
+
+            application.MapPut("/roles/{id:guid}/access", RoleManagementEndpoints.SetAccess)
+                .RequireAuthorization(roleManagement)
+                .AddEndpointFilter<DataAnnotationValidationFilter<RoleManagementEndpoints.AccessRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/roles/{id:guid}/delete", RoleManagementEndpoints.Delete)
+                .RequireAuthorization(GrantName.Of(GrantArea.Role, GrantAction.Delete))
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
                 .Produces(500);
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)

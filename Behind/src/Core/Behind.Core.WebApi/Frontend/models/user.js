@@ -8,6 +8,10 @@ define(function () {
         },
 
         grants: function (user) {
+            if (Array.isArray(user.grants)) {
+                return user.grants;
+            }
+
             var names = [];
 
             (user.roles || []).forEach(function (role) {

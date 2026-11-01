@@ -51,7 +51,7 @@ public class UserManagementFrontendTests
         var auth = Read("models/auth.js");
 
         Assert.Contains("session.hasGrant(\"User.Manage\")", header);
-        Assert.Contains("visible: canManageUsers", Read("index.html"));
+        Assert.Contains("visible: canAdminister", Read("index.html"));
         Assert.Contains("session.grants() === null", header);
         Assert.Contains("hasGrant: function", session);
         Assert.Contains("session.identify(user.label(response.data.user), user.grants(response.data.user))", auth);

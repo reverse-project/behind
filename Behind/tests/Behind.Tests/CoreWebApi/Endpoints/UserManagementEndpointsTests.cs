@@ -17,7 +17,7 @@ public class UserManagementEndpointsTests
     private static readonly Guid TargetId = Guid.NewGuid();
 
     private readonly ISessionQueries _sessions = Substitute.For<ISessionQueries>();
-    private readonly IRoleQueries _roles = Substitute.For<IRoleQueries>();
+    private readonly IAccessQueries _access = Substitute.For<IAccessQueries>();
     private readonly IUserManagementQueries _users = Substitute.For<IUserManagementQueries>();
     private readonly IRoleCommands _roleCommands = Substitute.For<IRoleCommands>();
     private readonly ISessionCommands _sessionCommands = Substitute.For<ISessionCommands>();
@@ -27,7 +27,7 @@ public class UserManagementEndpointsTests
 
     public UserManagementEndpointsTests()
     {
-        _gate = new UserManagementGate(_sessions, _roles, _users, new FixedTimeProvider(Now));
+        _gate = new UserManagementGate(_sessions, _access, _users, new FixedTimeProvider(Now));
         SignedInAs(ActorId, developer: false);
     }
 
@@ -57,10 +57,13 @@ public class UserManagementEndpointsTests
                     "test-agent"),
                 userId)));
 
-        _roles.GetRolesByUserId(userId, Arg.Any<CancellationToken>())
-            .Returns(developer
-                ? [(Role)BuiltInAccess.Developers.Role with { Grants = Some<IEnumerable<Grant>>(BuiltInAccess.Developers.Grants.Select(g => g.Grant).ToList()) }]
-                : [(Role)BuiltInAccess.Administrators.Role]);
+        _access.GetUserAccess(userId, Arg.Any<CancellationToken>())
+            .Returns(new UserAccess(
+                developer
+                    ? [(Role)BuiltInAccess.Developers.Role with { Grants = Some<IEnumerable<Grant>>(BuiltInAccess.Developers.Grants.Select(g => g.Grant).ToList()) }]
+                    : [(Role)BuiltInAccess.Administrators.Role],
+                [],
+                []));
     }
 
     private void DeletedTargetIs(IUserManagementQueries.ManagedUser? target) =>

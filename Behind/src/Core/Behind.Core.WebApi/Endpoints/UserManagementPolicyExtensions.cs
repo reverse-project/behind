@@ -4,7 +4,7 @@ using Behind.Core.Domain;
 
 namespace Behind.Core.WebApi.Endpoints;
 
-public sealed record UserManagementActor(Guid UserId, bool IsDeveloper, bool CanDeleteUsers);
+public sealed record UserManagementActor(Guid UserId, bool IsDeveloper, bool CanDeleteUsers, UserAccess Access);
 
 public static class UserManagementPolicyExtensions
 {

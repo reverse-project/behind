@@ -43,7 +43,9 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AbstractCoreContext).Assembly);
         UserConfiguration.ApplyHumanUser(modelBuilder);
         UserConfiguration.ApplyUserRoles(modelBuilder);
+        UserConfiguration.ApplyUserAccess(modelBuilder);
         RoleConfiguration.ApplyRoleGrants(modelBuilder);
+        RoleConfiguration.ApplyRoleRestrictions(modelBuilder);
         modelBuilder.ApplySoftDelete(
             this,
             DeletionRecorded,
@@ -51,6 +53,7 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
             typeof(Email),
             typeof(Role),
             typeof(Grant),
+            typeof(Restriction),
             typeof(Password),
             typeof(WallOfShameEntry));
     }

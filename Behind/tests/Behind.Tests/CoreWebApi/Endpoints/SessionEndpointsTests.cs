@@ -42,10 +42,10 @@ public class SessionEndpointsTests
         return queries;
     }
 
-    private static IRoleQueries Roles(params Role[] roles)
+    private static IAccessQueries Roles(params Role[] roles)
     {
-        var queries = Substitute.For<IRoleQueries>();
-        queries.GetRolesByUserId(UserId, Arg.Any<CancellationToken>()).Returns(roles);
+        var queries = Substitute.For<IAccessQueries>();
+        queries.GetUserAccess(UserId, Arg.Any<CancellationToken>()).Returns(new UserAccess(roles, [], []));
         return queries;
     }
 
@@ -92,7 +92,7 @@ public class SessionEndpointsTests
         HttpContext context,
         ISessionQueries queries,
         ISessionCommands? commands = null,
-        IRoleQueries? roles = null,
+        IAccessQueries? roles = null,
         Option<JwtSettings>? jwt = null,
         TimeProvider? time = null) =>
         SessionEndpoints.Get(
@@ -105,6 +105,25 @@ public class SessionEndpointsTests
 
     private static SessionResponse BodyOf(IResult result) =>
         Assert.IsType<JsonHttpResult<SessionResponse>>(result).Value!;
+
+    [Fact]
+    public async Task Get_ReturnsCalculatedGrantsAfterRestrictions()
+    {
+        var session = NewSession(accessAge: TimeSpan.FromMinutes(10));
+        var queries = Substitute.For<IAccessQueries>();
+        queries.GetUserAccess(UserId, Arg.Any<CancellationToken>()).Returns(new UserAccess(
+            [new UserRole("admin", Some<IEnumerable<Grant>>([new Grant("read"), new Grant("write")]))],
+            ["delete"],
+            ["write"]));
+
+        var body = BodyOf(await Get(
+            AuthenticatedContext(session.AccessToken.Nonce),
+            QueriesFor(session),
+            Commands(),
+            queries));
+
+        Assert.Equal(["delete", "read"], body.User.Grants);
+    }
 
     [Fact]
     public async Task Get_ValidAccessToken_ReturnsSessionUserRolesAndLength()
@@ -129,6 +148,7 @@ public class SessionEndpointsTests
         Assert.Equal(["admin", "viewer"], body.User.Roles.Select(r => r.Name));
         Assert.Equal(["read", "write"], body.User.Roles[0].Grants);
         Assert.Empty(body.User.Roles[1].Grants);
+        Assert.Equal(["read", "write"], body.User.Grants);
         Assert.Equal(TimeSpan.FromHours(2), body.Session.Length);
         Assert.Equal(session.RefreshToken.IssuedAt, body.Session.StartedAt);
         Assert.Equal(TimeSpan.FromMinutes(20), body.Session.AccessTokenRemaining);

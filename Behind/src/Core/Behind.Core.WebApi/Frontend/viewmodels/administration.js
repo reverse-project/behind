@@ -3,8 +3,13 @@ define(["ko", "models/session"], function (ko, session) {
         return session.hasGrant("User.Manage");
     };
 
+    var canManageRoles = function () {
+        return session.hasGrant("Role.Manage");
+    };
+
     var pages = [
-        { name: "Users", icon: "fa-users", href: "#/users", allowed: canManageUsers }
+        { name: "Users", icon: "fa-users", href: "#/users", allowed: canManageUsers },
+        { name: "Roles", icon: "fa-user-shield", href: "#/roles", allowed: canManageRoles }
     ];
 
     return function AdministrationViewModel() {

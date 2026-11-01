@@ -26,16 +26,36 @@
                     <span class="badge text-bg-info" data-bind="text: $data"></span>
                 </div>
                 <p class="text-danger mb-2" data-bind="visible: isBanned">Ban message: <span class="text-break" data-bind="text: banReason"></span></p>
-                <div class="d-flex flex-wrap gap-2" data-bind="visible: hasActions">
+                <div class="d-flex flex-wrap gap-2">
                     <div class="d-flex flex-wrap gap-2" data-bind="foreach: roleActions">
                         <button type="button" class="btn btn-sm" data-bind="css: granted ? 'btn-outline-warning' : 'btn-outline-primary', text: label, enable: !$root.busy(), visible: allowed, click: run"></button>
                     </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="enable: !$root.busy(), click: access.toggle, text: access.isOpen() ? 'Hide access' : 'Access'"></button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="visible: canModerate, enable: !$root.busy(), click: signOut">Sign out everywhere</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canModerate && !isBanned && !banning(), enable: !$root.busy(), click: startBan">Ban</button>
                     <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: canModerate && isBanned, enable: !$root.busy(), click: unban">Unban</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, enable: !$root.busy(), click: remove">Delete</button>
                     <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: canManageDeleted, enable: !$root.busy(), click: restore">Restore</button>
                     <button type="button" class="btn btn-sm btn-danger" data-bind="visible: canManageDeleted, enable: !$root.busy(), click: hardDelete">Delete permanently</button>
+                </div>
+                <div class="mt-3" data-bind="visible: access.isOpen, with: access">
+                    <p class="text-body-secondary" data-bind="visible: isLoading">Loading access...</p>
+                    <div class="alert alert-warning" role="alert" data-bind="visible: hasMessage, text: message"></div>
+                    <h2 class="h6">Calculated grants</h2>
+                    <p class="small text-body-secondary mb-2">Role grants and your selections below, minus every restriction. A restriction always wins over a grant.</p>
+                    <p class="small text-body-secondary" data-bind="visible: !hasCalculatedGrants()">No grants.</p>
+                    <div class="d-flex flex-wrap gap-1 mb-3" data-bind="foreach: calculatedGrants">
+                        <span class="badge text-bg-success" data-bind="text: $data"></span>
+                    </div>
+                    <h2 class="h6">Roles</h2>
+                    <div class="d-flex flex-wrap gap-3 mb-3" data-bind="foreach: availableRoles">
+                        <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="value: id, checked: $parent.selectedRoleIds, enable: $parent.canEdit() && !isRequired && !$root.busy()"> <span data-bind="text: name"></span></label>
+                    </div>
+                    <h2 class="h6">Direct grants and restrictions</h2>
+                    <access-editor params="access: editor, enabled: canEdit() && !$root.busy()"></access-editor>
+                    <div class="d-flex gap-2 mt-3" data-bind="visible: canEdit">
+                        <button type="button" class="btn btn-sm btn-primary" data-bind="enable: !$root.busy(), click: save">Save access</button>
+                    </div>
                 </div>
                 <form class="mt-3" data-bind="visible: banning, submit: confirmBan">
                     <label class="form-label">Ban message shown on the wall of shame

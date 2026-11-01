@@ -146,7 +146,7 @@ public class EmbeddedFrontendTests
         Assert.Contains("<li class=\"nav-item dropdown\" data-bind=\"visible: isSignedIn\">", index);
         Assert.Contains("data-bs-toggle=\"dropdown\" aria-expanded=\"false\" data-bind=\"text: label\"", index);
         Assert.All(
-            new[] { "href=\"#/profile\"", "href=\"#/session\"", "href=\"#/sessions\"", "<li data-bind=\"visible: canManageUsers\"><a class=\"dropdown-item\" href=\"#/administration\">Administration</a></li>", "click: signOut" },
+            new[] { "href=\"#/profile\"", "href=\"#/session\"", "href=\"#/sessions\"", "<li data-bind=\"visible: canAdminister\"><a class=\"dropdown-item\" href=\"#/administration\">Administration</a></li>", "click: signOut" },
             item => Assert.Contains(item, menu));
         Assert.Contains("<a class=\"nav-link\" href=\"#/wall-of-shame\">Wall of shame</a>", index);
         Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-in\">", index);
@@ -174,12 +174,12 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void AdministrationViewModel_ListsOnlyTheUsersPageForUserManagers()
+    public void AdministrationViewModel_ListsTheUsersAndRolesPagesForTheirManagers()
     {
         var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
-        Assert.Equal(1, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Equal(2, viewModel.Split("icon: \"fa-").Length - 1);
         Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);
         Assert.Contains("hasGrant(\"User.Manage\")", viewModel);
         Assert.Contains("visible: isEmpty", view);

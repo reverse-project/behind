@@ -1,0 +1,18 @@
+<div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+        <thead>
+            <tr>
+                <th scope="col">Grant</th>
+                <th scope="col" class="text-end">Access</th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: rows">
+            <tr data-bind="css: { 'table-success': state() === 'grant', 'table-danger': state() === 'restrict' }">
+                <td class="text-break" data-bind="text: name"></td>
+                <td class="text-end">
+                    <select class="form-select form-select-sm w-auto ms-auto" data-bind="value: state, options: $parent.choices, optionsText: 'label', optionsValue: 'value', enable: $parent.enabled(), attr: { 'aria-label': 'Access for ' + name }"></select>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

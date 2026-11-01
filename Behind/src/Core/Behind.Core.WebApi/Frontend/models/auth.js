@@ -31,6 +31,29 @@ define(["models/http", "models/session", "models/user"], function (http, session
         });
     };
 
+    var roleActionFailures = {
+        400: "The role name or access selection is not valid.",
+        401: "Your session has expired. Please sign in again.",
+        403: "You are not allowed to change this role.",
+        404: "This role no longer exists.",
+        409: "A role with this name already exists."
+    };
+
+    var userAccessFailures = {
+        400: "The access selection is not valid. Every user keeps the Users role.",
+        401: "Your session has expired. Please sign in again.",
+        403: "You are not allowed to change this user's access.",
+        404: "This user no longer exists."
+    };
+
+    var loaded = function (response, failures) {
+        return response.ok ? { ok: true, message: "", data: response.data } : failure(response, failures);
+    };
+
+    var saved = function (response, done, failures) {
+        return response.ok ? success(done) : failure(response, failures);
+    };
+
     return {
         signIn: function (email, password) {
             return http.post("/sign/in/password", { email: email, password: password }).then(function (response) {
@@ -169,6 +192,45 @@ define(["models/http", "models/session", "models/user"], function (http, session
 
         deelevateUser: function (userId, role) {
             return userAction(userId + "/deelevate/" + role, undefined, "The role was removed.");
+        },
+
+        loadUserAccess: function (userId) {
+            return http.get("/users/" + userId + "/access").then(function (response) {
+                return loaded(response, userAccessFailures);
+            });
+        },
+
+        saveUserAccess: function (userId, access) {
+            return http.put("/users/" + userId + "/access", access).then(function (response) {
+                return saved(response, "The access was saved.", userAccessFailures);
+            });
+        },
+
+        loadRoles: function () {
+            return http.get("/roles").then(function (response) {
+                return loaded(response, {
+                    401: "Your session has expired. Please sign in again.",
+                    403: "You need role management access to see roles."
+                });
+            });
+        },
+
+        createRole: function (name) {
+            return http.post("/roles", { name: name }).then(function (response) {
+                return saved(response, "The role was created.", roleActionFailures);
+            });
+        },
+
+        saveRoleAccess: function (roleId, access) {
+            return http.put("/roles/" + roleId + "/access", access).then(function (response) {
+                return saved(response, "The role was saved.", roleActionFailures);
+            });
+        },
+
+        deleteRole: function (roleId) {
+            return http.post("/roles/" + roleId + "/delete").then(function (response) {
+                return saved(response, "The role was deleted.", roleActionFailures);
+            });
         },
 
         signOutUser: function (userId) {

@@ -9,7 +9,7 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class UserManagementGate(
     ISessionQueries sessionQueries,
-    IRoleQueries roleQueries,
+    IAccessQueries accessQueries,
     IUserManagementQueries userQueries,
     TimeProvider timeProvider)
 {
@@ -21,13 +21,25 @@ public sealed class UserManagementGate(
             () => Task.FromResult<Option<UserManagementActor>>(None),
             async session =>
             {
-                var roles = await roleQueries.GetRolesByUserId(session.UserId, httpContext.RequestAborted);
+                var access = await accessQueries.GetUserAccess(session.UserId, httpContext.RequestAborted);
 
                 return Some(new UserManagementActor(
                     session.UserId,
-                    roles.Any(role => role.Holds(ManagedRole.Developer.RequiredGrant)),
-                    roles.Any(role => role.Holds(GrantName.Of(GrantArea.User, GrantAction.Delete)))));
+                    access.IsDeveloper,
+                    access.Holds(GrantName.Of(GrantArea.User, GrantAction.Delete)),
+                    access));
             });
+    }
+
+    public async Task<IResult> RunAs(
+        HttpContext httpContext,
+        Func<UserManagementActor, Task<IResult>> action)
+    {
+        var actor = await FindActor(httpContext);
+
+        return await actor.Match(
+            () => Task.FromResult<IResult>(Results.Unauthorized()),
+            action);
     }
 
     public Task<IResult> Run(

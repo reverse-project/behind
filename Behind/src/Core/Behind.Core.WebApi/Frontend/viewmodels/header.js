@@ -8,6 +8,10 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
             return session.hasGrant("User.Manage");
         });
 
+        self.canAdminister = ko.pureComputed(function () {
+            return self.canManageUsers() || session.hasGrant("Role.Manage");
+        });
+
         self.label = ko.pureComputed(function () {
             return session.displayName() || "Account";
         });

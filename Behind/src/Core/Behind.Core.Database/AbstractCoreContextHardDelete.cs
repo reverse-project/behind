@@ -8,6 +8,7 @@ public partial class AbstractCoreContext :
     IHardDeleteRepository<Email, Guid>,
     IHardDeleteRepository<UserRole, Guid>,
     IHardDeleteRepository<Grant, Guid>,
+    IHardDeleteRepository<Restriction, Guid>,
     IHardDeleteRepository<Password, Guid>,
     IHardDeleteRepository<WallOfShameEntry, Guid>
 {
@@ -34,6 +35,12 @@ public partial class AbstractCoreContext :
 
     Task IHardDeleteRepository<Grant, Guid>.HardDeleteAsync(Guid key, CancellationToken cancellationToken) =>
         this.HardDeleteByKeyAsync<Grant>([key], cancellationToken);
+
+    void IHardDeleteRepository<Restriction, Guid>.HardDelete(Restriction aggregate) =>
+        this.HardDelete(aggregate);
+
+    Task IHardDeleteRepository<Restriction, Guid>.HardDeleteAsync(Guid key, CancellationToken cancellationToken) =>
+        this.HardDeleteByKeyAsync<Restriction>([key], cancellationToken);
 
     void IHardDeleteRepository<Password, Guid>.HardDelete(Password aggregate) =>
         this.HardDelete(aggregate);

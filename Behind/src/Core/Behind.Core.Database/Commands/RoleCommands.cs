@@ -1,4 +1,7 @@
+using Behind.Common;
 using Behind.Core.Domain;
+using Microsoft.EntityFrameworkCore;
+using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Database.Commands;
 
@@ -10,6 +13,31 @@ public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
 
         await context.Set<Role>().AddAsync(role, cancellationToken);
         context.Entry(role).Property<Guid>("Id").CurrentValue = id;
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<Option<Guid>> Create(string name, CancellationToken cancellationToken = default)
+    {
+        var exists = await context.Roles.AnyAsync(
+            role => role.Name.ToLower() == name.ToLower(),
+            cancellationToken);
+
+        if (exists)
+        {
+            return None;
+        }
+
+        var role = new UserRole(name);
+
+        await context.Roles.AddAsync(role, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return Some(context.GetKey(role));
+    }
+
+    public async Task Delete(Guid roleId, CancellationToken cancellationToken = default)
+    {
+        await context.GetRepository<UserRole, Guid>().DeleteAsync(roleId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }
 

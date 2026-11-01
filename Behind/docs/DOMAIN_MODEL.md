@@ -285,6 +285,28 @@ public static class DomainGrants
 }
 ```
 
+### 3a. Restriction and calculated grants
+
+```csharp
+public sealed record Restriction(string Name);
+
+public sealed record UserAccess(
+    IReadOnlyList<Role> Roles,
+    IReadOnlyList<string> Grants,
+    IReadOnlyList<string> Restrictions);
+```
+
+A `Restriction` names a grant that must be taken away. Roles carry grants and restrictions, and users carry
+direct grants and restrictions. A user's calculated grants are every role grant plus every direct grant, minus
+every role restriction and every direct restriction, so a restriction always wins over a grant.
+
+Built-in role grants are seeded once when the role (or the built-in grant) is first created, so edits made
+through the Roles page persist across restarts. Editors can only raise a role or user to grants they hold
+themselves, unless they hold `RawDatabase.Manage`.
+
+Endpoints: `GET/POST /roles`, `PUT /roles/{id}/access`, `POST /roles/{id}/delete`,
+`GET/PUT /users/{id}/access`. `GET /session` returns the calculated grants in `user.grants`.
+
 ### 4. Session-Related Value Objects
 
 ```csharp

@@ -23,6 +23,45 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             builder.HasIndex(h => h.DisplayName);
         });
 
+    public static void ApplyUserAccess(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity("UserGrants", ug =>
+        {
+            ug.Property<Guid>("UserId");
+            ug.Property<Guid>("GrantId");
+
+            ug.HasKey("UserId", "GrantId");
+
+            ug.HasOne(typeof(HumanUser))
+                .WithMany()
+                .HasForeignKey("UserId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            ug.HasOne(typeof(Grant))
+                .WithMany()
+                .HasForeignKey("GrantId")
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity("UserRestrictions", ur =>
+        {
+            ur.Property<Guid>("UserId");
+            ur.Property<Guid>("RestrictionId");
+
+            ur.HasKey("UserId", "RestrictionId");
+
+            ur.HasOne(typeof(HumanUser))
+                .WithMany()
+                .HasForeignKey("UserId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            ur.HasOne(typeof(Restriction))
+                .WithMany()
+                .HasForeignKey("RestrictionId")
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
     public static void ApplyUserRoles(ModelBuilder modelBuilder) =>
         modelBuilder.Entity("UserRoles", ur =>
         {

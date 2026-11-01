@@ -16,6 +16,7 @@ public sealed class CoreContextSqlite(DbContextOptions<CoreContextSqlite> option
         modelBuilder.Entity<Email>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<User>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<Grant>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
+        modelBuilder.Entity<Restriction>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<WallOfShameEntry>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<Role>().Property("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<UserAgent>().Property<Guid>("Id").HasValueGenerator<Uuid7ValueGenerator>();

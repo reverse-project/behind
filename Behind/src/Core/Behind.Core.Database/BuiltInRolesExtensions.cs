@@ -9,18 +9,26 @@ public static class BuiltInRolesExtensions
     {
         public async Task EnsureBuiltInRolesAsync(CancellationToken cancellationToken = default)
         {
+            var addedGrants = new HashSet<Guid>();
+
             foreach (var grant in BuiltInAccess.Grants)
             {
-                await context.EnsureBuiltInGrantAsync(grant, cancellationToken);
+                if (await context.EnsureBuiltInGrantAsync(grant, cancellationToken))
+                {
+                    addedGrants.Add(grant.Id);
+                }
+            }
+
+            foreach (var restriction in BuiltInAccess.Restrictions)
+            {
+                await context.EnsureBuiltInRestrictionAsync(restriction, cancellationToken);
             }
 
             foreach (var role in BuiltInAccess.Roles)
             {
-                await context.EnsureBuiltInRoleAsync(role, cancellationToken);
+                var created = await context.EnsureBuiltInRoleAsync(role, cancellationToken);
 
-                await context.RemoveStaleRoleGrantsAsync(role, cancellationToken);
-
-                foreach (var grant in role.Grants)
+                foreach (var grant in role.Grants.Where(grant => created || addedGrants.Contains(grant.Id)))
                 {
                     await context.EnsureRoleGrantAsync(role.Id, grant.Id, cancellationToken);
                 }
@@ -86,7 +94,7 @@ public static class BuiltInRolesExtensions
             }
         }
 
-        private async Task EnsureBuiltInGrantAsync(BuiltInGrant builtIn, CancellationToken cancellationToken)
+        private async Task<bool> EnsureBuiltInGrantAsync(BuiltInGrant builtIn, CancellationToken cancellationToken)
         {
             var exists = await context.Grants
                 .IgnoreQueryFilters()
@@ -94,7 +102,7 @@ public static class BuiltInRolesExtensions
 
             if (exists)
             {
-                return;
+                return false;
             }
 
             var grant = new Grant(builtIn.Grant.Name);
@@ -103,9 +111,30 @@ public static class BuiltInRolesExtensions
             context.Entry(grant).Property<Guid>("Id").CurrentValue = builtIn.Id;
 
             await context.SaveChangesAsync(cancellationToken);
+
+            return true;
         }
 
-        private async Task EnsureBuiltInRoleAsync(BuiltInRole builtIn, CancellationToken cancellationToken)
+        private async Task EnsureBuiltInRestrictionAsync(BuiltInRestriction builtIn, CancellationToken cancellationToken)
+        {
+            var exists = await context.Restrictions
+                .IgnoreQueryFilters()
+                .AnyAsync(restriction => EF.Property<Guid>(restriction, "Id") == builtIn.Id, cancellationToken);
+
+            if (exists)
+            {
+                return;
+            }
+
+            var restriction = new Restriction(builtIn.Restriction.Name);
+
+            await context.Restrictions.AddAsync(restriction, cancellationToken);
+            context.Entry(restriction).Property<Guid>("Id").CurrentValue = builtIn.Id;
+
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        private async Task<bool> EnsureBuiltInRoleAsync(BuiltInRole builtIn, CancellationToken cancellationToken)
         {
             var exists = await context.Roles
                 .IgnoreQueryFilters()
@@ -113,7 +142,7 @@ public static class BuiltInRolesExtensions
 
             if (exists)
             {
-                return;
+                return false;
             }
 
             var role = new UserRole(builtIn.Role.Name);
@@ -122,25 +151,8 @@ public static class BuiltInRolesExtensions
             context.Entry(role).Property<Guid>("Id").CurrentValue = builtIn.Id;
 
             await context.SaveChangesAsync(cancellationToken);
-        }
 
-        private async Task RemoveStaleRoleGrantsAsync(BuiltInRole role, CancellationToken cancellationToken)
-        {
-            var roleGrants = context.Set<Dictionary<string, object>>("RoleGrants");
-            var expected = role.Grants.Select(grant => grant.Id).ToList();
-
-            var stale = await roleGrants
-                .Where(roleGrant => EF.Property<Guid>(roleGrant, "RoleId") == role.Id
-                                    && !expected.Contains(EF.Property<Guid>(roleGrant, "GrantId")))
-                .ToListAsync(cancellationToken);
-
-            if (stale.Count == 0)
-            {
-                return;
-            }
-
-            roleGrants.RemoveRange(stale);
-            await context.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
         private async Task EnsureRoleGrantAsync(Guid roleId, Guid grantId, CancellationToken cancellationToken)

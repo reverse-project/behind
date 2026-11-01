@@ -72,23 +72,60 @@ public sealed class BuiltInRolesTests : IDisposable
     }
 
     [Fact]
-    public async Task EnsureBuiltInRoles_RemovesGrantsThatTheBuiltInRoleNoLongerHas()
+    public async Task EnsureBuiltInRoles_KeepsGrantEditsMadeToABuiltInRole()
     {
         await using var ctx = _factory.CreateContext();
         await ctx.EnsureBuiltInRolesAsync();
         var configurationRead = BuiltInAccess.Grants.Single(grant => grant.Grant.Name == "Configuration.Read");
-        await ctx.Set<Dictionary<string, object>>("RoleGrants").AddAsync(new Dictionary<string, object>
+        var userRead = BuiltInAccess.Grants.Single(grant => grant.Grant.Name == "User.Read");
+        var roleGrants = ctx.Set<Dictionary<string, object>>("RoleGrants");
+        await roleGrants.AddAsync(new Dictionary<string, object>
         {
             ["RoleId"] = BuiltInAccess.Users.Id,
             ["GrantId"] = configurationRead.Id
         });
+        roleGrants.RemoveRange(await roleGrants
+            .Where(roleGrant => EF.Property<Guid>(roleGrant, "RoleId") == BuiltInAccess.Users.Id
+                                && EF.Property<Guid>(roleGrant, "GrantId") == userRead.Id)
+            .ToListAsync());
         await ctx.SaveChangesAsync();
 
         await ctx.EnsureBuiltInRolesAsync();
 
         var users = Found(await new RoleQueries(ctx).GetRoleByName(DomainConstants.UsersRole));
-        Assert.DoesNotContain("Configuration.Read", GrantNames(users.Role));
+        Assert.Contains("Configuration.Read", GrantNames(users.Role));
+        Assert.DoesNotContain("User.Read", GrantNames(users.Role));
+    }
+
+    [Fact]
+    public async Task EnsureBuiltInRoles_GivesANewlyAddedBuiltInGrantToTheRolesThatListIt()
+    {
+        await using (var seed = _factory.CreateContext())
+        {
+            await seed.EnsureBuiltInRolesAsync();
+            var sessionRead = BuiltInAccess.Grants.Single(grant => grant.Grant.Name == "Session.Read");
+            await seed.Grants
+                .Where(grant => EF.Property<Guid>(grant, "Id") == sessionRead.Id)
+                .ExecuteDeleteAsync();
+        }
+
+        await using var ctx = _factory.CreateContext();
+        await ctx.EnsureBuiltInRolesAsync();
+
+        var users = Found(await new RoleQueries(ctx).GetRoleByName(DomainConstants.UsersRole));
         Assert.Equal(ExpectedGrantNames(BuiltInAccess.Users), GrantNames(users.Role));
+    }
+
+    [Fact]
+    public async Task EnsureBuiltInRoles_SeedsOneRestrictionPerBuiltInGrant()
+    {
+        await using var ctx = _factory.CreateContext();
+
+        await ctx.EnsureBuiltInRolesAsync();
+        await ctx.EnsureBuiltInRolesAsync();
+
+        var names = await ctx.Restrictions.Select(restriction => restriction.Name).ToListAsync();
+        Assert.Equal(BuiltInAccess.GrantNames.Order().ToList(), names.Order().ToList());
     }
 
     [Fact]

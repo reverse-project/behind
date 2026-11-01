@@ -6,7 +6,8 @@ public sealed record SessionUser(
     Guid Id,
     string DisplayName,
     IReadOnlyList<string> Emails,
-    IReadOnlyList<SessionRole> Roles);
+    IReadOnlyList<SessionRole> Roles,
+    IReadOnlyList<string> Grants);
 
 public sealed record SessionDetails(
     DateTimeOffset StartedAt,

@@ -8,11 +8,7 @@ public static class SessionResponseExtensions
     extension(Role role)
     {
         public SessionRole ToSessionRole() =>
-            new(
-                role.Name,
-                role.Grants.Match(
-                    () => (IReadOnlyList<string>)[],
-                    grants => grants.Select(grant => grant.Name).ToList()));
+            new(role.Name, role.EffectiveGrants.Names);
     }
 
     extension(ValidSession session)
@@ -33,7 +29,7 @@ public static class SessionResponseExtensions
             Guid sessionId,
             Guid userId,
             HumanUser user,
-            IEnumerable<Role> roles,
+            UserAccess access,
             DateTimeOffset now,
             RefreshedAccessToken? refreshed) =>
             new(
@@ -42,7 +38,8 @@ public static class SessionResponseExtensions
                     userId,
                     user.DisplayName,
                     user.Emails.Select(email => email.Value).ToList(),
-                    roles.Select(role => role.ToSessionRole()).ToList()),
+                    access.Roles.Select(role => role.ToSessionRole()).ToList(),
+                    access.CalculatedGrants.Names),
                 session.ToSessionDetails(now),
                 refreshed);
     }

@@ -8,5 +8,9 @@ public interface IRoleQueries
     public sealed record RoleResult(Guid Id, Role Role);
     Task<Option<RoleResult>> GetRoleByName(string name, CancellationToken cancellationToken = default);
 
+    Task<Option<RoleResult>> GetRoleById(Guid id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<RoleResult>> ListRoles(CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Role>> GetRolesByUserId(Guid userId, CancellationToken cancellationToken = default);
 }

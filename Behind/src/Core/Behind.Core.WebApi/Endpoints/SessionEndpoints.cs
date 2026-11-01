@@ -25,7 +25,7 @@ public sealed class SessionEndpoints
         IOptions<SecurityConfiguration> securityConfiguration,
         ISessionQueries sessionQueries,
         ISessionCommands sessionCommands,
-        IRoleQueries roleQueries,
+        IAccessQueries accessQueries,
         TimeProvider timeProvider)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
@@ -44,9 +44,9 @@ public sealed class SessionEndpoints
 
                         return await refreshable.Match(
                             none: () => Task.FromResult(Results.Unauthorized()),
-                            some: active => Renew(httpContext, jwtSettings, sessionCommands, roleQueries, active, now));
+                            some: active => Renew(httpContext, jwtSettings, sessionCommands, accessQueries, active, now));
                     },
-                    some: active => Respond(httpContext, roleQueries, active, now, null));
+                    some: active => Respond(httpContext, accessQueries, active, now, null));
             });
     }
 
@@ -54,7 +54,7 @@ public sealed class SessionEndpoints
         HttpContext httpContext,
         JwtSettings jwtSettings,
         ISessionCommands sessionCommands,
-        IRoleQueries roleQueries,
+        IAccessQueries accessQueries,
         ActiveSession active,
         DateTimeOffset now)
     {
@@ -69,7 +69,7 @@ public sealed class SessionEndpoints
         return renewed
             ? await Respond(
                 httpContext,
-                roleQueries,
+                accessQueries,
                 active with { Session = active.Session with { AccessToken = accessToken } },
                 now,
                 new RefreshedAccessToken(
@@ -80,15 +80,15 @@ public sealed class SessionEndpoints
 
     private static async Task<IResult> Respond(
         HttpContext httpContext,
-        IRoleQueries roleQueries,
+        IAccessQueries accessQueries,
         ActiveSession active,
         DateTimeOffset now,
         RefreshedAccessToken? refreshed)
     {
-        var roles = await roleQueries.GetRolesByUserId(active.UserId, httpContext.RequestAborted);
+        var access = await accessQueries.GetUserAccess(active.UserId, httpContext.RequestAborted);
 
         return Results.Json(
-            active.Session.ToSessionResponse(active.Id, active.UserId, active.User, roles, now, refreshed));
+            active.Session.ToSessionResponse(active.Id, active.UserId, active.User, access, now, refreshed));
     }
 
     private static async Task<Option<ActiveSession>> FindCurrent(

@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/pager", "models/letterpager", "models/user"], function (ko, auth, session, createPager, createLetterPager, user) {
+define(["ko", "models/auth", "models/session", "models/pager", "models/letterpager", "models/user", "viewmodels/useraccess"], function (ko, auth, session, createPager, createLetterPager, user, UserAccessViewModel) {
     var pageSize = 10;
 
     var roleDefinitions = [
@@ -96,9 +96,12 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 banMessage: ko.observable("")
             };
 
-            row.hasActions = row.canModerate || row.canDelete || row.canManageDeleted || row.roleActions.some(function (action) {
-                return action.allowed;
+            row.access = new UserAccessViewModel(item.id, function (body) {
+                return perform(function () {
+                    return auth.saveUserAccess(item.id, body);
+                });
             });
+
             row.canConfirmBan = ko.pureComputed(function () {
                 return row.banMessage().trim() !== "";
             });

@@ -4,6 +4,8 @@ namespace Behind.Core.Domain;
 
 public sealed record BuiltInGrant(Guid Id, Grant Grant, string Area, string Action);
 
+public sealed record BuiltInRestriction(Guid Id, Restriction Restriction);
+
 public sealed record BuiltInRole(Guid Id, UserRole Role)
 {
     public IReadOnlyList<BuiltInGrant> Grants { get; init; } = [];
@@ -25,6 +27,13 @@ public static class BuiltInAccess
 
     public static readonly IReadOnlyList<BuiltInGrant> Grants = [..AreaGrants, RawDatabaseManage];
 
+    public static readonly IReadOnlyList<BuiltInRestriction> Restrictions =
+    [
+        ..Grants.Select(grant => new BuiltInRestriction(
+            Guid.Parse($"70000000-{grant.Id.ToString()[9..]}"),
+            new Restriction(grant.Grant.Name)))
+    ];
+
     public static readonly BuiltInRole Administrators = NewRole(
         3,
         DomainConstants.AdministratorsRole,
@@ -41,6 +50,12 @@ public static class BuiltInAccess
         [..AreaGrants.Where(grant => grant.Action == GrantAction.Read), RawDatabaseManage]);
 
     public static readonly IReadOnlyList<BuiltInRole> Roles = [Administrators, Users, Developers];
+
+    public static bool IsBuiltIn(Guid roleId) => Roles.Any(role => role.Id == roleId);
+
+    public static IReadOnlyList<string> GrantNames { get; } = [..Grants.Select(grant => grant.Grant.Name)];
+
+    public static bool IsKnownGrant(string name) => GrantNames.Contains(name);
 
     extension(BuiltInGrant grant)
     {

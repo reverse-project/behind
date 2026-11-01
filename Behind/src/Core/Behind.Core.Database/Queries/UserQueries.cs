@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Core.Domain;
 using static Behind.Common.FunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,19 +37,18 @@ public sealed class UserQueries(AbstractCoreContext context) : IUserQueries
 
     public async Task<bool> HasGrant(string email, string grant, CancellationToken cancellationToken = default)
     {
-        var grantQuery = from dbEmail in context.Emails
-            where dbEmail.Value == email.ToLowerInvariant()
-            join userRole in context.Set<Dictionary<string, object>>("UserRoles")
-                on EF.Property<Guid>(dbEmail, "UserId") equals EF.Property<Guid>(userRole, "UserId")
-            join role in context.Roles
-                on EF.Property<Guid>(userRole, "RoleId") equals EF.Property<Guid>(role, "Id")
-            join roleGrant in context.Set<Dictionary<string, object>>("RoleGrants")
-                on EF.Property<Guid>(role, "Id") equals EF.Property<Guid>(roleGrant, "RoleId")
-            join dbGrant in context.Grants
-                on EF.Property<Guid>(roleGrant, "GrantId") equals EF.Property<Guid>(dbGrant, "Id")
-            where dbGrant.Name == grant
-            select dbGrant;
+        var userId = await context.Emails
+            .Where(dbEmail => dbEmail.Value == email.ToLowerInvariant())
+            .Select(dbEmail => (Guid?)EF.Property<Guid>(dbEmail, "UserId"))
+            .FirstOrDefaultAsync(cancellationToken);
 
-        return await grantQuery.AnyAsync(cancellationToken);
+        if (userId is null)
+        {
+            return false;
+        }
+
+        var access = await context.GetUserAccessAsync(userId.Value, cancellationToken);
+
+        return access.Holds(grant);
     }
 }

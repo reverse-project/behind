@@ -165,6 +165,26 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.Restriction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Name");
+
+                    b.ToTable("Restrictions");
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -329,6 +349,51 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.ToTable("RoleGrants");
                 });
 
+            modelBuilder.Entity("RoleRestrictions", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RestrictionId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("RoleId", "RestrictionId");
+
+                    b.HasIndex("RestrictionId");
+
+                    b.ToTable("RoleRestrictions");
+                });
+
+            modelBuilder.Entity("UserGrants", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("GrantId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "GrantId");
+
+                    b.HasIndex("GrantId");
+
+                    b.ToTable("UserGrants");
+                });
+
+            modelBuilder.Entity("UserRestrictions", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RestrictionId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "RestrictionId");
+
+                    b.HasIndex("RestrictionId");
+
+                    b.ToTable("UserRestrictions");
+                });
+
             modelBuilder.Entity("UserRoles", b =>
                 {
                     b.Property<Guid>("RoleId")
@@ -453,6 +518,51 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasOne("Behind.Core.Domain.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RoleRestrictions", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.Restriction", null)
+                        .WithMany()
+                        .HasForeignKey("RestrictionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Behind.Core.Domain.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("UserGrants", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.Grant", null)
+                        .WithMany()
+                        .HasForeignKey("GrantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("UserRestrictions", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.Restriction", null)
+                        .WithMany()
+                        .HasForeignKey("RestrictionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

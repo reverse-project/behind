@@ -1,0 +1,1079 @@
+[
+  {
+    "name": "Bootstrap",
+    "version": "5.3.8",
+    "license": "MIT",
+    "copyright": "Copyright 2011-2025 The Bootstrap Authors",
+    "url": "https://getbootstrap.com/",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "jQuery",
+    "version": "4.0.0",
+    "license": "MIT",
+    "copyright": "Copyright OpenJS Foundation and other contributors",
+    "url": "https://jquery.com/",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "jQuery Migrate",
+    "version": "4.0.2",
+    "license": "MIT",
+    "copyright": "Copyright OpenJS Foundation and other contributors",
+    "url": "https://github.com/jquery/jquery-migrate",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Knockout",
+    "version": "3.5.3",
+    "license": "MIT",
+    "copyright": "Copyright The Knockout.js team",
+    "url": "https://knockoutjs.com/",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "RequireJS",
+    "version": "2.3.8",
+    "license": "MIT",
+    "copyright": "Copyright jQuery Foundation and other contributors",
+    "url": "https://requirejs.org/",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt",
+    "note": "Dual-licensed under the new BSD or MIT license; used under MIT."
+  },
+  {
+    "name": "RequireJS text plugin",
+    "version": "2.0.16",
+    "license": "MIT",
+    "copyright": "Copyright jQuery Foundation and other contributors",
+    "url": "https://github.com/requirejs/text",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "RequireJS domReady plugin",
+    "version": "2.0.1",
+    "license": "MIT",
+    "copyright": "Copyright jQuery Foundation and other contributors",
+    "url": "https://github.com/requirejs/domReady",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Sammy.js",
+    "version": "0.7.6",
+    "license": "MIT",
+    "copyright": "Copyright Aaron Quint, Quirkey",
+    "url": "https://sammyjs.org/",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Quill",
+    "version": "2.0.3",
+    "license": "BSD-3-Clause",
+    "copyright": "Copyright (c) 2017-2024, Slab; Copyright (c) 2014, Jason Chen; Copyright (c) 2013, salesforce.com",
+    "url": "https://quilljs.com/",
+    "scope": "frontend",
+    "text": "libraries/quill-LICENSE.txt"
+  },
+  {
+    "name": "Parchment",
+    "version": "bundled in Quill",
+    "license": "BSD-3-Clause",
+    "copyright": "Copyright (c) 2015, Jason Chen",
+    "url": "https://github.com/slab/parchment",
+    "scope": "frontend",
+    "text": "licenses/BSD-3-Clause.txt",
+    "note": "Bundled inside quill.min.js."
+  },
+  {
+    "name": "quill-delta",
+    "version": "bundled in Quill",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2014 Jason Chen",
+    "url": "https://github.com/slab/delta",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt",
+    "note": "Bundled inside quill.min.js."
+  },
+  {
+    "name": "lodash-es",
+    "version": "bundled in Quill",
+    "license": "MIT",
+    "copyright": "Copyright OpenJS Foundation and other contributors",
+    "url": "https://lodash.com/",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt",
+    "note": "Bundled inside quill.min.js."
+  },
+  {
+    "name": "EventEmitter3",
+    "version": "bundled in Quill",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2014 Arnout Kazemier",
+    "url": "https://github.com/primus/eventemitter3",
+    "scope": "frontend",
+    "text": "licenses/MIT.txt",
+    "note": "Bundled inside quill.min.js."
+  },
+  {
+    "name": "Font Awesome Free",
+    "version": "6.7.2",
+    "license": "CC-BY-4.0 AND OFL-1.1 AND MIT",
+    "copyright": "Copyright 2024 Fonticons, Inc.",
+    "url": "https://fontawesome.com/license/free",
+    "scope": "frontend",
+    "text": "libraries/fontawesome-LICENSE.txt",
+    "note": "Icons: CC BY 4.0. Fonts: SIL OFL 1.1. Code: MIT."
+  },
+  {
+    "name": "AngleSharp",
+    "version": "1.7.2",
+    "license": "MIT",
+    "copyright": "Copyright 2013-2026, AngleSharp.",
+    "url": "https://anglesharp.github.io/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "AngleSharp.Css",
+    "version": "1.0.2",
+    "license": "MIT",
+    "copyright": "AngleSharp.Css",
+    "url": "https://anglesharp.github.io/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Aspire.Hosting.Docker",
+    "version": "13.4.6",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/microsoft/aspire",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Aspire.Hosting.PostgreSQL",
+    "version": "13.4.6",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/microsoft/aspire",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Aspire.Hosting.Valkey",
+    "version": "13.4.6",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/microsoft/aspire",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "BCrypt.Net-Next",
+    "version": "4.2.0",
+    "license": "MIT",
+    "copyright": "2006-2021 Chris McKee, Ryan D. Emerl, Damien Miller",
+    "url": "https://github.com/BcryptNet/bcrypt.net",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "coverlet.collector",
+    "version": "6.0.2",
+    "license": "MIT",
+    "copyright": "tonerdo",
+    "url": "https://github.com/coverlet-coverage/coverlet",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "coverlet.msbuild",
+    "version": "6.0.2",
+    "license": "MIT",
+    "copyright": "tonerdo",
+    "url": "https://github.com/coverlet-coverage/coverlet",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "HtmlSanitizer",
+    "version": "9.2.1039",
+    "license": "MIT",
+    "copyright": "Copyright 2013-2026 Michael Ganss",
+    "url": "https://github.com/mganss/HtmlSanitizer",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Humanizer.Core",
+    "version": "2.14.1",
+    "license": "MIT",
+    "copyright": "Copyright (c) .NET Foundation and Contributors",
+    "url": "https://github.com/Humanizr/Humanizer",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "MessagePack",
+    "version": "3.1.9",
+    "license": "MIT",
+    "copyright": "© Yoshifumi Kawai and contributors. All rights reserved.",
+    "url": "https://github.com/MessagePack-CSharp/MessagePack-CSharp",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.AspNetCore.Authentication.JwtBearer",
+    "version": "10.0.8",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://asp.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.AspNetCore.OpenApi",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://asp.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Build.Framework",
+    "version": "18.0.2",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "http://go.microsoft.com/fwlink/?LinkId=624683",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.CodeAnalysis.Analyzers",
+    "version": "3.11.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/dotnet/roslyn-analyzers",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.CodeAnalysis.Common",
+    "version": "5.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/dotnet/roslyn",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.CodeAnalysis.CSharp",
+    "version": "5.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/dotnet/roslyn",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.CodeAnalysis.CSharp.Workspaces",
+    "version": "5.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/dotnet/roslyn",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.CodeAnalysis.Workspaces.Common",
+    "version": "5.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/dotnet/roslyn",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.CodeAnalysis.Workspaces.MSBuild",
+    "version": "5.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/dotnet/roslyn",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Data.Sqlite.Core",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://docs.microsoft.com/dotnet/standard/data/sqlite/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.EntityFrameworkCore",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://docs.microsoft.com/ef/core/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.EntityFrameworkCore.Abstractions",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://docs.microsoft.com/ef/core/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.EntityFrameworkCore.Analyzers",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://docs.microsoft.com/ef/core/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.EntityFrameworkCore.Design",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://docs.microsoft.com/ef/core/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.EntityFrameworkCore.Relational",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://docs.microsoft.com/ef/core/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.EntityFrameworkCore.Sqlite",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://docs.microsoft.com/ef/core/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.EntityFrameworkCore.Sqlite.Core",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://docs.microsoft.com/ef/core/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Caching.Abstractions",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Caching.Memory",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Configuration",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Configuration.Abstractions",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Configuration.Binder",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Configuration.CommandLine",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Configuration.EnvironmentVariables",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Configuration.FileExtensions",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Configuration.Json",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Configuration.UserSecrets",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.DependencyInjection",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.DependencyModel",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Diagnostics",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Diagnostics.Abstractions",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.FileProviders.Abstractions",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.FileProviders.Embedded",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://asp.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.FileProviders.Physical",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.FileSystemGlobbing",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Hosting",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Hosting.Abstractions",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Logging",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Logging.Abstractions",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Logging.Configuration",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Logging.Console",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Logging.Debug",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Logging.EventLog",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Logging.EventSource",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Options",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Options.ConfigurationExtensions",
+    "version": "10.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Primitives",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.IdentityModel.Abstractions",
+    "version": "8.0.1",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.IdentityModel.JsonWebTokens",
+    "version": "8.0.1",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.IdentityModel.Logging",
+    "version": "8.0.1",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.IdentityModel.Protocols",
+    "version": "8.0.1",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+    "version": "8.0.1",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.IdentityModel.Tokens",
+    "version": "8.0.1",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.NET.Test.Sdk",
+    "version": "17.12.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/microsoft/vstest",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.OpenApi",
+    "version": "2.11.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/Microsoft/OpenAPI.NET",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.VisualStudio.SolutionPersistence",
+    "version": "1.0.52",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/microsoft/vs-solutionpersistence",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Mono.TextTemplating",
+    "version": "3.0.0",
+    "license": "MIT",
+    "copyright": "Mikayla Hutchinson",
+    "url": "https://github.com/mono/t4",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Newtonsoft.Json",
+    "version": "13.0.3",
+    "license": "MIT",
+    "copyright": "Copyright © James Newton-King 2008",
+    "url": "https://www.newtonsoft.com/json",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "NSubstitute",
+    "version": "5.3.0",
+    "license": "BSD-3-Clause",
+    "copyright": "Anthony Egerton,David Tchepak,Alexandr Nikitin,Oleksandr Povar",
+    "url": "https://nsubstitute.github.io/",
+    "scope": "development",
+    "text": "licenses/BSD-3-Clause.txt"
+  },
+  {
+    "name": "NSubstitute.Analyzers.CSharp",
+    "version": "1.0.17",
+    "license": "MIT",
+    "copyright": "Tomasz Podolak, NSubstitute.Analyzers contributors",
+    "url": "https://github.com/nsubstitute/NSubstitute.Analyzers",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "NUglify",
+    "version": "1.23.6",
+    "license": "BSD-2-Clause",
+    "copyright": "Alexandre Mutel;Andrew Bullock;Jason Best",
+    "url": "https://github.com/jbest84/NUglify",
+    "scope": "server",
+    "text": "licenses/BSD-2-Clause.txt"
+  },
+  {
+    "name": "OpenTelemetry",
+    "version": "1.16.0",
+    "license": "Apache-2.0",
+    "copyright": "Copyright The OpenTelemetry Authors",
+    "url": "https://opentelemetry.io/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "OpenTelemetry.Api",
+    "version": "1.16.0",
+    "license": "Apache-2.0",
+    "copyright": "Copyright The OpenTelemetry Authors",
+    "url": "https://opentelemetry.io/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "OpenTelemetry.Api.ProviderBuilderExtensions",
+    "version": "1.16.0",
+    "license": "Apache-2.0",
+    "copyright": "Copyright The OpenTelemetry Authors",
+    "url": "https://opentelemetry.io/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+    "version": "1.16.0",
+    "license": "Apache-2.0",
+    "copyright": "Copyright The OpenTelemetry Authors",
+    "url": "https://opentelemetry.io/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "OpenTelemetry.Extensions.Hosting",
+    "version": "1.16.0",
+    "license": "Apache-2.0",
+    "copyright": "Copyright The OpenTelemetry Authors",
+    "url": "https://opentelemetry.io/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "OpenTelemetry.Instrumentation.AspNetCore",
+    "version": "1.15.2",
+    "license": "Apache-2.0",
+    "copyright": "Copyright The OpenTelemetry Authors",
+    "url": "https://opentelemetry.io/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "OpenTelemetry.Instrumentation.Http",
+    "version": "1.16.0",
+    "license": "Apache-2.0",
+    "copyright": "Copyright The OpenTelemetry Authors",
+    "url": "https://opentelemetry.io/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "OpenTelemetry.Instrumentation.Runtime",
+    "version": "1.16.0",
+    "license": "Apache-2.0",
+    "copyright": "Copyright The OpenTelemetry Authors",
+    "url": "https://opentelemetry.io/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "Otp.NET",
+    "version": "1.4.1",
+    "license": "MIT",
+    "copyright": "Kyle Spearrin",
+    "url": "https://github.com/kspearrin/Otp.NET",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Scalar.AspNetCore",
+    "version": "2.14.11",
+    "license": "MIT",
+    "copyright": "Scalar",
+    "url": "https://scalar.com/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Serilog",
+    "version": "4.3.0",
+    "license": "Apache-2.0",
+    "copyright": "Copyright © Serilog Contributors",
+    "url": "https://serilog.net/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "Serilog.Extensions.Hosting",
+    "version": "10.0.0",
+    "license": "Apache-2.0",
+    "copyright": "Microsoft,Serilog Contributors",
+    "url": "https://github.com/serilog/serilog-extensions-hosting",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "Serilog.Extensions.Logging",
+    "version": "10.0.0",
+    "license": "Apache-2.0",
+    "copyright": "Microsoft,Serilog Contributors",
+    "url": "https://github.com/serilog/serilog-extensions-logging",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "Serilog.Settings.Configuration",
+    "version": "10.0.1",
+    "license": "Apache-2.0",
+    "copyright": "Serilog Contributors",
+    "url": "https://github.com/serilog/serilog-settings-configuration",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "Serilog.Sinks.Console",
+    "version": "6.1.1",
+    "license": "Apache-2.0",
+    "copyright": "Serilog Contributors",
+    "url": "https://github.com/serilog/serilog-sinks-console",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "SQLitePCLRaw.bundle_e_sqlite3",
+    "version": "2.1.11",
+    "license": "Apache-2.0",
+    "copyright": "Copyright 2014-2024 SourceGear, LLC",
+    "url": "https://www.nuget.org/packages/SQLitePCLRaw.bundle_e_sqlite3",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "SQLitePCLRaw.core",
+    "version": "2.1.11",
+    "license": "Apache-2.0",
+    "copyright": "Copyright 2014-2024 SourceGear, LLC",
+    "url": "https://www.nuget.org/packages/SQLitePCLRaw.core",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "SQLitePCLRaw.lib.e_sqlite3",
+    "version": "3.53.3",
+    "license": "Public Domain",
+    "copyright": "SQLite is in the public domain; packaged by SourceGear, LLC",
+    "url": "https://sqlite.org/",
+    "scope": "server",
+    "text": "licenses/SQLite.txt"
+  },
+  {
+    "name": "SQLitePCLRaw.provider.e_sqlite3",
+    "version": "2.1.11",
+    "license": "Apache-2.0",
+    "copyright": "Copyright 2014-2024 SourceGear, LLC",
+    "url": "https://www.nuget.org/packages/SQLitePCLRaw.provider.e_sqlite3",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "System.CodeDom",
+    "version": "6.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.CommandLine",
+    "version": "2.0.7",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/dotnet/command-line-api",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Composition",
+    "version": "9.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Composition.AttributedModel",
+    "version": "9.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Composition.Convention",
+    "version": "9.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Composition.Hosting",
+    "version": "9.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Composition.Runtime",
+    "version": "9.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Composition.TypedParts",
+    "version": "9.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Diagnostics.EventLog",
+    "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.IdentityModel.Tokens.Jwt",
+    "version": "8.0.1",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Linq.Dynamic.Core",
+    "version": "1.7.3",
+    "license": "Apache-2.0",
+    "copyright": "Copyright © ZZZ Projects",
+    "url": "https://dynamic-linq.net/",
+    "scope": "server",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "xunit",
+    "version": "2.9.2",
+    "license": "Apache-2.0",
+    "copyright": "Copyright (C) .NET Foundation",
+    "url": "https://www.nuget.org/packages/xunit",
+    "scope": "development",
+    "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "xunit.runner.visualstudio",
+    "version": "2.8.2",
+    "license": "Apache-2.0",
+    "copyright": "Copyright (C) .NET Foundation",
+    "url": "https://www.nuget.org/packages/xunit.runner.visualstudio",
+    "scope": "development",
+    "text": "licenses/Apache-2.0.txt"
+  }
+]

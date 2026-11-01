@@ -15,6 +15,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/sites/new": "controllers/siteeditor",
         "#/sites/:id": "controllers/siteeditor",
         "#/changelog": "controllers/changelog",
+        "#/licenses": "controllers/licenses",
         "#/sign/in/magiclink": "controllers/magiclink",
         "#/sign/up/confirm": "controllers/confirmemail"
     };

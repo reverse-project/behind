@@ -1,0 +1,47 @@
+<section class="behind-wide">
+    <h1 class="mb-3">Licenses</h1>
+    <article class="mb-4">
+        <h2 class="h4">
+            <span data-bind="text: name"></span>
+            <small class="text-body-secondary" data-bind="text: license"></small>
+        </h2>
+        <p class="mb-1" data-bind="text: copyright"></p>
+        <p>
+            Behind is free software: you can redistribute it and modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+            Behind is distributed in the hope that it will be useful, but without any warranty.
+            <a href="#" data-bind="attr: { href: text }" target="_blank" rel="noopener">Read the license text</a>
+        </p>
+    </article>
+    <h2 class="h4 mb-3">Third-party components</h2>
+    <p class="text-body-secondary">Behind includes and uses the components below. Each one remains under its own license.</p>
+    <div class="alert alert-danger" role="alert" data-bind="visible: failed">The list of third-party licenses could not be loaded.</div>
+    <div data-bind="foreach: scopes">
+        <article class="mb-4">
+            <h3 class="h5" data-bind="text: title"></h3>
+            <p class="text-body-secondary" data-bind="text: description"></p>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                    <tr>
+                        <th scope="col">Component</th>
+                        <th scope="col">Version</th>
+                        <th scope="col">License</th>
+                        <th scope="col">Copyright</th>
+                    </tr>
+                    </thead>
+                    <tbody data-bind="foreach: licenses">
+                    <tr>
+                        <td>
+                            <a href="#" data-bind="attr: { href: url }, text: name" target="_blank" rel="noopener"></a>
+                            <div class="small text-body-secondary" data-bind="visible: hasNote, text: note"></div>
+                        </td>
+                        <td class="text-nowrap" data-bind="text: version"></td>
+                        <td><a href="#" data-bind="attr: { href: text }, text: license" target="_blank" rel="noopener"></a></td>
+                        <td class="text-break" data-bind="text: copyright"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </div>
+</section>

@@ -7,6 +7,14 @@ define(["models/http"], function (http) {
         });
     };
 
+    var loadList = function (url) {
+        return http.get(url).then(function (response) {
+            return response.ok && Array.isArray(response.data)
+                ? { ok: true, items: response.data }
+                : { ok: false, items: [] };
+        });
+    };
+
     return {
         loadVersion: function () {
             return load("/about", function (data) {
@@ -15,10 +23,14 @@ define(["models/http"], function (http) {
         },
 
         loadChangelog: function () {
-            return http.get("/changelog.json").then(function (response) {
-                return response.ok && Array.isArray(response.data)
-                    ? { ok: true, releases: response.data }
-                    : { ok: false, releases: [] };
+            return loadList("/changelog.json").then(function (result) {
+                return { ok: result.ok, releases: result.items };
+            });
+        },
+
+        loadLicenses: function () {
+            return loadList("/licenses.json").then(function (result) {
+                return { ok: result.ok, licenses: result.items };
             });
         }
     };

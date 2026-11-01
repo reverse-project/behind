@@ -33,6 +33,7 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Frontend\**\*" />
+        <EmbeddedResource Include="..\..\..\..\LICENSE" Link="Frontend\licenses\Behind.txt" />
     </ItemGroup>
 
 </Project>

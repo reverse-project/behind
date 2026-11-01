@@ -1,3 +1,4 @@
+using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
@@ -64,7 +65,7 @@ public class AuditLogResponseExtensionsTests
             new AuditLogEntry.Restored(),
             new SystemUser(None),
             timestamp,
-            Some<User>(new GuestUser(None))).ToItem();
+            Some<User>(new GuestUser(None))).ToItem(AuditLabels.Empty);
 
         Assert.Equal(timestamp, item.Timestamp);
         Assert.Equal("User", item.EntityName);
@@ -88,12 +89,49 @@ public class AuditLogResponseExtensionsTests
             auditAction,
             new HumanUser("Admin", [new Email("admin@example.com")], None),
             DateTimeOffset.UtcNow,
-            Some<User>(new HumanUser("Target", [new Email("target@example.com")], None))).ToItem();
+            Some<User>(new HumanUser("Target", [new Email("target@example.com")], None))).ToItem(AuditLabels.Empty);
 
         Assert.Equal(action, item.Action);
         Assert.Empty(item.Changes);
         Assert.Equal("Admin", item.Actor.Label);
         Assert.Equal("Target", item.OnBehalfOf!.Label);
+    }
+
+    [Fact]
+    public void ToItem_ReplacesKnownIdentifiersWithTheirLabels()
+    {
+        var labels = new AuditLabels(new Dictionary<Guid, string> { [First] = "Ada", [Second] = "Admins" });
+        var unknown = Guid.NewGuid();
+
+        var item = new AuditLogEntry(
+            "UserRoles",
+            $"{First}:{Second}",
+            new AuditLogEntry.Updated([new PropertyDifference("InvalidatedById", null, First), new PropertyDifference("Other", unknown, "x")]),
+            new SystemUser(None),
+            DateTimeOffset.UtcNow,
+            None).ToItem(labels);
+
+        Assert.Equal($"{First}:{Second}", item.EntityKey);
+        Assert.Equal("Ada: Admins", item.EntityLabel);
+        Assert.Equal(
+            [new AuditLogChange("InvalidatedById", null, "Ada"), new AuditLogChange("Other", unknown.ToString(), "x")],
+            item.Changes);
+    }
+
+    [Fact]
+    public void References_CollectEveryIdentifierOfTheEntryOnce()
+    {
+        var entry = new AuditLogEntry(
+            "RoleGrants",
+            $"{First}:{Second}",
+            new AuditLogEntry.Moved(First, Second),
+            new SystemUser(None),
+            DateTimeOffset.UtcNow,
+            None);
+
+        Assert.Equal([First, Second], entry.References.Order());
+        Assert.Equal([First, Second], new[] { entry, entry }.References.Order());
+        Assert.Empty(new AuditLogEntry("User", "7", new AuditLogEntry.Created(), DateTimeOffset.UtcNow).References);
     }
 
     private sealed class ActorComparer : IEqualityComparer<AuditLogActor>

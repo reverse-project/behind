@@ -19,4 +19,6 @@ public interface IAuditLogEntryQueries
     }
     
     Task<Option<PagedResult<AuditLogEntry>>> GetAuditLog(RequestAuditLog request, CancellationToken cancellationToken = default);
+
+    Task<AuditLabels> ResolveLabels(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
 }

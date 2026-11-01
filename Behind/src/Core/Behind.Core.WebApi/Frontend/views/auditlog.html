@@ -49,7 +49,7 @@
                     <td><span class="badge" data-bind="text: action, css: actionClass"></span></td>
                     <td>
                         <div data-bind="text: entityName"></div>
-                        <div class="text-body-secondary small text-break" data-bind="text: entityKey"></div>
+                        <div class="text-body-secondary small text-break" data-bind="text: entityLabel, attr: { title: entityKey }"></div>
                     </td>
                     <td>
                         <ul class="list-unstyled small mb-0" data-bind="foreach: changes">

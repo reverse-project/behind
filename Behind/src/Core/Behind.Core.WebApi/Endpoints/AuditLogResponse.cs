@@ -8,6 +8,7 @@ public sealed record AuditLogItem(
     DateTimeOffset Timestamp,
     string EntityName,
     string EntityKey,
+    string EntityLabel,
     string Action,
     IReadOnlyList<AuditLogChange> Changes,
     AuditLogActor Actor,

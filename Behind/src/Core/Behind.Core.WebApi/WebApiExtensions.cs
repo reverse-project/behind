@@ -257,6 +257,9 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(500);
 
+            application.MapGet("/about", AboutEndpoints.Get)
+                .Produces<AboutResponse>();
+
             application.MapGet("/wallOfShame", WallOfShameEndpoints.Get)
                 .Produces<PageResponse<WallOfShameItem>>()
                 .Produces(500);

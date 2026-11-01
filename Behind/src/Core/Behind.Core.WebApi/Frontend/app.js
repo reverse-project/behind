@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], function ($, migrate, ko, Sammy, HeaderViewModel) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel) {
     var routes = {
         "#/": "controllers/index",
         "#/sign-in": "controllers/signin",
@@ -11,6 +11,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], functio
         "#/audit-log": "controllers/auditlog",
         "#/administration": "controllers/administration",
         "#/wall-of-shame": "controllers/wallofshame",
+        "#/changelog": "controllers/changelog",
         "#/sign/in/magiclink": "controllers/magiclink"
     };
 
@@ -70,6 +71,11 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], functio
         start: function () {
             applyColorScheme();
             ko.applyBindings(new HeaderViewModel(context), $("#header-container")[0]);
+
+            var footer = new FooterViewModel();
+
+            ko.applyBindings(footer, $("#footer-container")[0]);
+            footer.activate();
             router.run("#/");
         }
     };

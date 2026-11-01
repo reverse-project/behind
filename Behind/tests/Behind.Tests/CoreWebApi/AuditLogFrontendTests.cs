@@ -59,7 +59,7 @@ public class AuditLogFrontendTests
             new[]
             {
                 "submit: find", "value: fromDate", "value: toDate", "value: search", "value: oldestFirst",
-                "click: reset", "foreach: entries", "foreach: changes", "visible: canView", "visible: isDenied",
+                "click: reset", "foreach: entries", "foreach: changes", "text: entityLabel", "visible: canView", "visible: isDenied",
                 "<pager class=\"d-block\" params=\"pager: pager\">"
             },
             binding => Assert.Contains(binding, view));

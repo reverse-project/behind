@@ -43,6 +43,7 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
             actionClass: actionClasses[item.action] || "text-bg-secondary",
             entityName: item.entityName,
             entityKey: item.entityKey,
+            entityLabel: item.entityLabel,
             changes: item.changes.map(function (change) {
                 return {
                     property: change.property,

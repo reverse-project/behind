@@ -2,6 +2,8 @@ using Behind.Common;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Database;
+using Behind.Core.Domain;
+using static Behind.Common.FunctionalExtensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -52,8 +54,15 @@ public static class AuditLogEntryEndpoints
                 oldestFirst ? OldestFirst : NewestFirst),
             httpContext.RequestAborted);
 
+        var items = entries.Match(
+            () => (IReadOnlyList<AuditLogEntry>)[],
+            paged => paged.Results.Match(() => (IReadOnlyList<AuditLogEntry>)[], found => found.ToList()));
+
+        var labels = await queries.ResolveLabels(items.References, httpContext.RequestAborted);
+
         return Results.Json(entries.Match(
             () => new PageResponse<AuditLogItem>(0, flipper.Index, 0, flipper.Size, []),
-            paged => paged.ToPageResponse(entry => entry.ToItem())));
+            paged => (paged with { Results = Some<IEnumerable<AuditLogEntry>>(items) })
+                .ToPageResponse(entry => entry.ToItem(labels))));
     }
 }

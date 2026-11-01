@@ -1,0 +1,23 @@
+[
+  {
+    "version": "1.0.0",
+    "date": "2026-11-01",
+    "changes": [
+      { "type": "added", "text": "Passwordless sign-in with Magic Links, including rate limiting and security policies." },
+      { "type": "added", "text": "Sign-up, profile and display name management." },
+      { "type": "added", "text": "Session management: view the current session, list all sessions and sign out everywhere." },
+      { "type": "added", "text": "Role management and fine-grained access control for users and roles." },
+      { "type": "added", "text": "Administration area with user management: ban, unban, delete and permanently delete users." },
+      { "type": "added", "text": "Wall of shame listing banned users with their reason and expiry." },
+      { "type": "added", "text": "Elevation for sensitive operations." },
+      { "type": "added", "text": "Impersonation of other users, recorded in the audit log on their behalf." },
+      { "type": "added", "text": "Audit log with filtering, searching and paging." },
+      { "type": "changed", "text": "The audit log shows names (users, roles, grants, emails and so on) instead of raw identifiers." },
+      { "type": "added", "text": "Email confirmation tracking and an email sender with templates." },
+      { "type": "added", "text": "Footer with the application name and version, and this changelog page." },
+      { "type": "changed", "text": "Frontend views now use Bootstrap, including automatic light and dark themes." },
+      { "type": "changed", "text": "Requests are logged with correlation ids, and ETag support was added to the Web API." },
+      { "type": "security", "text": "Sensitive configuration values are masked, and data protection keys are protected by a certificate." }
+    ]
+  }
+]

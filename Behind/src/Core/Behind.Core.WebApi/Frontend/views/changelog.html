@@ -1,0 +1,19 @@
+<section>
+    <h1 class="mb-3">Changelog</h1>
+    <div class="alert alert-danger" role="alert" data-bind="visible: failed">The changelog could not be loaded.</div>
+    <p class="text-body-secondary" data-bind="visible: isEmpty">There are no releases yet.</p>
+    <div data-bind="foreach: releases">
+        <article class="mb-4">
+            <h2 class="h4 d-flex flex-wrap align-items-baseline gap-2">
+                <span data-bind="text: 'v' + version"></span>
+                <small class="text-body-secondary" data-bind="text: date"></small>
+            </h2>
+            <ul class="list-group" data-bind="foreach: changes">
+                <li class="list-group-item d-flex flex-wrap align-items-baseline gap-2">
+                    <span class="badge text-bg-secondary" data-bind="text: type"></span>
+                    <span class="text-break" data-bind="text: text"></span>
+                </li>
+            </ul>
+        </article>
+    </div>
+</section>

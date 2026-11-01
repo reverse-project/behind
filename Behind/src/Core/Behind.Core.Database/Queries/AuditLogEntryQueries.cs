@@ -8,6 +8,20 @@ namespace Behind.Core.Database.Queries;
 
 public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLogEntryQueries
 {
+    public async Task<AuditLabels> ResolveLabels(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return AuditLabels.Empty;
+        }
+
+        using var attribution = context.SoftDelete.IncludeDeleted();
+
+        return await context.ResolveAuditLabelsAsync(ids, cancellationToken);
+    }
+
     public async Task<Option<PagedResult<AuditLogEntry>>> GetAuditLog(IAuditLogEntryQueries.RequestAuditLog request,
         CancellationToken cancellationToken = default)
     {

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Behind.Core.Database;
 using Behind.Core.Domain;
 
 namespace Behind.Core.WebApi.Endpoints;
@@ -47,6 +48,12 @@ public static class AuditLogResponseExtensions
             };
     }
 
+    extension(AuditLogChange change)
+    {
+        public AuditLogChange Labeled(AuditLabels labels) =>
+            change with { OldValue = labels.LabelOrNull(change.OldValue), NewValue = labels.LabelOrNull(change.NewValue) };
+    }
+
     extension(object? value)
     {
         private string? ToDisplayValue() => value is null ? null : Convert.ToString(value, CultureInfo.InvariantCulture);
@@ -54,13 +61,14 @@ public static class AuditLogResponseExtensions
 
     extension(AuditLogEntry entry)
     {
-        public AuditLogItem ToItem() =>
+        public AuditLogItem ToItem(AuditLabels labels) =>
             new(
                 entry.Timestamp,
                 entry.EntityName,
                 entry.EntityKey,
+                labels.LabelKey(entry.EntityKey),
                 entry.Action.GetType().Name,
-                entry.Action.ToChanges(),
+                entry.Action.ToChanges().Select(change => change.Labeled(labels)).ToList(),
                 entry.User.ToActor(),
                 entry.BehalfOf.Match<AuditLogActor?>(() => null, behalfOf => behalfOf.ToActor()));
     }

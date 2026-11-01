@@ -17,6 +17,8 @@ public class AuditLogEntryEndpointsTests
         var queries = Substitute.For<IAuditLogEntryQueries>();
         queries.GetAuditLog(Arg.Do<IAuditLogEntryQueries.RequestAuditLog>(requests.Add), Arg.Any<CancellationToken>())
             .Returns(result);
+        queries.ResolveLabels(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(AuditLabels.Empty);
 
         return (queries, requests);
     }
@@ -143,6 +145,7 @@ public class AuditLogEntryEndpointsTests
                 Now,
                 "Role",
                 "42",
+                "42",
                 "Created",
                 [],
                 new AuditLogActor("HumanUser", "Ada", ["ada@example.com"]),
@@ -165,6 +168,7 @@ public class AuditLogEntryEndpointsTests
             && x.Timestamp == y.Timestamp
             && x.EntityName == y.EntityName
             && x.EntityKey == y.EntityKey
+            && x.EntityLabel == y.EntityLabel
             && x.Action == y.Action
             && x.Changes.SequenceEqual(y.Changes)
             && x.Actor.Kind == y.Actor.Kind

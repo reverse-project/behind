@@ -11,7 +11,7 @@ Each row shows:
 - **When** - the time of the change, in your local time.
 - **Who** - the person who made the change, their email addresses, and, when it was done for someone else, "On behalf of" that person. Changes made by the application itself show as **System**, and changes without a signed-in person as **Guest**.
 - **Action** - `Created`, `Updated`, `Deleted`, `HardDeleted`, `Restored`, `ChangeOwnership`, `Moved`, `ImpersonationStarted`, or `ImpersonationEnded`.
-- **Entity** - the kind of record and its key.
+- **Entity** - the kind of record and a readable name for it (for example a user's display name or a role name). Hover the name to see the raw key. Identifiers that no longer exist are shown as they are.
 - **Changes** - for updates, each changed property with its old and new value. Sensitive values such as passwords are always shown as `***`.
 
 ## Finding entries

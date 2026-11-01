@@ -54,6 +54,17 @@ public sealed class BuiltInRolesTests : IDisposable
     }
 
     [Fact]
+    public void BuiltInAccess_KeepsTheAuditLogAwayFromUsers()
+    {
+        var names = BuiltInAccess.Users.Grants.Select(grant => grant.Grant.Name).ToList();
+
+        Assert.DoesNotContain("AuditLog.Read", names);
+        Assert.Contains("User.Read", names);
+        Assert.Contains("AuditLog.Read", BuiltInAccess.Administrators.Grants.Select(grant => grant.Grant.Name));
+        Assert.Contains("AuditLog.Read", BuiltInAccess.Developers.Grants.Select(grant => grant.Grant.Name));
+    }
+
+    [Fact]
     public async Task EnsureBuiltInRoles_SeedsDevelopersWithConfigurationReadAndRawDatabaseManage()
     {
         await using (var seed = _factory.CreateContext())

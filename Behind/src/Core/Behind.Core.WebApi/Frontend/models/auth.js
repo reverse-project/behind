@@ -265,6 +265,20 @@ define(["models/http", "models/session", "models/user"], function (http, session
             });
         },
 
+        loadAuditLog: function (query) {
+            var url = "/auditLog?fromDate=" + encodeURIComponent(query.fromDate) + "&toDate=" + encodeURIComponent(query.toDate)
+                + "&search=" + encodeURIComponent(query.search) + "&oldestFirst=" + query.oldestFirst
+                + "&page=" + query.page + "&pageSize=" + query.pageSize;
+
+            return http.get(url).then(function (response) {
+                return loaded(response, {
+                    400: "Choose a start date that is not after the end date.",
+                    401: "Your session has expired. Please sign in again.",
+                    403: "You need audit log access to see the audit log."
+                });
+            });
+        },
+
         signOutAll: function () {
             return http.post("/sign/out/all").then(function (response) {
                 if (response.ok || response.status === 401) {

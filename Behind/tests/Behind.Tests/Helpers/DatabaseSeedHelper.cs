@@ -114,7 +114,9 @@ public static class DatabaseSeedHelper
         CoreContextSqlite context,
         Guid? userId = null,
         Guid? behalfOfId = null,
-        DateTimeOffset? timestamp = null)
+        DateTimeOffset? timestamp = null,
+        string entityName = "Entity",
+        string entityKey = "key-1")
     {
         if (userId is not null || behalfOfId is not null)
         {
@@ -122,7 +124,7 @@ public static class DatabaseSeedHelper
         }
 
         var ts = timestamp ?? DateTimeOffset.UtcNow;
-        var entry = new AuditLogEntry("Entity", "key-1", new AuditLogEntry.Created(), ts);
+        var entry = new AuditLogEntry(entityName, entityKey, new AuditLogEntry.Created(), ts);
         await context.AuditLogEntries.AddAsync(entry);
 
         if (userId.HasValue)

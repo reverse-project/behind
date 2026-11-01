@@ -15,11 +15,11 @@ Open **Administration > Roles**. You need the `Role.Manage` grant.
 
 | Role | Default grants |
 |------|----------------|
-| Users | Read on Session, AuditLog, Role, and User |
+| Users | Read on Session, Role, and User |
 | Administrators | every action on Session, AuditLog, Role, and User |
-| Developers | the Users grants plus Configuration.Read and RawDatabase.Manage |
+| Developers | Read on Session, AuditLog, Role, and User, plus Configuration.Read and RawDatabase.Manage |
 
-Built-in roles can be edited but not deleted. Changes you make to them are kept when the application restarts.
+Built-in roles can be edited but not deleted. Changes you make to them are kept when the application restarts, so a database created before `AuditLog.Read` was removed from the Users role keeps it until an administrator removes it there.
 
 ### How calculated grants work
 

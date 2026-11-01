@@ -1,0 +1,65 @@
+<section class="behind-wide">
+    <h1 class="mb-3">Audit log</h1>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to see the audit log.</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need audit log access to see the audit log.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: canView">
+        <form class="row g-2 align-items-end mb-3" data-bind="submit: find">
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="audit-from">From</label>
+                <input id="audit-from" class="form-control" type="date" data-bind="value: fromDate">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="audit-to">To</label>
+                <input id="audit-to" class="form-control" type="date" data-bind="value: toDate">
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label" for="audit-search">Search</label>
+                <input id="audit-search" class="form-control" type="search" maxlength="200" placeholder="Entity or key" data-bind="value: search">
+            </div>
+            <div class="col-12 col-md-2">
+                <label class="form-label" for="audit-order">Order</label>
+                <select id="audit-order" class="form-select" data-bind="options: orders, optionsText: 'label', optionsValue: 'oldestFirst', value: oldestFirst"></select>
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSearch">Search</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="enable: !busy(), click: reset">Reset</button>
+            </div>
+        </form>
+        <p class="text-body-secondary" data-bind="visible: !hasEntries()">No audit log entries found.</p>
+        <div class="table-responsive" data-bind="visible: hasEntries">
+            <table class="table align-middle">
+                <thead>
+                <tr>
+                    <th scope="col">When</th>
+                    <th scope="col">Who</th>
+                    <th scope="col">Action</th>
+                    <th scope="col">Entity</th>
+                    <th scope="col">Changes</th>
+                </tr>
+                </thead>
+                <tbody data-bind="foreach: entries">
+                <tr>
+                    <td class="text-nowrap" data-bind="text: timestamp"></td>
+                    <td>
+                        <div class="text-break" data-bind="text: actor"></div>
+                        <div class="text-body-secondary small text-break" data-bind="visible: actorEmails !== '', text: actorEmails"></div>
+                        <div class="text-body-secondary small text-break" data-bind="visible: hasBehalfOf">On behalf of <span data-bind="text: behalfOf"></span></div>
+                    </td>
+                    <td><span class="badge" data-bind="text: action, css: actionClass"></span></td>
+                    <td>
+                        <div data-bind="text: entityName"></div>
+                        <div class="text-body-secondary small text-break" data-bind="text: entityKey"></div>
+                    </td>
+                    <td>
+                        <ul class="list-unstyled small mb-0" data-bind="foreach: changes">
+                            <li class="text-break"><strong data-bind="text: property"></strong>: <span class="text-body-secondary" data-bind="text: oldValue"></span> &rarr; <span data-bind="text: newValue"></span></li>
+                        </ul>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <pager class="d-block" params="pager: pager"></pager>
+    </div>
+</section>

@@ -7,9 +7,14 @@ define(["ko", "models/session"], function (ko, session) {
         return session.hasGrant("Role.Manage");
     };
 
+    var canReadAuditLog = function () {
+        return session.hasGrant("AuditLog.Read");
+    };
+
     var pages = [
         { name: "Users", icon: "fa-users", href: "#/users", allowed: canManageUsers },
-        { name: "Roles", icon: "fa-user-shield", href: "#/roles", allowed: canManageRoles }
+        { name: "Roles", icon: "fa-user-shield", href: "#/roles", allowed: canManageRoles },
+        { name: "Audit log", icon: "fa-clipboard-list", href: "#/audit-log", allowed: canReadAuditLog }
     ];
 
     return function AdministrationViewModel() {

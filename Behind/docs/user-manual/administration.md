@@ -6,6 +6,7 @@
 |------|----------|--------|
 | Users | the `User.Manage` grant | [Managing users](./managing-users.md) |
 | Roles | the `Role.Manage` grant | [Managing roles and access](./managing-roles-and-access.md) |
+| Audit log | the `AuditLog.Read` grant | [Audit log](./audit-log.md) |
 
 Administrators have both grants by default. If you open an administration page without the needed access you see a message such as "You need administrator access to manage users."
 

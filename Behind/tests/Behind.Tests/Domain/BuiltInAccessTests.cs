@@ -34,12 +34,12 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void Users_HaveReadOnEveryAreaExceptConfiguration()
+    public void Users_HaveReadOnEveryAreaExceptConfigurationAndAuditLog()
     {
         Assert.Equal(DomainConstants.UsersRole, BuiltInAccess.Users.Role.Name);
         Assert.Equal(
             GrantArea.All
-                .Where(area => area != GrantArea.Configuration)
+                .Where(area => area != GrantArea.Configuration && area != GrantArea.AuditLog)
                 .Select(area => GrantName.Of(area, GrantAction.Read))
                 .Order(),
             GrantNames(BuiltInAccess.Users));

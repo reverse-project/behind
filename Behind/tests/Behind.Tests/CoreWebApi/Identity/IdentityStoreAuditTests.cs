@@ -79,7 +79,8 @@ public sealed class IdentityStoreAuditTests : IDisposable
         var roles = await new RoleQueries(read).GetRolesByUserId(user.Id);
         var role = Assert.Single(roles);
         Assert.Equal(DomainConstants.UsersRole, role.Name);
-        Assert.True(await new UserQueries(read).HasGrant("store-role@test.com", "AuditLog.Read"));
+        Assert.True(await new UserQueries(read).HasGrant("store-role@test.com", "User.Read"));
+        Assert.False(await new UserQueries(read).HasGrant("store-role@test.com", "AuditLog.Read"));
         Assert.False(await new UserQueries(read).HasGrant("store-role@test.com", "AuditLog.Write"));
         Assert.False(await new UserQueries(read).HasGrant("store-role@test.com", "Configuration.Read"));
     }

@@ -234,9 +234,10 @@ public static class WebApiExtensions
                 .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read));
             application.MapGet("/auditLog", AuditLogEntryEndpoints.Get)
                 .RequireAuthorization(GrantName.Of(GrantArea.AuditLog, GrantAction.Read))
-                .Produces<IEnumerable<AuditLogEntry>>()
-                .Produces(204)
+                .Produces<PageResponse<AuditLogItem>>()
                 .Produces(400)
+                .Produces(401)
+                .Produces(403)
                 .Produces(500);
 
             application.UseRateLimiter();

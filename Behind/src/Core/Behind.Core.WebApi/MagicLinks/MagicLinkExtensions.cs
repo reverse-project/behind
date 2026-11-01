@@ -21,7 +21,7 @@ public static class MagicLinkExtensions
     extension(MagicLinkCredential credential)
     {
         public string ToLink(Uri baseUri) =>
-            $"{baseUri.GetLeftPart(UriPartial.Path)}#{QueryHelpers.AddQueryString(SignInRoute, TokenParameter, credential.Token)}";
+            baseUri.ToFrontendLink(SignInRoute, [new(TokenParameter, credential.Token)]);
     }
 
     extension(IServiceCollection services)

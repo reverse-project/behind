@@ -14,7 +14,7 @@ public class MagicLinkEmailSenderTests
     public async Task LoggerEmailSender_SendMagicLinkAsync_LogsSubjectAndEmailButNeverTheLink()
     {
         var logger = EnabledLogger.For<LoggerEmailSender>();
-        IMagicLinkEmailSender sender = new LoggerEmailSender(logger);
+        IMagicLinkEmailSender sender = new LoggerEmailSender(logger, FakeHostEnvironment.Production);
 
         await sender.SendMagicLinkAsync(new ApplicationUser { DisplayName = "User" }, "user@test.com", Link);
 

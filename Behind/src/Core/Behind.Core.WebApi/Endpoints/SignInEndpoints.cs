@@ -103,7 +103,7 @@ public sealed class SignInEndpoints
                         await magicLinkCommands.Issue(user.Id, magicLink, httpContext.RequestAborted);
 
                         var link = MagicLinkCredential.Create(magicLink.Nonce, settings.ActualSecret, jwtSettings.SigningKey)
-                            .ToLink(FrontendUri(configuration).GetOrElse(() => httpContext.BaseUri()));
+                            .ToLink(configuration.FrontendUri().GetOrElse(() => httpContext.BaseUri()));
 
                         var queued = mailQueue.TryEnqueue(new MagicLinkMail(user, request.Email, link));
 
@@ -190,12 +190,6 @@ public sealed class SignInEndpoints
 
         return Task.FromResult<IResult>(Results.InternalServerError());
     }
-
-    private static Option<Uri> FrontendUri(IConfiguration configuration) =>
-        configuration.GetSection(FrontendConfiguration.SectionName).GetValue<Uri>(nameof(FrontendConfiguration.Url))
-            is { } url
-            ? Some(url)
-            : None;
 
     private static async Task<IResult> StartSession(ApplicationUser user, JwtSettings jwtSettings,
         ISessionCommands sessionCommands, IWallOfShameQueries wallOfShameQueries, DateTimeOffset now,

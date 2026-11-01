@@ -1,5 +1,6 @@
 using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.EmailSender;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -13,8 +14,10 @@ public class EmailSenderExtensionsTests
         // Arrange
         var configuration = new LoggerEmailConfiguration();
         var logger = Substitute.For<ILogger<LoggerEmailSender>>();
+        var environment = FakeHostEnvironment.Production;
         var serviceProvider = Substitute.For<IServiceProvider>();
         serviceProvider.GetService(typeof(ILogger<LoggerEmailSender>)).Returns(logger);
+        serviceProvider.GetService(typeof(IHostEnvironment)).Returns(environment);
 
         // Act
         var sender = configuration.GetInstance(serviceProvider);
@@ -69,11 +72,13 @@ public class EmailSenderExtensionsTests
         // Arrange
         var configuration = new LoggerEmailConfiguration();
         var logger = Substitute.For<ILogger<LoggerEmailSender>>();
+        var environment = FakeHostEnvironment.Production;
         var serviceProvider = Substitute.For<IServiceProvider>();
-        
+
         serviceProvider
             .GetService(typeof(ILogger<LoggerEmailSender>))
             .Returns(logger);
+        serviceProvider.GetService(typeof(IHostEnvironment)).Returns(environment);
 
         // Act
         var sender = configuration.GetInstance(serviceProvider);

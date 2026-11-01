@@ -303,6 +303,7 @@ Domain objects use `record` types for:
 - TOTP two-factor authentication
 - Role-based access control (RBAC)
 - Grant-based permissions
+- Email confirmation at sign-up: `Security:EmailConfirmation` (default `true`) sends a confirmation link; when `false`, the new email's `ConfirmedAt` is set to the sign-up time
 
 ### Best Practices
 - Sensitive field masking in logs

@@ -585,6 +585,12 @@ public static class WebApiExtensions
                 .Produces(409)
                 .Produces(500);
 
+            application.MapPost(SignUpEndpoints.ConfirmEmailRoute, SignUpEndpoints.ConfirmEmail)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SignUpEndpoints.ConfirmEmailRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(500);
+
             application.MapPost("/sign/in/password", SignInEndpoints.SignInPassword)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.PasswordRequest>>()
                 .Produces(200)

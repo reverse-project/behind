@@ -12,7 +12,7 @@ public class LoggerEmailSenderTests
     {
         // Arrange
         var logger = EnabledLogger.For<LoggerEmailSender>();
-        var sender = new LoggerEmailSender(logger);
+        var sender = new LoggerEmailSender(logger, FakeHostEnvironment.Production);
         const string email = "test@example.com";
         const string subject = "Test Subject";
         const string htmlMessage = "<p>Test message</p>";
@@ -31,11 +31,47 @@ public class LoggerEmailSenderTests
     }
 
     [Fact]
+    public async Task SendEmailAsync_InDevelopment_LogsEmailBody()
+    {
+        var logger = EnabledLogger.For<LoggerEmailSender>();
+        var sender = new LoggerEmailSender(logger, FakeHostEnvironment.Development);
+
+        await sender.SendEmailAsync("test@example.com", "Subject", "<p>Body</p>");
+
+        logger.Received(1).Log(
+            LogLevel.Information,
+            Arg.Any<EventId>(),
+            Arg.Is<object>(o => o.ToString()!.Contains("<p>Body</p>")),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception?, string>>()
+        );
+    }
+
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Staging")]
+    public async Task SendEmailAsync_OutsideDevelopment_DoesNotLogEmailBody(string environmentName)
+    {
+        var logger = EnabledLogger.For<LoggerEmailSender>();
+        var sender = new LoggerEmailSender(logger, FakeHostEnvironment.Named(environmentName));
+
+        await sender.SendEmailAsync("test@example.com", "Subject", "<p>Body</p>");
+
+        logger.DidNotReceive().Log(
+            Arg.Any<LogLevel>(),
+            Arg.Any<EventId>(),
+            Arg.Is<object>(o => o.ToString()!.Contains("<p>Body</p>")),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception?, string>>()
+        );
+    }
+
+    [Fact]
     public async Task SendEmailAsync_CompletesSuccessfully()
     {
         // Arrange
         var logger = Substitute.For<ILogger<LoggerEmailSender>>();
-        var sender = new LoggerEmailSender(logger);
+        var sender = new LoggerEmailSender(logger, FakeHostEnvironment.Production);
 
         // Act
         var task = sender.SendEmailAsync("test@example.com", "Subject", "<p>Message</p>");
@@ -50,7 +86,7 @@ public class LoggerEmailSenderTests
     {
         // Arrange
         var logger = EnabledLogger.For<LoggerEmailSender>();
-        var sender = new LoggerEmailSender(logger);
+        var sender = new LoggerEmailSender(logger, FakeHostEnvironment.Production);
         var user = new ApplicationUser { DisplayName = "Test User" };
         const string confirmationLink = "https://example.com/confirm?token=abc123";
 
@@ -72,7 +108,7 @@ public class LoggerEmailSenderTests
     {
         // Arrange
         var logger = EnabledLogger.For<LoggerEmailSender>();
-        var sender = new LoggerEmailSender(logger);
+        var sender = new LoggerEmailSender(logger, FakeHostEnvironment.Production);
         var user = new ApplicationUser { DisplayName = "Test User" };
         const string resetCode = "123456";
 
@@ -94,7 +130,7 @@ public class LoggerEmailSenderTests
     {
         // Arrange
         var logger = EnabledLogger.For<LoggerEmailSender>();
-        var sender = new LoggerEmailSender(logger);
+        var sender = new LoggerEmailSender(logger, FakeHostEnvironment.Production);
         var user = new ApplicationUser { DisplayName = "Test User" };
         const string resetLink = "https://example.com/reset?token=xyz789";
 

@@ -1,5 +1,6 @@
 using Behind.Core.Common.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -12,7 +13,8 @@ public static class EmailSenderExtensions
         public EmailSender GetInstance(IServiceProvider serviceProvider) => configuration switch
         {
             LoggerEmailConfiguration _ => new LoggerEmailSender(
-                serviceProvider.GetRequiredService<ILogger<LoggerEmailSender>>()
+                serviceProvider.GetRequiredService<ILogger<LoggerEmailSender>>(),
+                serviceProvider.GetRequiredService<IHostEnvironment>()
             ),
             SmtpEmailConfiguration _ => new SmtpEmailSender(
                 serviceProvider.GetRequiredService<ILogger<SmtpEmailSender>>(),

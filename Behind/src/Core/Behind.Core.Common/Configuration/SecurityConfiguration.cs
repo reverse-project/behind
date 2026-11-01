@@ -13,7 +13,8 @@ public record SecurityConfiguration(
     Option<JwtSettings> Jwt,
     Option<MagicLinkSettings> MagicLink,
     Option<DataProtectionSettings> DataProtection = default,
-    Option<ElevationSettings> Elevation = default
+    Option<ElevationSettings> Elevation = default,
+    bool EmailConfirmation = true
 )
 {
     public SecurityConfiguration() : this(false, None, None, None)

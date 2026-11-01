@@ -2,6 +2,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.EmailSender;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -15,6 +16,7 @@ public class WebApiExtensionsEmailTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(FakeHostEnvironment.Production);
         
         var emailConfiguration = new LoggerEmailConfiguration();
         services.AddSingleton(Options.Create((EmailConfiguration)emailConfiguration));
@@ -35,6 +37,7 @@ public class WebApiExtensionsEmailTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(FakeHostEnvironment.Production);
         
         var emailConfiguration = new LoggerEmailConfiguration();
         services.AddSingleton(Options.Create((EmailConfiguration)emailConfiguration));
@@ -55,6 +58,7 @@ public class WebApiExtensionsEmailTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(FakeHostEnvironment.Production);
         
         var emailConfiguration = new SmtpEmailConfiguration(
             "smtp.example.com",
@@ -82,6 +86,7 @@ public class WebApiExtensionsEmailTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(FakeHostEnvironment.Production);
         
         var emailConfiguration = new LoggerEmailConfiguration();
         services.AddSingleton(Options.Create((EmailConfiguration)emailConfiguration));
@@ -104,6 +109,7 @@ public class WebApiExtensionsEmailTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(FakeHostEnvironment.Production);
         
         var emailConfiguration = new LoggerEmailConfiguration();
         services.AddSingleton(Options.Create((EmailConfiguration)emailConfiguration));

@@ -6,6 +6,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -59,15 +60,22 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>,
 public sealed class LoggerEmailSender : EmailSender
 {
     private readonly ILogger<LoggerEmailSender> _logger;
+    private readonly IHostEnvironment _environment;
 
-    public LoggerEmailSender(ILogger<LoggerEmailSender> logger)
+    public LoggerEmailSender(ILogger<LoggerEmailSender> logger, IHostEnvironment environment)
     {
         _logger = logger;
+        _environment = environment;
     }
 
     public override Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
         _logger.LogInformation("Sending email to {Email} with subject {Subject}", () => [email, subject]);
+
+        if (_environment.IsDevelopment())
+        {
+            _logger.LogInformation("Email body for {Email}: {Body}", () => [email, htmlMessage]);
+        }
 
         return Task.CompletedTask;
     }

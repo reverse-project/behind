@@ -20,6 +20,8 @@ If you have no display name, your email address is shown in the menu.
 
 If the email is already in use you are told so. After the account is created, sign in.
 
+Unless the installation has turned email confirmation off, you also receive an email with a link to confirm your address. Follow it to mark your email as confirmed. If confirmation is turned off, your email counts as confirmed the moment you sign up.
+
 Every new account gets the **Users** role, which lets you read the basic areas of the application.
 
 ## Signing in

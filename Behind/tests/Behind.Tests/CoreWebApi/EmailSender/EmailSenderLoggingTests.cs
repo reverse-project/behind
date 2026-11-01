@@ -10,7 +10,7 @@ public class EmailSenderLoggingTests
     {
         var logger = new CapturingLogger<LoggerEmailSender>();
 
-        await new LoggerEmailSender(logger).SendEmailAsync("user@test.com", "Hello", "<p>secret-link</p>");
+        await new LoggerEmailSender(logger, FakeHostEnvironment.Production).SendEmailAsync("user@test.com", "Hello", "<p>secret-link</p>");
 
         var entry = logger.Single(LogLevel.Information);
         Assert.Equal("user@test.com", entry.State["Email"]);

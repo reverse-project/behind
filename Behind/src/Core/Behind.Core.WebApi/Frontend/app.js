@@ -15,7 +15,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/sites/new": "controllers/siteeditor",
         "#/sites/:id": "controllers/siteeditor",
         "#/changelog": "controllers/changelog",
-        "#/sign/in/magiclink": "controllers/magiclink"
+        "#/sign/in/magiclink": "controllers/magiclink",
+        "#/sign/up/confirm": "controllers/confirmemail"
     };
 
     var siteRoutes = {

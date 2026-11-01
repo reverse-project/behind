@@ -106,6 +106,20 @@ define(["models/http", "models/session", "models/user"], function (http, session
             });
         },
 
+        confirmEmail: function (userId, token) {
+            if (!userId || !token) {
+                return Promise.resolve({ ok: false, message: "This confirmation link is incomplete." });
+            }
+
+            return http.post("/sign/up/confirm", { userId: userId, token: token }).then(function (response) {
+                return response.ok
+                    ? success("Your email is confirmed. You can sign in now.")
+                    : failure(response, {
+                        400: "This confirmation link is invalid or has expired."
+                    });
+            });
+        },
+
         requestMagicLink: function (email) {
             return http.post("/sign/in/magiclink", { email: email }).then(function (response) {
                 return response.ok

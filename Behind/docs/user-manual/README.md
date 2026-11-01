@@ -1,0 +1,22 @@
+# Behind User Manual
+
+This manual describes what you can do in the Behind web application today.
+
+## For everyone
+
+- **[Getting started](./getting-started.md)** - creating an account, signing in, signing out, and the navigation bar.
+- **[Your account](./your-account.md)** - profile, display name, current session, and all your sessions.
+- **[Wall of shame](./wall-of-shame.md)** - the public list of banned accounts.
+
+## For administrators and developers
+
+- **[Administration](./administration.md)** - the Administration page and who can see it.
+- **[Managing users](./managing-users.md)** - searching users, banning, deleting, restoring, signing users out, and editing a user's access.
+- **[Managing roles and access](./managing-roles-and-access.md)** - roles, grants, restrictions, and how a user's calculated grants are worked out.
+- **[Elevating your own role](./elevation.md)** - becoming an administrator or developer with an authenticator code.
+
+## Good to know
+
+- The app needs JavaScript enabled.
+- Pages that need you to be signed in show a "You are not signed in" message with a link to sign in.
+- Pages for administrators show a message instead of data when your account lacks the access they need.

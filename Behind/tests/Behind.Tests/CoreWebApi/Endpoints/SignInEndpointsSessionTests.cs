@@ -6,6 +6,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
+using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -16,6 +17,17 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 public class SignInEndpointsSessionTests
 {
     private static readonly JwtSettings Jwt = new("issuer", "audience", new string('k', 64));
+    private static readonly DateTimeOffset Now = new(2026, 11, 1, 9, 0, 0, TimeSpan.Zero);
+
+    private static IWallOfShameQueries NoBans() => Substitute.For<IWallOfShameQueries>();
+
+    private static IWallOfShameQueries BannedFor(string reason)
+    {
+        var queries = Substitute.For<IWallOfShameQueries>();
+        queries.FindActiveBan(Arg.Any<Guid>(), Now, Arg.Any<CancellationToken>())
+            .Returns(Some(new IWallOfShameQueries.ActiveBan(reason, None)));
+        return queries;
+    }
 
     private static IOptions<SecurityConfiguration> Security(Option<JwtSettings> jwt) =>
         Options.Create(new SecurityConfiguration(false, None, jwt, None));
@@ -57,6 +69,8 @@ public class SignInEndpointsSessionTests
             UserManagerFor(user),
             Security(Some(Jwt)),
             commands,
+            NoBans(),
+            new FixedTimeProvider(Now),
             NewHttpContext(),
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
@@ -89,6 +103,8 @@ public class SignInEndpointsSessionTests
             UserManagerFor(NewUser("secret")),
             Security(Some(Jwt)),
             commands,
+            NoBans(),
+            new FixedTimeProvider(Now),
             NewHttpContext(),
             new SignInEndpoints.PasswordRequest("user@test.com", "wrong"));
 
@@ -104,6 +120,8 @@ public class SignInEndpointsSessionTests
             UserManagerFor(null),
             Security(Some(Jwt)),
             Substitute.For<ISessionCommands>(),
+            NoBans(),
+            new FixedTimeProvider(Now),
             NewHttpContext(),
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
@@ -117,9 +135,46 @@ public class SignInEndpointsSessionTests
             UserManagerFor(NewUser("secret")),
             Security(None),
             Substitute.For<ISessionCommands>(),
+            NoBans(),
+            new FixedTimeProvider(Now),
             NewHttpContext(),
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
         Assert.IsType<InternalServerError>(result);
+    }
+
+    [Fact]
+    public async Task SignInPassword_BannedUser_ReturnsForbiddenWithTheBanReasonAndStartsNoSession()
+    {
+        var commands = Substitute.For<ISessionCommands>();
+
+        var result = await SignInEndpoints.SignInPassword(
+            UserManagerFor(NewUser("secret")),
+            Security(Some(Jwt)),
+            commands,
+            BannedFor("spamming the wall"),
+            new FixedTimeProvider(Now),
+            NewHttpContext(),
+            new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
+
+        var json = Assert.IsType<JsonHttpResult<SignInEndpoints.BannedResponse>>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, json.StatusCode);
+        Assert.Equal("spamming the wall", json.Value!.Reason);
+        await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SignInPassword_BannedUserWithWrongPassword_DoesNotRevealTheBan()
+    {
+        var result = await SignInEndpoints.SignInPassword(
+            UserManagerFor(NewUser("secret")),
+            Security(Some(Jwt)),
+            Substitute.For<ISessionCommands>(),
+            BannedFor("spamming the wall"),
+            new FixedTimeProvider(Now),
+            NewHttpContext(),
+            new SignInEndpoints.PasswordRequest("user@test.com", "wrong"));
+
+        Assert.IsType<UnauthorizedHttpResult>(result);
     }
 }

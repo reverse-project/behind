@@ -21,21 +21,24 @@ public sealed class SignInEndpoints
     private const string NoStore = "no-store";
 
     public sealed record PasswordRequest(
-        [Required, DataType(DataType.EmailAddress)]
+        [property: Required, DataType(DataType.EmailAddress)]
         string Email,
-        [Required] string Password);
+        [property: Required] string Password);
+
+    public sealed record BannedResponse(string Reason);
 
     public sealed record SignInResponse(string AccessToken, DateTimeOffset Expires, string RefreshToken);
 
     public sealed record MagicLinkRequest(
-        [Required, DataType(DataType.EmailAddress)]
+        [property: Required, DataType(DataType.EmailAddress)]
         string Email);
 
-    public sealed record MagicLinkSignInRequest([Required] string Token);
+    public sealed record MagicLinkSignInRequest([property: Required] string Token);
 
     [IgnoreETag]
     public static async Task<IResult> SignInPassword(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, ISessionCommands sessionCommands,
+        IWallOfShameQueries wallOfShameQueries, TimeProvider timeProvider,
         HttpContext httpContext, PasswordRequest request)
     {
         return await securityConfiguration.Value.Jwt.Match(
@@ -48,7 +51,8 @@ public sealed class SignInEndpoints
                     return Results.Unauthorized();
                 }
 
-                return await StartSession(user, jwtSettings, sessionCommands, httpContext);
+                return await StartSession(
+                    user, jwtSettings, sessionCommands, wallOfShameQueries, timeProvider.GetUtcNow(), httpContext);
             });
     }
 
@@ -88,7 +92,8 @@ public sealed class SignInEndpoints
     [IgnoreETag]
     public static async Task<IResult> SignInMagicLink(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, IMagicLinkSettingsStore settingsStore,
-        IMagicLinkCommands magicLinkCommands, ISessionCommands sessionCommands, TimeProvider timeProvider,
+        IMagicLinkCommands magicLinkCommands, ISessionCommands sessionCommands,
+        IWallOfShameQueries wallOfShameQueries, TimeProvider timeProvider,
         HttpContext httpContext, MagicLinkSignInRequest request)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
@@ -113,7 +118,7 @@ public sealed class SignInEndpoints
 
                     return user is null
                         ? Results.Unauthorized()
-                        : await StartSession(user, jwtSettings, sessionCommands, httpContext);
+                        : await StartSession(user, jwtSettings, sessionCommands, wallOfShameQueries, now, httpContext);
                 }));
     }
 
@@ -124,6 +129,19 @@ public sealed class SignInEndpoints
             : None;
 
     private static async Task<IResult> StartSession(ApplicationUser user, JwtSettings jwtSettings,
+        ISessionCommands sessionCommands, IWallOfShameQueries wallOfShameQueries, DateTimeOffset now,
+        HttpContext httpContext)
+    {
+        var ban = await wallOfShameQueries.FindActiveBan(user.Id, now, httpContext.RequestAborted);
+
+        return await ban.Match(
+            none: () => StartPermittedSession(user, jwtSettings, sessionCommands, httpContext),
+            some: active => Task.FromResult(Results.Json(
+                new BannedResponse(active.Reason),
+                statusCode: StatusCodes.Status403Forbidden)));
+    }
+
+    private static async Task<IResult> StartPermittedSession(ApplicationUser user, JwtSettings jwtSettings,
         ISessionCommands sessionCommands, HttpContext httpContext)
     {
         var humanUser = new HumanUser(user.DisplayName, user.Emails, None);

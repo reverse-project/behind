@@ -9,7 +9,7 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class ProfileEndpoints
 {
-    public sealed record DisplayNameRequest([MaxLength(DisplayNameExtensions.MaxLength)] string? DisplayName);
+    public sealed record DisplayNameRequest([property: MaxLength(DisplayNameExtensions.MaxLength)] string? DisplayName);
 
     [Authorize]
     [IgnoreETag]

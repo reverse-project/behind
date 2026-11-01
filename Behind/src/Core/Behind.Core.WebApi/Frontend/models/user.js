@@ -5,6 +5,20 @@ define(function () {
             var emails = user.emails || [];
 
             return name || (emails.length > 0 ? emails[0] : "");
+        },
+
+        grants: function (user) {
+            var names = [];
+
+            (user.roles || []).forEach(function (role) {
+                (role.grants || []).forEach(function (grant) {
+                    if (names.indexOf(grant) < 0) {
+                        names.push(grant);
+                    }
+                });
+            });
+
+            return names;
         }
     };
 });

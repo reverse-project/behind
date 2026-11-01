@@ -6,6 +6,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], functio
         "#/session": "controllers/session",
         "#/sessions": "controllers/sessions",
         "#/profile": "controllers/profile",
+        "#/users": "controllers/users",
+        "#/wall-of-shame": "controllers/wallofshame",
         "#/sign/in/magiclink": "controllers/magiclink"
     };
 

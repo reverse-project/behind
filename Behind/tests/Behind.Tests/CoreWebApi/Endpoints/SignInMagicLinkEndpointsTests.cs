@@ -26,6 +26,7 @@ public class SignInMagicLinkEndpointsTests
     private readonly IMagicLinkCommands _magicLinks = Substitute.For<IMagicLinkCommands>();
     private readonly IMagicLinkQueries _queries = Substitute.For<IMagicLinkQueries>();
     private readonly ISessionCommands _sessions = Substitute.For<ISessionCommands>();
+    private readonly IWallOfShameQueries _bans = Substitute.For<IWallOfShameQueries>();
     private readonly IMagicLinkMailQueue _mailQueue = new MagicLinkMailQueue();
     private readonly TimeProvider _time = new FixedTimeProvider(Now);
 
@@ -93,6 +94,7 @@ public class SignInMagicLinkEndpointsTests
             StoreOf(settings),
             _magicLinks,
             _sessions,
+            _bans,
             _time,
             NewHttpContext(),
             new SignInEndpoints.MagicLinkSignInRequest(token!));
@@ -281,6 +283,23 @@ public class SignInMagicLinkEndpointsTests
     }
 
     [Fact]
+    public async Task SignInMagicLink_BannedUser_ReturnsForbiddenWithTheBanReasonAndStartsNoSession()
+    {
+        var user = NewUser();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(user.Id)));
+        _bans.FindActiveBan(user.Id, Now, Arg.Any<CancellationToken>())
+            .Returns(Some(new IWallOfShameQueries.ActiveBan("abuse", None)));
+
+        var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        var json = Assert.IsType<JsonHttpResult<SignInEndpoints.BannedResponse>>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, json.StatusCode);
+        Assert.Equal("abuse", json.Value!.Reason);
+        await _sessions.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
     public async Task SignInMagicLink_OldSecretDuringOverlap_IsStillAccepted()
     {
         var user = NewUser();
@@ -305,6 +324,7 @@ public class SignInMagicLinkEndpointsTests
             StoreOf(Some(Settings())),
             _magicLinks,
             _sessions,
+            _bans,
             _time,
             httpContext,
             new SignInEndpoints.MagicLinkSignInRequest(string.Empty));

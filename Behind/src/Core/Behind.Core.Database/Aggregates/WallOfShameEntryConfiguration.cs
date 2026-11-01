@@ -14,6 +14,7 @@ public sealed class WallOfShameEntryConfiguration : IEntityTypeConfiguration<Wal
 
         builder.Ignore(w => w.Expires);
         builder.Property<DateTimeOffset?>("ExpiresAt")
+            .HasConversion<DateTimeOffsetConverter>()
             .IsRequired(false);
         builder.HasIndex("ExpiresAt");
 

@@ -176,6 +176,10 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
             builder.Services.AddScoped<ISessionQueries, SessionQueries>();
             builder.Services.AddScoped<ISessionCommands, SessionCommands>();
+            builder.Services.AddScoped<IUserManagementQueries, UserManagementQueries>();
+            builder.Services.AddScoped<IWallOfShameQueries, WallOfShameQueries>();
+            builder.Services.AddScoped<IWallOfShameCommands, WallOfShameCommands>();
+            builder.Services.AddScoped<UserManagementGate>();
             builder.Services.AddScoped<IMagicLinkCommands, MagicLinkCommands>();
             builder.Services.AddScoped<IMagicLinkQueries, MagicLinkQueries>();
             builder.Services.AddScoped<IAuditActorProvider, HttpAuditActorProvider>();
@@ -245,6 +249,61 @@ public static class WebApiExtensions
             application.MapGet("/sessions", SessionListEndpoints.Get)
                 .Produces<SessionListResponse>()
                 .Produces(401)
+                .Produces(500);
+
+            application.MapGet("/wallOfShame", WallOfShameEndpoints.Get)
+                .Produces<PageResponse<WallOfShameItem>>()
+                .Produces(500);
+
+            var userManagement = GrantName.Of(GrantArea.User, GrantAction.Manage);
+
+            application.MapGet("/users", UserManagementEndpoints.Get)
+                .RequireAuthorization(userManagement)
+                .Produces<PageResponse<ManagedUserItem>>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
+            application.MapPost("/users/{id:guid}/elevate/{role}", UserManagementEndpoints.Elevate)
+                .RequireAuthorization(userManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/users/{id:guid}/deelevate/{role}", UserManagementEndpoints.Deelevate)
+                .RequireAuthorization(userManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/users/{id:guid}/sign/out", UserManagementEndpoints.SignOut)
+                .RequireAuthorization(userManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/users/{id:guid}/ban", UserManagementEndpoints.Ban)
+                .RequireAuthorization(userManagement)
+                .AddEndpointFilter<DataAnnotationValidationFilter<UserManagementEndpoints.BanRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/users/{id:guid}/unban", UserManagementEndpoints.Unban)
+                .RequireAuthorization(userManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
                 .Produces(500);
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)

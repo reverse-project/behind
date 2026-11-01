@@ -18,4 +18,7 @@ public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
         await context.EnsureBuiltInRolesAsync(cancellationToken);
         await context.AssignRoleToUserAsync(userId, role.Id, cancellationToken);
     }
+
+    public Task RevokeBuiltIn(Guid userId, BuiltInRole role, CancellationToken cancellationToken = default) =>
+        context.RemoveRoleFromUserAsync(userId, role.Id, cancellationToken);
 }

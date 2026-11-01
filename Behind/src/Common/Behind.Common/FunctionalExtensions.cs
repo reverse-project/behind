@@ -230,6 +230,8 @@ public static partial class FunctionalExtensions
 
     extension<T>(T? t) where T : struct
     {
+        public Option<T> ToOption() => t.HasValue ? Some(t.Value) : None;
+
         public void Null(Action nullAction, Action<T>? notNullAction = null)
         {
             if (t.HasValue)

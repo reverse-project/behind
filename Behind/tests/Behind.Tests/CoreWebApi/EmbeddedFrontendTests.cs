@@ -210,7 +210,7 @@ public class EmbeddedFrontendTests
         Assert.Contains("session.refreshHeaders()", auth);
         Assert.Contains("session.renew(response.data.refreshed)", auth);
         Assert.Contains("session.end()", auth);
-        Assert.Contains("session.identify(user.label(response.data.user))", auth);
+        Assert.Contains("session.identify(user.label(response.data.user), user.grants(response.data.user))", auth);
         Assert.Contains("extraHeaders", http);
         Assert.Contains("renew:", session);
     }

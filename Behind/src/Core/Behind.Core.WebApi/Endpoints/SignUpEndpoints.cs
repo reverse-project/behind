@@ -9,9 +9,9 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class SignUpEndpoints
 {
-    public sealed record PasswordRequest([Required, DataType(DataType.EmailAddress)] string Email,
-        [Required] string Password,
-        [MaxLength(DisplayNameExtensions.MaxLength)] string? DisplayName = null);
+    public sealed record PasswordRequest([property: Required, DataType(DataType.EmailAddress)] string Email,
+        [property: Required] string Password,
+        [property: MaxLength(DisplayNameExtensions.MaxLength)] string? DisplayName = null);
 
     [IgnoreETag]
     public static async Task<IResult> SignUpPassword(UserManager<ApplicationUser> userManager, PasswordRequest request)

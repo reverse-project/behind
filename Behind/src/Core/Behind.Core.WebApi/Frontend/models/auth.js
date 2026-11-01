@@ -11,6 +11,25 @@ define(["models/http", "models/session", "models/user"], function (http, session
         return { ok: false, message: messages[response.status] || details || genericFailure };
     };
 
+    var bannedMessage = function (response) {
+        var reason = response.data && response.data.reason ? response.data.reason : "";
+
+        return reason ? "This account is banned: " + reason : "This account is banned.";
+    };
+
+    var userActionFailures = {
+        400: "Enter a message of up to 500 characters.",
+        401: "Your session has expired. Please sign in again.",
+        403: "You are not allowed to do that to this user.",
+        404: "This user no longer exists."
+    };
+
+    var userAction = function (path, body, done) {
+        return http.post("/users/" + path, body).then(function (response) {
+            return response.ok ? success(done) : failure(response, userActionFailures);
+        });
+    };
+
     return {
         signIn: function (email, password) {
             return http.post("/sign/in/password", { email: email, password: password }).then(function (response) {
@@ -19,7 +38,11 @@ define(["models/http", "models/session", "models/user"], function (http, session
                     return success("Signed in.");
                 }
 
-                return failure(response, { 400: "Enter a valid email and password.", 401: "Invalid email or password." });
+                return failure(response, {
+                    400: "Enter a valid email and password.",
+                    401: "Invalid email or password.",
+                    403: bannedMessage(response)
+                });
             });
         },
 
@@ -37,6 +60,7 @@ define(["models/http", "models/session", "models/user"], function (http, session
                 return failure(response, {
                     400: "This sign in link is incomplete.",
                     401: "This sign in link is invalid or has expired.",
+                    403: bannedMessage(response),
                     404: "Magic link sign in is not available.",
                     429: "Too many attempts. Please wait before trying again."
                 });
@@ -70,7 +94,7 @@ define(["models/http", "models/session", "models/user"], function (http, session
                         session.renew(response.data.refreshed);
                     }
 
-                    session.identify(user.label(response.data.user));
+                    session.identify(user.label(response.data.user), user.grants(response.data.user));
 
                     return { ok: true, message: "", data: response.data };
                 }
@@ -118,6 +142,47 @@ define(["models/http", "models/session", "models/user"], function (http, session
                 return response.ok
                     ? { ok: true, message: "", data: response.data }
                     : failure(response, { 401: "Your session has expired. Please sign in again." });
+            });
+        },
+
+        loadUsers: function (query) {
+            var url = "/users?page=" + query.page + "&pageSize=" + query.pageSize + "&search=" + encodeURIComponent(query.search);
+
+            return http.get(url).then(function (response) {
+                return response.ok
+                    ? { ok: true, message: "", data: response.data }
+                    : failure(response, {
+                        401: "Your session has expired. Please sign in again.",
+                        403: "You need administrator access to manage users."
+                    });
+            });
+        },
+
+        elevateUser: function (userId, role) {
+            return userAction(userId + "/elevate/" + role, undefined, "The role was granted.");
+        },
+
+        deelevateUser: function (userId, role) {
+            return userAction(userId + "/deelevate/" + role, undefined, "The role was removed.");
+        },
+
+        signOutUser: function (userId) {
+            return userAction(userId + "/sign/out", undefined, "The user was signed out of all sessions.");
+        },
+
+        banUser: function (userId, reason) {
+            return userAction(userId + "/ban", { reason: reason }, "The user was banned and signed out of all sessions.");
+        },
+
+        unbanUser: function (userId) {
+            return userAction(userId + "/unban", undefined, "The user was unbanned.");
+        },
+
+        loadWallOfShame: function (paging) {
+            var query = "?page=" + paging.page + "&pageSize=" + paging.pageSize;
+
+            return http.get("/wallOfShame" + query).then(function (response) {
+                return response.ok ? { ok: true, message: "", data: response.data } : failure(response, {});
             });
         },
 

@@ -48,6 +48,25 @@ public static class BuiltInRolesExtensions
             await context.SaveChangesAsync(cancellationToken);
         }
 
+        public async Task RemoveRoleFromUserAsync(Guid userId, Guid roleId, CancellationToken cancellationToken = default)
+        {
+            var userRoles = context.Set<Dictionary<string, object>>("UserRoles");
+
+            var assigned = await userRoles
+                .Where(userRole => EF.Property<Guid>(userRole, "UserId") == userId
+                                   && EF.Property<Guid>(userRole, "RoleId") == roleId)
+                .ToListAsync(cancellationToken);
+
+            if (assigned.Count == 0)
+            {
+                return;
+            }
+
+            userRoles.RemoveRange(assigned);
+
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
         public async Task EnsureUsersHaveUsersRoleAsync(CancellationToken cancellationToken = default)
         {
             var assigned = context.Set<Dictionary<string, object>>("UserRoles")

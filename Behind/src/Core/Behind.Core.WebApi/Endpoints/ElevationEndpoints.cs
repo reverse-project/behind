@@ -12,7 +12,7 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class ElevationEndpoints
 {
-    public sealed record ElevationRequest([Required, RegularExpression(@"^\d{6,8}$")] string Code);
+    public sealed record ElevationRequest([property: Required, RegularExpression(@"^\d{6,8}$")] string Code);
 
     [Authorize]
     [IgnoreETag]

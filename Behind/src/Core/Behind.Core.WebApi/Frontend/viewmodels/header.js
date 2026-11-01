@@ -4,6 +4,10 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
 
         self.isSignedIn = session.isSignedIn;
 
+        self.canManageUsers = ko.pureComputed(function () {
+            return session.hasGrant("User.Manage");
+        });
+
         self.label = ko.pureComputed(function () {
             return session.displayName() || "Account";
         });
@@ -15,7 +19,7 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
         };
 
         var needsIdentity = ko.pureComputed(function () {
-            return session.isSignedIn() && session.displayName() === "";
+            return session.isSignedIn() && (session.displayName() === "" || session.grants() === null);
         });
 
         var identify = function (required) {

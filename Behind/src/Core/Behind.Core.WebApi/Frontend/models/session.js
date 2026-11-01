@@ -32,12 +32,20 @@ define(["jquery", "ko"], function ($, ko) {
             var current = tokens();
             return current ? current.displayName || "" : "";
         }),
-        identify: function (displayName) {
+        identify: function (displayName, grants) {
             var current = tokens();
 
             if (current) {
-                persist($.extend({}, current, { displayName: displayName }));
+                persist($.extend({}, current, { displayName: displayName, grants: grants }));
             }
+        },
+        grants: ko.pureComputed(function () {
+            var current = tokens();
+            return current && current.grants ? current.grants : null;
+        }),
+        hasGrant: function (name) {
+            var current = tokens();
+            return !!current && !!current.grants && current.grants.indexOf(name) >= 0;
         },
         renew: function (refreshed) {
             var current = tokens();

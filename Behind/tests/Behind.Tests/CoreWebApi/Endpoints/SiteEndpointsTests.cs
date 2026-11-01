@@ -6,7 +6,6 @@ using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
 using Site = Behind.Core.Domain.Site;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
@@ -375,7 +374,7 @@ public class SiteEndpointsTests
     public void GetSettings_ReturnsTheNormalizedIndexSlugAndTheImageLimit()
     {
         var context = new DefaultHttpContext();
-        var configuration = Options.Create(new SitesConfiguration { IndexSlug = " Home Page ", MaxImageBytes = 2048 });
+        var configuration = FixedOptionsSnapshot.Of(new SitesConfiguration { IndexSlug = " Home Page ", MaxImageBytes = 2048 });
 
         var result = SiteEndpoints.GetSettings(context, configuration);
 
@@ -391,7 +390,7 @@ public class SiteEndpointsTests
     [InlineData("!!!")]
     public void GetSettings_WithoutAUsableIndexSlug_HasNoIndex(string? indexSlug)
     {
-        var result = SiteEndpoints.GetSettings(new DefaultHttpContext(), Options.Create(new SitesConfiguration { IndexSlug = indexSlug }));
+        var result = SiteEndpoints.GetSettings(new DefaultHttpContext(), FixedOptionsSnapshot.Of(new SitesConfiguration { IndexSlug = indexSlug }));
 
         var body = Assert.IsType<JsonHttpResult<SiteSettingsResponse>>(result).Value!;
         Assert.Null(body.IndexSlug);
@@ -406,7 +405,7 @@ public class SiteEndpointsTests
             .Returns(Some(new Site(new VersionedKey<Guid>(SiteId, 2), "Home", "home", "<p>x</p>", Some(Now), Now)));
         var context = new DefaultHttpContext();
 
-        var result = await SiteEndpoints.GetIndex(context, queries, Options.Create(new SitesConfiguration { IndexSlug = "Home" }));
+        var result = await SiteEndpoints.GetIndex(context, queries, FixedOptionsSnapshot.Of(new SitesConfiguration { IndexSlug = "Home" }));
 
         Assert.Equal("no-cache", context.Response.Headers.CacheControl);
         Assert.Equal(
@@ -419,7 +418,7 @@ public class SiteEndpointsTests
     {
         var queries = Substitute.For<ISiteQueries>();
 
-        var result = await SiteEndpoints.GetIndex(new DefaultHttpContext(), queries, Options.Create(new SitesConfiguration()));
+        var result = await SiteEndpoints.GetIndex(new DefaultHttpContext(), queries, FixedOptionsSnapshot.Of(new SitesConfiguration()));
 
         Assert.IsType<NotFound>(result);
         await queries.DidNotReceiveWithAnyArgs().FindActiveBySlug(default!);
@@ -431,7 +430,7 @@ public class SiteEndpointsTests
         var queries = Substitute.For<ISiteQueries>();
         queries.FindActiveBySlug(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(None);
 
-        var result = await SiteEndpoints.GetIndex(new DefaultHttpContext(), queries, Options.Create(new SitesConfiguration { IndexSlug = "home" }));
+        var result = await SiteEndpoints.GetIndex(new DefaultHttpContext(), queries, FixedOptionsSnapshot.Of(new SitesConfiguration { IndexSlug = "home" }));
 
         Assert.IsType<NotFound>(result);
     }

@@ -15,8 +15,8 @@ public class SiteImageEndpointsTests
     private static readonly DateTimeOffset Now = new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
     private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3];
 
-    private static IOptions<SitesConfiguration> Options(long? maxBytes = null) =>
-        Microsoft.Extensions.Options.Options.Create(
+    private static IOptionsSnapshot<SitesConfiguration> Options(long? maxBytes = null) =>
+        FixedOptionsSnapshot.Of(
             maxBytes is { } limit ? new SitesConfiguration { MaxImageBytes = limit } : new SitesConfiguration());
 
     private static IFormFile File(byte[] content, string fileName = "logo.png") =>

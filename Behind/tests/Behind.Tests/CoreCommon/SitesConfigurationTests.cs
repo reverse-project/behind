@@ -1,5 +1,7 @@
 using Behind.Core.Common.Configuration;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Behind.Tests.CoreCommon;
 
@@ -56,5 +58,29 @@ public class SitesConfigurationTests
         Assert.Equal(
             SitesConfiguration.DefaultMaxImageBytes,
             new SitesConfiguration { MaxImageBytes = value }.ImageLimit);
+    }
+
+    [Fact]
+    public void SnapshotsPickUpChangedConfigurationInNewScopes()
+    {
+        var configuration = new ConfigurationManager();
+        configuration["Frontend:Sites:IndexSlug"] = "before";
+        using var provider = new ServiceCollection()
+            .Configure<SitesConfiguration>(configuration.GetSection(SitesConfiguration.SectionName))
+            .BuildServiceProvider();
+
+        var before = SnapshotIndexSlug(provider);
+        configuration["Frontend:Sites:IndexSlug"] = "after";
+        var after = SnapshotIndexSlug(provider);
+
+        Assert.Equal("before", before);
+        Assert.Equal("after", after);
+    }
+
+    private static string? SnapshotIndexSlug(IServiceProvider provider)
+    {
+        using var scope = provider.CreateScope();
+
+        return scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<SitesConfiguration>>().Value.IndexSlug;
     }
 }

@@ -88,7 +88,7 @@ public sealed class SiteEndpoints
         (await commands.HardDelete(id, httpContext.RequestAborted)).ToResult();
 
     [IgnoreETag]
-    public static IResult GetSettings(HttpContext httpContext, IOptions<SitesConfiguration> configuration)
+    public static IResult GetSettings(HttpContext httpContext, IOptionsSnapshot<SitesConfiguration> configuration)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
 
@@ -162,7 +162,7 @@ public sealed class SiteEndpoints
     public static Task<IResult> GetIndex(
         HttpContext httpContext,
         ISiteQueries queries,
-        IOptions<SitesConfiguration> configuration) =>
+        IOptionsSnapshot<SitesConfiguration> configuration) =>
         ServePublic(configuration.Value.IndexSlugOption, httpContext, queries);
 
     private static async Task<IResult> ServePublic(Option<string> slug, HttpContext httpContext, ISiteQueries queries)

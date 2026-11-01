@@ -19,6 +19,7 @@
       { "type": "added", "text": "A custom index site: frontend.json can name a site slug that is shown at #/, and the Sites pages mark it." },
       { "type": "added", "text": "The maximum site image size is configurable in frontend.json." },
       { "type": "changed", "text": "Active versions are stored in their own database context, as they are shared by every versioned entity." },
+      { "type": "fixed", "text": "Changes to frontend.json (site settings, image size limit, index site) are picked up without restarting the application." },
       { "type": "fixed", "text": "The Stop impersonating button is visible in the dark theme." },
       { "type": "fixed", "text": "Versioned keys now support Guid and text keys and keep their version when converted to text." },
       { "type": "changed", "text": "The audit log shows names (users, roles, grants, emails and so on) instead of raw identifiers." },

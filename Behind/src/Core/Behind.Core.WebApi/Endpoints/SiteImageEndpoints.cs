@@ -21,7 +21,7 @@ public sealed class SiteImageEndpoints
         HttpContext httpContext,
         ISiteImageCommands commands,
         TimeProvider timeProvider,
-        IOptions<SitesConfiguration> configuration)
+        IOptionsSnapshot<SitesConfiguration> configuration)
     {
         if (file is null || file.Length == 0)
         {

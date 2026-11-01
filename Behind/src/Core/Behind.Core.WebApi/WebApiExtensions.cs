@@ -247,6 +247,13 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(500);
 
+            application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)
+                .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEndpoints.DisplayNameRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(500);
+
             application.MapPost("/session/elevate/administrator", ElevationEndpoints.ElevateAdministrator)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ElevationEndpoints.ElevationRequest>>()
                 .RequireRateLimiting(ElevationExtensions.RateLimitPolicy)

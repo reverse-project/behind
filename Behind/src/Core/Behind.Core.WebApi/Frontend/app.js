@@ -5,6 +5,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], functio
         "#/sign-up": "controllers/signup",
         "#/session": "controllers/session",
         "#/sessions": "controllers/sessions",
+        "#/profile": "controllers/profile",
         "#/sign/in/magiclink": "controllers/magiclink"
     };
 

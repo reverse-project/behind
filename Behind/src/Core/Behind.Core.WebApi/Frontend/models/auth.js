@@ -1,4 +1,4 @@
-define(["models/http", "models/session"], function (http, session) {
+define(["models/http", "models/session", "models/user"], function (http, session, user) {
     var genericFailure = "Something went wrong. Please try again.";
 
     var success = function (message) {
@@ -43,8 +43,8 @@ define(["models/http", "models/session"], function (http, session) {
             });
         },
 
-        signUp: function (email, password) {
-            return http.post("/sign/up/password", { email: email, password: password }).then(function (response) {
+        signUp: function (email, password, displayName) {
+            return http.post("/sign/up/password", { email: email, password: password, displayName: displayName }).then(function (response) {
                 return response.ok
                     ? success("Account created. You can sign in now.")
                     : failure(response, { 409: "This email is already in use." });
@@ -70,7 +70,7 @@ define(["models/http", "models/session"], function (http, session) {
                         session.renew(response.data.refreshed);
                     }
 
-                    session.identify(response.data.user.displayName);
+                    session.identify(user.label(response.data.user));
 
                     return { ok: true, message: "", data: response.data };
                 }
@@ -83,6 +83,17 @@ define(["models/http", "models/session"], function (http, session) {
                     401: "Your session has expired. Please sign in again.",
                     409: "Your session was changed elsewhere. Please try again."
                 });
+            });
+        },
+
+        changeDisplayName: function (displayName) {
+            return http.put("/profile/displayName", { displayName: displayName }).then(function (response) {
+                return response.ok
+                    ? success("Your display name was saved.")
+                    : failure(response, {
+                        400: "The display name is too long.",
+                        401: "Your session has expired. Please sign in again."
+                    });
             });
         },
 

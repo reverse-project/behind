@@ -44,6 +44,10 @@ public class EmbeddedFrontendTests
     [InlineData("controllers/sessions.js")]
     [InlineData("viewmodels/sessions.js")]
     [InlineData("views/sessions.html")]
+    [InlineData("controllers/profile.js")]
+    [InlineData("viewmodels/profile.js")]
+    [InlineData("views/profile.html")]
+    [InlineData("models/user.js")]
     [InlineData("models/pager.js")]
     [InlineData("components/pager.js")]
     [InlineData("components/pager.html")]
@@ -206,7 +210,7 @@ public class EmbeddedFrontendTests
         Assert.Contains("session.refreshHeaders()", auth);
         Assert.Contains("session.renew(response.data.refreshed)", auth);
         Assert.Contains("session.end()", auth);
-        Assert.Contains("session.identify(response.data.user.displayName)", auth);
+        Assert.Contains("session.identify(user.label(response.data.user))", auth);
         Assert.Contains("extraHeaders", http);
         Assert.Contains("renew:", session);
     }
@@ -234,6 +238,49 @@ public class EmbeddedFrontendTests
         Assert.Contains("url === sessionUrl", http);
         Assert.Contains("session.renew(response.data.refreshed)", http);
         Assert.Contains("\"X-Refresh-Token\"", session);
+    }
+
+    [Fact]
+    public void SignUpView_OffersAnOptionalDisplayNameAndSendsIt()
+    {
+        var view = Read(Provider.GetFileInfo("views/signup.html"));
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/signup.js"));
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+
+        Assert.Contains("value: displayName", view);
+        Assert.DoesNotContain("required data-bind=\"value: displayName\"", view);
+        Assert.Contains("self.displayName()", viewModel);
+        Assert.Contains("displayName: displayName", auth);
+    }
+
+    [Fact]
+    public void UserLabel_FallsBackToThePrimaryEmailWhenTheDisplayNameIsBlank()
+    {
+        var user = Read(Provider.GetFileInfo("models/user.js"));
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/session.js"));
+
+        Assert.Contains("(user.displayName || \"\").trim()", user);
+        Assert.Contains("emails[0]", user);
+        Assert.Contains("user.label(data.user)", viewModel);
+        Assert.Contains("user.label(response.data.user)", auth);
+    }
+
+    [Fact]
+    public void ProfileRoute_IsRegisteredLinkedAndSavesTheDisplayName()
+    {
+        var app = Read(Provider.GetFileInfo("app.js"));
+        var index = Read(Provider.GetFileInfo("index.html"));
+        var view = Read(Provider.GetFileInfo("views/profile.html"));
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+        var http = Read(Provider.GetFileInfo("models/http.js"));
+
+        Assert.Contains("\"#/profile\": \"controllers/profile\"", app);
+        Assert.Contains("<a class=\"dropdown-item\" href=\"#/profile\">Profile</a>", index);
+        Assert.Contains("value: displayName", view);
+        Assert.Contains("submit: submit", view);
+        Assert.Contains("http.put(\"/profile/displayName\"", auth);
+        Assert.Contains("put: function", http);
     }
 
     [Fact]

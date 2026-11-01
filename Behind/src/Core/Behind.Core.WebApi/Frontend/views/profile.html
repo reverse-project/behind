@@ -1,0 +1,13 @@
+<section>
+    <h1 class="mb-3">Profile</h1>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to change your display name.</p>
+    <form data-bind="visible: isSignedIn, submit: submit">
+        <div class="mb-3">
+            <label class="form-label" for="profile-display-name">Display name</label>
+            <input id="profile-display-name" class="form-control" type="text" maxlength="500" autocomplete="nickname" data-bind="value: displayName, attr: { placeholder: emails()[0] }">
+            <div class="form-text">Shown as <strong data-bind="text: shownAs"></strong>. Leave empty to use your primary email address.</div>
+        </div>
+        <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Save</button>
+    </form>
+    <p class="mt-3" role="status" data-bind="visible: hasMessage, text: message"></p>
+</section>

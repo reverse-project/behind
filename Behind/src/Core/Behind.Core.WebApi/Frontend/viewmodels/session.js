@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
+define(["ko", "models/auth", "models/session", "models/user"], function (ko, auth, session, user) {
     var elevationTargets = [
         { value: "administrator", label: "Administrator", role: "Administrators" },
         { value: "developer", label: "Developer", role: "Developers" }
@@ -36,7 +36,7 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
     var present = function (data) {
         return {
             sessionId: data.sessionId,
-            displayName: data.user.displayName,
+            displayName: user.label(data.user),
             userId: data.user.id,
             emails: data.user.emails,
             roles: data.user.roles.map(function (role) {

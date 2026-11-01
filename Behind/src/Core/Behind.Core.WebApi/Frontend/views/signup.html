@@ -6,6 +6,11 @@
             <input id="signup-email" class="form-control" type="email" autocomplete="username" required data-bind="value: email">
         </div>
         <div class="mb-3">
+            <label class="form-label" for="signup-display-name">Display name <span class="text-body-secondary">(optional)</span></label>
+            <input id="signup-display-name" class="form-control" type="text" maxlength="500" autocomplete="nickname" data-bind="value: displayName">
+            <div class="form-text">If left empty, your email address is shown instead.</div>
+        </div>
+        <div class="mb-3">
             <label class="form-label" for="signup-password">Password</label>
             <input id="signup-password" class="form-control" type="password" autocomplete="new-password" required data-bind="value: password">
         </div>

@@ -81,6 +81,9 @@ define(["jquery", "models/session"], function ($, session) {
         },
         post: function (url, body) {
             return request("POST", url, body);
+        },
+        put: function (url, body) {
+            return request("PUT", url, body);
         }
     };
 });

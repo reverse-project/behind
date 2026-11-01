@@ -19,7 +19,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
     public static void ApplyHumanUser(ModelBuilder modelBuilder) =>
         modelBuilder.Entity<HumanUser>(builder =>
         {
-            builder.Property(h => h.DisplayName).HasMaxLength(500).IsRequired();
+            builder.Property(h => h.DisplayName).HasMaxLength(DisplayNameExtensions.MaxLength).IsRequired();
             builder.HasIndex(h => h.DisplayName);
         });
 

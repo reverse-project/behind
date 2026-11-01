@@ -1,3 +1,4 @@
+using Behind.Common.Logging;
 using Behind.Core.Database;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,7 +36,12 @@ public sealed class MagicLinkCleanupService(
     {
         try
         {
-            await CleanAsync(cancellationToken);
+            var deleted = await CleanAsync(cancellationToken);
+
+            logger.Log(
+                deleted > 0 ? LogLevel.Information : LogLevel.Debug,
+                "Deleted {DeletedCount} expired magic links",
+                () => [deleted]);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

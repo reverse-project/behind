@@ -649,6 +649,32 @@ userOption.Match(
 );
 ```
 
+## Logging
+
+Use `ILogger<T>` with constant, PascalCase message templates. Never interpolate values into the template.
+
+```csharp
+// Bad ✗
+logger.LogInformation($"User {user.Id} signed in");
+logger.LogInformation("User {userId} signed in", user.Id);
+logger.LogInformation("Request to {Path}", context.Request.Path.Value);
+
+// Good ✓
+logger.LogInformation("Session {SessionId} started for user {UserId}", () => [sessionId, user.Id]);
+```
+
+Arguments are passed as a `Func<object?[]>` through the `LoggingExtensions` overloads in `Behind.Common.Logging` (`using Behind.Common.Logging;`). The overloads check `IsEnabled` first, so the arguments are only evaluated when the level is enabled. Use them for every call that has arguments (CA1873).
+
+| Level | Use for | Example |
+|-------|---------|---------|
+| `Debug` | Flow details useful while developing | `Skipping session validation for anonymous request to {Path}` |
+| `Information` | Completed business events | `User {UserId} elevated to {Role}` |
+| `Warning` | Rejected or suspicious requests the system handled | `Password sign-in rejected for user {UserId}: {Reason}` |
+| `Error` | Failures, always with the exception | `logger.LogError(exception, "Failed to update user {UserId}", () => [user.Id])` |
+
+- Log identifiers (`{UserId}`, `{SessionId}`), never secrets, tokens, passwords or magic links.
+- The `Behind` namespace logs at `Debug` in the `Development` environment.
+
 ## Summary of Requirements
 
 | Requirement | How | Example |

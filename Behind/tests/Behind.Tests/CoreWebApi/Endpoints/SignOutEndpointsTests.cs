@@ -3,6 +3,7 @@ using Behind.Common;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
+using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -56,6 +57,57 @@ public class SignOutEndpointsTests
     }
 
     [Fact]
+    public async Task SignOut_ValidAuth_LogsInformationWithOperationSessionAndUser()
+    {
+        var userId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+        var logger = new CapturingLogger<SignOutEndpoints>();
+
+        await SignOutEndpoints.SignOut(
+            NewHttpContextWithAuth(sessionId),
+            MockSessionCommands(),
+            MockSessionQueriesFor(sessionId, userId),
+            TimeProvider.System,
+            logger);
+
+        var entry = logger.Single(LogLevel.Information);
+        Assert.Equal(nameof(SignOutEndpoints.SignOut), entry.State["Operation"]);
+        Assert.Equal(sessionId, entry.State["SessionId"]);
+        Assert.Equal(userId, entry.State["UserId"]);
+    }
+
+    [Fact]
+    public async Task SignOutAll_ValidAuth_LogsInformationWithOperation()
+    {
+        var sessionId = Guid.NewGuid();
+        var logger = new CapturingLogger<SignOutEndpoints>();
+
+        await SignOutEndpoints.SignOutAll(
+            NewHttpContextWithAuth(sessionId),
+            MockSessionCommands(),
+            MockSessionQueriesFor(sessionId, Guid.NewGuid()),
+            TimeProvider.System,
+            logger);
+
+        Assert.Equal(nameof(SignOutEndpoints.SignOutAll), logger.Single(LogLevel.Information).State["Operation"]);
+    }
+
+    [Fact]
+    public async Task SignOut_WithoutSession_LogsWarning()
+    {
+        var logger = new CapturingLogger<SignOutEndpoints>();
+
+        await SignOutEndpoints.SignOut(
+            NewHttpContextWithoutAuth(),
+            MockSessionCommands(),
+            Substitute.For<ISessionQueries>(),
+            TimeProvider.System,
+            logger);
+
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
+    }
+
+    [Fact]
     public async Task SignOut_ValidAuth_InvalidatesCurrentSession()
     {
         var userId = Guid.NewGuid();
@@ -64,7 +116,8 @@ public class SignOutEndpointsTests
         var commands = MockSessionCommands();
         var queries = MockSessionQueriesFor(sessionId, userId);
 
-        var result = await SignOutEndpoints.SignOut(context, commands, queries, TimeProvider.System);
+        var result = await SignOutEndpoints.SignOut(
+            context, commands, queries, TimeProvider.System, NullLogger<SignOutEndpoints>.Instance);
 
         var noContent = Assert.IsType<NoContent>(result);
         await commands.Received(1).InvalidateSession(
@@ -81,7 +134,8 @@ public class SignOutEndpointsTests
         var commands = MockSessionCommands();
         var queries = Substitute.For<ISessionQueries>();
 
-        var result = await SignOutEndpoints.SignOut(context, commands, queries, TimeProvider.System);
+        var result = await SignOutEndpoints.SignOut(
+            context, commands, queries, TimeProvider.System, NullLogger<SignOutEndpoints>.Instance);
 
         Assert.IsType<UnauthorizedHttpResult>(result);
     }
@@ -94,7 +148,8 @@ public class SignOutEndpointsTests
         var commands = MockSessionCommands();
         var queries = MockSessionQueriesFor(sessionId, None);
 
-        var result = await SignOutEndpoints.SignOut(context, commands, queries, TimeProvider.System);
+        var result = await SignOutEndpoints.SignOut(
+            context, commands, queries, TimeProvider.System, NullLogger<SignOutEndpoints>.Instance);
 
         Assert.IsType<UnauthorizedHttpResult>(result);
     }
@@ -108,7 +163,8 @@ public class SignOutEndpointsTests
         var commands = MockSessionCommands();
         var queries = MockSessionQueriesFor(sessionId, userId, isValid: false);
 
-        var result = await SignOutEndpoints.SignOut(context, commands, queries, TimeProvider.System);
+        var result = await SignOutEndpoints.SignOut(
+            context, commands, queries, TimeProvider.System, NullLogger<SignOutEndpoints>.Instance);
 
         Assert.IsType<UnauthorizedHttpResult>(result);
     }
@@ -122,7 +178,8 @@ public class SignOutEndpointsTests
         var commands = MockSessionCommands();
         var queries = MockSessionQueriesFor(sessionId, userId);
 
-        var result = await SignOutEndpoints.SignOutAll(context, commands, queries, TimeProvider.System);
+        var result = await SignOutEndpoints.SignOutAll(
+            context, commands, queries, TimeProvider.System, NullLogger<SignOutEndpoints>.Instance);
 
         var noContent = Assert.IsType<NoContent>(result);
         await commands.Received(1).InvalidateAllSessions(
@@ -139,7 +196,8 @@ public class SignOutEndpointsTests
         var commands = MockSessionCommands();
         var queries = Substitute.For<ISessionQueries>();
 
-        var result = await SignOutEndpoints.SignOutAll(context, commands, queries, TimeProvider.System);
+        var result = await SignOutEndpoints.SignOutAll(
+            context, commands, queries, TimeProvider.System, NullLogger<SignOutEndpoints>.Instance);
 
         Assert.IsType<UnauthorizedHttpResult>(result);
     }
@@ -152,7 +210,8 @@ public class SignOutEndpointsTests
         var commands = MockSessionCommands();
         var queries = MockSessionQueriesFor(sessionId, None);
 
-        var result = await SignOutEndpoints.SignOutAll(context, commands, queries, TimeProvider.System);
+        var result = await SignOutEndpoints.SignOutAll(
+            context, commands, queries, TimeProvider.System, NullLogger<SignOutEndpoints>.Instance);
 
         Assert.IsType<UnauthorizedHttpResult>(result);
     }
@@ -168,7 +227,8 @@ public class SignOutEndpointsTests
         var commands = MockSessionCommands();
         var queries = MockSessionQueriesFor(sessionId, userId);
 
-        await SignOutEndpoints.SignOut(context, commands, queries, TimeProvider.System);
+        await SignOutEndpoints.SignOut(
+            context, commands, queries, TimeProvider.System, NullLogger<SignOutEndpoints>.Instance);
 
         await commands.Received(1).InvalidateSession(
             Arg.Any<Guid>(),

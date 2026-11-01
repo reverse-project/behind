@@ -1,8 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using Behind.Common.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace Behind.Common.WebApi.Filters;
-public sealed class DataAnnotationValidationFilter<T> : IEndpointFilter where T : class
+public sealed class DataAnnotationValidationFilter<T>(ILogger<DataAnnotationValidationFilter<T>> logger)
+    : IEndpointFilter where T : class
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
@@ -10,6 +13,10 @@ public sealed class DataAnnotationValidationFilter<T> : IEndpointFilter where T 
 
         if (argToValidate is null)
         {
+            logger.LogWarning(
+                "Rejected {Method} {Path}: request body of type {RequestType} is missing",
+                () => [context.HttpContext.Request.Method, context.HttpContext.Request.Path.Value, typeof(T).Name]);
+
             return Results.BadRequest();
         }
 
@@ -20,8 +27,20 @@ public sealed class DataAnnotationValidationFilter<T> : IEndpointFilter where T 
 
         if (isValid)
         {
+            logger.LogDebug("Validated request of type {RequestType}", () => [typeof(T).Name]);
+
             return await next(context);
         }
+
+        logger.LogWarning(
+            "Rejected {Method} {Path}: request of type {RequestType} failed validation for {InvalidMembers}",
+            () =>
+            [
+                context.HttpContext.Request.Method,
+                context.HttpContext.Request.Path.Value,
+                typeof(T).Name,
+                validationResults.SelectMany(r => r.MemberNames).Distinct().ToArray()
+            ]);
         
         var errors = validationResults
             .Where(r => r.MemberNames.Any())

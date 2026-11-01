@@ -1,5 +1,6 @@
 using Behind.Common.Database;
 using Behind.Core.Database;
+using Microsoft.Extensions.Logging;
 
 namespace Behind.Core.WebApi.Identity;
 
@@ -12,5 +13,6 @@ public partial class IdentityStore(
     IRoleQueries roleQueries,
     IPasswordCommands passwordCommands,
     IUserCommands userCommands,
-    IRoleCommands roleCommands
+    IRoleCommands roleCommands,
+    ILogger<IdentityStore> logger
 );

@@ -73,7 +73,8 @@ public class ElevationEndpointsTests
             security,
             queries ?? ValidSessionQueries(),
             roles,
-            Time);
+            Time,
+            NullLogger<ElevationEndpoints>.Instance);
 
     private static Task<IResult> Developer(
         string code,
@@ -87,13 +88,72 @@ public class ElevationEndpointsTests
             security,
             queries ?? ValidSessionQueries(),
             roles,
-            Time);
+            Time,
+            NullLogger<ElevationEndpoints>.Instance);
 
     private static async Task AssertNothingAssigned(IRoleCommands roles) =>
         await roles.DidNotReceiveWithAnyArgs().AssignBuiltIn(default, default!, default);
 
     private static void AssertForbidden(IResult result) =>
         Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+
+    private static async Task<CapturingLogger<ElevationEndpoints>> LoggedAdministrator(
+        string code,
+        IOptions<SecurityConfiguration> security,
+        HttpContext? context = null,
+        ISessionQueries? queries = null)
+    {
+        var logger = new CapturingLogger<ElevationEndpoints>();
+
+        await ElevationEndpoints.ElevateAdministrator(
+            new ElevationEndpoints.ElevationRequest(code),
+            context ?? SignedIn(),
+            security,
+            queries ?? ValidSessionQueries(),
+            Substitute.For<IRoleCommands>(),
+            Time,
+            logger);
+
+        return logger;
+    }
+
+    [Fact]
+    public async Task ElevateAdministrator_ValidCode_LogsInformationWithUserAndRole()
+    {
+        var logger = await LoggedAdministrator(CodeFor(AdministratorKey), Security());
+
+        var entry = logger.Single(LogLevel.Information);
+        Assert.Equal(UserId, entry.State["UserId"]);
+        Assert.Equal(BuiltInAccess.Administrators.Role.Name, entry.State["Role"]);
+    }
+
+    [Fact]
+    public async Task ElevateAdministrator_InvalidCode_LogsWarningWithUser()
+    {
+        var logger = await LoggedAdministrator(CodeFor(DeveloperKey), Security());
+
+        Assert.Equal(UserId, logger.Single(LogLevel.Warning).State["UserId"]);
+        Assert.False(logger.Has(LogLevel.Information));
+    }
+
+    [Fact]
+    public async Task ElevateAdministrator_ElevationDisabled_LogsWarning()
+    {
+        var logger = await LoggedAdministrator(CodeFor(AdministratorKey), Security(enabled: false));
+
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task ElevateAdministrator_WithoutSession_LogsWarning()
+    {
+        var logger = await LoggedAdministrator(
+            CodeFor(AdministratorKey),
+            Security(),
+            new DefaultHttpContext());
+
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
+    }
 
     [Fact]
     public async Task ElevateAdministrator_ValidCode_AssignsAdministratorsRole()

@@ -32,7 +32,8 @@ public sealed class IdentityStoreAuditTests : IDisposable
             new RoleQueries(context),
             new PasswordCommands(context),
             new UserCommands(context),
-            new RoleCommands(context));
+            new RoleCommands(context),
+            NullLogger<IdentityStore>.Instance);
 
     private CoreContextSqlite Audited() => _factory.CreateAuditedContext(AuditActor.ForUser(_actorId));
 

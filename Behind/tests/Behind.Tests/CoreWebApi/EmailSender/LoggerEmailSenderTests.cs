@@ -11,7 +11,7 @@ public class LoggerEmailSenderTests
     public async Task SendEmailAsync_LogsEmailInformation()
     {
         // Arrange
-        var logger = Substitute.For<ILogger<LoggerEmailSender>>();
+        var logger = EnabledLogger.For<LoggerEmailSender>();
         var sender = new LoggerEmailSender(logger);
         const string email = "test@example.com";
         const string subject = "Test Subject";
@@ -49,7 +49,7 @@ public class LoggerEmailSenderTests
     public async Task SendConfirmationLinkAsync_UsesCorrectTemplate()
     {
         // Arrange
-        var logger = Substitute.For<ILogger<LoggerEmailSender>>();
+        var logger = EnabledLogger.For<LoggerEmailSender>();
         var sender = new LoggerEmailSender(logger);
         var user = new ApplicationUser { DisplayName = "Test User" };
         const string confirmationLink = "https://example.com/confirm?token=abc123";
@@ -71,7 +71,7 @@ public class LoggerEmailSenderTests
     public async Task SendPasswordResetCodeAsync_UsesCorrectTemplate()
     {
         // Arrange
-        var logger = Substitute.For<ILogger<LoggerEmailSender>>();
+        var logger = EnabledLogger.For<LoggerEmailSender>();
         var sender = new LoggerEmailSender(logger);
         var user = new ApplicationUser { DisplayName = "Test User" };
         const string resetCode = "123456";
@@ -93,7 +93,7 @@ public class LoggerEmailSenderTests
     public async Task SendPasswordResetLinkAsync_UsesCorrectTemplate()
     {
         // Arrange
-        var logger = Substitute.For<ILogger<LoggerEmailSender>>();
+        var logger = EnabledLogger.For<LoggerEmailSender>();
         var sender = new LoggerEmailSender(logger);
         var user = new ApplicationUser { DisplayName = "Test User" };
         const string resetLink = "https://example.com/reset?token=xyz789";

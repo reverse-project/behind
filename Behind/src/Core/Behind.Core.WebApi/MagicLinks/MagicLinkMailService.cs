@@ -1,3 +1,4 @@
+using Behind.Common.Logging;
 using Behind.Core.WebApi.EmailSender;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,13 +20,17 @@ public sealed class MagicLinkMailService(
 
     private async Task SendAsync(MagicLinkMail mail)
     {
+        logger.LogDebug("Sending magic link email to user {UserId}", () => [mail.User.Id]);
+
         try
         {
             await emailSender.SendMagicLinkAsync(mail.User, mail.Email, mail.Link);
+
+            logger.LogInformation("Magic link email sent to user {UserId}", () => [mail.User.Id]);
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "Failed to send a magic link email");
+            logger.LogError(exception, "Failed to send a magic link email to user {UserId}", () => [mail.User.Id]);
         }
     }
 }

@@ -11,9 +11,9 @@ public class MagicLinkEmailSenderTests
     private const string Link = "https://example.com/sign/in/magiclink?token=abc";
 
     [Fact]
-    public async Task LoggerEmailSender_SendMagicLinkAsync_RendersTemplateWithLinkAndEmail()
+    public async Task LoggerEmailSender_SendMagicLinkAsync_LogsSubjectAndEmailButNeverTheLink()
     {
-        var logger = Substitute.For<ILogger<LoggerEmailSender>>();
+        var logger = EnabledLogger.For<LoggerEmailSender>();
         IMagicLinkEmailSender sender = new LoggerEmailSender(logger);
 
         await sender.SendMagicLinkAsync(new ApplicationUser { DisplayName = "User" }, "user@test.com", Link);
@@ -22,8 +22,8 @@ public class MagicLinkEmailSenderTests
             LogLevel.Information,
             Arg.Any<EventId>(),
             Arg.Is<object>(o => o.ToString()!.Contains("Your sign in link")
-                                && o.ToString()!.Contains($"href=\"{Link}\"")
-                                && o.ToString()!.Contains("user@test.com")),
+                                && o.ToString()!.Contains("user@test.com")
+                                && !o.ToString()!.Contains(Link)),
             Arg.Any<Exception>(),
             Arg.Any<Func<object, Exception?, string>>());
     }
@@ -31,16 +31,18 @@ public class MagicLinkEmailSenderTests
     [Fact]
     public async Task SmtpEmailSender_SendMagicLinkAsync_UsesSubjectAndDefaultTemplate()
     {
-        var logger = Substitute.For<ILogger<SmtpEmailSender>>();
+        var logger = EnabledLogger.For<SmtpEmailSender>();
         var configuration = new SmtpEmailConfiguration(
             "invalid.invalid",
             25,
             new Ssl(false),
             new NoAuthentication(),
-            None);
+            None,
+            Some("noreply@test.com"));
         IMagicLinkEmailSender sender = new SmtpEmailSender(logger, Options.Create(configuration));
 
-        await sender.SendMagicLinkAsync(new ApplicationUser { DisplayName = "User" }, "user@test.com", Link);
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            sender.SendMagicLinkAsync(new ApplicationUser { DisplayName = "User" }, "user@test.com", Link));
 
         logger.Received().Log(
             Arg.Any<LogLevel>(),

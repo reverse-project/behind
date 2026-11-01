@@ -94,14 +94,16 @@ public class SessionEndpointsTests
         ISessionCommands? commands = null,
         IAccessQueries? roles = null,
         Option<JwtSettings>? jwt = null,
-        TimeProvider? time = null) =>
+        TimeProvider? time = null,
+        ILogger<SessionEndpoints>? logger = null) =>
         SessionEndpoints.Get(
             context,
             Security(jwt ?? Some(Jwt)),
             queries,
             commands ?? Commands(),
             roles ?? Roles(),
-            time ?? Time);
+            time ?? Time,
+            logger ?? NullLogger<SessionEndpoints>.Instance);
 
     private static SessionResponse BodyOf(IResult result) =>
         Assert.IsType<JsonHttpResult<SessionResponse>>(result).Value!;
@@ -227,6 +229,53 @@ public class SessionEndpointsTests
             Commands(renewed: false));
 
         Assert.IsType<Conflict>(result);
+    }
+
+    [Fact]
+    public async Task Get_RenewedWithRefreshToken_LogsInformationWithSessionAndUser()
+    {
+        var session = NewSession(accessAge: TimeSpan.FromHours(1));
+        var logger = new CapturingLogger<SessionEndpoints>();
+
+        await Get(AnonymousContext(RefreshJwt(session)), QueriesFor(session), logger: logger);
+
+        var entry = logger.Single(LogLevel.Information);
+        Assert.Equal(SessionId, entry.State["SessionId"]);
+        Assert.Equal(UserId, entry.State["UserId"]);
+        Assert.Equal(Now + DomainConstants.AccessTokenDuration, entry.State["AccessTokenExpiresAt"]);
+        Assert.True(logger.Has(LogLevel.Debug));
+    }
+
+    [Fact]
+    public async Task Get_RenewalLost_LogsWarningWithSession()
+    {
+        var session = NewSession(accessAge: TimeSpan.FromHours(1));
+        var logger = new CapturingLogger<SessionEndpoints>();
+
+        await Get(AnonymousContext(RefreshJwt(session)), QueriesFor(session), Commands(renewed: false), logger: logger);
+
+        Assert.Equal(SessionId, logger.Single(LogLevel.Warning).State["SessionId"]);
+        Assert.False(logger.Has(LogLevel.Information));
+    }
+
+    [Fact]
+    public async Task Get_NoTokens_LogsWarning()
+    {
+        var logger = new CapturingLogger<SessionEndpoints>();
+
+        await Get(AnonymousContext(), QueriesFor(NewSession()), logger: logger);
+
+        Assert.Single(logger.Entries, entry => entry.Level == LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task Get_WithoutJwtSettings_LogsError()
+    {
+        var logger = new CapturingLogger<SessionEndpoints>();
+
+        await Get(AnonymousContext(), QueriesFor(NewSession()), jwt: None, logger: logger);
+
+        Assert.Equal(LogLevel.Error, Assert.Single(logger.Entries).Level);
     }
 
     [Fact]

@@ -29,6 +29,7 @@ public class SignInMagicLinkEndpointsTests
     private readonly IWallOfShameQueries _bans = Substitute.For<IWallOfShameQueries>();
     private readonly IMagicLinkMailQueue _mailQueue = new MagicLinkMailQueue();
     private readonly TimeProvider _time = new FixedTimeProvider(Now);
+    private readonly CapturingLogger<SignInEndpoints> _logger = new();
 
     private static MagicLinkSettings Settings(Option<Uuid> old = default) =>
         new(Actual, old, Some(TimeSpan.FromDays(30)), Some(Overlap), Some(TimeSpan.FromMinutes(15)), Some(Cooldown));
@@ -81,6 +82,7 @@ public class SignInMagicLinkEndpointsTests
             configuration ?? FrontendConfigurationOf(null),
             _time,
             NewHttpContext(),
+            _logger,
             new SignInEndpoints.MagicLinkRequest("user@test.com"));
 
     private Task<IResult> Redeem(
@@ -97,6 +99,7 @@ public class SignInMagicLinkEndpointsTests
             _bans,
             _time,
             NewHttpContext(),
+            _logger,
             new SignInEndpoints.MagicLinkSignInRequest(token!));
 
     private static string TokenFor(Uuid secret, TokenNonce? nonce = null) =>
@@ -152,6 +155,141 @@ public class SignInMagicLinkEndpointsTests
         Assert.IsType<NoContent>(result);
         await _magicLinks.DidNotReceiveWithAnyArgs().Issue(default, default!, default);
         Assert.Empty(QueuedMails());
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_KnownEmail_LogsInformationWithUserAndExpiry()
+    {
+        var user = NewUser();
+
+        await RequestLink(user, Some(Settings()));
+
+        var entry = _logger.Single(LogLevel.Information);
+        Assert.Equal(user.Id, entry.State["UserId"]);
+        Assert.Equal(Now.AddMinutes(15), entry.State["ExpiresAt"]);
+        Assert.Equal(true, entry.State["Queued"]);
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_FullMailQueue_LogsWarning()
+    {
+        var user = NewUser();
+        var queue = Substitute.For<IMagicLinkMailQueue>();
+        queue.TryEnqueue(Arg.Any<MagicLinkMail>()).Returns(false);
+
+        await SignInEndpoints.RequestMagicLink(
+            UserManagerFor(user),
+            Security(Some(Jwt)),
+            StoreOf(Some(Settings())),
+            _magicLinks,
+            _queries,
+            queue,
+            FrontendConfigurationOf(null),
+            _time,
+            NewHttpContext(),
+            _logger,
+            new SignInEndpoints.MagicLinkRequest("user@test.com"));
+
+        Assert.Equal(false, _logger.Single(LogLevel.Warning).State["Queued"]);
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_UnknownEmail_LogsDebugOnly()
+    {
+        await RequestLink(null, Some(Settings()));
+
+        Assert.Equal(LogLevel.Debug, Assert.Single(_logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_WithinCooldown_LogsDebugWithUser()
+    {
+        var user = NewUser();
+        _queries.HasIssuedSince(user.Id, Now - Cooldown, Arg.Any<CancellationToken>()).Returns(true);
+
+        await RequestLink(user, Some(Settings()));
+
+        Assert.Equal(user.Id, _logger.Single(LogLevel.Debug).State["UserId"]);
+        Assert.False(_logger.Has(LogLevel.Information));
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_Disabled_LogsWarning()
+    {
+        await RequestLink(NewUser(), None);
+
+        Assert.Equal(LogLevel.Warning, Assert.Single(_logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_WithoutJwtSettings_LogsErrorWithOperation()
+    {
+        await RequestLink(NewUser(), Some(Settings()), jwt: None);
+
+        Assert.Equal(nameof(SignInEndpoints.RequestMagicLink), _logger.Single(LogLevel.Error).State["Operation"]);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_MalformedToken_LogsWarning()
+    {
+        await Redeem(NewUser(), Some(Settings()), "garbage");
+
+        Assert.Single(_logger.Entries, entry => entry.Level == LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_AlreadyConsumedOrExpired_LogsWarning()
+    {
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Option<Guid>>(None));
+
+        await Redeem(NewUser(), Some(Settings()), TokenFor(Actual));
+
+        Assert.Contains("already used", _logger.Single(LogLevel.Warning).Message);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_UserNoLongerExists_LogsWarningWithUserId()
+    {
+        var userId = Guid.NewGuid();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(userId)));
+
+        await Redeem(null, Some(Settings()), TokenFor(Actual));
+
+        Assert.Equal(userId, _logger.Single(LogLevel.Warning).State["UserId"]);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_ValidToken_LogsInformationWithSessionAndUser()
+    {
+        var user = NewUser();
+        var sessionId = Guid.NewGuid();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(user.Id)));
+        _sessions.CreateForUserId(Arg.Any<Guid>(), Arg.Any<ValidSession>(), Arg.Any<CancellationToken>())
+            .Returns(sessionId);
+
+        await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        var entry = _logger.Single(LogLevel.Information);
+        Assert.Equal(sessionId, entry.State["SessionId"]);
+        Assert.Equal(user.Id, entry.State["UserId"]);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_BannedUser_LogsWarningWithUserId()
+    {
+        var user = NewUser();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(user.Id)));
+        _bans.FindActiveBan(user.Id, Now, Arg.Any<CancellationToken>())
+            .Returns(Some(new IWallOfShameQueries.ActiveBan("abuse", None)));
+
+        await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        Assert.Equal(user.Id, _logger.Single(LogLevel.Warning).State["UserId"]);
+        Assert.False(_logger.Has(LogLevel.Information));
     }
 
     [Fact]
@@ -327,6 +465,7 @@ public class SignInMagicLinkEndpointsTests
             _bans,
             _time,
             httpContext,
+            NullLogger<SignInEndpoints>.Instance,
             new SignInEndpoints.MagicLinkSignInRequest(string.Empty));
 
         Assert.Equal("no-store", httpContext.Response.Headers.CacheControl.ToString());

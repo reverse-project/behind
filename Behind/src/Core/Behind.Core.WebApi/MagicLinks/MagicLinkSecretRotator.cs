@@ -11,7 +11,12 @@ public sealed class MagicLinkSecretRotator(
 {
     public Task<bool> RotateIfNeededAsync(CancellationToken cancellationToken = default) =>
         store.Current.Match(
-            none: () => Task.FromResult(false),
+            none: () =>
+            {
+                logger.LogDebug("Magic link secret rotation skipped: magic links are not configured");
+
+                return Task.FromResult(false);
+            },
             some: current => AdvanceAsync(current, cancellationToken));
 
     private async Task<bool> AdvanceAsync(MagicLinkSettings current, CancellationToken cancellationToken)
@@ -20,11 +25,15 @@ public sealed class MagicLinkSecretRotator(
 
         if (advanced == current)
         {
+            logger.LogDebug("Magic link secrets are current, no rotation needed");
+
             return false;
         }
 
         store.Replace(advanced);
         await PersistAsync(advanced, cancellationToken);
+
+        logger.LogInformation("Magic link secrets rotated");
 
         return true;
     }
@@ -34,6 +43,8 @@ public sealed class MagicLinkSecretRotator(
         try
         {
             await persister.PersistAsync(settings, cancellationToken);
+
+            logger.LogDebug("Persisted the rotated magic link secrets");
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

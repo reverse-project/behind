@@ -58,7 +58,7 @@ public class SerilogExtensionsTests
             {
                 logger.LogInformation("inside");
                 return Task.CompletedTask;
-            }, CorrelationIdOptions.Default);
+            }, CorrelationIdOptions.Default, NullLogger<CorrelationIdMiddleware>.Instance);
 
             var context = new DefaultHttpContext();
             context.Request.Headers[CorrelationIdOptions.DefaultHeaderName] = "abc-123";

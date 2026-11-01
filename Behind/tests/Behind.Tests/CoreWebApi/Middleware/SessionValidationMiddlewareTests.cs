@@ -11,7 +11,7 @@ namespace Behind.Tests.CoreWebApi.Middleware;
 public sealed class SessionValidationMiddlewareTests : IDisposable
 {
     private readonly TestDbContextFactory _factory = new();
-
+    private readonly CapturingLogger<SessionValidationMiddleware> _logger = new();
     public void Dispose() => _factory.Dispose();
 
     private static ValidSession NewSession(
@@ -56,7 +56,7 @@ public sealed class SessionValidationMiddlewareTests : IDisposable
         {
             reachedEndpoint = true;
             return Task.CompletedTask;
-        }, TimeProvider.System);
+        }, TimeProvider.System, _logger);
 
         await using var db = _factory.CreateContext();
         await middleware.InvokeAsync(context, new SessionQueries(db));
@@ -155,6 +155,51 @@ public sealed class SessionValidationMiddlewareTests : IDisposable
 
         Assert.False(await InvokeAsync(context));
         Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_AnonymousRequest_LogsDebug()
+    {
+        await InvokeAsync(new DefaultHttpContext());
+
+        Assert.Equal(LogLevel.Debug, Assert.Single(_logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ValidSession_LogsDebugWithSessionId()
+    {
+        var session = NewSession();
+        var id = await SeedAsync(session);
+
+        await InvokeAsync(ContextFor(ClaimsFor(id, session.AccessToken.Nonce)));
+
+        var entry = _logger.Single(LogLevel.Debug);
+        Assert.Equal(id, entry.State["SessionId"]);
+        Assert.False(_logger.Has(LogLevel.Warning));
+    }
+
+    [Fact]
+    public async Task InvokeAsync_InvalidatedSession_LogsWarningWithSessionIdAndReason()
+    {
+        var session = NewSession();
+        var id = await SeedAsync(session, DateTimeOffset.UtcNow);
+
+        await InvokeAsync(ContextFor(ClaimsFor(id, session.AccessToken.Nonce)));
+
+        var entry = _logger.Single(LogLevel.Warning);
+        Assert.Equal(id, entry.State["SessionId"]);
+        Assert.Equal(StatusCodes.Status401Unauthorized, entry.State["StatusCode"]);
+        Assert.Equal(SessionRejection.Invalidated.Reason, entry.State["Reason"]);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_MissingSessionClaims_LogsWarningWithoutSessionId()
+    {
+        await InvokeAsync(ContextFor(new Claim(ClaimTypes.Email, "user@test.com")));
+
+        var entry = _logger.Single(LogLevel.Warning);
+        Assert.Null(entry.State["SessionId"]);
+        Assert.Equal(SessionRejection.MissingSession.Reason, entry.State["Reason"]);
     }
 
     [Fact]

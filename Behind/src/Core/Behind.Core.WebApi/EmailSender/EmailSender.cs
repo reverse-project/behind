@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using Behind.Common.Logging;
 using Behind.Common.Templating;
 using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.Identity;
@@ -66,7 +67,8 @@ public sealed class LoggerEmailSender : EmailSender
 
     public override Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
-        _logger.LogInformation("Sending email to {email} with subject {subject}: {htmlMessage}", email, subject, htmlMessage);
+        _logger.LogInformation("Sending email to {Email} with subject {Subject}", () => [email, subject]);
+
         return Task.CompletedTask;
     }
 }
@@ -150,23 +152,34 @@ public sealed class SmtpEmailSender : EmailSender
 
         client.EnableSsl = _emailOptions.Value.Ssl.Enabled;
 
+        var sender = _emailOptions.Value.SenderAddress.Match(
+            () => throw new InvalidOperationException(
+                "The SMTP sender address is not configured. Set Email:From or use basic authentication with the mailbox address as the username."),
+            address => address);
+
         var mailMessage = new MailMessage
         {
-            From = new MailAddress(email),
+            From = new MailAddress(sender),
             Subject = subject,
             Body = htmlMessage,
             IsBodyHtml = true
         };
         mailMessage.To.Add(email);
 
-        try
-        {
-            await client.SendMailAsync(mailMessage);
-            _logger.LogInformation("Email sent successfully to {email} with subject {subject}", email, subject);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send email to {email}", email);
-        }
+        _logger.LogDebug(
+            "Sending email from {Sender} to {Email} with subject {Subject} through {SmtpServer}:{Port} (SSL: {SslEnabled})",
+            () =>
+            [
+                sender,
+                email,
+                subject,
+                _emailOptions.Value.SmtpServer,
+                _emailOptions.Value.Port,
+                _emailOptions.Value.Ssl.Enabled
+            ]);
+
+        await client.SendMailAsync(mailMessage);
+
+        _logger.LogInformation("Email sent successfully to {Email} with subject {Subject}", () => [email, subject]);
     }
 }

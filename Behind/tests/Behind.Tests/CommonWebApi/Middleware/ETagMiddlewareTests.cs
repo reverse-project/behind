@@ -30,7 +30,8 @@ public class ETagMiddlewareTests
             context.SetEndpoint(matchedEndpoint);
         }
 
-        var middleware = new ETagMiddleware(ctx => endpoint(ctx), options ?? ETagOptions.Default);
+        var middleware = new ETagMiddleware(
+            ctx => endpoint(ctx), options ?? ETagOptions.Default, NullLogger<ETagMiddleware>.Instance);
         await middleware.InvokeAsync(context);
 
         return context;

@@ -1,15 +1,21 @@
 using System.Security.Cryptography;
+using Behind.Common.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 
 namespace Behind.Common.WebApi.Middleware;
 
-public sealed class ETagMiddleware(RequestDelegate next, ETagOptions options)
+public sealed class ETagMiddleware(RequestDelegate next, ETagOptions options, ILogger<ETagMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
     {
         if (IsIgnored(context) || !options.AllowedMethods.Contains(context.Request.Method))
         {
+            logger.LogDebug(
+                "ETag handling skipped for {Method} {Path}",
+                () => [context.Request.Method, context.Request.Path.Value]);
+
             await next(context);
             return;
         }
@@ -38,6 +44,10 @@ public sealed class ETagMiddleware(RequestDelegate next, ETagOptions options)
 
         if (RequestHasMatchingETag(context.Request, eTag))
         {
+            logger.LogDebug(
+                "ETag {ETag} matched for {Method} {Path}, responding with {StatusCode}",
+                () => [eTag.Tag.Value, context.Request.Method, context.Request.Path.Value, StatusCodes.Status304NotModified]);
+
             context.Response.StatusCode = StatusCodes.Status304NotModified;
             context.Response.ContentLength = null;
             context.Response.Headers.Remove(HeaderNames.ContentType);

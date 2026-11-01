@@ -74,9 +74,11 @@ var rendered = template
 - Uses `DefaultEmailTemplates` for out-of-box template content
 
 #### 2. Implementations
-- **LoggerEmailSender**: Logs email content (for development/testing)
+- **LoggerEmailSender**: Logs the recipient and subject only, never the body, so sign-in links and codes stay out of the logs
 - **SmtpEmailSender**: Sends emails via SMTP with:
   - Configurable authentication (Basic or No auth)
+  - Sender address from `SmtpEmailConfiguration.From`, falling back to the Basic authentication username; sending fails when neither is configured
+  - SMTP failures propagate to the caller (the magic link mail service logs them)
   - Optional custom Templates override via `SmtpEmailConfiguration.Templates`
   - Fallback to `DefaultEmailTemplates` when no custom templates provided
   - Per-email-type template resolution with `GetOrDefault` fallback
@@ -124,7 +126,8 @@ public sealed record SmtpEmailConfiguration(
     int Port, 
     Ssl Ssl, 
     Option<Authentication> Authentication,
-    Option<Templates> Templates  // NEW: Optional custom templates
+    Option<Templates> Templates,  // Optional custom templates
+    Option<string> From = default // Optional sender address
 ) : EmailConfiguration("Smtp");
 ```
 
@@ -271,6 +274,7 @@ The email configuration supports two providers with optional template customizat
     "Provider": "Smtp",
     "SmtpServer": "smtp.example.com",
     "Port": 587,
+    "From": "noreply@example.com",
     "Ssl": {
       "Enabled": true
     },
@@ -489,7 +493,7 @@ The implementation is designed for easy extension:
 ✅ **Functional Templates API**: Option-based retrieval with Match for safe error handling
 ✅ **Dependency Injection**: All dependencies resolved through DI container
 ✅ **Template Pattern**: Common functionality in base class, specifics in subclasses
-✅ **Error Handling**: SmtpEmailSender logs errors without throwing; ArgumentNullException for invalid inputs
+✅ **Error Handling**: SmtpEmailSender lets SMTP failures propagate; ArgumentNullException for invalid inputs
 ✅ **Thread Safety**: Transient lifetime ensures no shared state between requests; immutable templates
 ✅ **Testing**: Comprehensive test coverage (43 tests) with NSubstitute mocking and xUnit
 ✅ **Configuration Flexibility**: Multiple providers with optional per-provider template overrides

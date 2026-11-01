@@ -72,6 +72,7 @@ public class SignInEndpointsSessionTests
             NoBans(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
         var json = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
@@ -106,6 +107,7 @@ public class SignInEndpointsSessionTests
             NoBans(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
             new SignInEndpoints.PasswordRequest("user@test.com", "wrong"));
 
         Assert.IsType<UnauthorizedHttpResult>(result);
@@ -123,6 +125,7 @@ public class SignInEndpointsSessionTests
             NoBans(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
         Assert.IsType<UnauthorizedHttpResult>(result);
@@ -138,6 +141,7 @@ public class SignInEndpointsSessionTests
             NoBans(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
         Assert.IsType<InternalServerError>(result);
@@ -155,6 +159,7 @@ public class SignInEndpointsSessionTests
             BannedFor("spamming the wall"),
             new FixedTimeProvider(Now),
             NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
         var json = Assert.IsType<JsonHttpResult<SignInEndpoints.BannedResponse>>(result);
@@ -173,8 +178,98 @@ public class SignInEndpointsSessionTests
             BannedFor("spamming the wall"),
             new FixedTimeProvider(Now),
             NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
             new SignInEndpoints.PasswordRequest("user@test.com", "wrong"));
 
         Assert.IsType<UnauthorizedHttpResult>(result);
+    }
+
+    private async Task<CapturingLogger<SignInEndpoints>> SignInWithLoggingAsync(
+        ApplicationUser? user,
+        string password,
+        IWallOfShameQueries bans,
+        ISessionCommands commands,
+        Option<JwtSettings>? jwt = null)
+    {
+        var logger = new CapturingLogger<SignInEndpoints>();
+
+        await SignInEndpoints.SignInPassword(
+            UserManagerFor(user),
+            Security(jwt ?? Some(Jwt)),
+            commands,
+            bans,
+            new FixedTimeProvider(Now),
+            NewHttpContext(),
+            logger,
+            new SignInEndpoints.PasswordRequest("user@test.com", password));
+
+        return logger;
+    }
+
+    [Fact]
+    public async Task SignInPassword_WrongPassword_LogsWarningWithUserAndReason()
+    {
+        var user = NewUser("secret");
+
+        var logger = await SignInWithLoggingAsync(user, "wrong", NoBans(), Substitute.For<ISessionCommands>());
+
+        var entry = logger.Single(LogLevel.Warning);
+        Assert.Equal(user.Id, entry.State["UserId"]);
+        Assert.Equal("wrong password", entry.State["Reason"]);
+    }
+
+    [Fact]
+    public async Task SignInPassword_UnknownUser_LogsWarningWithoutUserId()
+    {
+        var logger = await SignInWithLoggingAsync(null, "secret", NoBans(), Substitute.For<ISessionCommands>());
+
+        var entry = logger.Single(LogLevel.Warning);
+        Assert.Null(entry.State["UserId"]);
+        Assert.Equal("unknown email", entry.State["Reason"]);
+    }
+
+    [Fact]
+    public async Task SignInPassword_ValidCredentials_LogsInformationWithSessionAndUser()
+    {
+        var user = NewUser("secret");
+        var sessionId = Guid.NewGuid();
+        var commands = Substitute.For<ISessionCommands>();
+        commands.CreateForUserId(Arg.Any<Guid>(), Arg.Any<ValidSession>(), Arg.Any<CancellationToken>())
+            .Returns(sessionId);
+
+        var logger = await SignInWithLoggingAsync(user, "secret", NoBans(), commands);
+
+        var entry = logger.Single(LogLevel.Information);
+        Assert.Equal(sessionId, entry.State["SessionId"]);
+        Assert.Equal(user.Id, entry.State["UserId"]);
+        Assert.False(logger.Has(LogLevel.Warning));
+    }
+
+    [Fact]
+    public async Task SignInPassword_BannedUser_LogsWarningWithUser()
+    {
+        var user = NewUser("secret");
+
+        var logger = await SignInWithLoggingAsync(
+            user,
+            "secret",
+            BannedFor("spamming the wall"),
+            Substitute.For<ISessionCommands>());
+
+        Assert.Equal(user.Id, logger.Single(LogLevel.Warning).State["UserId"]);
+        Assert.False(logger.Has(LogLevel.Information));
+    }
+
+    [Fact]
+    public async Task SignInPassword_WithoutJwtSettings_LogsErrorWithOperation()
+    {
+        var logger = await SignInWithLoggingAsync(
+            NewUser("secret"),
+            "secret",
+            NoBans(),
+            Substitute.For<ISessionCommands>(),
+            None);
+
+        Assert.Equal(nameof(SignInEndpoints.SignInPassword), logger.Single(LogLevel.Error).State["Operation"]);
     }
 }

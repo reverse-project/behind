@@ -1,11 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using Behind.Common;
+using Behind.Common.Logging;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Behind.Core.WebApi.Endpoints;
@@ -22,7 +24,8 @@ public sealed class ElevationEndpoints
         IOptions<SecurityConfiguration> securityConfiguration,
         ISessionQueries sessionQueries,
         IRoleCommands roleCommands,
-        TimeProvider timeProvider) =>
+        TimeProvider timeProvider,
+        ILogger<ElevationEndpoints> logger) =>
         ElevateTo(
             BuiltInAccess.Administrators,
             securityConfiguration.Value.SecretKey,
@@ -31,7 +34,8 @@ public sealed class ElevationEndpoints
             securityConfiguration,
             sessionQueries,
             roleCommands,
-            timeProvider);
+            timeProvider,
+            logger);
 
     [Authorize]
     [IgnoreETag]
@@ -41,7 +45,8 @@ public sealed class ElevationEndpoints
         IOptions<SecurityConfiguration> securityConfiguration,
         ISessionQueries sessionQueries,
         IRoleCommands roleCommands,
-        TimeProvider timeProvider) =>
+        TimeProvider timeProvider,
+        ILogger<ElevationEndpoints> logger) =>
         ElevateTo(
             BuiltInAccess.Developers,
             securityConfiguration.Value.DeveloperElevationSecretKey,
@@ -50,7 +55,8 @@ public sealed class ElevationEndpoints
             securityConfiguration,
             sessionQueries,
             roleCommands,
-            timeProvider);
+            timeProvider,
+            logger);
 
     private static async Task<IResult> ElevateTo(
         BuiltInRole role,
@@ -60,25 +66,39 @@ public sealed class ElevationEndpoints
         IOptions<SecurityConfiguration> securityConfiguration,
         ISessionQueries sessionQueries,
         IRoleCommands roleCommands,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         if (!securityConfiguration.Value.IsElevationEnabled)
         {
+            logger.LogWarning("Elevation to {Role} rejected: elevation is not enabled", () => [role.Role.Name]);
+
             return Results.NotFound();
         }
 
         var current = await httpContext.FindCurrentSession(sessionQueries);
 
         return await current.Match(
-            () => Task.FromResult<IResult>(Results.Unauthorized()),
+            () =>
+            {
+                logger.LogWarning("Elevation to {Role} rejected: no active session", () => [role.Role.Name]);
+
+                return Task.FromResult<IResult>(Results.Unauthorized());
+            },
             async session =>
             {
                 if (!secretKey.VerifyTotp(request.Code, timeProvider.GetUtcNow()))
                 {
+                    logger.LogWarning(
+                        "Elevation of user {UserId} to {Role} rejected: invalid one-time code",
+                        () => [session.UserId, role.Role.Name]);
+
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
                 }
 
                 await roleCommands.AssignBuiltIn(session.UserId, role, httpContext.RequestAborted);
+
+                logger.LogInformation("User {UserId} elevated to {Role}", () => [session.UserId, role.Role.Name]);
 
                 return Results.NoContent();
             });

@@ -24,7 +24,8 @@ public class RoleManagementEndpointsTests
 
     public RoleManagementEndpointsTests()
     {
-        _gate = new UserManagementGate(_sessions, _access, _users, new FixedTimeProvider(Now));
+        _gate = new UserManagementGate(
+            _sessions, _access, _users, new FixedTimeProvider(Now), NullLogger<UserManagementGate>.Instance);
         SignedInAs(ActorRoles(BuiltInAccess.Administrators));
     }
 

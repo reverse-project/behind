@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Logging;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
@@ -6,6 +7,7 @@ using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.Middleware;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using static Behind.Common.FunctionalExtensions;
 
@@ -26,12 +28,18 @@ public sealed class SessionEndpoints
         ISessionQueries sessionQueries,
         ISessionCommands sessionCommands,
         IAccessQueries accessQueries,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<SessionEndpoints> logger)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
 
         return await securityConfiguration.Value.Jwt.Match(
-            none: () => Task.FromResult(Results.InternalServerError()),
+            none: () =>
+            {
+                logger.LogError("Session lookup rejected: JWT settings are not configured");
+
+                return Task.FromResult(Results.InternalServerError());
+            },
             async jwtSettings =>
             {
                 var now = timeProvider.GetUtcNow();
@@ -40,11 +48,19 @@ public sealed class SessionEndpoints
                 return await current.Match(
                     none: async () =>
                     {
+                        logger.LogDebug("No current session for the access token, trying the refresh token");
+
                         var refreshable = await FindRefreshable(httpContext, jwtSettings, sessionQueries, now);
 
                         return await refreshable.Match(
-                            none: () => Task.FromResult(Results.Unauthorized()),
-                            some: active => Renew(httpContext, jwtSettings, sessionCommands, accessQueries, active, now));
+                            none: () =>
+                            {
+                                logger.LogWarning("Session lookup rejected: no valid access or refresh token");
+
+                                return Task.FromResult(Results.Unauthorized());
+                            },
+                            some: active => Renew(
+                                httpContext, jwtSettings, sessionCommands, accessQueries, active, now, logger));
                     },
                     some: active => Respond(httpContext, accessQueries, active, now, null));
             });
@@ -56,7 +72,8 @@ public sealed class SessionEndpoints
         ISessionCommands sessionCommands,
         IAccessQueries accessQueries,
         ActiveSession active,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        ILogger logger)
     {
         var accessToken = AccessToken.Create(active.User, now, DomainConstants.AccessTokenDuration);
 
@@ -66,16 +83,27 @@ public sealed class SessionEndpoints
             accessToken,
             httpContext.RequestAborted);
 
-        return renewed
-            ? await Respond(
-                httpContext,
-                accessQueries,
-                active with { Session = active.Session with { AccessToken = accessToken } },
-                now,
-                new RefreshedAccessToken(
-                    accessToken.ToJwtToken(active.User.ToApplicationUser(active.UserId), active.Id, jwtSettings),
-                    accessToken.ExpiresAt))
-            : Results.Conflict();
+        if (!renewed)
+        {
+            logger.LogWarning(
+                "Access token renewal for session {SessionId} of user {UserId} conflicted with another renewal",
+                () => [active.Id, active.UserId]);
+
+            return Results.Conflict();
+        }
+
+        logger.LogInformation(
+            "Access token renewed for session {SessionId} of user {UserId}, expires at {AccessTokenExpiresAt}",
+            () => [active.Id, active.UserId, accessToken.ExpiresAt]);
+
+        return await Respond(
+            httpContext,
+            accessQueries,
+            active with { Session = active.Session with { AccessToken = accessToken } },
+            now,
+            new RefreshedAccessToken(
+                accessToken.ToJwtToken(active.User.ToApplicationUser(active.UserId), active.Id, jwtSettings),
+                accessToken.ExpiresAt));
     }
 
     private static async Task<IResult> Respond(

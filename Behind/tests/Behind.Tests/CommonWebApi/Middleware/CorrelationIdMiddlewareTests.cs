@@ -22,7 +22,7 @@ public class CorrelationIdMiddlewareTests
         {
             seen = ctx.CorrelationId;
             return Task.CompletedTask;
-        }, resolved);
+        }, resolved, NullLogger<CorrelationIdMiddleware>.Instance);
 
         await middleware.InvokeAsync(context);
 

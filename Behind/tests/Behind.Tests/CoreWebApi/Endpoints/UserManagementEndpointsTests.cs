@@ -24,10 +24,12 @@ public class UserManagementEndpointsTests
     private readonly IWallOfShameCommands _wallOfShame = Substitute.For<IWallOfShameCommands>();
     private readonly IUserCommands _userCommands = Substitute.For<IUserCommands>();
     private readonly UserManagementGate _gate;
+    private readonly CapturingLogger<UserManagementGate> _gateLogger = new();
 
     public UserManagementEndpointsTests()
     {
-        _gate = new UserManagementGate(_sessions, _access, _users, new FixedTimeProvider(Now));
+        _gate = new UserManagementGate(
+            _sessions, _access, _users, new FixedTimeProvider(Now), _gateLogger);
         SignedInAs(ActorId, developer: false);
     }
 
@@ -324,6 +326,53 @@ public class UserManagementEndpointsTests
         Assert.IsType<NoContent>(result);
         await _wallOfShame.Received(1).Ban(TargetId, ActorId, new Reason("spamming"), Arg.Any<CancellationToken>());
         await _sessionCommands.Received(1).InvalidateAllSessions(TargetId, ActorId, Now, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SignOut_Allowed_LogsInformationWithActorTargetAndStatus()
+    {
+        TargetIs(Managed(TargetId));
+
+        await UserManagementEndpoints.SignOut(TargetId, SignedIn(), _gate, _sessionCommands);
+
+        var entry = _gateLogger.Single(LogLevel.Information);
+        Assert.Equal(ActorId, entry.State["ActorId"]);
+        Assert.Equal(TargetId, entry.State["TargetId"]);
+        Assert.Equal(StatusCodes.Status204NoContent, entry.State["StatusCode"]);
+    }
+
+    [Fact]
+    public async Task SignOut_Forbidden_LogsWarningsWithActorAndTarget()
+    {
+        _users.TryFindUser(ActorId, DeletionState.Active, Now, Arg.Any<CancellationToken>()).Returns(Some(Managed(ActorId)));
+
+        await UserManagementEndpoints.SignOut(ActorId, SignedIn(), _gate, _sessionCommands);
+
+        Assert.All(
+            _gateLogger.Entries.Where(entry => entry.Level == LogLevel.Warning),
+            entry => Assert.Equal(ActorId, entry.State["ActorId"]));
+        Assert.False(_gateLogger.Has(LogLevel.Information));
+        Assert.Single(_gateLogger.Entries, entry => entry.Level == LogLevel.Warning && entry.Message.Contains("not allowed"));
+    }
+
+    [Fact]
+    public async Task SignOut_UnknownTarget_LogsWarningWithTarget()
+    {
+        TargetIs(null);
+
+        await UserManagementEndpoints.SignOut(TargetId, SignedIn(), _gate, _sessionCommands);
+
+        var entry = _gateLogger.Single(LogLevel.Warning);
+        Assert.Equal(TargetId, entry.State["TargetId"]);
+        Assert.Equal(DeletionState.Active, entry.State["State"]);
+    }
+
+    [Fact]
+    public async Task SignOut_WithoutSession_LogsWarning()
+    {
+        await UserManagementEndpoints.SignOut(TargetId, new DefaultHttpContext(), _gate, _sessionCommands);
+
+        Assert.Equal(LogLevel.Warning, Assert.Single(_gateLogger.Entries).Level);
     }
 
     [Fact]

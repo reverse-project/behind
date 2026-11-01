@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Behind.Common.Configuration;
 using Behind.Common.Converters;
+using Behind.Common.Logging;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Handlers;
@@ -31,6 +32,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Behind.Core.WebApi;
@@ -221,6 +223,7 @@ public static class WebApiExtensions
         public WebApplication UseCore()
         {
             application.UseCorrelationId();
+            application.UseRequestLogging();
             application.UseExceptionHandler(_ => { });
             application.UseStaticFrontend(
                 EmbeddedFrontend.CreateFileProvider().WithWebRoot(application.Environment.WebRootPath));
@@ -460,6 +463,10 @@ public static class WebApiExtensions
                 .Produces(204)
                 .Produces(401)
                 .Produces(500);
+
+            application.Logger.LogInformation(
+                "Core web api configured for environment {EnvironmentName} with content root {ContentRootPath}",
+                () => [application.Environment.EnvironmentName, application.Environment.ContentRootPath]);
 
             return application;
         }

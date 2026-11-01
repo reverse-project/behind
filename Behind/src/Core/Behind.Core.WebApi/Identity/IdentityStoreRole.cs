@@ -1,5 +1,7 @@
+using Behind.Common.Logging;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace Behind.Core.WebApi.Identity;
 
@@ -19,15 +21,22 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
 
                     return IdentityResult.Success;
                 },
-                some: _ => Task.FromResult(IdentityResult.Failed(new IdentityError
+                some: _ =>
                 {
-                    Code = "RoleAlreadyExists",
-                    Description = "Role already exists"
-                }))
+                    logger.LogWarning("Role {RoleId} was not created: it already exists", () => [role.Id]);
+
+                    return Task.FromResult(IdentityResult.Failed(new IdentityError
+                    {
+                        Code = "RoleAlreadyExists",
+                        Description = "Role already exists"
+                    }));
+                }
             );
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            logger.LogError(exception, "Failed to create role {RoleId}", () => [role.Id]);
+
             return IdentityResult.Failed();
         }
     }
@@ -40,7 +49,12 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
             var dbRole = await repository.TryFindAsync(role.Id, cancellationToken);
 
             return await dbRole.Match(
-                none: () => Task.FromResult(IdentityResult.Failed()),
+                none: () =>
+                {
+                    logger.LogWarning("Role {RoleId} was not updated: it does not exist", () => [role.Id]);
+
+                    return Task.FromResult(IdentityResult.Failed());
+                },
                 some: async r =>
                 {
                     repository.Update(role.Id, r with { Name = role.Name });
@@ -49,8 +63,10 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
                 }
             );
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            logger.LogError(exception, "Failed to update role {RoleId}", () => [role.Id]);
+
             return IdentityResult.Failed();
         }
     }
@@ -63,8 +79,10 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
             await unitOfWork.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            logger.LogError(exception, "Failed to delete role {RoleId}", () => [role.Id]);
+
             return IdentityResult.Failed();
         }
     }
@@ -97,6 +115,8 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
         {
             if (!Guid.TryParse(roleId, out var id))
             {
+                logger.LogDebug("Role lookup ignored: {RoleId} is not a valid identifier", () => [roleId]);
+
                 return null;
             }
 
@@ -106,8 +126,10 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
                     some: role => role.ToApplicationRole(id)
                 );
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            logger.LogError(exception, "Failed to find role {RoleId}", () => [roleId]);
+
             return null;
         }
     }

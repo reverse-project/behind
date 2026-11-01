@@ -11,6 +11,7 @@ public sealed class DeletedRecordsVisibilityMiddlewareTests : IDisposable
     private const string Email = "viewer@test.com";
 
     private readonly TestDbContextFactory _factory = new();
+    private readonly CapturingLogger<DeletedRecordsVisibilityMiddleware> _logger = new();
 
     public void Dispose() => _factory.Dispose();
 
@@ -35,11 +36,31 @@ public sealed class DeletedRecordsVisibilityMiddlewareTests : IDisposable
         {
             duringRequest = db.SoftDelete.IncludesDeleted;
             return Task.CompletedTask;
-        });
+        }, _logger);
 
         await middleware.InvokeAsync(context, db, new UserQueries(db));
 
         return (duringRequest, db.SoftDelete.IncludesDeleted);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_UserWithViewDeletedGrant_LogsDebug()
+    {
+        await SeedUserWithGrantAsync(DomainConstants.ViewDeletedGrant);
+
+        await InvokeAsync(Authenticated(Email));
+
+        Assert.Equal(LogLevel.Debug, Assert.Single(_logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_UserWithoutViewDeletedGrant_LogsNothing()
+    {
+        await SeedUserWithGrantAsync("read");
+
+        await InvokeAsync(Authenticated(Email));
+
+        Assert.Empty(_logger.Entries);
     }
 
     [Fact]
@@ -78,7 +99,9 @@ public sealed class DeletedRecordsVisibilityMiddlewareTests : IDisposable
     {
         await SeedUserWithGrantAsync(DomainConstants.ViewDeletedGrant);
         await using var db = _factory.CreateContext();
-        var middleware = new DeletedRecordsVisibilityMiddleware(_ => throw new InvalidOperationException());
+        var middleware = new DeletedRecordsVisibilityMiddleware(
+            _ => throw new InvalidOperationException(),
+            NullLogger<DeletedRecordsVisibilityMiddleware>.Instance);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             middleware.InvokeAsync(Authenticated(Email), db, new UserQueries(db)));

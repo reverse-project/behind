@@ -73,7 +73,7 @@ public class MagicLinkMailTests
                 second.SetResult();
                 return Task.CompletedTask;
             });
-        var logger = Substitute.For<ILogger<MagicLinkMailService>>();
+        var logger = EnabledLogger.For<MagicLinkMailService>();
         using var service = new MagicLinkMailService(queue, sender, logger);
 
         await service.StartAsync(CancellationToken.None);

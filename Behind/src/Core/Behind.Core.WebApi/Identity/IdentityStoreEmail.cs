@@ -1,6 +1,8 @@
 using static Behind.Common.FunctionalExtensions;
+using Behind.Common.Logging;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace Behind.Core.WebApi.Identity;
 
@@ -40,15 +42,22 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                     await roleCommands.AssignBuiltIn(user.Id, BuiltInAccess.Users, cancellationToken);
                     return IdentityResult.Success;
                 },
-                some: _ => Task.FromResult(IdentityResult.Failed(new IdentityError
+                some: _ =>
                 {
-                    Code = "EmailAlreadyExists",
-                    Description = "Email already exists"
-                }))
+                    logger.LogWarning("User {UserId} was not created: the email already exists", () => [user.Id]);
+
+                    return Task.FromResult(IdentityResult.Failed(new IdentityError
+                    {
+                        Code = "EmailAlreadyExists",
+                        Description = "Email already exists"
+                    }));
+                }
             );
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            logger.LogError(exception, "Failed to create user {UserId}", () => [user.Id]);
+
             return IdentityResult.Failed();
         }
     }
@@ -61,7 +70,12 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
             var dbUser = await repository.TryFindAsync(user.Id, cancellationToken);
 
             return await dbUser.Match(
-                none: () => Task.FromResult(IdentityResult.Failed()),
+                none: () =>
+                {
+                    logger.LogWarning("User {UserId} was not updated: it does not exist", () => [user.Id]);
+
+                    return Task.FromResult(IdentityResult.Failed());
+                },
                 some: async u =>
                 {
                     repository.Update(user.Id, u with { DisplayName = user.DisplayName });
@@ -69,8 +83,10 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                     return IdentityResult.Success;
                 });
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            logger.LogError(exception, "Failed to update user {UserId}", () => [user.Id]);
+
             return IdentityResult.Failed();
         }
     }
@@ -83,8 +99,10 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
             await unitOfWork.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            logger.LogError(exception, "Failed to delete user {UserId}", () => [user.Id]);
+
             return IdentityResult.Failed();
         }
     }
@@ -95,6 +113,8 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
         {
             if (!Guid.TryParse(userId, out Guid id))
             {
+                logger.LogDebug("User lookup ignored: {UserId} is not a valid identifier", () => [userId]);
+
                 return null;
             }
 
@@ -104,8 +124,10 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                     some: user => user.ToApplicationUser(id)
                 );
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            logger.LogError(exception, "Failed to find user {UserId}", () => [userId]);
+
             return null;
         }
     }

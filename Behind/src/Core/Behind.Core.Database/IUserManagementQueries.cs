@@ -14,8 +14,11 @@ public interface IUserManagementQueries
     Task<PagedResult<ManagedUser>> ListUsers(
         Flipper flipper,
         Option<string> search,
+        Option<string> letter,
         DateTimeOffset now,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<string>> GetLetters(Option<string> search, CancellationToken cancellationToken = default);
 
     Task<Option<ManagedUser>> TryFindUser(Guid id, DateTimeOffset now, CancellationToken cancellationToken = default);
 }

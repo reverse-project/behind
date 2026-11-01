@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/pager", "models/user"], function (ko, auth, session, createPager, user) {
+define(["ko", "models/auth", "models/session", "models/pager", "models/letterpager", "models/user"], function (ko, auth, session, createPager, createLetterPager, user) {
     var pageSize = 10;
 
     var roleDefinitions = [
@@ -21,6 +21,10 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/user"], f
         self.search = ko.observable("");
         self.users = ko.observableArray([]);
         self.pager = createPager(function () {
+            return self.refresh();
+        });
+        self.letterPager = createLetterPager(function () {
+            self.pager.page(1);
             return self.refresh();
         });
 
@@ -124,7 +128,12 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/user"], f
 
             self.busy(true);
 
-            return auth.loadUsers({ page: self.pager.page(), pageSize: pageSize, search: self.search().trim() })
+            return auth.loadUsers({
+                page: self.pager.page(),
+                pageSize: pageSize,
+                search: self.search().trim(),
+                letter: self.letterPager.selected()
+            })
                 .then(function (result) {
                     self.message(result.message);
 
@@ -133,13 +142,15 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/user"], f
                         return undefined;
                     }
 
-                    if (self.pager.isOutOfRange(result.data)) {
-                        self.pager.clampIfOutOfRange(result.data);
+                    self.letterPager.update(result.data.letters);
+
+                    if (self.pager.isOutOfRange(result.data.users)) {
+                        self.pager.clampIfOutOfRange(result.data.users);
                         return self.refresh();
                     }
 
-                    self.pager.update(result.data);
-                    self.users(result.data.items.map(present));
+                    self.pager.update(result.data.users);
+                    self.users(result.data.users.items.map(present));
                     return undefined;
                 })
                 .finally(function () {

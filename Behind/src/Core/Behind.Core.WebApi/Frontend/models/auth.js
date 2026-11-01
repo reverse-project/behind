@@ -146,7 +146,8 @@ define(["models/http", "models/session", "models/user"], function (http, session
         },
 
         loadUsers: function (query) {
-            var url = "/users?page=" + query.page + "&pageSize=" + query.pageSize + "&search=" + encodeURIComponent(query.search);
+            var url = "/users?page=" + query.page + "&pageSize=" + query.pageSize
+                + "&search=" + encodeURIComponent(query.search) + "&letter=" + encodeURIComponent(query.letter);
 
             return http.get(url).then(function (response) {
                 return response.ok

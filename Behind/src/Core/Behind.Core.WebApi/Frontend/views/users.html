@@ -1,4 +1,4 @@
-<section>
+<section class="behind-wide">
     <h1 class="mb-3">Users</h1>
     <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage users.</p>
     <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need administrator access to manage users.</div>
@@ -8,6 +8,7 @@
             <input class="form-control" type="search" maxlength="200" placeholder="Search by name or email" aria-label="Search users" data-bind="value: search">
             <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Search</button>
         </form>
+        <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
         <p class="text-body-secondary" data-bind="visible: !hasUsers()">No users found.</p>
         <ul class="list-group mb-3" data-bind="foreach: users">
             <li class="list-group-item">

@@ -30,10 +30,17 @@ public sealed class UserManagementQueriesTests : IDisposable
 
     private async Task<PagedResult<IUserManagementQueries.ManagedUser>> ListAsync(
         Option<string> search = default,
-        Flipper? flipper = null)
+        Flipper? flipper = null,
+        Option<string> letter = default)
     {
         await using var ctx = _factory.CreateContext();
-        return await new UserManagementQueries(ctx).ListUsers(flipper ?? new Flipper(1, 50), search, Now);
+        return await new UserManagementQueries(ctx).ListUsers(flipper ?? new Flipper(1, 50), search, letter, Now);
+    }
+
+    private async Task<IReadOnlyList<string>> LettersAsync(Option<string> search = default)
+    {
+        await using var ctx = _factory.CreateContext();
+        return await new UserManagementQueries(ctx).GetLetters(search);
     }
 
     private static IReadOnlyList<IUserManagementQueries.ManagedUser> Items(
@@ -109,6 +116,75 @@ public sealed class UserManagementQueriesTests : IDisposable
         Assert.Equal(None, page.Results);
     }
 
+    [Theory]
+    [InlineData("a", new[] { "Ada", "adam@test.com" })]
+    [InlineData("B", new[] { "Bob" })]
+    [InlineData("#", new[] { "42@test.com", "Émile" })]
+    [InlineData("Z", new string[0])]
+    public async Task ListUsers_LetterFiltersByTheFirstLetterOfTheShownLabel(string letter, string[] expected)
+    {
+        await SeedUserAsync("ada@test.com", "Ada");
+        await SeedUserAsync("adam@test.com");
+        await SeedUserAsync("bob@test.com", "Bob");
+        await SeedUserAsync("42@test.com");
+        await SeedUserAsync("emile@test.com", "Émile");
+
+        var users = Items(await ListAsync(letter: Some(letter)));
+
+        Assert.Equal(expected.Order(), users.Select(user => user.DisplayName.Length > 0 ? user.DisplayName : user.Emails[0]).Order());
+    }
+
+    [Fact]
+    public async Task ListUsers_OrdersByTheShownLabelIgnoringCase()
+    {
+        await SeedUserAsync("zed@test.com", "zed");
+        await SeedUserAsync("bob@test.com", "Bob");
+        await SeedUserAsync("amy@test.com");
+
+        var users = Items(await ListAsync());
+
+        Assert.Equal(["amy@test.com", "bob@test.com", "zed@test.com"], users.Select(user => user.Emails[0]));
+    }
+
+    [Fact]
+    public async Task ListUsers_LetterCombinesWithSearchAndCountsOnlyTheBucket()
+    {
+        await SeedUserAsync("ann@test.com", "Ann");
+        await SeedUserAsync("alf@other.com", "Alf");
+        await SeedUserAsync("bob@test.com", "Bob");
+
+        var page = await ListAsync(Some("test"), letter: Some("A"));
+
+        Assert.Equal(1, page.Total);
+        Assert.Equal(["Ann"], Items(page).Select(user => user.DisplayName));
+    }
+
+    [Fact]
+    public async Task GetLetters_ReturnsOnlyPresentBucketsInAlphabeticalOrderWithOtherLast()
+    {
+        await SeedUserAsync("c@test.com", "Cleo");
+        await SeedUserAsync("a@test.com", "ann");
+        await SeedUserAsync("9@test.com");
+        await SeedUserAsync("e@test.com", "Émile");
+
+        Assert.Equal(["A", "C", "#"], await LettersAsync());
+    }
+
+    [Fact]
+    public async Task GetLetters_RespectsTheSearchTerm()
+    {
+        await SeedUserAsync("c@test.com", "Cleo");
+        await SeedUserAsync("a@test.com", "Ann");
+
+        Assert.Equal(["C"], await LettersAsync(Some("cleo")));
+    }
+
+    [Fact]
+    public async Task GetLetters_WithoutUsers_IsEmpty()
+    {
+        Assert.Empty(await LettersAsync());
+    }
+
     [Fact]
     public async Task ListUsers_AndTryFindUser_ExcludeTheBuiltInSystemAndGuestUsers()
     {
@@ -121,7 +197,7 @@ public sealed class UserManagementQueriesTests : IDisposable
 
         await using var ctx = _factory.CreateContext();
         var queries = new UserManagementQueries(ctx);
-        var users = Items(await queries.ListUsers(new Flipper(1, 50), None, Now));
+        var users = Items(await queries.ListUsers(new Flipper(1, 50), None, None, Now));
 
         Assert.Equal(["Real"], users.Select(user => user.DisplayName));
         Assert.Equal(None, await queries.TryFindUser(DomainConstants.SystemUserId, Now));

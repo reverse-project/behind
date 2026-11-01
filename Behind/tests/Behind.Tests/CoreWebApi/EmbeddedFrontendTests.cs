@@ -41,6 +41,12 @@ public class EmbeddedFrontendTests
     [InlineData("viewmodels/session.js")]
     [InlineData("views/session.html")]
     [InlineData("viewmodels/header.js")]
+    [InlineData("controllers/administration.js")]
+    [InlineData("viewmodels/administration.js")]
+    [InlineData("views/administration.html")]
+    [InlineData("css/fontawesome.min.css")]
+    [InlineData("css/solid.min.css")]
+    [InlineData("webfonts/fa-solid-900.woff2")]
     [InlineData("controllers/sessions.js")]
     [InlineData("viewmodels/sessions.js")]
     [InlineData("views/sessions.html")]
@@ -130,19 +136,63 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void Header_ShowsUserNameAndSignOutWhenSignedIn_AndSignInLinksOtherwise()
+    public void Header_ShowsUserNameMenuWithAccountPagesAdministrationAndSignOutWhenSignedIn_AndSignInLinksOtherwise()
     {
         var index = Read(Provider.GetFileInfo("index.html"));
         var header = Read(Provider.GetFileInfo("viewmodels/header.js"));
+        var menu = index[index.IndexOf("nav-item dropdown", StringComparison.Ordinal)..];
+        menu = menu[..menu.IndexOf("</ul>", StringComparison.Ordinal)];
 
         Assert.Contains("<li class=\"nav-item dropdown\" data-bind=\"visible: isSignedIn\">", index);
         Assert.Contains("data-bs-toggle=\"dropdown\" aria-expanded=\"false\" data-bind=\"text: label\"", index);
-        Assert.Contains("<a class=\"dropdown-item\" href=\"#/session\">Session</a>", index);
+        Assert.All(
+            new[] { "href=\"#/profile\"", "href=\"#/session\"", "href=\"#/sessions\"", "<li data-bind=\"visible: canManageUsers\"><a class=\"dropdown-item\" href=\"#/administration\">Administration</a></li>", "click: signOut" },
+            item => Assert.Contains(item, menu));
+        Assert.Contains("<a class=\"nav-link\" href=\"#/wall-of-shame\">Wall of shame</a>", index);
         Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-in\">", index);
         Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-up\">", index);
-        Assert.Contains("visible: isSignedIn, click: signOut", index);
+        Assert.Equal(1, index.Split("click: signOut").Length - 1);
         Assert.Contains("session.displayName()", header);
         Assert.Contains("auth.loadSession()", header);
+    }
+
+    [Fact]
+    public void AdministrationRoute_IsRegisteredAndRendersAGridOfIconButtons()
+    {
+        var app = Read(Provider.GetFileInfo("app.js"));
+        var index = Read(Provider.GetFileInfo("index.html"));
+        var view = Read(Provider.GetFileInfo("views/administration.html"));
+
+        Assert.Contains("\"#/administration\": \"controllers/administration\"", app);
+        Assert.Contains("css/fontawesome.min.css", index);
+        Assert.Contains("css/solid.min.css", index);
+        Assert.Contains("foreach: pages", view);
+        Assert.Contains("row row-cols-", view);
+        Assert.Contains("css: icon", view);
+        Assert.Contains("text: name", view);
+        Assert.Contains("attr: { href: href }", view);
+    }
+
+    [Fact]
+    public void AdministrationViewModel_ListsOnlyTheUsersPageForUserManagers()
+    {
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
+        var view = Read(Provider.GetFileInfo("views/administration.html"));
+
+        Assert.Equal(1, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);
+        Assert.Contains("hasGrant(\"User.Manage\")", viewModel);
+        Assert.Contains("visible: isEmpty", view);
+    }
+
+    [Fact]
+    public void FontAwesomeAssets_AreSelfHostedAndReferenceExistingFonts()
+    {
+        var solid = Read(Provider.GetFileInfo("css/solid.min.css"));
+
+        Assert.Contains("Font Awesome Free", solid);
+        Assert.Contains("../webfonts/fa-solid-900.woff2", solid);
+        Assert.True(Provider.GetFileInfo("webfonts/fa-solid-900.woff2").Exists);
     }
 
     [Theory]
@@ -270,13 +320,12 @@ public class EmbeddedFrontendTests
     public void ProfileRoute_IsRegisteredLinkedAndSavesTheDisplayName()
     {
         var app = Read(Provider.GetFileInfo("app.js"));
-        var index = Read(Provider.GetFileInfo("index.html"));
         var view = Read(Provider.GetFileInfo("views/profile.html"));
         var auth = Read(Provider.GetFileInfo("models/auth.js"));
         var http = Read(Provider.GetFileInfo("models/http.js"));
 
         Assert.Contains("\"#/profile\": \"controllers/profile\"", app);
-        Assert.Contains("<a class=\"dropdown-item\" href=\"#/profile\">Profile</a>", index);
+        Assert.Contains("<a class=\"dropdown-item\" href=\"#/profile\">Profile</a>", Read(Provider.GetFileInfo("index.html")));
         Assert.Contains("value: displayName", view);
         Assert.Contains("submit: submit", view);
         Assert.Contains("http.put(\"/profile/displayName\"", auth);
@@ -325,19 +374,6 @@ public class EmbeddedFrontendTests
         Assert.Contains("auth.signOutAll()", viewModel);
         Assert.Contains("window.confirm(", viewModel);
         Assert.Contains("self.showEnded = ko.observable(false)", viewModel);
-    }
-
-    [Fact]
-    public void SessionsLink_IsInsideTheDisplayNameDropdown()
-    {
-        var index = Read(Provider.GetFileInfo("index.html"));
-        var dropdown = index[index.IndexOf("nav-item dropdown", StringComparison.Ordinal)..];
-        var menu = dropdown[..dropdown.IndexOf("</ul>", StringComparison.Ordinal)];
-
-        Assert.Contains("dropdown-menu", menu);
-        Assert.Contains("href=\"#/sessions\"", menu);
-        Assert.Contains("href=\"#/session\"", menu);
-        Assert.Equal(1, index.Split("href=\"#/sessions\"").Length - 1);
     }
 
     [Fact]

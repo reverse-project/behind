@@ -2,6 +2,10 @@
     max-width: 40rem;
 }
 
+.behind-main:has(.behind-wide) {
+    max-width: 64rem;
+}
+
 .behind-details dd {
     overflow-wrap: anywhere;
 }

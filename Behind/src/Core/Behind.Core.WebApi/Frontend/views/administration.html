@@ -1,0 +1,12 @@
+<section class="behind-wide">
+    <h1 class="mb-4">Administration</h1>
+    <p class="text-body-secondary" data-bind="visible: isEmpty">No administration pages are available.</p>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3" data-bind="foreach: pages">
+        <div class="col">
+            <a class="btn btn-outline-primary w-100 h-100 py-4 d-flex flex-column align-items-center justify-content-center gap-2" data-bind="attr: { href: href }">
+                <i class="fa-solid fa-2x" aria-hidden="true" data-bind="css: icon"></i>
+                <span data-bind="text: name"></span>
+            </a>
+        </div>
+    </div>
+</section>

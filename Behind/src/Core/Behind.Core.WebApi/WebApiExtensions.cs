@@ -259,7 +259,8 @@ public static class WebApiExtensions
 
             application.MapGet("/users", UserManagementEndpoints.Get)
                 .RequireAuthorization(userManagement)
-                .Produces<PageResponse<ManagedUserItem>>()
+                .Produces<UserListResponse>()
+                .Produces(400)
                 .Produces(401)
                 .Produces(403)
                 .Produces(500);

@@ -7,6 +7,7 @@ using Behind.Core.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.WebApi.Endpoints;
 
@@ -28,9 +29,17 @@ public sealed class UserManagementEndpoints
         TimeProvider timeProvider,
         [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] string? letter = null)
     {
         httpContext.Response.Headers.CacheControl = "no-store";
+
+        var letterFilter = LetterBucketExtensions.ParseLetterBucket(letter);
+
+        if (!string.IsNullOrWhiteSpace(letter) && letterFilter == None)
+        {
+            return Results.BadRequest();
+        }
 
         var actor = await gate.FindActor(httpContext);
 
@@ -38,13 +47,20 @@ public sealed class UserManagementEndpoints
             () => Task.FromResult<IResult>(Results.Unauthorized()),
             async current =>
             {
+                var searchTerm = search.ToSearchTerm(MaxSearchLength);
+
                 var users = await userQueries.ListUsers(
                     Flipper.Create(page, pageSize, DefaultPageSize, MaxPageSize),
-                    search.ToSearchTerm(MaxSearchLength),
+                    searchTerm,
+                    letterFilter,
                     timeProvider.GetUtcNow(),
                     httpContext.RequestAborted);
 
-                return Results.Json(users.ToPageResponse(user => user.ToItem(current)));
+                var letters = await userQueries.GetLetters(searchTerm, httpContext.RequestAborted);
+
+                return Results.Json(new UserListResponse(
+                    users.ToPageResponse(user => user.ToItem(current)),
+                    letters));
             });
     }
 

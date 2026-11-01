@@ -7,11 +7,13 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], functio
         "#/sessions": "controllers/sessions",
         "#/profile": "controllers/profile",
         "#/users": "controllers/users",
+        "#/administration": "controllers/administration",
         "#/wall-of-shame": "controllers/wallofshame",
         "#/sign/in/magiclink": "controllers/magiclink"
     };
 
     ko.components.register("pager", { require: "components/pager" });
+    ko.components.register("letter-pager", { require: "components/letterpager" });
 
     var container = function () {
         return $("#main-container");

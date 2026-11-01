@@ -30,25 +30,28 @@ public class UserManagementFrontendTests
     }
 
     [Fact]
-    public void Routes_AreRegisteredAndLinkedInTheHeader()
+    public void Routes_AreRegisteredAndLinked()
     {
         var app = Read("app.js");
         var index = Read("index.html");
+        var administration = Read("viewmodels/administration.js");
 
         Assert.Contains("\"#/users\": \"controllers/users\"", app);
         Assert.Contains("\"#/wall-of-shame\": \"controllers/wallofshame\"", app);
-        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: canManageUsers\"><a class=\"nav-link\" href=\"#/users\">Users</a></li>", index);
+        Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", administration);
         Assert.Contains("<a class=\"nav-link\" href=\"#/wall-of-shame\">Wall of shame</a>", index);
+        Assert.Contains("href=\"#/administration\">Administration</a>", index);
     }
 
     [Fact]
-    public void Header_ShowsTheUsersLinkOnlyToUserManagers()
+    public void Header_ShowsTheAdministrationLinkOnlyToUserManagers()
     {
         var header = Read("viewmodels/header.js");
         var session = Read("models/session.js");
         var auth = Read("models/auth.js");
 
         Assert.Contains("session.hasGrant(\"User.Manage\")", header);
+        Assert.Contains("visible: canManageUsers", Read("index.html"));
         Assert.Contains("session.grants() === null", header);
         Assert.Contains("hasGrant: function", session);
         Assert.Contains("session.identify(user.label(response.data.user), user.grants(response.data.user))", auth);
@@ -108,6 +111,57 @@ public class UserManagementFrontendTests
         Assert.Contains("auth.unbanUser(", viewModel);
         Assert.Contains("window.confirm(", viewModel);
         Assert.Contains("models/pager", viewModel);
+    }
+
+    [Fact]
+    public void LetterPager_IsARegisteredReusableComponentUsedByTheUsersPage()
+    {
+        var app = Read("app.js");
+        var component = Read("components/letterpager.js");
+        var template = Read("components/letterpager.html");
+        var model = Read("models/letterpager.js");
+        var view = Read("views/users.html");
+        var viewModel = Read("viewmodels/users.js");
+        var auth = Read("models/auth.js");
+
+        Assert.Contains("ko.components.register(\"letter-pager\", { require: \"components/letterpager\" })", app);
+        Assert.Contains("text!components/letterpager.html", component);
+        Assert.Contains("params.pager", component);
+        Assert.All(
+            new[] { "click: all", "foreach: letters", "$parent.select", "text: label", "enable: isAvailable" },
+            binding => Assert.Contains(binding, template));
+        Assert.DoesNotContain("user", template, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("user", model, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("params=\"pager: letterPager\"", view);
+        Assert.Contains("models/letterpager", viewModel);
+        Assert.Contains("letter: self.letterPager.selected()", viewModel);
+        Assert.Contains("self.letterPager.update(result.data.letters)", viewModel);
+        Assert.Contains("encodeURIComponent(query.letter)", auth);
+    }
+
+    [Fact]
+    public void LetterPager_ShowsEveryLetterAndTheOtherBucketAndResetsThePage()
+    {
+        var model = Read("models/letterpager.js");
+        var viewModel = Read("viewmodels/users.js");
+
+        Assert.Contains("\"ABCDEFGHIJKLMNOPQRSTUVWXYZ#\"", model);
+        Assert.Contains("present.indexOf(letter) >= 0 || letter === selected", model);
+        Assert.Contains("self.pager.page(1)", viewModel);
+    }
+
+    [Fact]
+    public void UsersPage_IsWiderAndKeepsTheLetterBarOnOneLine()
+    {
+        var css = Read("css/app.css");
+        var view = Read("views/users.html");
+        var template = Read("components/letterpager.html");
+
+        Assert.Contains(".behind-main:has(.behind-wide)", css);
+        Assert.Contains("<section class=\"behind-wide\">", view);
+        Assert.Contains("flex-nowrap", template);
+        Assert.Contains("overflow-x-auto", template);
+        Assert.DoesNotContain("flex-wrap", template);
     }
 
     [Fact]

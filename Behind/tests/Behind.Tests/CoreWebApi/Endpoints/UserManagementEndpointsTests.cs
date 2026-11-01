@@ -74,17 +74,21 @@ public class UserManagementEndpointsTests
             "Banned",
             ban: Some(new IWallOfShameQueries.ActiveBan("rude", None)));
         var developer = Managed(Guid.NewGuid(), "Dev", [DomainConstants.DevelopersRole]);
-        _users.ListUsers(new Flipper(1, UserManagementEndpoints.DefaultPageSize), None, Now, Arg.Any<CancellationToken>())
+        _users.ListUsers(new Flipper(1, UserManagementEndpoints.DefaultPageSize), None, None, Now, Arg.Any<CancellationToken>())
             .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(
                 3,
                 1,
                 1,
                 UserManagementEndpoints.DefaultPageSize,
                 Some<IEnumerable<IUserManagementQueries.ManagedUser>>([self, banned, developer])));
+        _users.GetLetters(None, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<string>>(["B", "D", "S"]));
 
         var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now));
 
-        var page = Assert.IsType<JsonHttpResult<Behind.Common.WebApi.PageResponse<ManagedUserItem>>>(result).Value!;
+        var response = Assert.IsType<JsonHttpResult<UserListResponse>>(result).Value!;
+        Assert.Equal(["B", "D", "S"], response.Letters);
+        var page = response.Users;
         Assert.Equal(3, page.Total);
         var items = page.Items;
         Assert.True(items[0].IsCurrent);
@@ -97,15 +101,18 @@ public class UserManagementEndpointsTests
     }
 
     [Fact]
-    public async Task Get_DisablesCachingAndPassesSearchAndPaging()
+    public async Task Get_DisablesCachingAndPassesSearchLetterAndPaging()
     {
         var context = SignedIn();
         _users.ListUsers(
                 new Flipper(3, UserManagementEndpoints.MaxPageSize),
                 Some("ada"),
+                Some("A"),
                 Now,
                 Arg.Any<CancellationToken>())
             .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(0, 3, 0, 100, None));
+        _users.GetLetters(Some("ada"), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<string>>(["A"]));
 
         var result = await UserManagementEndpoints.Get(
             context,
@@ -114,11 +121,48 @@ public class UserManagementEndpointsTests
             new FixedTimeProvider(Now),
             page: 3,
             pageSize: 100000,
-            search: "  ada ");
+            search: "  ada ",
+            letter: " a ");
 
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
-        var body = Assert.IsType<JsonHttpResult<Behind.Common.WebApi.PageResponse<ManagedUserItem>>>(result).Value!;
-        Assert.Empty(body.Items);
+        var body = Assert.IsType<JsonHttpResult<UserListResponse>>(result).Value!;
+        Assert.Empty(body.Users.Items);
+        Assert.Equal(["A"], body.Letters);
+    }
+
+    [Theory]
+    [InlineData("AB")]
+    [InlineData("1")]
+    [InlineData("%")]
+    public async Task Get_InvalidLetter_ReturnsBadRequest(string letter)
+    {
+        var result = await UserManagementEndpoints.Get(
+            SignedIn(),
+            _gate,
+            _users,
+            new FixedTimeProvider(Now),
+            letter: letter);
+
+        Assert.IsType<BadRequest>(result);
+        await _users.DidNotReceiveWithAnyArgs().ListUsers(default!, default, default, default, default);
+    }
+
+    [Fact]
+    public async Task Get_OtherLetterBucket_IsAccepted()
+    {
+        _users.ListUsers(
+                Arg.Any<Flipper>(),
+                None,
+                Some("#"),
+                Now,
+                Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(0, 1, 0, 10, None));
+        _users.GetLetters(None, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<string>>([]));
+
+        var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now), letter: "#");
+
+        Assert.IsType<JsonHttpResult<UserListResponse>>(result);
     }
 
     [Fact]

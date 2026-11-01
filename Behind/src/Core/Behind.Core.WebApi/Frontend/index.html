@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Behind</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+    <link rel="stylesheet" href="css/solid.min.css">
     <link rel="stylesheet" href="css/app.css">
     <script src="libraries/require.min.js" data-main="bootloader.js"></script>
 </head>
@@ -20,19 +22,20 @@
                 <ul class="navbar-nav me-auto mb-2 mb-md-0">
                     <li class="nav-item"><a class="nav-link" href="#/">Index</a></li>
                     <li class="nav-item"><a class="nav-link" href="#/wall-of-shame">Wall of shame</a></li>
-                    <li class="nav-item" data-bind="visible: canManageUsers"><a class="nav-link" href="#/users">Users</a></li>
                     <li class="nav-item dropdown" data-bind="visible: isSignedIn">
                         <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: label"></button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="#/profile">Profile</a></li>
                             <li><a class="dropdown-item" href="#/session">Session</a></li>
                             <li><a class="dropdown-item" href="#/sessions">Sessions</a></li>
+                            <li data-bind="visible: canManageUsers"><a class="dropdown-item" href="#/administration">Administration</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button type="button" class="dropdown-item" data-bind="click: signOut">Sign out</button></li>
                         </ul>
                     </li>
                     <li class="nav-item" data-bind="visible: !isSignedIn()"><a class="nav-link" href="#/sign-in">Sign in</a></li>
                     <li class="nav-item" data-bind="visible: !isSignedIn()"><a class="nav-link" href="#/sign-up">Sign up</a></li>
                 </ul>
-                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isSignedIn, click: signOut">Sign out</button>
             </div>
         </div>
     </nav>

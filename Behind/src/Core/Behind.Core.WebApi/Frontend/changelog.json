@@ -5,7 +5,7 @@
     "changes": [
       { "type": "added", "text": "Sign-up sends a confirmation email with a link, and the link confirms the email address." },
       { "type": "added", "text": "Email confirmation can be turned off with Security:EmailConfirmation (default true); when off, new emails are confirmed at the moment of sign-up." },
-      { "type": "fixed", "text": "Sign-up now sends (and logs) the confirmation email; the logger email sender also logs the email body at debug level." },
+      { "type": "fixed", "text": "Sign-up now sends (and logs) the confirmation email; the logger email sender also logs the email body when the environment is Development." },
       { "type": "added", "text": "Passwordless sign-in with Magic Links, including rate limiting and security policies." },
       { "type": "added", "text": "Sign-up, profile and display name management." },
       { "type": "added", "text": "Session management: view the current session, list all sessions and sign out everywhere." },

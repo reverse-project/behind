@@ -76,34 +76,40 @@ public sealed class SessionEndpoints
         ILogger logger)
     {
         var accessToken = AccessToken.Create(active.User, now, DomainConstants.AccessTokenDuration);
+        var refreshToken = active.Session.RefreshToken.Rotate();
 
-        var renewed = await sessionCommands.RenewAccessToken(
+        var renewed = await sessionCommands.RenewTokens(
             active.Id,
             active.Session.AccessToken.Nonce,
+            active.Session.RefreshToken.Nonce,
             accessToken,
+            refreshToken,
             httpContext.RequestAborted);
 
         if (!renewed)
         {
             logger.LogWarning(
-                "Access token renewal for session {SessionId} of user {UserId} conflicted with another renewal",
+                "Token renewal for session {SessionId} of user {UserId} conflicted with another renewal",
                 () => [active.Id, active.UserId]);
 
             return Results.Conflict();
         }
 
         logger.LogInformation(
-            "Access token renewed for session {SessionId} of user {UserId}, expires at {AccessTokenExpiresAt}",
+            "Access and refresh tokens renewed for session {SessionId} of user {UserId}, access token expires at {AccessTokenExpiresAt}",
             () => [active.Id, active.UserId, accessToken.ExpiresAt]);
+
+        var applicationUser = active.User.ToApplicationUser(active.UserId);
 
         return await Respond(
             httpContext,
             accessQueries,
-            active with { Session = active.Session with { AccessToken = accessToken } },
+            active with { Session = active.Session with { AccessToken = accessToken, RefreshToken = refreshToken } },
             now,
-            new RefreshedAccessToken(
-                accessToken.ToJwtToken(active.User.ToApplicationUser(active.UserId), active.Id, jwtSettings),
-                accessToken.ExpiresAt));
+            new RefreshedTokens(
+                accessToken.ToJwtToken(applicationUser, active.Id, jwtSettings),
+                accessToken.ExpiresAt,
+                refreshToken.ToJwtToken(applicationUser, active.Id, jwtSettings)));
     }
 
     private static async Task<IResult> Respond(
@@ -111,7 +117,7 @@ public sealed class SessionEndpoints
         IAccessQueries accessQueries,
         ActiveSession active,
         DateTimeOffset now,
-        RefreshedAccessToken? refreshed)
+        RefreshedTokens? refreshed)
     {
         var access = await accessQueries.GetUserAccess(active.UserId, httpContext.RequestAborted);
 

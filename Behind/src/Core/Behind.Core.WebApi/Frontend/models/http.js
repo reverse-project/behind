@@ -12,7 +12,7 @@ define(["jquery", "models/session"], function ($, session) {
     };
 
     var sessionUrl = "/session";
-    var pendingRenewal = null;
+    var pendingSession = null;
 
     var send = function (method, url, body, extraHeaders) {
         var token = session.accessToken();
@@ -37,28 +37,32 @@ define(["jquery", "models/session"], function ($, session) {
         });
     };
 
-    var renew = function () {
-        if (!pendingRenewal) {
-            pendingRenewal = send("GET", sessionUrl, undefined, session.refreshHeaders())
+    var loadSession = function () {
+        if (!pendingSession) {
+            pendingSession = send("GET", sessionUrl, undefined, session.refreshHeaders())
                 .then(function (response) {
                     if (response.status === 401) {
                         session.end();
                     }
 
-                    var renewed = response.ok && !!response.data.refreshed;
-
-                    if (renewed) {
+                    if (response.ok && response.data.refreshed) {
                         session.renew(response.data.refreshed);
                     }
 
-                    return renewed;
+                    return response;
                 })
                 .finally(function () {
-                    pendingRenewal = null;
+                    pendingSession = null;
                 });
         }
 
-        return pendingRenewal;
+        return pendingSession;
+    };
+
+    var renew = function () {
+        return loadSession().then(function (response) {
+            return response.ok && !!response.data.refreshed;
+        });
     };
 
     var request = function (method, url, body, extraHeaders) {
@@ -76,6 +80,7 @@ define(["jquery", "models/session"], function ($, session) {
     };
 
     return {
+        loadSession: loadSession,
         get: function (url, headers) {
             return request("GET", url, undefined, headers);
         },

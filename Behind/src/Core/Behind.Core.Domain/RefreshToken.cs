@@ -26,6 +26,8 @@ public sealed record RefreshToken
     public static RefreshToken Create(User user, DateTimeOffset issuedAt, TimeSpan duration) =>
         new(Guid.NewGuid(), user, issuedAt, duration);
 
+    public RefreshToken Rotate() => this with { Nonce = Guid.NewGuid() };
+
     public static RefreshToken CreateExisting(Guid nonce, User user, DateTimeOffset issuedAt, TimeSpan duration) =>
         new(nonce, user, issuedAt, duration);
 }

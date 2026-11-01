@@ -71,7 +71,11 @@ define(["jquery", "ko"], function ($, ko) {
             var current = tokens();
 
             if (current) {
-                persist($.extend({}, current, { accessToken: refreshed.accessToken, expires: refreshed.expires }));
+                persist($.extend({}, current, {
+                    accessToken: refreshed.accessToken,
+                    expires: refreshed.expires,
+                    refreshToken: refreshed.refreshToken
+                }));
             }
         },
         start: function (response) {

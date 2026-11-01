@@ -52,10 +52,12 @@ public class SessionEndpointsTests
     private static ISessionCommands Commands(bool renewed = true)
     {
         var commands = Substitute.For<ISessionCommands>();
-        commands.RenewAccessToken(
+        commands.RenewTokens(
                 Arg.Any<Guid>(),
                 Arg.Any<TokenNonce>(),
+                Arg.Any<TokenNonce>(),
                 Arg.Any<AccessToken>(),
+                Arg.Any<RefreshToken>(),
                 Arg.Any<CancellationToken>())
             .Returns(renewed);
         return commands;
@@ -108,6 +110,9 @@ public class SessionEndpointsTests
     private static SessionResponse BodyOf(IResult result) =>
         Assert.IsType<JsonHttpResult<SessionResponse>>(result).Value!;
 
+    private static Task NotRenewed(ISessionCommands commands) =>
+        commands.DidNotReceiveWithAnyArgs().RenewTokens(default, default!, default!, default!, default!, default);
+
     [Fact]
     public async Task Get_ReturnsCalculatedGrantsAfterRestrictions()
     {
@@ -159,7 +164,7 @@ public class SessionEndpointsTests
         Assert.Equal(session.RefreshToken.ExpiresAt - Now, body.Session.Remaining);
         Assert.Equal("10.0.0.1", body.Session.RemoteAddress);
         Assert.Equal("test-agent", body.Session.UserAgent);
-        await commands.DidNotReceiveWithAnyArgs().RenewAccessToken(default, default!, default!, default);
+        await NotRenewed(commands);
     }
 
     [Fact]
@@ -174,7 +179,7 @@ public class SessionEndpointsTests
     }
 
     [Fact]
-    public async Task Get_ExpiredAccessTokenWithValidRefreshToken_RenewsAccessToken()
+    public async Task Get_ExpiredAccessTokenWithValidRefreshToken_RenewsBothTokens()
     {
         var session = NewSession(accessAge: TimeSpan.FromHours(1));
         var commands = Commands();
@@ -186,21 +191,31 @@ public class SessionEndpointsTests
             commands,
             roles));
 
-        var renewed = Assert.IsType<RefreshedAccessToken>(body.Refreshed);
-        var captured = Assert.IsType<AccessToken>(
-            commands.ReceivedCalls().Single().GetArguments()[2]);
-        await commands.Received(1).RenewAccessToken(
+        var renewed = Assert.IsType<RefreshedTokens>(body.Refreshed);
+        var arguments = commands.ReceivedCalls().Single().GetArguments();
+        var captured = Assert.IsType<AccessToken>(arguments[3]);
+        var rotated = Assert.IsType<RefreshToken>(arguments[4]);
+        await commands.Received(1).RenewTokens(
             SessionId,
             session.AccessToken.Nonce,
+            session.RefreshToken.Nonce,
             captured,
+            rotated,
             Arg.Any<CancellationToken>());
         Assert.NotEqual(session.AccessToken.Nonce, captured.Nonce);
+        Assert.NotEqual(session.RefreshToken.Nonce, rotated.Nonce);
+        Assert.Equal(session.RefreshToken.IssuedAt, rotated.IssuedAt);
+        Assert.Equal(session.RefreshToken.ExpiresAt, rotated.ExpiresAt);
         Assert.Equal(Now + DomainConstants.AccessTokenDuration, captured.ExpiresAt);
         Assert.Equal(captured.ExpiresAt, renewed.Expires);
         var claims = await Jwt.ReadSessionClaims(renewed.AccessToken);
         Assert.Equal(
             new Behind.Core.WebApi.Middleware.SessionClaims(SessionId, captured.Nonce),
             claims.Match(() => throw new Xunit.Sdk.XunitException("None"), c => c));
+        var refreshClaims = await Jwt.ReadSessionClaims(renewed.RefreshToken);
+        Assert.Equal(
+            new Behind.Core.WebApi.Middleware.SessionClaims(SessionId, rotated.Nonce),
+            refreshClaims.Match(() => throw new Xunit.Sdk.XunitException("None"), c => c));
         Assert.Equal(captured.ExpiresAt, body.Session.AccessTokenExpiresAt);
         Assert.Equal(TimeSpan.FromMinutes(30), body.Session.AccessTokenRemaining);
         Assert.Equal(["admin"], body.User.Roles.Select(r => r.Name));
@@ -304,7 +319,7 @@ public class SessionEndpointsTests
         var result = await Get(AnonymousContext(AccessJwt(session)), QueriesFor(session), commands);
 
         Assert.IsType<UnauthorizedHttpResult>(result);
-        await commands.DidNotReceiveWithAnyArgs().RenewAccessToken(default, default!, default!, default);
+        await NotRenewed(commands);
     }
 
     [Fact]
@@ -320,7 +335,7 @@ public class SessionEndpointsTests
             time: new FixedTimeProvider(Now.AddHours(2)));
 
         Assert.IsType<UnauthorizedHttpResult>(result);
-        await commands.DidNotReceiveWithAnyArgs().RenewAccessToken(default, default!, default!, default);
+        await NotRenewed(commands);
     }
 
     [Fact]
@@ -331,6 +346,16 @@ public class SessionEndpointsTests
 
         Assert.IsType<UnauthorizedHttpResult>(
             await Get(AnonymousContext(RefreshJwt(other)), QueriesFor(session)));
+    }
+
+    [Fact]
+    public async Task Get_RotatedOutRefreshToken_ReturnsUnauthorized()
+    {
+        var original = NewSession(accessAge: TimeSpan.FromHours(1));
+        var rotated = original with { RefreshToken = original.RefreshToken.Rotate() };
+
+        Assert.IsType<UnauthorizedHttpResult>(
+            await Get(AnonymousContext(RefreshJwt(original)), QueriesFor(rotated)));
     }
 
     [Fact]
@@ -346,7 +371,7 @@ public class SessionEndpointsTests
             commands);
 
         Assert.IsType<UnauthorizedHttpResult>(result);
-        await commands.DidNotReceiveWithAnyArgs().RenewAccessToken(default, default!, default!, default);
+        await NotRenewed(commands);
     }
 
     [Fact]

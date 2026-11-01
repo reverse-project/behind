@@ -112,19 +112,11 @@ define(["models/http", "models/session", "models/user"], function (http, session
         },
 
         loadSession: function () {
-            return http.get("/session", session.refreshHeaders()).then(function (response) {
+            return http.loadSession().then(function (response) {
                 if (response.ok) {
-                    if (response.data.refreshed) {
-                        session.renew(response.data.refreshed);
-                    }
-
                     session.identify(user.label(response.data.user), user.grants(response.data.user));
 
                     return { ok: true, message: "", data: response.data };
-                }
-
-                if (response.status === 401) {
-                    session.end();
                 }
 
                 return failure(response, {

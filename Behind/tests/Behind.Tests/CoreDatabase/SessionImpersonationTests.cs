@@ -127,23 +127,24 @@ public sealed class SessionImpersonationTests : IDisposable
     }
 
     [Fact]
-    public async Task RenewAccessToken_KeepsTheImpersonator()
+    public async Task RenewTokens_KeepsTheImpersonator()
     {
         var sessionId = await StartImpersonationAsync();
-        Guid nonce;
+        ValidSession original;
         await using (var ctx = _factory.CreateContext())
         {
             var found = await new SessionQueries(ctx).TryFindById(sessionId);
-            nonce = ((ValidSession)found.Match(() => throw new Xunit.Sdk.XunitException("None"), value => value))
-                .AccessToken.Nonce;
+            original = (ValidSession)found.Match(() => throw new Xunit.Sdk.XunitException("None"), value => value);
         }
 
         await using (var ctx = _factory.CreateContext())
         {
-            Assert.True(await new SessionCommands(ctx).RenewAccessToken(
+            Assert.True(await new SessionCommands(ctx).RenewTokens(
                 sessionId,
-                new TokenNonce(nonce),
-                AccessToken.Create(new GuestUser(None))));
+                original.AccessToken.Nonce,
+                original.RefreshToken.Nonce,
+                AccessToken.Create(new GuestUser(None)),
+                original.RefreshToken.Rotate()));
         }
 
         await using var reader = _factory.CreateContext();

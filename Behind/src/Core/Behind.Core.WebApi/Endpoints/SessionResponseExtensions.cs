@@ -39,7 +39,7 @@ public static class SessionResponseExtensions
             HumanUser user,
             UserAccess access,
             DateTimeOffset now,
-            RefreshedAccessToken? refreshed) =>
+            RefreshedTokens? refreshed) =>
             new(
                 sessionId,
                 new SessionUser(

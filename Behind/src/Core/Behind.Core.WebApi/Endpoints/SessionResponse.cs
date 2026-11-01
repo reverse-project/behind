@@ -20,7 +20,7 @@ public sealed record SessionDetails(
     string RemoteAddress,
     string UserAgent);
 
-public sealed record RefreshedAccessToken(string AccessToken, DateTimeOffset Expires);
+public sealed record RefreshedTokens(string AccessToken, DateTimeOffset Expires, string RefreshToken);
 
 public sealed record SessionImpersonator(string DisplayName, IReadOnlyList<string> Emails);
 
@@ -28,5 +28,5 @@ public sealed record SessionResponse(
     Guid SessionId,
     SessionUser User,
     SessionDetails Session,
-    RefreshedAccessToken? Refreshed,
+    RefreshedTokens? Refreshed,
     SessionImpersonator? Impersonator = null);

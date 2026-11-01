@@ -250,19 +250,21 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void SessionLoading_SendsRefreshTokenAndStoresRefreshedAccessToken()
+    public void SessionLoading_SharesTheRenewalAndStoresTheRotatedTokens()
     {
         var auth = Read(Provider.GetFileInfo("models/auth.js"));
         var http = Read(Provider.GetFileInfo("models/http.js"));
         var session = Read(Provider.GetFileInfo("models/session.js"));
 
-        Assert.Contains("http.get(\"/session\"", auth);
-        Assert.Contains("session.refreshHeaders()", auth);
-        Assert.Contains("session.renew(response.data.refreshed)", auth);
-        Assert.Contains("session.end()", auth);
+        Assert.Contains("http.loadSession()", auth);
+        Assert.DoesNotContain("session.refreshHeaders()", auth);
         Assert.Contains("session.identify(user.label(response.data.user), user.grants(response.data.user))", auth);
+        Assert.Contains("session.refreshHeaders()", http);
+        Assert.Contains("session.renew(response.data.refreshed)", http);
+        Assert.Contains("session.end()", http);
         Assert.Contains("extraHeaders", http);
         Assert.Contains("renew:", session);
+        Assert.Contains("refreshToken: refreshed.refreshToken", session);
     }
 
     [Fact]
@@ -283,7 +285,7 @@ public class EmbeddedFrontendTests
         var session = Read(Provider.GetFileInfo("models/session.js"));
 
         Assert.Contains("response.status !== 401", http);
-        Assert.Contains("pendingRenewal", http);
+        Assert.Contains("pendingSession", http);
         Assert.Contains("session.refreshHeaders()", http);
         Assert.Contains("url === sessionUrl", http);
         Assert.Contains("session.renew(response.data.refreshed)", http);

@@ -130,6 +130,15 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
+    public void Scrub_RecordsTheScrubbedHashAsTheRouterLocationSoTheRouteDoesNotRunTwice()
+    {
+        var app = Read(Provider.GetFileInfo("app.js"));
+
+        Assert.Contains("replaceState(", app);
+        Assert.Contains("router.last_location = [\"get\", router.getLocation()]", app);
+    }
+
+    [Fact]
     public void SessionRoute_IsRegistered()
     {
         var app = Read(Provider.GetFileInfo("app.js"));

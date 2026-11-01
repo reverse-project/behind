@@ -47,6 +47,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         },
         scrub: function (hash) {
             window.history.replaceState(null, "", window.location.pathname + window.location.search + hash);
+            router.last_location = ["get", router.getLocation()];
         }
     };
 

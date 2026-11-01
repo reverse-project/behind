@@ -7,6 +7,13 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:10.0-noble</ContainerBaseImage>
+      <PublishSingleFile>true</PublishSingleFile>
+      <SelfContained>true</SelfContained>
+      <ContainerRepository>reverse-project/behind/core-database-migrator</ContainerRepository>
+    </PropertyGroup>
+
     <ItemGroup>
       <ProjectReference Include="..\Behind.Core.Common\Behind.Core.Common.csproj" />
       <ProjectReference Include="..\Behind.Core.Database.Sqlite\Behind.Core.Database.Sqlite.csproj" />

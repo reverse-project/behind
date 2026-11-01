@@ -149,6 +149,8 @@ public static class WebApiExtensions
                 .AddSignInManager()
                 .AddDefaultTokenProviders();
 
+            builder.Services.AddGrantAuthorization();
+
             return securityConfiguration.Jwt.Match(
                 none: () => builder,
                 jwtSettings =>
@@ -163,7 +165,6 @@ public static class WebApiExtensions
                             options.TokenValidationParameters = jwtSettings.ValidationParameters;
                         });
 
-                    builder.Services.AddGrantAuthorization();
                     return builder;
                 });
         }

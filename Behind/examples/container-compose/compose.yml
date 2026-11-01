@@ -1,0 +1,27 @@
+services:
+  core-database-migrator:
+    image: git.prod.zwebnt.hu/reverse-project/behind/core-database-migrator:latest
+    container_name: core-database-migrator
+    restart: on-failure
+    environment:
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+    volumes:
+      - ./database.json:/app/database.json:Z
+      - ./data:/app/data:Z
+
+  web:
+    image: git.prod.zwebnt.hu/reverse-project/behind/web:latest
+    container_name: web
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - core-database-migrator
+    environment:
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+    volumes:
+      - ./database.json:/app/database.json:Z
+      - ./data:/app/data:Z
+      - ./security.json:/app/security.json:Z

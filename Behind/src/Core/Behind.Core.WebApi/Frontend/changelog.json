@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [
+      { "type": "fixed", "text": "The application starts when Security:Jwt is not configured, as the authorization services are always registered." },
       { "type": "added", "text": "Licenses page linked from the footer: Behind is licensed under GPL-2.0-or-later and the page lists every frontend library, server package and development tool with its version, license and copyright, linking to the license texts." },
       { "type": "added", "text": "LICENSE file with the GNU General Public License version 2 (or later) and the project copyright notice; the build properties declare the same license expression." },
       { "type": "fixed", "text": "Confirming an email no longer ends with an incomplete link message after it succeeded; the link parameters are cleared without running the page a second time." },

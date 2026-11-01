@@ -6,7 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
-     <PropertyGroup>
+    <PropertyGroup>
       <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:10.0-noble</ContainerBaseImage>
       <PublishSingleFile>true</PublishSingleFile>
       <SelfContained>true</SelfContained>

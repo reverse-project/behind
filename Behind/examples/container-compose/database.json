@@ -1,0 +1,9 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=/app/data/web.db"
+  },
+  "Database": {
+    "Provider": "Sqlite",
+    "Key": "DefaultConnection"
+  }
+}

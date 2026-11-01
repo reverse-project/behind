@@ -6,6 +6,13 @@
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
+     <PropertyGroup>
+      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:10.0-noble</ContainerBaseImage>
+      <PublishSingleFile>true</PublishSingleFile>
+      <SelfContained>true</SelfContained>
+      <ContainerRepository>reverse-project/behind/web</ContainerRepository>
+    </PropertyGroup>
+
     <ItemGroup>
       <ProjectReference Include="..\..\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
     </ItemGroup>

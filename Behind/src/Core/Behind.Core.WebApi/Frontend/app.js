@@ -1,6 +1,6 @@
 define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel) {
     var routes = {
-        "#/": "controllers/index",
+        "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
         "#/sign-up": "controllers/signup",
         "#/session": "controllers/session",
@@ -11,8 +11,16 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/audit-log": "controllers/auditlog",
         "#/administration": "controllers/administration",
         "#/wall-of-shame": "controllers/wallofshame",
+        "#/sites": "controllers/sites",
+        "#/sites/new": "controllers/siteeditor",
+        "#/sites/:id": "controllers/siteeditor",
         "#/changelog": "controllers/changelog",
         "#/sign/in/magiclink": "controllers/magiclink"
+    };
+
+    var siteRoutes = {
+        "#/site/:slug": "controllers/site",
+        "#/:slug": "controllers/site"
     };
 
     ko.components.register("pager", { require: "components/pager" });
@@ -50,9 +58,11 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     var router = Sammy(function () {
         var app = this;
 
-        Object.keys(routes).forEach(function (path) {
-            app.get(path, function () {
-                execute(routes[path], this.params.toHash());
+        [routes, siteRoutes].forEach(function (table) {
+            Object.keys(table).forEach(function (path) {
+                app.get(path, function () {
+                    execute(table[path], this.params.toHash());
+                });
             });
         });
     });

@@ -8,10 +8,11 @@ public static class GrantArea
     public const string User = nameof(User);
     public const string Configuration = nameof(Configuration);
     public const string Impersonation = nameof(Impersonation);
+    public const string Site = nameof(Site);
 
     public const string RawDatabase = nameof(RawDatabase);
 
-    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation];
+    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site];
 }
 
 public static class GrantAction

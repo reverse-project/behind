@@ -129,8 +129,8 @@ public class AuditLogResponseExtensionsTests
             DateTimeOffset.UtcNow,
             None);
 
-        Assert.Equal([First, Second], entry.References.Order());
-        Assert.Equal([First, Second], new[] { entry, entry }.References.Order());
+        Assert.Equal(new[] { First, Second }.Order(), entry.References.Order());
+        Assert.Equal(new[] { First, Second }.Order(), new[] { entry, entry }.References.Order());
         Assert.Empty(new AuditLogEntry("User", "7", new AuditLogEntry.Created(), DateTimeOffset.UtcNow).References);
     }
 

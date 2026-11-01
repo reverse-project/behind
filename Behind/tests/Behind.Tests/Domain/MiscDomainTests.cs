@@ -281,11 +281,62 @@ public class VersionedKeyTests
     // VersionedKey<int> → string?
 
     [Fact]
-    public void ImplicitToString_ReturnsKeyToString()
+    public void ImplicitToString_ReturnsKeyAndVersion()
     {
         var vk = new VersionedKey<int>(99, 3);
         string? str = vk;
+        Assert.Equal("99.3", str);
+    }
+
+    [Fact]
+    public void ImplicitToString_UnversionedKey_ReturnsKeyOnly()
+    {
+        var vk = new VersionedKey<int>(99);
+        string? str = vk;
         Assert.Equal("99", str);
+    }
+
+    [Fact]
+    public void ImplicitConversions_RoundTripTheVersion()
+    {
+        var original = new VersionedKey<int>(99, 3);
+        string? text = original;
+        VersionedKey<int>? parsed = text;
+        Assert.Equal(original, parsed);
+    }
+
+    [Fact]
+    public void ImplicitFromString_GuidKey_ParsesKeyAndVersion()
+    {
+        var id = Guid.NewGuid();
+        VersionedKey<Guid>? vk = $"{id}.4";
+        Assert.Equal(new VersionedKey<Guid>(id, 4), vk);
+    }
+
+    [Fact]
+    public void ImplicitConversions_GuidKey_RoundTrip()
+    {
+        var original = new VersionedKey<Guid>(Guid.NewGuid(), 2);
+        string? text = original;
+        VersionedKey<Guid>? parsed = text;
+        Assert.Equal(original, parsed);
+    }
+
+    [Fact]
+    public void ImplicitFromString_StringKey_UsesTheTextAsKey()
+    {
+        VersionedKey<string>? vk = "about-us";
+        Assert.Equal(new VersionedKey<string>("about-us"), vk);
+    }
+
+    [Fact]
+    public void ImplicitFromString_InvalidGuid_Throws()
+    {
+        Assert.ThrowsAny<Exception>(() =>
+        {
+            VersionedKey<Guid>? vk = "not-a-guid";
+            _ = vk;
+        });
     }
 
     [Fact]

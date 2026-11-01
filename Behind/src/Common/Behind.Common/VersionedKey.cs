@@ -1,11 +1,18 @@
 using static Behind.Common.FunctionalExtensions;
-using System.Text.Json;
+using System.ComponentModel;
 
-namespace Behind.Core.Domain;
+namespace Behind.Common;
 
 public sealed record VersionedKey<TKey>(TKey Key, long Version = 0)
 {
-    public static implicit operator string?(VersionedKey<TKey>? versionedKey) => versionedKey?.Key?.ToString();
+    private const char VersionSeparator = '.';
+
+    public static implicit operator string?(VersionedKey<TKey>? versionedKey) =>
+        versionedKey is null
+            ? null
+            : versionedKey.Version == 0
+                ? versionedKey.Key?.ToString()
+                : $"{versionedKey.Key}{VersionSeparator}{versionedKey.Version}";
 
     public static implicit operator VersionedKey<TKey>?(string? value)
     {
@@ -14,15 +21,15 @@ public sealed record VersionedKey<TKey>(TKey Key, long Version = 0)
             return null;
         }
 
-        TKey KeyParser(string keyValue) => JsonSerializer.Deserialize<TKey>(keyValue)
+        TKey KeyParser(string keyValue) => (TKey?)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(keyValue)
                                            ?? throw new ArgumentException(nameof(value));
 
-        if (!value.Contains('.'))
+        if (!value.Contains(VersionSeparator))
         {
             return new VersionedKey<TKey>(KeyParser(value));
         }
         
-        string[] parts = value.Split('.');
+        string[] parts = value.Split(VersionSeparator);
 
         if (parts.Length > 2)
         {

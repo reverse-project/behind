@@ -1,4 +1,5 @@
 using Behind.Core.Database;
+using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
 using Behind.Tests.Helpers;
 
@@ -72,6 +73,46 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([shameId]);
 
         Assert.Equal("Wall of shame entry of Test User", labels.Label(shameId.ToString()));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesSitesAfterTheirLatestVersionTitle()
+    {
+        Guid siteId;
+        await using (var seed = _factory.CreateContext())
+        {
+            await using var seedVersions = _factory.CreateVersioningContext();
+            var commands = new SiteCommands(seed, seedVersions, TimeProvider.System);
+            siteId = ((SiteSaveResult.Saved)await commands.Create("Old title", "old", "<p/>", true)).Id.Key;
+        }
+
+        await using (var update = _factory.CreateContext())
+        {
+            await using var updateVersions = _factory.CreateVersioningContext();
+            await new SiteCommands(update, updateVersions, TimeProvider.System).SaveVersion(siteId, "New title", "new", "<p/>", false);
+        }
+
+        await using var ctx = _factory.CreateContext();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([siteId]);
+
+        Assert.Equal("New title", labels.Label(siteId.ToString()));
+        Assert.Equal("New title: 2", labels.LabelKey($"{siteId}:2"));
+        Assert.Equal("Site: New title", labels.LabelKey($"Site:{siteId}"));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesSiteImagesAfterTheirFileName()
+    {
+        Guid imageId;
+        await using (var seed = _factory.CreateContext())
+        {
+            imageId = await new SiteImageCommands(seed).Add(new SiteImage("logo.png", "image/png", [1], DateTimeOffset.UnixEpoch));
+        }
+
+        await using var ctx = _factory.CreateContext();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([imageId]);
+
+        Assert.Equal("logo.png", labels.Label(imageId.ToString()));
     }
 
     [Fact]

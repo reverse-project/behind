@@ -174,14 +174,16 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void AdministrationViewModel_ListsTheUsersRolesAndAuditLogPagesForTheirManagers()
+    public void AdministrationViewModel_ListsTheUsersRolesSitesAndAuditLogPagesForTheirManagers()
     {
         var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
-        Assert.Equal(3, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Equal(4, viewModel.Split("icon: \"fa-").Length - 1);
         Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);
+        Assert.Contains("name: \"Sites\", icon: \"fa-file-lines\", href: \"#/sites\", allowed: canReadSites", viewModel);
         Assert.Contains("hasGrant(\"User.Manage\")", viewModel);
+        Assert.Contains("hasGrant(\"Site.Read\")", viewModel);
         Assert.Contains("visible: isEmpty", view);
     }
 

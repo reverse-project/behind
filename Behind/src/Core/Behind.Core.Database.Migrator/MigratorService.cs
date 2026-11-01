@@ -22,6 +22,10 @@ public sealed class MigratorService(IServiceProvider services, ILogger<MigratorS
         await sqlite.Database.MigrateAsync(stoppingToken);
         logger.LogInformation("Database migrations applied");
 
+        var versioning = scope.ServiceProvider.GetRequiredService<VersioningContextSqlite>();
+        await versioning.Database.MigrateAsync(stoppingToken);
+        logger.LogInformation("Versioning database migrations applied");
+
         await sqlite.EnsureBuiltInUsersAsync(stoppingToken);
         logger.LogDebug("Built-in users ensured");
 

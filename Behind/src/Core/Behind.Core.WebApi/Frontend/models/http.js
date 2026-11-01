@@ -17,6 +17,7 @@ define(["jquery", "models/session"], function ($, session) {
     var send = function (method, url, body, extraHeaders) {
         var token = session.accessToken();
         var hasBody = body !== undefined;
+        var isForm = hasBody && body instanceof FormData;
 
         return new Promise(function (resolve) {
             $.ajax({
@@ -24,8 +25,9 @@ define(["jquery", "models/session"], function ($, session) {
                 method: method,
                 dataType: "text",
                 headers: $.extend({}, token ? { Authorization: "Bearer " + token } : {}, extraHeaders),
-                contentType: hasBody ? "application/json" : false,
-                data: hasBody ? JSON.stringify(body) : undefined
+                contentType: hasBody && !isForm ? "application/json" : false,
+                processData: !isForm,
+                data: hasBody && !isForm ? JSON.stringify(body) : body
             }).then(
                 function (data, status, xhr) {
                     resolve({ ok: true, status: xhr.status, data: parse(data) });
@@ -89,6 +91,9 @@ define(["jquery", "models/session"], function ($, session) {
         },
         put: function (url, body) {
             return request("PUT", url, body);
+        },
+        postForm: function (url, form) {
+            return request("POST", url, form);
         }
     };
 });

@@ -31,8 +31,8 @@ Behind.Core.Domain/
 ├── UserContext.cs          # Current user context
 ├── SystemContext.cs        # System execution context
 ├── Password.cs             # Password value object
-├── ActiveVersion.cs        # Versioning value object
-├── VersionedKey.cs         # Versioning value object
+├── Site.cs                 # Site version record (VersionedKey id, draft / published)
+├── SiteImage.cs            # Uploaded site image
 └── Reason.cs              # Business reason value object
 ```
 

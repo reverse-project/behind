@@ -116,6 +116,9 @@ public static class WebApiExtensions
             builder.Services.Configure<FrontendConfiguration>(
                 builder.Configuration.GetSection(FrontendConfiguration.SectionName)
             );
+            builder.Services.Configure<SitesConfiguration>(
+                builder.Configuration.GetSection(SitesConfiguration.SectionName)
+            );
 
             securityConfiguration.DataProtection.Match(
                 none: () => builder,
@@ -183,6 +186,10 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IUserManagementQueries, UserManagementQueries>();
             builder.Services.AddScoped<IWallOfShameQueries, WallOfShameQueries>();
             builder.Services.AddScoped<IWallOfShameCommands, WallOfShameCommands>();
+            builder.Services.AddScoped<ISiteQueries, SiteQueries>();
+            builder.Services.AddScoped<ISiteCommands, SiteCommands>();
+            builder.Services.AddScoped<ISiteImageQueries, SiteImageQueries>();
+            builder.Services.AddScoped<ISiteImageCommands, SiteImageCommands>();
             builder.Services.AddScoped<UserManagementGate>();
             builder.Services.AddScoped<IMagicLinkCommands, MagicLinkCommands>();
             builder.Services.AddScoped<IMagicLinkQueries, MagicLinkQueries>();
@@ -408,6 +415,95 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(403)
                 .Produces(404)
+                .Produces(500);
+
+            var siteRead = GrantName.Of(GrantArea.Site, GrantAction.Read);
+            var siteWrite = GrantName.Of(GrantArea.Site, GrantAction.Write);
+
+            application.MapGet("/sites/index", SiteEndpoints.GetIndex)
+                .Produces<PublicSiteResponse>()
+                .Produces(404)
+                .Produces(500);
+
+            application.MapGet("/sites/slug/{slug}", SiteEndpoints.GetPublic)
+                .Produces<PublicSiteResponse>()
+                .Produces(404)
+                .Produces(500);
+
+            application.MapGet("/sites/images/{id:guid}", SiteImageEndpoints.Get)
+                .Produces(200)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/sites/images", SiteImageEndpoints.Upload)
+                .RequireAuthorization(siteWrite)
+                .DisableAntiforgery()
+                .Produces<SiteImageResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces<SiteImageLimitResponse>(413)
+                .Produces(415)
+                .Produces(500);
+
+            application.MapGet("/sites/settings", SiteEndpoints.GetSettings)
+                .RequireAuthorization(siteRead)
+                .Produces<SiteSettingsResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
+            application.MapGet("/sites", SiteEndpoints.List)
+                .RequireAuthorization(siteRead)
+                .Produces<SiteListResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
+            application.MapPost("/sites", SiteEndpoints.Create)
+                .RequireAuthorization(siteWrite)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SiteEndpoints.SaveSiteRequest>>()
+                .Produces<SiteSavedResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces<SiteConflictResponse>(409)
+                .Produces(500);
+
+            application.MapGet("/sites/{id:guid}", SiteEndpoints.GetHistory)
+                .RequireAuthorization(siteRead)
+                .Produces<SiteHistoryResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapGet("/sites/{id:guid}/versions/{version:long}", SiteEndpoints.GetVersion)
+                .RequireAuthorization(siteRead)
+                .Produces<SiteVersionResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/sites/{id:guid}/versions", SiteEndpoints.SaveVersion)
+                .RequireAuthorization(siteWrite)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SiteEndpoints.SaveSiteRequest>>()
+                .Produces<SiteSavedResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces<SiteConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/sites/{id:guid}/versions/{version:long}/activate", SiteEndpoints.Activate)
+                .RequireAuthorization(siteWrite)
+                .Produces<SiteSavedResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces<SiteConflictResponse>(409)
                 .Produces(500);
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)

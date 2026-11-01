@@ -9,7 +9,7 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
         });
 
         self.canAdminister = ko.pureComputed(function () {
-            return self.canManageUsers() || session.hasGrant("Role.Manage") || session.hasGrant("AuditLog.Read");
+            return self.canManageUsers() || session.hasGrant("Role.Manage") || session.hasGrant("Site.Read") || session.hasGrant("AuditLog.Read");
         });
 
         self.label = ko.pureComputed(function () {

@@ -608,6 +608,22 @@ There is no `IsDeleted` column. A record is deleted when it has more `Deleted` t
 - A hard delete answers `409` when the database rejects it, for example because audit entries are attributed to the user (see the audit log notes above).
 - `IUserManagementQueries` takes a `DeletionState` (`Active` / `Deleted`) and opens the `IncludeDeleted` scope itself for `Deleted`; `Active` always excludes deleted users, even inside a `DeletedRecordsVisibilityMiddleware` scope.
 
+## Versioned Sites
+
+`Site` is the first versioned entity. Its identity is a `VersionedKey<Guid>` (`Behind.Common`, next to `ActiveVersion` in `Behind.Common.Database`) (the site id and a version number starting at 1) and the version that visitors see is decided by an `ActiveVersion` row, never by the site row itself.
+
+- `Sites` has the composite key (`SiteId`, `Version`). The domain `Site.Id` is ignored by EF and stored in the two shadow columns, like the other entities keep their ids. A save never updates a row: `ISiteCommands.Create` / `SaveVersion` insert version `latest + 1` (a concurrent insert of the same version fails on the key and returns `SiteSaveResult.VersionConflict`).
+- `PublishedAt` (`Option<DateTimeOffset>`) is the draft flag: `None` is a draft. It is stored in the shadow column `PublishedAtUtc`. The only update ever made to a `Sites` row is stamping `PublishedAtUtc` when a draft is made live with `ISiteCommands.Activate`.
+- `ActiveVersions` (`EntityType`, `EntityKey`, `Version`, key `EntityType` + `EntityKey`) holds the live version, `EntityType` is `Site.EntityType` and `EntityKey` the site id. It is a general table, so it has its own context: `AbstractVersioningContext` (`VersioningContextSqlite`) with its own migrations in `Migrations/Versioning` and its own history table (`__VersioningMigrationsHistory`). `ActiveVersion`, its mapping and `ActiveVersionsAsync` / `SetActiveVersionAsync` live in `Behind.Common.Database`. The migrator applies the core migrations first and the versioning ones second.
+- The versioning context is audited like the core one (same `AuditSaveChangesInterceptor`): it maps `AuditLogEntry` onto the existing `AuditLogEntries` table with `ExcludeFromMigrations`, so its migrations never create or change that table. Publishing or activating adds the `ActiveVersions` row or replaces it through `UpdateImmutable`, so the audit log shows an `Updated` entry with the `Version` change.
+- The two contexts are saved one after the other (no shared transaction): `SiteCommands` saves the `Sites` row first and the `ActiveVersions` row second, so a failure in between leaves a published version that is not live yet, never a live version that does not exist.
+- A slug is taken when another site has it in its live or its newest version (`IsSiteSlugTakenAsync`), which is checked on save and on activation (`SiteSaveResult.SlugTaken`). `ISiteQueries.FindActiveBySlug` resolves the slug of the live versions only, drafts never leak.
+- `SiteImages` stores uploaded images (`FileName`, sniffed `ContentType`, `Content` blob) so the images travel with the database. They are served by `GET /sites/images/{id}` with an immutable cache header.
+- Audit labels: `AuditLabelExtensions` names a site by the title of its newest version (`Site` keys are `<id>:<version>`) and an image by its file name.
+- Content is sanitized with `SanitizeRichText()` (`Behind.Common.WebApi`, HtmlSanitizer) before it is saved; only the editor's tags, `class` values and `http` / `https` / `mailto` links are kept.
+
+The `Site` grant area (`Site.Read`, `Write`, `Delete`, `Manage`) is administration only: `Users` do not get `Site.Read`.
+
 ## Migrations
 
 ### Creating Migrations

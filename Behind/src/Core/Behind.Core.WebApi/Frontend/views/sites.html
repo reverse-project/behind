@@ -1,0 +1,24 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0">Sites</h1>
+        <a class="btn btn-primary ms-auto" href="#/sites/new" data-bind="visible: canWrite">New site</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage sites.</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need site access to manage sites.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: canRead">
+        <p class="text-body-secondary" data-bind="visible: !hasSites()">No sites found.</p>
+        <ul class="list-group mb-3" data-bind="foreach: sites">
+            <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                <div class="me-auto">
+                    <a class="fw-bold text-break" data-bind="attr: { href: href }, text: title"></a>
+                    <div class="small text-body-secondary text-break">#/<span data-bind="text: slug"></span></div>
+                </div>
+                <span class="badge text-bg-primary" data-bind="visible: isIndex">Custom index</span>
+                <span class="badge" data-bind="text: status, css: statusCss"></span>
+                <span class="small text-body-secondary">Version <span data-bind="text: latestVersion"></span>, live: <span data-bind="text: activeVersion"></span></span>
+                <span class="small text-body-secondary" data-bind="text: updatedAt"></span>
+            </li>
+        </ul>
+    </div>
+</section>

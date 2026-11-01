@@ -1,0 +1,86 @@
+using Behind.Common;
+using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
+using Behind.Core.Domain;
+using Microsoft.AspNetCore.Http;
+using Site = Behind.Core.Domain.Site;
+
+namespace Behind.Core.WebApi.Endpoints;
+
+public static class SiteResponseExtensions
+{
+    public const string SlugTakenReason = "slug-taken";
+    public const string VersionConflictReason = "version-conflict";
+
+    extension(ISiteQueries.SiteListing listing)
+    {
+        public SiteListItem ToItem() =>
+            new(
+                listing.Id,
+                listing.Title,
+                listing.Slug,
+                listing.LatestVersion,
+                listing.ActiveVersion.ToNullable(),
+                listing.ActiveSlug.Match<string?>(() => null, slug => slug),
+                listing.UpdatedAt);
+    }
+
+    extension(SitesConfiguration configuration)
+    {
+        public Option<string> IndexSlugOption => configuration.IndexSlug.ToSlug(Site.MaxSlugLength);
+
+        public SiteSettingsResponse ToResponse() =>
+            new(configuration.IndexSlugOption.Match<string?>(() => null, slug => slug), configuration.ImageLimit);
+    }
+
+    extension(ISiteQueries.SiteHistory history)
+    {
+        public SiteHistoryResponse ToResponse() =>
+            new(
+                history.Id,
+                history.ActiveVersion.ToNullable(),
+                history.Versions.Select(version => version.ToItem()).ToList());
+    }
+
+    extension(ISiteQueries.SiteVersionInfo version)
+    {
+        private SiteVersionItem ToItem() =>
+            new(
+                version.Version,
+                version.Title,
+                version.Slug,
+                version.PublishedAt.ToNullable(),
+                version.CreatedAt,
+                version.IsActive,
+                version.PublishedAt.Match(() => true, _ => false));
+    }
+
+    extension(Site site)
+    {
+        public SiteVersionResponse ToVersionResponse() =>
+            new(
+                site.Id.Key,
+                site.Id.Version,
+                site.Title,
+                site.Slug,
+                site.Content,
+                site.PublishedAt.ToNullable(),
+                site.CreatedAt,
+                site.IsDraft);
+
+        public Option<PublicSiteResponse> ToPublicResponse() =>
+            site.PublishedAt.Map(publishedAt => new PublicSiteResponse(site.Title, site.Slug, site.Content, publishedAt));
+    }
+
+    extension(SiteSaveResult result)
+    {
+        public IResult ToResult() =>
+            result switch
+            {
+                SiteSaveResult.Saved saved => Results.Json(new SiteSavedResponse(saved.Id.Key, saved.Id.Version)),
+                SiteSaveResult.NotFound => Results.NotFound(),
+                SiteSaveResult.SlugTaken => Results.Conflict(new SiteConflictResponse(SlugTakenReason)),
+                _ => Results.Conflict(new SiteConflictResponse(VersionConflictReason))
+            };
+    }
+}

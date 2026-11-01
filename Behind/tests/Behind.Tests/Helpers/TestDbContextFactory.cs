@@ -3,6 +3,8 @@ using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Sqlite;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Behind.Tests.Helpers;
 
@@ -22,6 +24,9 @@ public sealed class TestDbContextFactory : IDisposable
         // Create the schema once on the shared connection
         using var ctx = CreateContext();
         ctx.Database.EnsureCreated();
+
+        using var versioning = CreateVersioningContext();
+        versioning.GetService<IRelationalDatabaseCreator>().CreateTables();
     }
 
     public CoreContextSqlite CreateContext()
@@ -31,6 +36,24 @@ public sealed class TestDbContextFactory : IDisposable
             .Options;
 
         return new CoreContextSqlite(options);
+    }
+
+    public VersioningContextSqlite CreateVersioningContext() =>
+        new(new DbContextOptionsBuilder<VersioningContextSqlite>().UseSqlite(_connection).Options);
+
+    public VersioningContextSqlite CreateAuditedVersioningContext(AuditActor actor)
+    {
+        var interceptor = new AuditSaveChangesInterceptor(
+            () => new FixedAuditActorProvider(actor),
+            TimeProvider.System
+        );
+
+        var options = new DbContextOptionsBuilder<VersioningContextSqlite>()
+            .UseSqlite(_connection)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        return new VersioningContextSqlite(options);
     }
 
     public CoreContextSqlite CreateAuditedContext(AuditActor actor)

@@ -6,6 +6,10 @@
       "Copyright": "© 2026 Reverse Project",
       "DefaultLocale": "en-US",
       "ContactEmail": "system@zwebnt.hu"
+    },
+    "Sites": {
+      "IndexSlug": "",
+      "MaxImageBytes": 5242880
     }
   }
 }

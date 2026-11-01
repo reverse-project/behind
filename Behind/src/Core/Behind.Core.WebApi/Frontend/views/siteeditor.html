@@ -1,0 +1,61 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="text: heading"></h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/sites">Back to sites</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage sites.</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need site access to manage sites.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: canRead">
+        <form data-bind="submit: saveDraft">
+            <div class="mb-3">
+                <label class="form-label" for="site-title">Title</label>
+                <input id="site-title" class="form-control" type="text" maxlength="200" data-bind="value: title, valueUpdate: 'input', enable: canWrite">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="site-slug">Slug</label>
+                <div class="input-group">
+                    <span class="input-group-text">#/</span>
+                    <input id="site-slug" class="form-control" type="text" maxlength="100" data-bind="value: slugInput, valueUpdate: 'input', enable: canWrite">
+                    <button type="button" class="btn btn-outline-secondary" data-bind="click: resetSlug, enable: canWrite">Generate from title</button>
+                </div>
+                <div class="form-text">The page is served at <code>#/slug</code>. When that address belongs to a built-in page, use <code>#/site/slug</code>.</div>
+                <div class="form-text text-success" data-bind="visible: isIndexSlug">This slug is the custom index: once this site is live it is also shown at <code>#/</code>.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Content</label>
+                <div class="site-editor bg-body">
+                    <div data-bind="richEditor: { value: content, upload: uploadImage, enabled: canWrite }"></div>
+                </div>
+                <div class="form-text" data-bind="visible: basedOnLabel() !== '', text: basedOnLabel"></div>
+                <div class="form-text" data-bind="visible: imageLimitLabel() !== '', text: imageLimitLabel"></div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <button type="submit" class="btn btn-outline-primary" data-bind="enable: canSave">Save draft</button>
+                <button type="button" class="btn btn-primary" data-bind="enable: canSave, click: publish">Save and publish</button>
+            </div>
+        </form>
+        <div class="mb-4" data-bind="visible: hasLive">
+            <h2 class="h5">Live address</h2>
+            <p class="mb-0"><a data-bind="attr: { href: primaryPath }, text: primaryPath"></a></p>
+            <p class="mb-0"><a data-bind="attr: { href: fallbackPath }, text: fallbackPath"></a></p>
+            <p class="mb-0" data-bind="visible: isLiveIndex"><a href="#/">#/</a> <span class="badge text-bg-primary">Custom index</span></p>
+        </div>
+        <div data-bind="visible: !isNew">
+            <h2 class="h5">Versions</h2>
+            <p class="text-body-secondary" data-bind="visible: !hasVersions()">No versions found.</p>
+            <ul class="list-group mb-3" data-bind="foreach: versions">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <strong>Version <span data-bind="text: version"></span></strong>
+                    <span class="badge" data-bind="text: status, css: statusCss"></span>
+                    <span class="badge text-bg-primary" data-bind="visible: isIndex">Custom index</span>
+                    <span class="text-break" data-bind="text: title"></span>
+                    <span class="small text-body-secondary text-break">#/<span data-bind="text: slug"></span></span>
+                    <span class="small text-body-secondary ms-md-auto">Saved <span data-bind="text: createdAt"></span>. <span data-bind="text: publishedAt"></span></span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: load, enable: !$root.busy()">Load into editor</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: $root.canWrite() && !isActive, enable: canActivate, click: activate">Make live</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>

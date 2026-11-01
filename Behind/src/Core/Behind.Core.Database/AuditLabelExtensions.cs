@@ -1,3 +1,4 @@
+using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -81,6 +82,17 @@ public static class AuditLabelExtensions
             .. await context.UserAgents
                 .Where(agent => ids.Contains(EF.Property<Guid>(agent, "Id")))
                 .Select(agent => new Named(EF.Property<Guid>(agent, "Id"), agent.Value))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.Sites
+                .Where(site => ids.Contains(EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty)))
+                .OrderByDescending(site => EF.Property<long>(site, SiteConfiguration.VersionProperty))
+                .Select(site => new Named(EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty), site.Title))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.SiteImages
+                .Where(image => ids.Contains(EF.Property<Guid>(image, "Id")))
+                .Select(image => new Named(EF.Property<Guid>(image, "Id"), image.FileName))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken)
         ];

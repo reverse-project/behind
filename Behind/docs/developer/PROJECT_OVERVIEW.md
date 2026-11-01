@@ -110,6 +110,7 @@ Core business logic and domain implementation.
   - Email value object
   - Audit log entries
   - Wall of Shame entries
+  - Sites (versioned with `VersionedKey` and `ActiveVersion`) and site images
 
 - **Behind.Core.Database** (Data implementation)
   - DbContext configuration

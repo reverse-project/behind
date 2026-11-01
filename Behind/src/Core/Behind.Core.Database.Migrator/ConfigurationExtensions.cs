@@ -30,6 +30,10 @@ public static class ConfigurationExtensions
                                     var connectionString = builder.Configuration.GetConnectionString(key);
                                     options.UseSqlite(connectionString);
                                 }));
+                        builder.Services.AddDbContext<VersioningContextSqlite>(options =>
+                            database.Key.Match(
+                                none: () => { },
+                                some: key => options.UseVersioningSqlite(builder.Configuration.GetConnectionString(key))));
                     }
 
                     return builder;

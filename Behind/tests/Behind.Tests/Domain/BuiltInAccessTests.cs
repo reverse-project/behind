@@ -17,7 +17,7 @@ public class BuiltInAccessTests
     [Fact]
     public void Grants_CoverReadWriteDeleteAndManageForEveryAreaPlusRawDatabaseManage()
     {
-        Assert.Equal(25, BuiltInAccess.Grants.Count);
+        Assert.Equal(29, BuiltInAccess.Grants.Count);
         Assert.Equal(
             AreaGrantNames.Append(RawDatabaseManage).Order(),
             BuiltInAccess.Grants.Select(grant => grant.Grant.Name).Order());
@@ -34,12 +34,12 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void Users_HaveReadOnEveryAreaExceptConfigurationAuditLogAndImpersonation()
+    public void Users_HaveReadOnEveryAreaExceptConfigurationAuditLogImpersonationAndSite()
     {
         Assert.Equal(DomainConstants.UsersRole, BuiltInAccess.Users.Role.Name);
         Assert.Equal(
             GrantArea.All
-                .Where(area => area is not (GrantArea.Configuration or GrantArea.AuditLog or GrantArea.Impersonation))
+                .Where(area => area is not (GrantArea.Configuration or GrantArea.AuditLog or GrantArea.Impersonation or GrantArea.Site))
                 .Select(area => GrantName.Of(area, GrantAction.Read))
                 .Order(),
             GrantNames(BuiltInAccess.Users));
@@ -74,6 +74,28 @@ public class BuiltInAccessTests
         Assert.Equal([DomainConstants.AdministratorsRole], holders);
     }
 
+    [Theory]
+    [InlineData(GrantAction.Write)]
+    [InlineData(GrantAction.Manage)]
+    public void SiteChanges_BelongOnlyToAdministrators(string action)
+    {
+        var holders = BuiltInAccess.Roles
+            .Where(role => GrantNames(role).Contains(GrantName.Of(GrantArea.Site, action)))
+            .Select(role => role.Role.Name);
+
+        Assert.Equal([DomainConstants.AdministratorsRole], holders);
+    }
+
+    [Fact]
+    public void SiteRead_BelongsToAdministratorsAndDevelopers()
+    {
+        var holders = BuiltInAccess.Roles
+            .Where(role => GrantNames(role).Contains(GrantName.Of(GrantArea.Site, GrantAction.Read)))
+            .Select(role => role.Role.Name);
+
+        Assert.Equal([DomainConstants.AdministratorsRole, DomainConstants.DevelopersRole], holders);
+    }
+
     [Fact]
     public void RawDatabaseManage_BelongsOnlyToDevelopers()
     {
@@ -89,7 +111,7 @@ public class BuiltInAccessTests
     {
         var grants = BuiltInAccess.Developers.Role.Grants.GetOrElse([]);
 
-        Assert.Equal(7, grants.Count());
+        Assert.Equal(8, grants.Count());
     }
 
     [Fact]

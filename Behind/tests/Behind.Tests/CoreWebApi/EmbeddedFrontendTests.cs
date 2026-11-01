@@ -41,6 +41,12 @@ public class EmbeddedFrontendTests
     [InlineData("viewmodels/session.js")]
     [InlineData("views/session.html")]
     [InlineData("viewmodels/header.js")]
+    [InlineData("controllers/sessions.js")]
+    [InlineData("viewmodels/sessions.js")]
+    [InlineData("views/sessions.html")]
+    [InlineData("models/pager.js")]
+    [InlineData("components/pager.js")]
+    [InlineData("components/pager.html")]
     public void Provider_ContainsFile(string path)
     {
         Assert.True(Provider.GetFileInfo(path).Exists);
@@ -125,8 +131,9 @@ public class EmbeddedFrontendTests
         var index = Read(Provider.GetFileInfo("index.html"));
         var header = Read(Provider.GetFileInfo("viewmodels/header.js"));
 
-        Assert.Contains("<a class=\"nav-link\" href=\"#/session\" data-bind=\"text: label\">", index);
-        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: isSignedIn\">", index);
+        Assert.Contains("<li class=\"nav-item dropdown\" data-bind=\"visible: isSignedIn\">", index);
+        Assert.Contains("data-bs-toggle=\"dropdown\" aria-expanded=\"false\" data-bind=\"text: label\"", index);
+        Assert.Contains("<a class=\"dropdown-item\" href=\"#/session\">Session</a>", index);
         Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-in\">", index);
         Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-up\">", index);
         Assert.Contains("visible: isSignedIn, click: signOut", index);
@@ -227,5 +234,93 @@ public class EmbeddedFrontendTests
         Assert.Contains("url === sessionUrl", http);
         Assert.Contains("session.renew(response.data.refreshed)", http);
         Assert.Contains("\"X-Refresh-Token\"", session);
+    }
+
+    [Fact]
+    public void SessionsRoute_IsRegisteredAndLinkedUnderTheDisplayNameMenu()
+    {
+        var app = Read(Provider.GetFileInfo("app.js"));
+        var index = Read(Provider.GetFileInfo("index.html"));
+
+        Assert.Contains("\"#/sessions\": \"controllers/sessions\"", app);
+        Assert.Contains("<a class=\"dropdown-item\" href=\"#/sessions\">Sessions</a>", index);
+    }
+
+    [Fact]
+    public void SessionsView_ShowsCurrentSessionsATogglableOldSessionsPartAndSignOutAll()
+    {
+        var view = Read(Provider.GetFileInfo("views/sessions.html"));
+
+        Assert.All(
+            new[]
+            {
+                "foreach: active", "foreach: ended", "remoteAddress", "userAgent", "isCurrent", "reason",
+                "visible: showEnded", "click: toggleEnded", "click: signOutAll", "click: refresh",
+                "params=\"pager: activePager\"", "params=\"pager: endedPager\""
+            },
+            binding => Assert.Contains(binding, view));
+        Assert.DoesNotContain("<!--", view);
+    }
+
+    [Fact]
+    public void SessionsViewModel_LoadsSessionsAndSignsOutEverywhere()
+    {
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/sessions.js"));
+
+        Assert.Contains("http.get(\"/sessions\"", auth);
+        Assert.Contains("http.post(\"/sign/out/all\")", auth);
+        Assert.Contains("session.end()", auth);
+        Assert.Contains("auth.loadSessions(", viewModel);
+        Assert.Contains("activePage=", auth);
+        Assert.Contains("endedPage=", auth);
+        Assert.Contains("pageSize=", auth);
+        Assert.Contains("auth.signOutAll()", viewModel);
+        Assert.Contains("window.confirm(", viewModel);
+        Assert.Contains("self.showEnded = ko.observable(false)", viewModel);
+    }
+
+    [Fact]
+    public void SessionsLink_IsInsideTheDisplayNameDropdown()
+    {
+        var index = Read(Provider.GetFileInfo("index.html"));
+        var dropdown = index[index.IndexOf("nav-item dropdown", StringComparison.Ordinal)..];
+        var menu = dropdown[..dropdown.IndexOf("</ul>", StringComparison.Ordinal)];
+
+        Assert.Contains("dropdown-menu", menu);
+        Assert.Contains("href=\"#/sessions\"", menu);
+        Assert.Contains("href=\"#/session\"", menu);
+        Assert.Equal(1, index.Split("href=\"#/sessions\"").Length - 1);
+    }
+
+    [Fact]
+    public void SessionsView_SeparatesTheCurrentSessionsPagerFromTheOldSessionsToggle()
+    {
+        var view = Read(Provider.GetFileInfo("views/sessions.html"));
+
+        Assert.Contains("<pager class=\"d-block mb-4\" params=\"pager: activePager\"></pager>", view);
+    }
+
+    [Fact]
+    public void Pager_IsARegisteredReusableComponentNotTiedToSessions()
+    {
+        var app = Read(Provider.GetFileInfo("app.js"));
+        var component = Read(Provider.GetFileInfo("components/pager.js"));
+        var template = Read(Provider.GetFileInfo("components/pager.html"));
+        var model = Read(Provider.GetFileInfo("models/pager.js"));
+        var sessionsView = Read(Provider.GetFileInfo("views/sessions.html"));
+        var sessionsViewModel = Read(Provider.GetFileInfo("viewmodels/sessions.js"));
+
+        Assert.Contains("ko.components.register(\"pager\", { require: \"components/pager\" })", app);
+        Assert.Contains("text!components/pager.html", component);
+        Assert.Contains("params.pager", component);
+        Assert.All(
+            new[] { "click: first", "click: previous", "click: next", "click: last", "foreach: pages", "$parent.goTo", "text: label", "visible: hasItems" },
+            binding => Assert.Contains(binding, template));
+        Assert.DoesNotContain("session", template, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("session", model, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("models/pager", sessionsViewModel);
+        Assert.DoesNotContain("pager-template", sessionsView);
+        Assert.DoesNotContain("createPager = function", sessionsViewModel);
     }
 }

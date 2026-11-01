@@ -242,6 +242,11 @@ public static class WebApiExtensions
                 .Produces(409)
                 .Produces(500);
 
+            application.MapGet("/sessions", SessionListEndpoints.Get)
+                .Produces<SessionListResponse>()
+                .Produces(401)
+                .Produces(500);
+
             application.MapPost("/session/elevate/administrator", ElevationEndpoints.ElevateAdministrator)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ElevationEndpoints.ElevationRequest>>()
                 .RequireRateLimiting(ElevationExtensions.RateLimitPolicy)

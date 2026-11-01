@@ -4,8 +4,11 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header"], functio
         "#/sign-in": "controllers/signin",
         "#/sign-up": "controllers/signup",
         "#/session": "controllers/session",
+        "#/sessions": "controllers/sessions",
         "#/sign/in/magiclink": "controllers/magiclink"
     };
+
+    ko.components.register("pager", { require: "components/pager" });
 
     var container = function () {
         return $("#main-container");

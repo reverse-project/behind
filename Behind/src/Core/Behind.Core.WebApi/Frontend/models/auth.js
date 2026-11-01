@@ -100,6 +100,27 @@ define(["models/http", "models/session"], function (http, session) {
             });
         },
 
+        loadSessions: function (paging) {
+            var query = "?activePage=" + paging.activePage + "&endedPage=" + paging.endedPage + "&pageSize=" + paging.pageSize;
+
+            return http.get("/sessions" + query).then(function (response) {
+                return response.ok
+                    ? { ok: true, message: "", data: response.data }
+                    : failure(response, { 401: "Your session has expired. Please sign in again." });
+            });
+        },
+
+        signOutAll: function () {
+            return http.post("/sign/out/all").then(function (response) {
+                if (response.ok || response.status === 401) {
+                    session.end();
+                    return success("Signed out of all sessions.");
+                }
+
+                return failure(response, {});
+            });
+        },
+
         signOut: function () {
             return http.post("/sign/out").then(function () {
                 session.end();

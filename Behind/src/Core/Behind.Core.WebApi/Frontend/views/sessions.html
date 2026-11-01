@@ -1,0 +1,64 @@
+<section>
+    <h1 class="mb-3">Sessions</h1>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to see your sessions.</p>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: isSignedIn">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <button type="button" class="btn btn-primary" data-bind="enable: !busy(), click: refresh">Refresh</button>
+            <button type="button" class="btn btn-danger" data-bind="enable: !busy(), click: signOutAll">Sign out all sessions</button>
+        </div>
+        <h2 class="h4 mt-4">Current sessions</h2>
+        <p class="text-body-secondary" data-bind="visible: active().length === 0">There are no current sessions.</p>
+        <div class="table-responsive" data-bind="visible: active().length > 0">
+            <table class="table align-middle">
+                <thead>
+                <tr>
+                    <th scope="col">IP address</th>
+                    <th scope="col">User agent</th>
+                    <th scope="col">Started</th>
+                    <th scope="col">Last active</th>
+                    <th scope="col">Expires</th>
+                </tr>
+                </thead>
+                <tbody data-bind="foreach: active">
+                <tr>
+                    <td><span data-bind="text: remoteAddress"></span> <span class="badge text-bg-success" data-bind="visible: isCurrent">This session</span></td>
+                    <td class="text-break" data-bind="text: userAgent"></td>
+                    <td data-bind="text: startedAt"></td>
+                    <td data-bind="text: lastActiveAt"></td>
+                    <td data-bind="text: expiresAt"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <pager class="d-block mb-4" params="pager: activePager"></pager>
+        <div data-bind="visible: hasEnded">
+            <button type="button" class="btn btn-outline-secondary" aria-controls="ended-sessions" data-bind="click: toggleEnded, text: endedToggleLabel, attr: { 'aria-expanded': showEnded() ? 'true' : 'false' }"></button>
+            <div id="ended-sessions" class="table-responsive mt-3" data-bind="visible: showEnded">
+                <table class="table align-middle">
+                    <thead>
+                    <tr>
+                        <th scope="col">IP address</th>
+                        <th scope="col">User agent</th>
+                        <th scope="col">Started</th>
+                        <th scope="col">Ended</th>
+                        <th scope="col">Reason</th>
+                    </tr>
+                    </thead>
+                    <tbody data-bind="foreach: ended">
+                    <tr>
+                        <td data-bind="text: remoteAddress"></td>
+                        <td class="text-break" data-bind="text: userAgent"></td>
+                        <td data-bind="text: startedAt"></td>
+                        <td data-bind="text: endedAt"></td>
+                        <td data-bind="text: reason"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3" data-bind="visible: showEnded">
+                <pager class="d-block" params="pager: endedPager"></pager>
+            </div>
+        </div>
+    </div>
+</section>

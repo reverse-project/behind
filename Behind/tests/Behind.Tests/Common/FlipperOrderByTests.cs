@@ -30,36 +30,39 @@ public class FlipperTests
         Assert.Equal(15, flipper.Skip); // (4-1)*5 = 15
     }
 
-    // PageCount — tests the ACTUAL (operator-precedence-affected) behaviour:
-    // formula evaluates as: ((total - total%Size)/Size + total%Size) > 0 ? 1 : 0
-
-    [Fact]
-    public void PageCount_TotalZero_ReturnsZero()
+    [Theory]
+    [InlineData(0, 3, 0)]
+    [InlineData(1, 3, 1)]
+    [InlineData(3, 3, 1)]
+    [InlineData(4, 3, 2)]
+    [InlineData(6, 3, 2)]
+    [InlineData(7, 3, 3)]
+    [InlineData(95, 10, 10)]
+    [InlineData(100, 10, 10)]
+    [InlineData(101, 10, 11)]
+    public void PageCount_ReturnsTheNumberOfPagesNeeded(long total, int size, long expected)
     {
-        var flipper = new Flipper(1, 3);
-        Assert.Equal(0L, flipper.PageCount(0));
+        Assert.Equal(expected, new Flipper(1, size).PageCount(total));
     }
 
     [Fact]
-    public void PageCount_TotalEqualsSize_ReturnsOne()
+    public void PageCount_NegativeTotalOrNonPositiveSize_ReturnsZero()
     {
-        var flipper = new Flipper(1, 3);
-        Assert.Equal(1L, flipper.PageCount(3));
+        Assert.Equal(0L, new Flipper(1, 3).PageCount(-5));
+        Assert.Equal(0L, new Flipper(1, 0).PageCount(5));
     }
 
-    [Fact]
-    public void PageCount_TotalSizePlusOne_ActualBehaviour()
+    [Theory]
+    [InlineData(null, null, 1, 10)]
+    [InlineData(0, 0, 1, 1)]
+    [InlineData(-3, -1, 1, 1)]
+    [InlineData(4, 25, 4, 25)]
+    [InlineData(2, 5000, 2, 100)]
+    public void Create_AppliesDefaultsAndClampsToTheAllowedRange(int? index, int? size, int expectedIndex, int expectedSize)
     {
-        // Due to operator-precedence bug the result is 1, not 2.
-        var flipper = new Flipper(1, 3);
-        Assert.Equal(1L, flipper.PageCount(4));
-    }
+        var flipper = Flipper.Create(index, size, 10, 100);
 
-    [Fact]
-    public void PageCount_TotalPositive_ReturnsOne()
-    {
-        var flipper = new Flipper(1, 5);
-        Assert.Equal(1L, flipper.PageCount(1));
+        Assert.Equal(new Flipper(expectedIndex, expectedSize), flipper);
     }
 
     // Apply

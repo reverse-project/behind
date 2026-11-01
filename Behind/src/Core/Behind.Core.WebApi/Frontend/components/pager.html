@@ -1,0 +1,14 @@
+<nav class="d-flex flex-wrap align-items-center gap-3" aria-label="Pagination" data-bind="visible: hasItems">
+    <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary" data-bind="enable: hasPrevious, click: first">First</button>
+        <button type="button" class="btn btn-outline-secondary" data-bind="enable: hasPrevious, click: previous">Previous</button>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" data-bind="foreach: pages">
+        <button type="button" class="btn" data-bind="css: isCurrent ? 'btn-primary' : 'btn-outline-secondary', text: number, click: $parent.goTo, attr: { 'aria-current': isCurrent ? 'page' : null }"></button>
+    </div>
+    <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary" data-bind="enable: hasNext, click: next">Next</button>
+        <button type="button" class="btn btn-outline-secondary" data-bind="enable: hasNext, click: last">Last</button>
+    </div>
+    <span class="text-body-secondary small" data-bind="text: label"></span>
+</nav>

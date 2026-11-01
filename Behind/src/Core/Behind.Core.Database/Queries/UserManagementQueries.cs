@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using static Behind.Common.FunctionalExtensions;
@@ -11,10 +12,12 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
         Flipper flipper,
         Option<string> search,
         Option<string> letter,
+        DeletionState state,
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
-        var matching = InBucket(Matching(search), letter);
+        using var scope = Scope(state);
+        var matching = InBucket(Matching(search, state), letter);
         var total = await matching.LongCountAsync(cancellationToken);
 
         var rows = await flipper.Apply(
@@ -25,7 +28,7 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        var users = await Hydrate(rows, now, cancellationToken);
+        var users = await Hydrate(rows, state, now, cancellationToken);
 
         return new PagedResult<IUserManagementQueries.ManagedUser>(
             total,
@@ -37,9 +40,11 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
 
     public async Task<IReadOnlyList<string>> GetLetters(
         Option<string> search,
+        DeletionState state,
         CancellationToken cancellationToken = default)
     {
-        var firstCharacters = await Matching(search)
+        using var scope = Scope(state);
+        var firstCharacters = await Matching(search, state)
             .Select(user => user.Label.ToLower().Substring(0, 1))
             .Distinct()
             .ToListAsync(cancellationToken);
@@ -51,22 +56,39 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
 
     public async Task<Option<IUserManagementQueries.ManagedUser>> TryFindUser(
         Guid id,
+        DeletionState state,
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
-        var rows = await Labeled()
+        using var scope = Scope(state);
+        var rows = await Labeled(state)
             .Where(user => user.Id == id)
             .Select(user => new UserRow(user.Id, user.DisplayName))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return (await Hydrate(rows, now, cancellationToken)).Head();
+        return (await Hydrate(rows, state, now, cancellationToken)).Head();
     }
 
-    private IQueryable<LabeledUser> Labeled() =>
-        context.Users
+    private IDisposable? Scope(DeletionState state) =>
+        state == DeletionState.Deleted ? context.SoftDelete.IncludeDeleted() : null;
+
+    private IQueryable<LabeledUser> Labeled(DeletionState state)
+    {
+        var deleted = state == DeletionState.Deleted;
+
+        return context.Users
             .Where(user => EF.Property<Guid>(user, "Id") != DomainConstants.SystemUserId
                            && EF.Property<Guid>(user, "Id") != DomainConstants.GuestUserId)
+            .Where(user =>
+                (context.AuditLogEntries.Count(audit =>
+                     audit.EntityName == nameof(User)
+                     && audit.EntityKey == EF.Property<Guid>(user, "Id").ToString().ToLower()
+                     && audit.Action == new AuditLogEntry.Deleted())
+                 > context.AuditLogEntries.Count(audit =>
+                     audit.EntityName == nameof(User)
+                     && audit.EntityKey == EF.Property<Guid>(user, "Id").ToString().ToLower()
+                     && audit.Action == new AuditLogEntry.Restored())) == deleted)
             .Select(user => new LabeledUser
             {
                 Id = EF.Property<Guid>(user, "Id"),
@@ -79,10 +101,11 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
                         .Select(email => email.Value)
                         .FirstOrDefault() ?? ""
             });
+    }
 
-    private IQueryable<LabeledUser> Matching(Option<string> search)
+    private IQueryable<LabeledUser> Matching(Option<string> search, DeletionState state)
     {
-        var people = Labeled();
+        var people = Labeled(state);
 
         return search
             .Map(term => term.Trim().ToLowerInvariant())
@@ -107,6 +130,7 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
 
     private async Task<IReadOnlyList<IUserManagementQueries.ManagedUser>> Hydrate(
         IReadOnlyList<UserRow> rows,
+        DeletionState state,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
@@ -154,7 +178,8 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
                 row.DisplayName,
                 emails[row.Id].ToList(),
                 roles[row.Id].ToList(),
-                bans.TryGetValue(row.Id, out var ban) ? Some(ban) : None))
+                bans.TryGetValue(row.Id, out var ban) ? Some(ban) : None,
+                state))
             .ToList();
     }
 

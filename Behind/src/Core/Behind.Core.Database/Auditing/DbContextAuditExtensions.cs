@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +17,9 @@ public static class DbContextAuditExtensions
         {
             var entries = context.ChangeTracker.Entries()
                 .Where(entry => entry.Entity is not AuditLogEntry)
-                .Where(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                .Where(entry =>
+                    entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted
+                    || (entry.State == EntityState.Unchanged && entry.IsRestored))
                 .ToList();
 
             foreach (var entry in entries)

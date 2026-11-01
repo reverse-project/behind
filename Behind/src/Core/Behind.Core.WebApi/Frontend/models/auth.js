@@ -21,7 +21,8 @@ define(["models/http", "models/session", "models/user"], function (http, session
         400: "Enter a message of up to 500 characters.",
         401: "Your session has expired. Please sign in again.",
         403: "You are not allowed to do that to this user.",
-        404: "This user no longer exists."
+        404: "This user no longer exists.",
+        409: "This user is referenced by the audit log and cannot be permanently deleted."
     };
 
     var userAction = function (path, body, done) {
@@ -147,14 +148,17 @@ define(["models/http", "models/session", "models/user"], function (http, session
 
         loadUsers: function (query) {
             var url = "/users?page=" + query.page + "&pageSize=" + query.pageSize
-                + "&search=" + encodeURIComponent(query.search) + "&letter=" + encodeURIComponent(query.letter);
+                + "&search=" + encodeURIComponent(query.search) + "&letter=" + encodeURIComponent(query.letter)
+                + (query.deleted ? "&deleted=true" : "");
 
             return http.get(url).then(function (response) {
                 return response.ok
                     ? { ok: true, message: "", data: response.data }
                     : failure(response, {
                         401: "Your session has expired. Please sign in again.",
-                        403: "You need administrator access to manage users."
+                        403: query.deleted
+                            ? "You need developer access to see deleted users."
+                            : "You need administrator access to manage users."
                     });
             });
         },
@@ -177,6 +181,18 @@ define(["models/http", "models/session", "models/user"], function (http, session
 
         unbanUser: function (userId) {
             return userAction(userId + "/unban", undefined, "The user was unbanned.");
+        },
+
+        deleteUser: function (userId) {
+            return userAction(userId + "/delete", undefined, "The user was deleted.");
+        },
+
+        restoreUser: function (userId) {
+            return userAction(userId + "/restore", undefined, "The user was restored.");
+        },
+
+        hardDeleteUser: function (userId) {
+            return userAction(userId + "/hard/delete", undefined, "The user was permanently deleted.");
         },
 
         loadWallOfShame: function (paging) {

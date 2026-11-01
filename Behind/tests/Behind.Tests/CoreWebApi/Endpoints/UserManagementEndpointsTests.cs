@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using Behind.Common.Database;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Tests.Helpers;
@@ -21,6 +22,7 @@ public class UserManagementEndpointsTests
     private readonly IRoleCommands _roleCommands = Substitute.For<IRoleCommands>();
     private readonly ISessionCommands _sessionCommands = Substitute.For<ISessionCommands>();
     private readonly IWallOfShameCommands _wallOfShame = Substitute.For<IWallOfShameCommands>();
+    private readonly IUserCommands _userCommands = Substitute.For<IUserCommands>();
     private readonly UserManagementGate _gate;
 
     public UserManagementEndpointsTests()
@@ -61,8 +63,12 @@ public class UserManagementEndpointsTests
                 : [(Role)BuiltInAccess.Administrators.Role]);
     }
 
+    private void DeletedTargetIs(IUserManagementQueries.ManagedUser? target) =>
+        _users.TryFindUser(TargetId, DeletionState.Deleted, Now, Arg.Any<CancellationToken>())
+            .Returns(target is null ? None : Some(target));
+
     private void TargetIs(IUserManagementQueries.ManagedUser? target) =>
-        _users.TryFindUser(TargetId, Now, Arg.Any<CancellationToken>())
+        _users.TryFindUser(TargetId, DeletionState.Active, Now, Arg.Any<CancellationToken>())
             .Returns(target is null ? None : Some(target));
 
     [Fact]
@@ -74,14 +80,14 @@ public class UserManagementEndpointsTests
             "Banned",
             ban: Some(new IWallOfShameQueries.ActiveBan("rude", None)));
         var developer = Managed(Guid.NewGuid(), "Dev", [DomainConstants.DevelopersRole]);
-        _users.ListUsers(new Flipper(1, UserManagementEndpoints.DefaultPageSize), None, None, Now, Arg.Any<CancellationToken>())
+        _users.ListUsers(new Flipper(1, UserManagementEndpoints.DefaultPageSize), None, None, DeletionState.Active, Now, Arg.Any<CancellationToken>())
             .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(
                 3,
                 1,
                 1,
                 UserManagementEndpoints.DefaultPageSize,
                 Some<IEnumerable<IUserManagementQueries.ManagedUser>>([self, banned, developer])));
-        _users.GetLetters(None, Arg.Any<CancellationToken>())
+        _users.GetLetters(None, DeletionState.Active, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<string>>(["B", "D", "S"]));
 
         var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now));
@@ -95,9 +101,9 @@ public class UserManagementEndpointsTests
         Assert.True(items[0].IsAdministrator);
         Assert.False(items[0].Permissions.CanModerate);
         Assert.Equal(new BanInfo("rude", null), items[1].Ban);
-        Assert.Equal(new ManagedUserPermissions(true, false, true), items[1].Permissions);
+        Assert.Equal(new ManagedUserPermissions(true, false, true, true, false), items[1].Permissions);
         Assert.True(items[2].IsDeveloper);
-        Assert.Equal(new ManagedUserPermissions(false, false, false), items[2].Permissions);
+        Assert.Equal(new ManagedUserPermissions(false, false, false, false, false), items[2].Permissions);
     }
 
     [Fact]
@@ -108,10 +114,11 @@ public class UserManagementEndpointsTests
                 new Flipper(3, UserManagementEndpoints.MaxPageSize),
                 Some("ada"),
                 Some("A"),
+                DeletionState.Active,
                 Now,
                 Arg.Any<CancellationToken>())
             .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(0, 3, 0, 100, None));
-        _users.GetLetters(Some("ada"), Arg.Any<CancellationToken>())
+        _users.GetLetters(Some("ada"), DeletionState.Active, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<string>>(["A"]));
 
         var result = await UserManagementEndpoints.Get(
@@ -154,10 +161,11 @@ public class UserManagementEndpointsTests
                 Arg.Any<Flipper>(),
                 None,
                 Some("#"),
+                DeletionState.Active,
                 Now,
                 Arg.Any<CancellationToken>())
             .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(0, 1, 0, 10, None));
-        _users.GetLetters(None, Arg.Any<CancellationToken>())
+        _users.GetLetters(None, DeletionState.Active, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<string>>([]));
 
         var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now), letter: "#");
@@ -232,7 +240,7 @@ public class UserManagementEndpointsTests
     [Fact]
     public async Task Elevate_Yourself_IsForbidden()
     {
-        _users.TryFindUser(ActorId, Now, Arg.Any<CancellationToken>())
+        _users.TryFindUser(ActorId, DeletionState.Active, Now, Arg.Any<CancellationToken>())
             .Returns(Some(Managed(ActorId, "Self")));
 
         var result = await UserManagementEndpoints.Elevate(ActorId, "administrator", SignedIn(), _gate, _roleCommands);
@@ -289,7 +297,7 @@ public class UserManagementEndpointsTests
     [Fact]
     public async Task SignOut_Yourself_IsForbidden()
     {
-        _users.TryFindUser(ActorId, Now, Arg.Any<CancellationToken>()).Returns(Some(Managed(ActorId)));
+        _users.TryFindUser(ActorId, DeletionState.Active, Now, Arg.Any<CancellationToken>()).Returns(Some(Managed(ActorId)));
 
         var result = await UserManagementEndpoints.SignOut(ActorId, SignedIn(), _gate, _sessionCommands);
 
@@ -389,5 +397,192 @@ public class UserManagementEndpointsTests
 
         Assert.IsType<NotFound>(result);
         await _wallOfShame.DidNotReceiveWithAnyArgs().Unban(default, default);
+    }
+
+    [Fact]
+    public async Task Get_Deleted_AsAdministrator_IsForbidden()
+    {
+        var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now), deleted: true);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _users.DidNotReceiveWithAnyArgs().ListUsers(default!, default, default, default, default, default);
+    }
+
+    [Fact]
+    public async Task Get_Deleted_AsDeveloper_ListsDeletedUsersWithRestorePermissions()
+    {
+        SignedInAs(ActorId, developer: true);
+        var removed = Managed(TargetId, "Removed") with { State = DeletionState.Deleted };
+        _users.ListUsers(new Flipper(1, UserManagementEndpoints.DefaultPageSize), None, None, DeletionState.Deleted, Now, Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(
+                1,
+                1,
+                1,
+                UserManagementEndpoints.DefaultPageSize,
+                Some<IEnumerable<IUserManagementQueries.ManagedUser>>([removed])));
+        _users.GetLetters(None, DeletionState.Deleted, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<string>>(["R"]));
+
+        var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now), deleted: true);
+
+        var item = Assert.Single(Assert.IsType<JsonHttpResult<UserListResponse>>(result).Value!.Users.Items);
+        Assert.True(item.IsDeleted);
+        Assert.Equal(new ManagedUserPermissions(false, false, false, false, true), item.Permissions);
+    }
+
+    [Fact]
+    public async Task Delete_AsAdministrator_DeletesTheTarget()
+    {
+        TargetIs(Managed(TargetId));
+
+        var result = await UserManagementEndpoints.Delete(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.IsType<NoContent>(result);
+        await _userCommands.Received(1).Delete(TargetId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Delete_UnknownUser_ReturnsNotFound()
+    {
+        TargetIs(null);
+
+        var result = await UserManagementEndpoints.Delete(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.IsType<NotFound>(result);
+        await _userCommands.DidNotReceiveWithAnyArgs().Delete(default, default);
+    }
+
+    [Fact]
+    public async Task Delete_Yourself_IsForbidden()
+    {
+        _users.TryFindUser(ActorId, DeletionState.Active, Now, Arg.Any<CancellationToken>()).Returns(Some(Managed(ActorId)));
+
+        var result = await UserManagementEndpoints.Delete(ActorId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _userCommands.DidNotReceiveWithAnyArgs().Delete(default, default);
+    }
+
+    [Fact]
+    public async Task Delete_DeveloperTarget_AsAdministrator_IsForbidden()
+    {
+        TargetIs(Managed(TargetId, roles: [DomainConstants.DevelopersRole]));
+
+        var result = await UserManagementEndpoints.Delete(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _userCommands.DidNotReceiveWithAnyArgs().Delete(default, default);
+    }
+
+    [Fact]
+    public async Task Delete_WithoutTheDeleteGrant_IsForbidden()
+    {
+        SignedInAs(ActorId, developer: true);
+        TargetIs(Managed(TargetId));
+
+        var result = await UserManagementEndpoints.Delete(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _userCommands.DidNotReceiveWithAnyArgs().Delete(default, default);
+    }
+
+    [Fact]
+    public async Task Restore_AsDeveloper_RestoresTheDeletedTarget()
+    {
+        SignedInAs(ActorId, developer: true);
+        DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
+
+        var result = await UserManagementEndpoints.Restore(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.IsType<NoContent>(result);
+        await _userCommands.Received(1).Restore(TargetId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Restore_AsAdministrator_IsForbidden()
+    {
+        DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
+
+        var result = await UserManagementEndpoints.Restore(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _userCommands.DidNotReceiveWithAnyArgs().Restore(default, default);
+    }
+
+    [Fact]
+    public async Task Restore_UserThatIsNotDeleted_ReturnsNotFound()
+    {
+        SignedInAs(ActorId, developer: true);
+        DeletedTargetIs(null);
+
+        var result = await UserManagementEndpoints.Restore(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.IsType<NotFound>(result);
+        await _userCommands.DidNotReceiveWithAnyArgs().Restore(default, default);
+    }
+
+    [Fact]
+    public async Task HardDelete_AsDeveloper_RemovesTheDeletedTarget()
+    {
+        SignedInAs(ActorId, developer: true);
+        DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
+        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.IsType<NoContent>(result);
+    }
+
+    [Fact]
+    public async Task HardDelete_RejectedByTheDatabase_ReturnsConflict()
+    {
+        SignedInAs(ActorId, developer: true);
+        DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
+        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.IsType<Conflict>(result);
+    }
+
+    [Fact]
+    public async Task HardDelete_AsAdministrator_IsForbidden()
+    {
+        DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
+
+        var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _userCommands.DidNotReceiveWithAnyArgs().HardDelete(default, default);
+    }
+
+    [Fact]
+    public async Task HardDelete_UserThatIsNotDeleted_ReturnsNotFound()
+    {
+        SignedInAs(ActorId, developer: true);
+        DeletedTargetIs(null);
+
+        var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.IsType<NotFound>(result);
+        await _userCommands.DidNotReceiveWithAnyArgs().HardDelete(default, default);
+    }
+
+    [Fact]
+    public async Task ModerationActions_OnADeletedUser_AreNotOffered()
+    {
+        SignedInAs(ActorId, developer: true);
+        var removed = Managed(TargetId) with { State = DeletionState.Deleted };
+        _users.ListUsers(Arg.Any<Flipper>(), None, None, DeletionState.Deleted, Now, Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(
+                1, 1, 1, 10, Some<IEnumerable<IUserManagementQueries.ManagedUser>>([removed])));
+        _users.GetLetters(None, DeletionState.Deleted, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<string>>([]));
+
+        var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now), deleted: true);
+
+        var permissions = Assert.Single(Assert.IsType<JsonHttpResult<UserListResponse>>(result).Value!.Users.Items).Permissions;
+        Assert.False(permissions.CanModerate);
+        Assert.False(permissions.CanChangeAdministrator);
     }
 }

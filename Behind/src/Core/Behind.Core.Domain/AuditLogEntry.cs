@@ -17,6 +17,7 @@ public sealed record AuditLogEntry(
     public sealed record Created : AuditAction;
     public sealed record Deleted : AuditAction;
     public sealed record HardDeleted : AuditAction;
+    public sealed record Restored : AuditAction;
     public sealed record Updated(IEnumerable<PropertyDifference> Differences) : AuditAction;
     public sealed record ChangeOwnership(Guid OldOwnerId, Guid NewOwnerId) : AuditAction;
     public sealed record Moved(Guid OldParentId, Guid NewParentId) : AuditAction;

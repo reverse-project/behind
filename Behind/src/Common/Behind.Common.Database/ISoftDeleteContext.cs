@@ -4,5 +4,9 @@ public interface ISoftDeleteContext
 {
     SoftDeleteSwitch SoftDelete { get; }
 
-    HardDeleteRegistry HardDeletes { get; }
+    EntityMarkRegistry HardDeletes { get; }
+
+    EntityMarkRegistry Restores { get; }
+
+    Task<bool> IsDeletedAsync(string entityName, string entityKey, CancellationToken cancellationToken = default);
 }

@@ -307,6 +307,31 @@ public static class WebApiExtensions
                 .Produces(404)
                 .Produces(500);
 
+            application.MapPost("/users/{id:guid}/delete", UserManagementEndpoints.Delete)
+                .RequireAuthorization(GrantName.Of(GrantArea.User, GrantAction.Delete))
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/users/{id:guid}/restore", UserManagementEndpoints.Restore)
+                .RequireAuthorization(userManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/users/{id:guid}/hard/delete", UserManagementEndpoints.HardDelete)
+                .RequireAuthorization(userManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(409)
+                .Produces(500);
+
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEndpoints.DisplayNameRequest>>()
                 .Produces(204)

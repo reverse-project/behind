@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Behind.Core.Database;
 using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Commands;
@@ -34,13 +35,13 @@ public sealed class UserManagementQueriesTests : IDisposable
         Option<string> letter = default)
     {
         await using var ctx = _factory.CreateContext();
-        return await new UserManagementQueries(ctx).ListUsers(flipper ?? new Flipper(1, 50), search, letter, Now);
+        return await new UserManagementQueries(ctx).ListUsers(flipper ?? new Flipper(1, 50), search, letter, DeletionState.Active, Now);
     }
 
     private async Task<IReadOnlyList<string>> LettersAsync(Option<string> search = default)
     {
         await using var ctx = _factory.CreateContext();
-        return await new UserManagementQueries(ctx).GetLetters(search);
+        return await new UserManagementQueries(ctx).GetLetters(search, DeletionState.Active);
     }
 
     private static IReadOnlyList<IUserManagementQueries.ManagedUser> Items(
@@ -197,11 +198,11 @@ public sealed class UserManagementQueriesTests : IDisposable
 
         await using var ctx = _factory.CreateContext();
         var queries = new UserManagementQueries(ctx);
-        var users = Items(await queries.ListUsers(new Flipper(1, 50), None, None, Now));
+        var users = Items(await queries.ListUsers(new Flipper(1, 50), None, None, DeletionState.Active, Now));
 
         Assert.Equal(["Real"], users.Select(user => user.DisplayName));
-        Assert.Equal(None, await queries.TryFindUser(DomainConstants.SystemUserId, Now));
-        Assert.Equal(None, await queries.TryFindUser(DomainConstants.GuestUserId, Now));
+        Assert.Equal(None, await queries.TryFindUser(DomainConstants.SystemUserId, DeletionState.Active, Now));
+        Assert.Equal(None, await queries.TryFindUser(DomainConstants.GuestUserId, DeletionState.Active, Now));
     }
 
     [Fact]
@@ -212,8 +213,105 @@ public sealed class UserManagementQueriesTests : IDisposable
         await using var ctx = _factory.CreateContext();
         var queries = new UserManagementQueries(ctx);
 
-        var found = await queries.TryFindUser(id, Now);
+        var found = await queries.TryFindUser(id, DeletionState.Active, Now);
         Assert.Equal("Finder", found.Match(() => "", user => user.DisplayName));
-        Assert.Equal(None, await queries.TryFindUser(Guid.NewGuid(), Now));
+        Assert.Equal(None, await queries.TryFindUser(Guid.NewGuid(), DeletionState.Active, Now));
+    }
+
+    private async Task DeleteAsync(Guid userId)
+    {
+        await using var ctx = _factory.CreateAuditedContext(AuditActor.Anonymous);
+        await new UserCommands(ctx).Delete(userId);
+    }
+
+    [Fact]
+    public async Task ListUsers_ActiveState_HidesDeletedUsers_EvenWhenDeletedRecordsAreIncluded()
+    {
+        await SeedUserAsync("kept@test.com", "Kept");
+        var removed = await SeedUserAsync("removed@test.com", "Removed");
+        await DeleteAsync(removed);
+
+        await using var ctx = _factory.CreateContext();
+        using var scope = ctx.SoftDelete.IncludeDeleted();
+        var users = Items(await new UserManagementQueries(ctx)
+            .ListUsers(new Flipper(1, 50), None, None, DeletionState.Active, Now));
+
+        Assert.Equal(["Kept"], users.Select(user => user.DisplayName));
+    }
+
+    [Fact]
+    public async Task ListUsers_DeletedState_ReturnsOnlyDeletedUsersWithTheirEmails()
+    {
+        await SeedUserAsync("kept@test.com", "Kept");
+        var removed = await SeedUserAsync("removed@test.com", "Removed");
+        await DeleteAsync(removed);
+
+        await using var ctx = _factory.CreateContext();
+        var users = Items(await new UserManagementQueries(ctx)
+            .ListUsers(new Flipper(1, 50), None, None, DeletionState.Deleted, Now));
+
+        var user = Assert.Single(users);
+        Assert.Equal("Removed", user.DisplayName);
+        Assert.Equal(["removed@test.com"], user.Emails);
+        Assert.Equal(DeletionState.Deleted, user.State);
+    }
+
+    [Fact]
+    public async Task ListUsers_DeletedState_DoesNotLeakTheScopeToLaterQueries()
+    {
+        var removed = await SeedUserAsync("removed@test.com", "Removed");
+        await DeleteAsync(removed);
+
+        await using var ctx = _factory.CreateContext();
+        var queries = new UserManagementQueries(ctx);
+        await queries.ListUsers(new Flipper(1, 50), None, None, DeletionState.Deleted, Now);
+
+        Assert.False(ctx.SoftDelete.IncludesDeleted);
+    }
+
+    [Fact]
+    public async Task ListUsers_RestoredUser_IsActiveAgain()
+    {
+        var id = await SeedUserAsync("back@test.com", "Back");
+        await DeleteAsync(id);
+
+        await using (var ctx = _factory.CreateAuditedContext(AuditActor.Anonymous))
+        {
+            await new UserCommands(ctx).Restore(id);
+        }
+
+        await using var verify = _factory.CreateContext();
+        var queries = new UserManagementQueries(verify);
+        Assert.Equal(["Back"], Items(await queries.ListUsers(new Flipper(1, 50), None, None, DeletionState.Active, Now))
+            .Select(user => user.DisplayName));
+        Assert.Empty(Items(await queries.ListUsers(new Flipper(1, 50), None, None, DeletionState.Deleted, Now)));
+    }
+
+    [Fact]
+    public async Task GetLetters_DeletedState_ListsOnlyDeletedUsers()
+    {
+        await SeedUserAsync("alpha@test.com", "Alpha");
+        var removed = await SeedUserAsync("zulu@test.com", "Zulu");
+        await DeleteAsync(removed);
+
+        await using var ctx = _factory.CreateContext();
+        var queries = new UserManagementQueries(ctx);
+
+        Assert.Equal(["Z"], await queries.GetLetters(None, DeletionState.Deleted));
+        Assert.Equal(["A"], await queries.GetLetters(None, DeletionState.Active));
+    }
+
+    [Fact]
+    public async Task TryFindUser_RespectsTheRequestedState()
+    {
+        var id = await SeedUserAsync("state@test.com", "State");
+        await DeleteAsync(id);
+
+        await using var ctx = _factory.CreateContext();
+        var queries = new UserManagementQueries(ctx);
+
+        Assert.Equal(None, await queries.TryFindUser(id, DeletionState.Active, Now));
+        var found = await queries.TryFindUser(id, DeletionState.Deleted, Now);
+        Assert.Equal(DeletionState.Deleted, found.Match(() => DeletionState.Active, user => user.State));
     }
 }

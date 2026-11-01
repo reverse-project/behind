@@ -1,11 +1,11 @@
 namespace Behind.Tests.CommonDatabase;
 
-public sealed class HardDeleteRegistryTests
+public sealed class EntityMarkRegistryTests
 {
     [Fact]
     public void IsMarked_AfterMark_IsTrue()
     {
-        var registry = new HardDeleteRegistry();
+        var registry = new EntityMarkRegistry();
         var entity = new Grant("read");
 
         registry.Mark(entity);
@@ -16,7 +16,7 @@ public sealed class HardDeleteRegistryTests
     [Fact]
     public void IsMarked_EqualButDifferentInstance_IsFalse()
     {
-        var registry = new HardDeleteRegistry();
+        var registry = new EntityMarkRegistry();
 
         registry.Mark(new Grant("read"));
 
@@ -26,7 +26,7 @@ public sealed class HardDeleteRegistryTests
     [Fact]
     public void Clear_RemovesAllMarks()
     {
-        var registry = new HardDeleteRegistry();
+        var registry = new EntityMarkRegistry();
         var entity = new Grant("read");
         registry.Mark(entity);
 

@@ -43,6 +43,15 @@ public sealed class AuditLogEntryAuditActionConverterTests
     }
 
     [Fact]
+    public void Restored_RoundTripsAsPlainActionName()
+    {
+        string value = AuditLogEntryAuditActionJsonConverter.ToStorageValue(new AuditLogEntry.Restored());
+
+        Assert.Equal(nameof(AuditLogEntry.Restored), value);
+        Assert.IsType<AuditLogEntry.Restored>(AuditLogEntryAuditActionJsonConverter.FromStorageValue(value));
+    }
+
+    [Fact]
     public void ToStorageValue_Updated_ReturnsJson()
     {
         var action = new AuditLogEntry.Updated([

@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace Behind.Common.Database;
 
-public sealed class HardDeleteRegistry
+public sealed class EntityMarkRegistry
 {
     private readonly ConcurrentDictionary<object, byte> _entities = new(ReferenceEqualityComparer.Instance);
 

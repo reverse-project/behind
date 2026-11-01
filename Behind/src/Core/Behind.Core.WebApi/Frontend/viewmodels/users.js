@@ -13,6 +13,10 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
         self.canManage = ko.pureComputed(function () {
             return session.hasGrant("User.Manage");
         });
+        self.canViewDeleted = ko.pureComputed(function () {
+            return session.hasGrant("RawDatabase.Manage");
+        });
+        self.showDeleted = ko.observable(false);
         self.isDenied = ko.pureComputed(function () {
             return session.isSignedIn() && session.grants() !== null && !self.canManage();
         });
@@ -26,6 +30,11 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
         self.letterPager = createLetterPager(function () {
             self.pager.page(1);
             return self.refresh();
+        });
+        self.showDeleted.subscribe(function () {
+            self.letterPager.selected("");
+            self.pager.page(1);
+            self.refresh();
         });
 
         self.hasMessage = ko.pureComputed(function () {
@@ -77,6 +86,9 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 isBanned: item.ban !== null,
                 banReason: item.ban ? item.ban.reason : "",
                 canModerate: item.permissions.canModerate,
+                isDeleted: item.isDeleted,
+                canDelete: item.permissions.canDelete,
+                canManageDeleted: item.permissions.canManageDeleted,
                 roleActions: roleDefinitions.map(function (definition) {
                     return presentRoleAction(item, definition);
                 }),
@@ -84,7 +96,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 banMessage: ko.observable("")
             };
 
-            row.hasActions = row.canModerate || row.roleActions.some(function (action) {
+            row.hasActions = row.canModerate || row.canDelete || row.canManageDeleted || row.roleActions.some(function (action) {
                 return action.allowed;
             });
             row.canConfirmBan = ko.pureComputed(function () {
@@ -117,6 +129,30 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 });
             };
 
+            row.remove = function () {
+                if (!window.confirm("Delete " + row.name + "? The user can be restored by a developer.")) {
+                    return Promise.resolve();
+                }
+
+                return perform(function () {
+                    return auth.deleteUser(item.id);
+                });
+            };
+            row.restore = function () {
+                return perform(function () {
+                    return auth.restoreUser(item.id);
+                });
+            };
+            row.hardDelete = function () {
+                if (!window.confirm("Permanently delete " + row.name + "? This cannot be undone.")) {
+                    return Promise.resolve();
+                }
+
+                return perform(function () {
+                    return auth.hardDeleteUser(item.id);
+                });
+            };
+
             return row;
         };
 
@@ -132,7 +168,8 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 page: self.pager.page(),
                 pageSize: pageSize,
                 search: self.search().trim(),
-                letter: self.letterPager.selected()
+                letter: self.letterPager.selected(),
+                deleted: self.showDeleted()
             })
                 .then(function (result) {
                     self.message(result.message);
@@ -164,6 +201,12 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
         };
 
         self.activate = function () {
+            self.canViewDeleted.subscribe(function (allowed) {
+                if (!allowed && self.showDeleted()) {
+                    self.showDeleted(false);
+                }
+            });
+
             self.canManage.subscribe(function (allowed) {
                 if (allowed) {
                     self.refresh();

@@ -69,6 +69,10 @@ public class UserManagementFrontendTests
         Assert.Contains("\"/sign/out\"", auth);
         Assert.Contains("\"/ban\", { reason: reason }", auth);
         Assert.Contains("\"/unban\"", auth);
+        Assert.Contains("\"/delete\"", auth);
+        Assert.Contains("\"/restore\"", auth);
+        Assert.Contains("\"/hard/delete\"", auth);
+        Assert.Contains("\"&deleted=true\"", auth);
         Assert.Contains("\"/wallOfShame\"", auth);
     }
 
@@ -175,5 +179,27 @@ public class UserManagementFrontendTests
         Assert.Contains("params=\"pager: pager\"", view);
         Assert.Contains("auth.loadWallOfShame(", viewModel);
         Assert.DoesNotContain("session.isSignedIn", viewModel);
+    }
+
+    [Fact]
+    public void UsersPage_OffersDeleteRestoreAndPermanentDeleteOnlyWhenAllowed()
+    {
+        var view = Read("views/users.html");
+        var viewModel = Read("viewmodels/users.js");
+
+        Assert.All(
+            new[]
+            {
+                "visible: canDelete", "click: remove", "visible: canManageDeleted", "click: restore",
+                "click: hardDelete", "checked: showDeleted", "visible: canViewDeleted", "visible: isDeleted"
+            },
+            binding => Assert.Contains(binding, view));
+        Assert.Contains("item.permissions.canDelete", viewModel);
+        Assert.Contains("item.permissions.canManageDeleted", viewModel);
+        Assert.Contains("session.hasGrant(\"RawDatabase.Manage\")", viewModel);
+        Assert.Contains("deleted: self.showDeleted()", viewModel);
+        Assert.Contains("auth.deleteUser(", viewModel);
+        Assert.Contains("auth.restoreUser(", viewModel);
+        Assert.Contains("auth.hardDeleteUser(", viewModel);
     }
 }

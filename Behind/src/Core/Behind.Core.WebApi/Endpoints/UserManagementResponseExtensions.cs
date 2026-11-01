@@ -29,9 +29,12 @@ public static class UserManagementResponseExtensions
                 user.IsDeveloper,
                 user.Id == actor.UserId,
                 user.Ban.Match<BanInfo?>(() => null, ban => ban.ToBanInfo()),
+                !user.IsActive,
                 new ManagedUserPermissions(
                     actor.CanChange(ManagedRole.Administrator, user),
                     actor.CanChange(ManagedRole.Developer, user),
-                    actor.CanModerate(user)));
+                    actor.CanModerate(user),
+                    actor.CanDelete(user),
+                    actor.CanManageDeleted(user)));
     }
 }

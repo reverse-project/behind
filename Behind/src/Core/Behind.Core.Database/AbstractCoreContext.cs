@@ -12,12 +12,31 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
 {
     public SoftDeleteSwitch SoftDelete { get; } = new();
 
-    public HardDeleteRegistry HardDeletes { get; } = new();
+    public EntityMarkRegistry HardDeletes { get; } = new();
+
+    public EntityMarkRegistry Restores { get; } = new();
 
     public IHardDeleteRepository<TAggregate, TKey> GetHardDeleteRepository<TAggregate, TKey>() =>
         (IHardDeleteRepository<TAggregate, TKey>)this;
 
+    public IRestoreRepository<TAggregate, TKey> GetRestoreRepository<TAggregate, TKey>() =>
+        (IRestoreRepository<TAggregate, TKey>)this;
+
     public IRepository<TAggregate, TKey> GetRepository<TAggregate, TKey>() => (IRepository<TAggregate, TKey>)this;
+
+    public async Task<bool> IsDeletedAsync(
+        string entityName,
+        string entityKey,
+        CancellationToken cancellationToken = default)
+    {
+        var actions = await AuditLogEntries
+            .Where(audit => audit.EntityName == entityName && audit.EntityKey == entityKey)
+            .Select(audit => audit.Action)
+            .ToListAsync(cancellationToken);
+
+        return actions.Count(action => action is AuditLogEntry.Deleted)
+               > actions.Count(action => action is AuditLogEntry.Restored);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,8 +56,11 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
     }
 
     private static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =
-        (context, entityName, entityKey) => context.AuditLogEntries.Any(audit =>
-            audit.EntityName == entityName && audit.EntityKey == entityKey && audit.Action == new AuditLogEntry.Deleted());
+        (context, entityName, entityKey) =>
+            context.AuditLogEntries.Count(audit =>
+                audit.EntityName == entityName && audit.EntityKey == entityKey && audit.Action == new AuditLogEntry.Deleted())
+            > context.AuditLogEntries.Count(audit =>
+                audit.EntityName == entityName && audit.EntityKey == entityKey && audit.Action == new AuditLogEntry.Restored());
 
     public override async Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess,
@@ -48,6 +70,7 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
         await this.ExpandCascadingDeletesAsync(cancellationToken);
         var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         HardDeletes.Clear();
+        Restores.Clear();
         return saved;
     }
 

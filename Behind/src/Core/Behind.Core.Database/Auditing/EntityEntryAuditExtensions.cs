@@ -34,6 +34,7 @@ public static class EntityEntryAuditExtensions
                 EntityState.Deleted when entry.IsHardDeleted => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.HardDeleted()),
                 EntityState.Deleted => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Deleted()),
                 EntityState.Modified => await entry.ToUpdatedActionAsync(cancellationToken),
+                EntityState.Unchanged when entry.IsRestored => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Restored()),
                 _ => None
             };
 

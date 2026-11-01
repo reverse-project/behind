@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Database;
@@ -30,7 +31,8 @@ public sealed class UserManagementEndpoints
         [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null,
         [FromQuery] string? search = null,
-        [FromQuery] string? letter = null)
+        [FromQuery] string? letter = null,
+        [FromQuery] bool deleted = false)
     {
         httpContext.Response.Headers.CacheControl = "no-store";
 
@@ -42,21 +44,28 @@ public sealed class UserManagementEndpoints
         }
 
         var actor = await gate.FindActor(httpContext);
+        var state = deleted ? DeletionState.Deleted : DeletionState.Active;
 
         return await actor.Match(
             () => Task.FromResult<IResult>(Results.Unauthorized()),
             async current =>
             {
+                if (deleted && !current.IsDeveloper)
+                {
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                }
+
                 var searchTerm = search.ToSearchTerm(MaxSearchLength);
 
                 var users = await userQueries.ListUsers(
                     Flipper.Create(page, pageSize, DefaultPageSize, MaxPageSize),
                     searchTerm,
                     letterFilter,
+                    state,
                     timeProvider.GetUtcNow(),
                     httpContext.RequestAborted);
 
-                var letters = await userQueries.GetLetters(searchTerm, httpContext.RequestAborted);
+                var letters = await userQueries.GetLetters(searchTerm, state, httpContext.RequestAborted);
 
                 return Results.Json(new UserListResponse(
                     users.ToPageResponse(user => user.ToItem(current)),
@@ -147,6 +156,49 @@ public sealed class UserManagementEndpoints
             id,
             (actor, target) => actor.CanModerate(target),
             (_, target, _) => wallOfShameCommands.Unban(target.Id, httpContext.RequestAborted));
+
+    [Authorize]
+    [IgnoreETag]
+    public static Task<IResult> Delete(
+        Guid id,
+        HttpContext httpContext,
+        UserManagementGate gate,
+        IUserCommands userCommands) =>
+        gate.Run(
+            httpContext,
+            id,
+            (actor, target) => actor.CanDelete(target),
+            (_, target, _) => userCommands.Delete(target.Id, httpContext.RequestAborted));
+
+    [Authorize]
+    [IgnoreETag]
+    public static Task<IResult> Restore(
+        Guid id,
+        HttpContext httpContext,
+        UserManagementGate gate,
+        IUserCommands userCommands) =>
+        gate.Run(
+            httpContext,
+            id,
+            (actor, target) => actor.CanManageDeleted(target),
+            (_, target, _) => userCommands.Restore(target.Id, httpContext.RequestAborted),
+            DeletionState.Deleted);
+
+    [Authorize]
+    [IgnoreETag]
+    public static Task<IResult> HardDelete(
+        Guid id,
+        HttpContext httpContext,
+        UserManagementGate gate,
+        IUserCommands userCommands) =>
+        gate.RunForResult(
+            httpContext,
+            id,
+            (actor, target) => actor.CanManageDeleted(target),
+            async (_, target, _) => await userCommands.HardDelete(target.Id, httpContext.RequestAborted)
+                ? Results.NoContent()
+                : Results.Conflict(),
+            DeletionState.Deleted);
 
     private static Task<IResult> ChangeRole(
         Guid id,

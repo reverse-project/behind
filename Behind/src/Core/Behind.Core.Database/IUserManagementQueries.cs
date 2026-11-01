@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 
 namespace Behind.Core.Database;
 
@@ -9,16 +10,25 @@ public interface IUserManagementQueries
         string DisplayName,
         IReadOnlyList<string> Emails,
         IReadOnlyList<string> Roles,
-        Option<IWallOfShameQueries.ActiveBan> Ban);
+        Option<IWallOfShameQueries.ActiveBan> Ban,
+        DeletionState State = DeletionState.Active);
 
     Task<PagedResult<ManagedUser>> ListUsers(
         Flipper flipper,
         Option<string> search,
         Option<string> letter,
+        DeletionState state,
         DateTimeOffset now,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<string>> GetLetters(Option<string> search, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<string>> GetLetters(
+        Option<string> search,
+        DeletionState state,
+        CancellationToken cancellationToken = default);
 
-    Task<Option<ManagedUser>> TryFindUser(Guid id, DateTimeOffset now, CancellationToken cancellationToken = default);
+    Task<Option<ManagedUser>> TryFindUser(
+        Guid id,
+        DeletionState state,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
 }

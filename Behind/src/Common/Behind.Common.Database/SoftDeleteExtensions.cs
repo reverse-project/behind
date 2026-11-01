@@ -41,6 +41,17 @@ public static class SoftDeleteExtensions
 
         public bool IsHardDeleted =>
             entry.Context is ISoftDeleteContext context && context.HardDeletes.IsMarked(entry.Entity);
+
+        public bool IsRestored =>
+            entry.Context is ISoftDeleteContext context && context.Restores.IsMarked(entry.Entity);
+
+        private string SoftDeleteKey =>
+            entry.Property(entry.Metadata.FindPrimaryKey()!.Properties[0].Name).CurrentValue!.ToString()!.ToLowerInvariant();
+
+        public Task<bool> IsDeletedAsync(CancellationToken cancellationToken = default) =>
+            entry.Context is ISoftDeleteContext context
+                ? context.IsDeletedAsync(entry.Metadata.GetRootType().ClrType.Name, entry.SoftDeleteKey, cancellationToken)
+                : Task.FromResult(false);
     }
 
     extension(DbContext context)
@@ -77,6 +88,40 @@ public static class SoftDeleteExtensions
             if (entity is not null)
             {
                 context.HardDelete(entity);
+            }
+        }
+
+        public async Task RestoreByKeyAsync<TEntity>(
+            object[] keyValues,
+            CancellationToken cancellationToken = default) where TEntity : class
+        {
+            using var scope = context.SoftDeleteContext.SoftDelete.IncludeDeleted();
+            var entity = await context.Set<TEntity>().FindAsync(keyValues, cancellationToken);
+
+            if (entity is not null)
+            {
+                await context.RestoreCascadingAsync(context.Entry(entity), cancellationToken);
+            }
+        }
+
+        private async Task RestoreCascadingAsync(EntityEntry root, CancellationToken cancellationToken)
+        {
+            var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+            var pending = new Queue<EntityEntry>([root]);
+
+            while (pending.TryDequeue(out var principal))
+            {
+                if (!seen.Add(principal.Entity) || !principal.IsSoftDeletable || !await principal.IsDeletedAsync(cancellationToken))
+                {
+                    continue;
+                }
+
+                context.SoftDeleteContext.Restores.Mark(principal.Entity);
+
+                foreach (var dependent in await SoftDeleteCascade.FindDependentsAsync(context, principal, cancellationToken))
+                {
+                    pending.Enqueue(dependent);
+                }
             }
         }
 

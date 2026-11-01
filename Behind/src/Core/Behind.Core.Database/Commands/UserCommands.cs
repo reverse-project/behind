@@ -1,4 +1,5 @@
 using Behind.Core.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Core.Database.Commands;
 
@@ -30,5 +31,32 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
                 await context.SaveChangesAsync(cancellationToken);
                 return true;
             });
+    }
+
+    public async Task Delete(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await context.GetRepository<HumanUser, Guid>().DeleteAsync(userId, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Restore(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await context.GetRestoreRepository<HumanUser, Guid>().RestoreAsync(userId, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> HardDelete(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await context.GetHardDeleteRepository<HumanUser, Guid>().HardDeleteAsync(userId, cancellationToken);
+
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            return false;
+        }
     }
 }

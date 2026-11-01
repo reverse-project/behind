@@ -590,14 +590,22 @@ Do not add `AuditLogEntry` rows manually for these entities.
 
 ## Soft Delete, Hard Delete and Deleted Records Visibility
 
-There is no `IsDeleted` column. A record is deleted when a `Deleted` `AuditLogEntry` exists for its `EntityName` and `EntityKey`.
+There is no `IsDeleted` column. A record is deleted when it has more `Deleted` than `Restored` `AuditLogEntry` rows for its `EntityName` and `EntityKey`.
 
 - `User`, `Email`, `Role`, `Grant`, `Password` and `WallOfShameEntry` are soft deletable (`ApplySoftDelete` in `AbstractCoreContext`). Removing them keeps the row, writes the `Deleted` audit entry and a global query filter (`SoftDelete`) hides them. Cascading dependents are deleted the same way, dependents that are not soft deletable (sessions) are removed physically.
 - Hard delete is explicit: `IUnitOfWork.GetHardDeleteRepository<TAggregate, TKey>()` returns `IHardDeleteRepository` with `HardDelete` / `HardDeleteAsync`. The row (and its cascading dependents) is removed permanently and the audit log gets a `HardDeleted` entry for each of them, so the event stays traceable. Hard deleting an already soft deleted record is supported.
+- Restore is explicit: `IUnitOfWork.GetRestoreRepository<TAggregate, TKey>()` returns `IRestoreRepository` with `RestoreAsync`. The record and its soft deleted cascading dependents are marked (`ISoftDeleteContext.Restores`) and the next `SaveChangesAsync` writes a `Restored` audit entry for each of them, the earlier `Deleted` entries are kept. Restoring a record that is not deleted does nothing.
 - Soft delete relies on `AuditSaveChangesInterceptor`; a context without it removes rows physically.
 - `context.SoftDelete.IncludeDeleted()` returns an `IDisposable` scope (`SoftDeleteSwitch`, thread safe and nestable) that disables the filter on that context while it is open. `AuditLogEntryQueries` uses it so audit entries always resolve their users.
 - When a stored user id (audit `UserId` / `BehalfOfId`, wall of shame `UserId` / `GivenById`, session `InvalidatedById`) cannot be resolved to a user, for example because the user is soft deleted and the filter is active, the entity is populated with `UnknownUser(Id)` instead of failing (`UserResolutionExtensions.ToUser`).
 - `DeletedRecordsVisibilityMiddleware` opens the scope for the whole request of authenticated users holding the `ViewDeleted` grant (`DomainConstants.ViewDeletedGrant`, checked with `IUserQueries.HasGrant`), so those admins see deleted records in every query of that request.
+
+### Users management
+
+- `POST /users/{id}/delete` soft deletes a user (`User.Delete` grant, same moderation rules as ban: not yourself, only developers may delete developers). The user's sessions are removed with it.
+- `GET /users?deleted=true`, `POST /users/{id}/restore` and `POST /users/{id}/hard/delete` are developer only. Restore and hard delete only apply to users that are already soft deleted (otherwise `404`), so a permanent delete is always a second, explicit step.
+- A hard delete answers `409` when the database rejects it, for example because audit entries are attributed to the user (see the audit log notes above).
+- `IUserManagementQueries` takes a `DeletionState` (`Active` / `Deleted`) and opens the `IncludeDeleted` scope itself for `Deleted`; `Active` always excludes deleted users, even inside a `DeletedRecordsVisibilityMiddleware` scope.
 
 ## Migrations
 

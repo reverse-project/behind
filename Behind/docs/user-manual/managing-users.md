@@ -22,6 +22,8 @@ For any other role, use the [Access panel](#editing-a-users-access).
 
 **Sign out everywhere** ends all sessions of that user.
 
+**Impersonate** lets an administrator act as the user, see [Impersonation](./impersonation.md).
+
 ## Banning and unbanning
 
 1. Choose **Ban**.

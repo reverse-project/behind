@@ -61,7 +61,7 @@ public static class BuiltInAccess
     {
         private bool IsDeveloperOnly => grant.Area == GrantArea.Configuration;
 
-        private bool IsAdministrationOnly => grant.Area == GrantArea.AuditLog;
+        private bool IsAdministrationOnly => grant.Area is GrantArea.AuditLog or GrantArea.Impersonation;
     }
 
     private static BuiltInGrant NewGrant(int number, string area, string action) =>

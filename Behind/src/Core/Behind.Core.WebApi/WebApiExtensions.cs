@@ -338,6 +338,20 @@ public static class WebApiExtensions
                 .Produces(409)
                 .Produces(500);
 
+            application.MapPost("/users/{id:guid}/impersonate", ImpersonationEndpoints.Start)
+                .RequireAuthorization(GrantName.Of(GrantArea.Impersonation, GrantAction.Manage))
+                .Produces<SignInEndpoints.SignInResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/impersonation/stop", ImpersonationEndpoints.Stop)
+                .Produces(204)
+                .Produces(401)
+                .Produces(409)
+                .Produces(500);
+
             application.MapGet("/users/{id:guid}/access", UserAccessEndpoints.Get)
                 .RequireAuthorization(userManagement)
                 .Produces<UserAccessResponse>()

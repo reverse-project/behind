@@ -21,11 +21,11 @@ public sealed class HttpAuditActorProvider(
             none: () => Task.FromResult(AuditActor.Anonymous),
             some: async sessionId =>
             {
-                var session = await sessionQueries.TryFindByIdWithUserId(sessionId, cancellationToken);
+                var session = await sessionQueries.TryFindActor(sessionId, cancellationToken);
 
                 return session.Match(
                     none: () => AuditActor.Anonymous,
-                    some: found => AuditActor.ForUser(found.UserId)
+                    some: found => AuditActor.ForSession(found.UserId, found.ImpersonatorId)
                 );
             }
         );

@@ -583,6 +583,7 @@ Every `SaveChangesAsync` on the core context writes `AuditLogEntry` rows for all
 - `EntityName` is the root entity type (`User`, `Role`, `Email`, `ValidSession`, ...) and `EntityKey` is the primary key.
 - Properties marked `[Sensible]` (password hash, token nonces) are stored as `***`.
 - The actor (`UserId` / `BehalfOfId`) comes from `IAuditActorProvider`: `HttpAuditActorProvider` resolves it from the session claim of the current request, anonymous requests are logged without a user and code running outside a request is logged as the system user.
+- Impersonation: a session started with `ISessionCommands.CreateImpersonation` stores the impersonator in its `ImpersonatorId` column. `ISessionQueries.TryFindActor` returns the session user and the impersonator, and `AuditActor.ForSession` turns that into the actor: the impersonator is the `UserId` and the impersonated user is the `BehalfOfId`. Creating such a session is audited as `ImpersonationStarted` (on behalf of the target) and invalidating it as `ImpersonationEnded` instead of `Created` / `Updated`.
 - `AuditLogEntry` rows are never audited themselves and synchronous `SaveChanges` is not supported.
 - The system and guest users are seeded by the migrator (`EnsureBuiltInUsersAsync`), and the `UserId` / `BehalfOfId` keys of audit rows are `NoAction`, so a user referenced by audit rows can only be soft deleted; a hard delete is rejected by the database to keep the audit trail attributable.
 

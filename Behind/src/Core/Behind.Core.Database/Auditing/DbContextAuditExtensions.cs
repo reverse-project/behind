@@ -30,7 +30,9 @@ public static class DbContextAuditExtensions
                     () => { },
                     value => context.AddAuditEntry(
                         new AuditLogEntry(entry.AuditEntityName, entry.AuditEntityKey, value, timestamp),
-                        actor
+                        value is AuditLogEntry.ImpersonationStarted
+                            ? actor.OnBehalfOf(entry.SessionUserId)
+                            : actor
                     )
                 );
             }

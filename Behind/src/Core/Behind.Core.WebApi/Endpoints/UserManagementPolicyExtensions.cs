@@ -1,10 +1,17 @@
+using Behind.Common;
 using Behind.Common.Database;
 using Behind.Core.Database;
 using Behind.Core.Domain;
+using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.WebApi.Endpoints;
 
-public sealed record UserManagementActor(Guid UserId, bool IsDeveloper, bool CanDeleteUsers, UserAccess Access);
+public sealed record UserManagementActor(
+    Guid UserId,
+    bool IsDeveloper,
+    bool CanDeleteUsers,
+    UserAccess Access,
+    bool IsImpersonating = false);
 
 public static class UserManagementPolicyExtensions
 {
@@ -29,6 +36,12 @@ public static class UserManagementPolicyExtensions
 
         public bool CanDelete(IUserManagementQueries.ManagedUser target) =>
             actor.CanDeleteUsers && actor.CanModerate(target);
+
+        public bool CanImpersonate(IUserManagementQueries.ManagedUser target) =>
+            !actor.IsImpersonating
+            && actor.Access.Holds(GrantName.Of(GrantArea.Impersonation, GrantAction.Manage))
+            && target.Ban == None
+            && actor.CanModerate(target);
 
         public bool CanManageDeleted(IUserManagementQueries.ManagedUser target) =>
             actor.IsDeveloper && !target.IsActive;

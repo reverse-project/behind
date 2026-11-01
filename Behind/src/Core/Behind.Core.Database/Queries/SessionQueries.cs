@@ -29,6 +29,27 @@ public sealed class SessionQueries(AbstractCoreContext context) : ISessionQuerie
         return session.Map(s => (s, userId.Value));
     }
 
+    public async Task<Option<ISessionQueries.SessionActor>> TryFindActor(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var row = await context.Sessions
+            .Where(s => EF.Property<Guid>(s, "Id") == id)
+            .Select(s => new
+            {
+                UserId = EF.Property<Guid>(s, "UserId"),
+                ImpersonatorId = EF.Property<Guid?>(s, "ImpersonatorId")
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return row is null
+            ? None
+            : Some(new ISessionQueries.SessionActor(
+                row.UserId,
+                row.ImpersonatorId.HasValue ? Some(row.ImpersonatorId.Value) : None));
+    }
+
     public async Task<ISessionQueries.UserSessions> GetUserSessions(
         Guid userId,
         DateTimeOffset now,

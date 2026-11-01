@@ -21,6 +21,8 @@ public sealed record AuditLogEntry(
     public sealed record Updated(IEnumerable<PropertyDifference> Differences) : AuditAction;
     public sealed record ChangeOwnership(Guid OldOwnerId, Guid NewOwnerId) : AuditAction;
     public sealed record Moved(Guid OldParentId, Guid NewParentId) : AuditAction;
+    public sealed record ImpersonationStarted : AuditAction;
+    public sealed record ImpersonationEnded : AuditAction;
     
     public AuditLogEntry(
         string entityName,

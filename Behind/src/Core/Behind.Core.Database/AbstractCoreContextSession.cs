@@ -33,6 +33,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
                     .Where(a => EF.Property<Guid>(a, "Id") == EF.Property<Guid>(s, "UserAgentId"))
                     .Select(a => a.Value)
                     .FirstOrDefault(),
+                ImpersonatorId = EF.Property<Guid?>(s, "ImpersonatorId"),
                 InvalidatedById = EF.Property<Guid?>(s, "InvalidatedById"),
                 InvalidatedAt = EF.Property<DateTimeOffset?>(s, "InvalidatedAt")
             })
@@ -50,6 +51,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
                 await ToValidSessionAsync(
                     row.Session,
                     row.UserId,
+                    row.ImpersonatorId,
                     row.UserAgent ?? throw new InvalidOperationException("The session user agent does not exist."),
                     cancellationToken));
     }
@@ -98,15 +100,20 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
     private async Task<Session> ToValidSessionAsync(
         ValidSession session,
         Guid userId,
+        Guid? impersonatorId,
         string userAgent,
         CancellationToken cancellationToken
     )
     {
         var user = (await TryResolveUserAsync(userId, cancellationToken)).GetOrElse(new GuestUser(None));
+        Option<User> impersonator = impersonatorId.HasValue
+            ? await TryResolveUserAsync(impersonatorId.Value, cancellationToken)
+            : None;
 
         return session with
         {
             User = user,
+            Impersonator = impersonator,
             UserAgent = new UserAgent(userAgent),
             AccessToken = session.AccessToken with { User = user },
             RefreshToken = session.RefreshToken with { User = user }
@@ -149,6 +156,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         var original = FindTrackedSession(key);
         var userAgentKey = GetOrAddUserAgentKey(replacement.UserAgent);
         var userId = original.Property<Guid>("UserId").CurrentValue;
+        var impersonatorId = original.Property<Guid?>("ImpersonatorId").CurrentValue;
         var invalidatedById = original.Property<Guid?>("InvalidatedById").CurrentValue;
         var invalidatedAt = original.Property<DateTimeOffset?>("InvalidatedAt").CurrentValue;
 
@@ -157,6 +165,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         var updated = Entry(replacement);
         updated.Property("UserId").CurrentValue = userId;
         updated.Property("UserAgentId").CurrentValue = userAgentKey;
+        updated.Property("ImpersonatorId").CurrentValue = impersonatorId;
         updated.Property("InvalidatedById").CurrentValue = invalidatedById;
         updated.Property("InvalidatedAt").CurrentValue = invalidatedAt;
     }

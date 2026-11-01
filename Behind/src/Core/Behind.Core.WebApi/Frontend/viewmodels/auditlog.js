@@ -9,7 +9,9 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
         HardDeleted: "text-bg-danger",
         Restored: "text-bg-info",
         ChangeOwnership: "text-bg-secondary",
-        Moved: "text-bg-secondary"
+        Moved: "text-bg-secondary",
+        ImpersonationStarted: "text-bg-warning",
+        ImpersonationEnded: "text-bg-warning"
     };
 
     var pad = function (number) {

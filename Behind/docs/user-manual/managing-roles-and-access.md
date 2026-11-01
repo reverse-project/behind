@@ -5,7 +5,7 @@ Open **Administration > Roles**. You need the `Role.Manage` grant.
 ## Concepts
 
 - A **grant** allows something. Grant names are `Area.Action`, for example `User.Manage`.
-  - Areas: Session, AuditLog, Role, User, Configuration, RawDatabase.
+  - Areas: Session, AuditLog, Role, User, Configuration, Impersonation, RawDatabase.
   - Actions: Read, Write, Delete, Manage (RawDatabase only has Manage).
 - A **restriction** removes a grant. It uses the same names as grants.
 - A **role** is a named set of grants and restrictions. Users can have several roles.
@@ -16,7 +16,7 @@ Open **Administration > Roles**. You need the `Role.Manage` grant.
 | Role | Default grants |
 |------|----------------|
 | Users | Read on Session, Role, and User |
-| Administrators | every action on Session, AuditLog, Role, and User |
+| Administrators | every action on Session, AuditLog, Role, User, and Impersonation |
 | Developers | Read on Session, AuditLog, Role, and User, plus Configuration.Read and RawDatabase.Manage |
 
 Built-in roles can be edited but not deleted. Changes you make to them are kept when the application restarts, so a database created before `AuditLog.Read` was removed from the Users role keeps it until an administrator removes it there.

@@ -35,6 +35,7 @@ public static class UserManagementResponseExtensions
                     actor.CanChange(ManagedRole.Developer, user),
                     actor.CanModerate(user),
                     actor.CanDelete(user),
-                    actor.CanManageDeleted(user)));
+                    actor.CanManageDeleted(user),
+                    actor.CanImpersonate(user)));
     }
 }

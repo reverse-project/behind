@@ -9,7 +9,8 @@ public sealed record ManagedUserPermissions(
     bool CanChangeDeveloper,
     bool CanModerate,
     bool CanDelete,
-    bool CanManageDeleted);
+    bool CanManageDeleted,
+    bool CanImpersonate);
 
 public sealed record ManagedUserItem(
     Guid Id,

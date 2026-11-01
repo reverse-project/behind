@@ -16,6 +16,14 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
             return session.displayName() || "Account";
         });
 
+        self.isImpersonating = session.isImpersonating;
+
+        self.stopImpersonating = function () {
+            return auth.stopImpersonating().then(function () {
+                context.navigate("#/");
+            });
+        };
+
         self.signOut = function () {
             return auth.signOut().then(function () {
                 context.navigate("#/");

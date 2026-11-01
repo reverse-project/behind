@@ -30,6 +30,10 @@ public static class EntityEntryAuditExtensions
         ) =>
             entry.State switch
             {
+                EntityState.Added when entry.IsImpersonationSession =>
+                    Some<AuditLogEntry.AuditAction>(new AuditLogEntry.ImpersonationStarted()),
+                EntityState.Modified when entry.IsImpersonationSession && entry.IsInvalidation =>
+                    Some<AuditLogEntry.AuditAction>(new AuditLogEntry.ImpersonationEnded()),
                 EntityState.Added => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Created()),
                 EntityState.Deleted when entry.IsHardDeleted => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.HardDeleted()),
                 EntityState.Deleted => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Deleted()),
@@ -37,6 +41,15 @@ public static class EntityEntryAuditExtensions
                 EntityState.Unchanged when entry.IsRestored => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Restored()),
                 _ => None
             };
+
+        public Guid SessionUserId => (Guid)entry.Property("UserId").CurrentValue!;
+
+        private bool IsImpersonationSession =>
+            entry.Entity is ValidSession && entry.Property("ImpersonatorId").CurrentValue is Guid;
+
+        private bool IsInvalidation =>
+            entry.Property("InvalidatedById") is { IsModified: true, OriginalValue: null }
+            || entry.Property("InvalidatedAt") is { IsModified: true, OriginalValue: null };
 
         private IEnumerable<PropertyDifference> DifferencesFrom(PropertyValues stored) =>
             entry.CurrentValues.Properties

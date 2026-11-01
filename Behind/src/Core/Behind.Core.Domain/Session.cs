@@ -13,6 +13,8 @@ public sealed record ValidSession(
     UserAgent UserAgent
 ) : Session
 {
+    public Option<User> Impersonator { get; init; } = None;
+
     private ValidSession() : this(new GuestUser(None), default!, default!, default!, default!)
     {
     }

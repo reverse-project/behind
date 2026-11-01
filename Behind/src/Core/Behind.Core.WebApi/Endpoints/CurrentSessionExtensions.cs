@@ -7,7 +7,7 @@ using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.WebApi.Endpoints;
 
-public sealed record CurrentSession(Guid SessionId, Guid UserId);
+public sealed record CurrentSession(Guid SessionId, Guid UserId, bool IsImpersonated = false);
 
 public static class CurrentSessionExtensions
 {
@@ -22,7 +22,10 @@ public static class CurrentSessionExtensions
 
                     return found
                         .Where(result => result.Session is ValidSession)
-                        .Map(result => new CurrentSession(sessionId, result.UserId));
+                        .Map(result => new CurrentSession(
+                            sessionId,
+                            result.UserId,
+                            ((ValidSession)result.Session).Impersonator != None));
                 });
     }
 }

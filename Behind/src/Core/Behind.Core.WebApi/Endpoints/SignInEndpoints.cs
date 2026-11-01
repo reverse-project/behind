@@ -218,7 +218,7 @@ public sealed class SignInEndpoints
     private static async Task<IResult> StartPermittedSession(ApplicationUser user, JwtSettings jwtSettings,
         ISessionCommands sessionCommands, HttpContext httpContext, ILogger logger)
     {
-        var humanUser = new HumanUser(user.DisplayName, user.Emails, None);
+        var humanUser = user.ToHumanUser();
         var accessToken = AccessToken.Create(humanUser);
         var refreshToken = RefreshToken.Create(humanUser);
 
@@ -235,10 +235,6 @@ public sealed class SignInEndpoints
             "Session {SessionId} started for user {UserId}, access token expires at {AccessTokenExpiresAt}",
             () => [sessionId, user.Id, accessToken.ExpiresAt]);
 
-        return Results.Json(new SignInResponse(
-            accessToken.ToJwtToken(user, sessionId, jwtSettings),
-            accessToken.ExpiresAt,
-            refreshToken.ToJwtToken(user, sessionId, jwtSettings)
-        ));
+        return Results.Json(user.ToSignInResponse(accessToken, refreshToken, sessionId, jwtSettings));
     }
 }

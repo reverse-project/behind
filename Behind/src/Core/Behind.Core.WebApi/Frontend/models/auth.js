@@ -233,6 +233,28 @@ define(["models/http", "models/session", "models/user"], function (http, session
             });
         },
 
+        impersonateUser: function (userId) {
+            return http.post("/users/" + userId + "/impersonate").then(function (response) {
+                if (response.ok) {
+                    session.impersonate(response.data);
+                    return success("You are now impersonating this user.");
+                }
+
+                return failure(response, {
+                    401: "Your session has expired. Please sign in again.",
+                    403: "You are not allowed to impersonate this user.",
+                    404: "This user no longer exists."
+                });
+            });
+        },
+
+        stopImpersonating: function () {
+            return http.post("/impersonation/stop").then(function () {
+                session.stopImpersonating();
+                return success("You stopped impersonating.");
+            });
+        },
+
         signOutUser: function (userId) {
             return userAction(userId + "/sign/out", undefined, "The user was signed out of all sessions.");
         },

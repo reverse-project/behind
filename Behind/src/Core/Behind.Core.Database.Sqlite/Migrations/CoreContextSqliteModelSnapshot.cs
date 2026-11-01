@@ -244,6 +244,9 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ImpersonatorId")
+                        .HasColumnType("TEXT");
+
                     b.Property<long?>("InvalidatedAt")
                         .HasColumnType("INTEGER");
 
@@ -290,6 +293,8 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         });
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ImpersonatorId");
 
                     b.HasIndex("InvalidatedAt");
 
@@ -474,6 +479,11 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
             modelBuilder.Entity("Behind.Core.Domain.ValidSession", b =>
                 {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("ImpersonatorId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("InvalidatedById")

@@ -11,6 +11,14 @@ public static class SessionResponseExtensions
             new(role.Name, role.EffectiveGrants.Names);
     }
 
+    extension(User user)
+    {
+        public SessionImpersonator? ToSessionImpersonator() =>
+            user is HumanUser human
+                ? new SessionImpersonator(human.DisplayName, human.Emails.Select(email => email.Value).ToList())
+                : null;
+    }
+
     extension(ValidSession session)
     {
         public SessionDetails ToSessionDetails(DateTimeOffset now) =>
@@ -41,6 +49,7 @@ public static class SessionResponseExtensions
                     access.Roles.Select(role => role.ToSessionRole()).ToList(),
                     access.CalculatedGrants.Names),
                 session.ToSessionDetails(now),
-                refreshed);
+                refreshed,
+                session.Impersonator.Match<SessionImpersonator?>(() => null, impersonator => impersonator.ToSessionImpersonator()));
     }
 }

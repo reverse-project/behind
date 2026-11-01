@@ -13,4 +13,5 @@ public static class DomainConstants
     public static Guid GuestRoleId => Guid.Parse("20000000-0000-0000-0000-000000000000");
     public static readonly TimeSpan AccessTokenDuration = TimeSpan.FromMinutes(30);
     public static readonly TimeSpan RefreshTokenDuration = TimeSpan.FromDays(30);
+    public static readonly TimeSpan ImpersonationDuration = TimeSpan.FromHours(1);
 }

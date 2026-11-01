@@ -41,7 +41,8 @@ public sealed class UserManagementGate(
                     session.UserId,
                     access.IsDeveloper,
                     access.Holds(GrantName.Of(GrantArea.User, GrantAction.Delete)),
-                    access));
+                    access,
+                    session.IsImpersonated));
             });
     }
 

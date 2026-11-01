@@ -11,4 +11,9 @@ public sealed record AuditActor(Option<Guid> UserId, Option<Guid> BehalfOfId)
     public static AuditActor Anonymous { get; } = new(None, None);
 
     public static AuditActor ForUser(Guid userId) => new(Some(userId), None);
+
+    public AuditActor OnBehalfOf(Guid userId) => this with { BehalfOfId = Some(userId) };
+
+    public static AuditActor ForSession(Guid userId, Option<Guid> impersonatorId) =>
+        impersonatorId.Match(() => ForUser(userId), impersonator => new AuditActor(Some(impersonator), Some(userId)));
 }

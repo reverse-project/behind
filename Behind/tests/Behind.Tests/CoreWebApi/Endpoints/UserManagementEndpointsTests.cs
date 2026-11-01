@@ -106,9 +106,9 @@ public class UserManagementEndpointsTests
         Assert.True(items[0].IsAdministrator);
         Assert.False(items[0].Permissions.CanModerate);
         Assert.Equal(new BanInfo("rude", null), items[1].Ban);
-        Assert.Equal(new ManagedUserPermissions(true, false, true, true, false), items[1].Permissions);
+        Assert.Equal(new ManagedUserPermissions(true, false, true, true, false, false), items[1].Permissions);
         Assert.True(items[2].IsDeveloper);
-        Assert.Equal(new ManagedUserPermissions(false, false, false, false, false), items[2].Permissions);
+        Assert.Equal(new ManagedUserPermissions(false, false, false, false, false, false), items[2].Permissions);
     }
 
     [Fact]
@@ -479,7 +479,7 @@ public class UserManagementEndpointsTests
 
         var item = Assert.Single(Assert.IsType<JsonHttpResult<UserListResponse>>(result).Value!.Users.Items);
         Assert.True(item.IsDeleted);
-        Assert.Equal(new ManagedUserPermissions(false, false, false, false, true), item.Permissions);
+        Assert.Equal(new ManagedUserPermissions(false, false, false, false, true, false), item.Permissions);
     }
 
     [Fact]

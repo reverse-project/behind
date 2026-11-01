@@ -8,7 +8,7 @@
 | Roles | the `Role.Manage` grant | [Managing roles and access](./managing-roles-and-access.md) |
 | Audit log | the `AuditLog.Read` grant | [Audit log](./audit-log.md) |
 
-Administrators have both grants by default. If you open an administration page without the needed access you see a message such as "You need administrator access to manage users."
+Administrators have all of these grants by default. Impersonating a user needs the `Impersonation.Manage` grant, see [Impersonation](./impersonation.md). If you open an administration page without the needed access you see a message such as "You need administrator access to manage users."
 
 ## Who can do what
 

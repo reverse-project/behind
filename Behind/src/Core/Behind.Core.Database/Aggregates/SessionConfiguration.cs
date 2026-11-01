@@ -49,6 +49,14 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<ValidSession
             .HasForeignKey("UserId")
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Ignore(s => s.Impersonator);
+        builder.Property<Guid?>("ImpersonatorId").IsRequired(false);
+        builder.HasOne<HumanUser>()
+            .WithMany()
+            .HasForeignKey("ImpersonatorId")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+
         builder.Property<Guid?>("InvalidatedById").IsRequired(false);
         builder.HasOne<HumanUser>()
             .WithMany()
@@ -61,6 +69,7 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<ValidSession
             .IsRequired(false);
 
         builder.HasIndex("UserId");
+        builder.HasIndex("ImpersonatorId");
         builder.HasIndex("InvalidatedAt");
     }
 }

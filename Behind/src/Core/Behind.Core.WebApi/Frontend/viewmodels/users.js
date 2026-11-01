@@ -89,6 +89,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 isDeleted: item.isDeleted,
                 canDelete: item.permissions.canDelete,
                 canManageDeleted: item.permissions.canManageDeleted,
+                canImpersonate: item.permissions.canImpersonate,
                 roleActions: roleDefinitions.map(function (definition) {
                     return presentRoleAction(item, definition);
                 }),
@@ -130,6 +131,27 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 return perform(function () {
                     return auth.signOutUser(item.id);
                 });
+            };
+
+            row.impersonate = function () {
+                if (!window.confirm("Impersonate " + row.name + "? Everything you do is recorded in the audit log on their behalf.")) {
+                    return Promise.resolve();
+                }
+
+                self.busy(true);
+
+                return auth.impersonateUser(item.id)
+                    .then(function (result) {
+                        if (result.ok) {
+                            window.location.hash = "#/";
+                            return;
+                        }
+
+                        self.message(result.message);
+                    })
+                    .finally(function () {
+                        self.busy(false);
+                    });
             };
 
             row.remove = function () {

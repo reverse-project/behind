@@ -39,11 +39,28 @@ public sealed class HttpAuditActorProviderTests
         var sessionId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         _accessor.HttpContext.Returns(ContextWith(new Claim(SessionClaimTypes.SessionId, sessionId.ToString())));
-        _sessionQueries.TryFindByIdWithUserId(sessionId, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<Option<(Session Session, Guid UserId)>>(
-                Some<(Session Session, Guid UserId)>((new InvalidSession(None, None), userId))));
+        _sessionQueries.TryFindActor(sessionId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Option<ISessionQueries.SessionActor>>(
+                Some(new ISessionQueries.SessionActor(userId, None))));
 
         Assert.Equal(AuditActor.ForUser(userId), await Provider.GetCurrentAsync());
+    }
+
+    [Fact]
+    public async Task GetCurrentAsync_WithImpersonationSession_IsImpersonatorOnBehalfOfSessionUser()
+    {
+        var sessionId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var impersonatorId = Guid.NewGuid();
+        _accessor.HttpContext.Returns(ContextWith(new Claim(SessionClaimTypes.SessionId, sessionId.ToString())));
+        _sessionQueries.TryFindActor(sessionId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Option<ISessionQueries.SessionActor>>(
+                Some(new ISessionQueries.SessionActor(userId, Some(impersonatorId)))));
+
+        var actor = await Provider.GetCurrentAsync();
+
+        Assert.Equal(Some(impersonatorId), actor.UserId);
+        Assert.Equal(Some(userId), actor.BehalfOfId);
     }
 
     [Fact]
@@ -51,8 +68,8 @@ public sealed class HttpAuditActorProviderTests
     {
         var sessionId = Guid.NewGuid();
         _accessor.HttpContext.Returns(ContextWith(new Claim(SessionClaimTypes.SessionId, sessionId.ToString())));
-        _sessionQueries.TryFindByIdWithUserId(sessionId, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<Option<(Session Session, Guid UserId)>>(None));
+        _sessionQueries.TryFindActor(sessionId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Option<ISessionQueries.SessionActor>>(None));
 
         Assert.Equal(AuditActor.Anonymous, await Provider.GetCurrentAsync());
     }

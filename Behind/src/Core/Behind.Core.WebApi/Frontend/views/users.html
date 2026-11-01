@@ -32,6 +32,7 @@
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="enable: !$root.busy(), click: access.toggle, text: access.isOpen() ? 'Hide access' : 'Access'"></button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="visible: canModerate, enable: !$root.busy(), click: signOut">Sign out everywhere</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" data-bind="visible: canImpersonate, enable: !$root.busy(), click: impersonate">Impersonate</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canModerate && !isBanned && !banning(), enable: !$root.busy(), click: startBan">Ban</button>
                     <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: canModerate && isBanned, enable: !$root.busy(), click: unban">Unban</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, enable: !$root.busy(), click: remove">Delete</button>

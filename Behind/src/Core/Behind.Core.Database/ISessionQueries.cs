@@ -15,10 +15,13 @@ public interface ISessionQueries
         bool SignedOut,
         Option<DateTimeOffset> SignedOutAt);
 
+    public sealed record SessionActor(Guid UserId, Option<Guid> ImpersonatorId);
+
     public sealed record UserSessions(PagedResult<SessionSummary> Active, PagedResult<SessionSummary> Ended);
 
     Task<Option<Session>> TryFindById(Guid id, CancellationToken cancellationToken = default);
     Task<Option<(Session Session, Guid UserId)>> TryFindByIdWithUserId(Guid id, CancellationToken cancellationToken = default);
+    Task<Option<SessionActor>> TryFindActor(Guid id, CancellationToken cancellationToken = default);
 
     Task<UserSessions> GetUserSessions(
         Guid userId,

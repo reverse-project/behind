@@ -22,8 +22,11 @@ public sealed record SessionDetails(
 
 public sealed record RefreshedAccessToken(string AccessToken, DateTimeOffset Expires);
 
+public sealed record SessionImpersonator(string DisplayName, IReadOnlyList<string> Emails);
+
 public sealed record SessionResponse(
     Guid SessionId,
     SessionUser User,
     SessionDetails Session,
-    RefreshedAccessToken? Refreshed);
+    RefreshedAccessToken? Refreshed,
+    SessionImpersonator? Impersonator = null);

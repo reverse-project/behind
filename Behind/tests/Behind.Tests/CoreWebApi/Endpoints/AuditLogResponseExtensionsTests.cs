@@ -73,6 +73,29 @@ public class AuditLogResponseExtensionsTests
         Assert.Equal("Guest", item.OnBehalfOf!.Label);
     }
 
+    [Theory]
+    [InlineData("ImpersonationStarted")]
+    [InlineData("ImpersonationEnded")]
+    public void ToItem_ImpersonationEntries_ShowTheImpersonatorOnBehalfOfTheTarget(string action)
+    {
+        AuditLogEntry.AuditAction auditAction = action == "ImpersonationStarted"
+            ? new AuditLogEntry.ImpersonationStarted()
+            : new AuditLogEntry.ImpersonationEnded();
+
+        var item = new AuditLogEntry(
+            nameof(ValidSession),
+            "9",
+            auditAction,
+            new HumanUser("Admin", [new Email("admin@example.com")], None),
+            DateTimeOffset.UtcNow,
+            Some<User>(new HumanUser("Target", [new Email("target@example.com")], None))).ToItem();
+
+        Assert.Equal(action, item.Action);
+        Assert.Empty(item.Changes);
+        Assert.Equal("Admin", item.Actor.Label);
+        Assert.Equal("Target", item.OnBehalfOf!.Label);
+    }
+
     private sealed class ActorComparer : IEqualityComparer<AuditLogActor>
     {
         public static readonly ActorComparer Instance = new();

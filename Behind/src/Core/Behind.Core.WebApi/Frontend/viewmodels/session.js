@@ -1,4 +1,9 @@
 define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
+    var elevationTargets = [
+        { value: "administrator", label: "Administrator", role: "Administrators" },
+        { value: "developer", label: "Developer", role: "Developers" }
+    ];
+
     var formatDate = function (value) {
         return value ? new Date(value).toLocaleString() : "";
     };
@@ -37,6 +42,9 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
             roles: data.user.roles.map(function (role) {
                 return { name: role.name, grants: role.grants.join(", ") };
             }),
+            roleNames: data.user.roles.map(function (role) {
+                return role.name;
+            }),
             startedAt: formatDate(data.session.startedAt),
             length: formatSpan(data.session.length),
             accessTokenIssuedAt: formatDate(data.session.accessTokenIssuedAt),
@@ -73,6 +81,41 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
                 .then(function (result) {
                     self.message(result.message);
                     self.details(result.ok ? present(result.data) : null);
+                })
+                .finally(function () {
+                    self.busy(false);
+                });
+        };
+
+        self.availableTargets = ko.pureComputed(function () {
+            var details = self.details();
+
+            return details === null
+                ? []
+                : elevationTargets.filter(function (target) {
+                    return details.roleNames.indexOf(target.role) < 0;
+                });
+        });
+
+        self.canElevate = ko.pureComputed(function () {
+            return self.availableTargets().length > 0;
+        });
+
+        self.target = ko.observable("administrator");
+
+        self.code = ko.observable("");
+
+        self.elevate = function () {
+            self.busy(true);
+
+            return auth.elevate(self.target(), self.code().trim())
+                .then(function (result) {
+                    var refreshed = result.ok ? self.refresh() : Promise.resolve();
+
+                    return refreshed.then(function () {
+                        self.code("");
+                        self.message(result.message);
+                    });
                 })
                 .finally(function () {
                     self.busy(false);

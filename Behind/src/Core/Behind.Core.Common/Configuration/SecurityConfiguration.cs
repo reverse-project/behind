@@ -12,7 +12,8 @@ public record SecurityConfiguration(
     Option<SecretKey> SecretKey,
     Option<JwtSettings> Jwt,
     Option<MagicLinkSettings> MagicLink,
-    Option<DataProtectionSettings> DataProtection = default
+    Option<DataProtectionSettings> DataProtection = default,
+    Option<ElevationSettings> Elevation = default
 )
 {
     public SecurityConfiguration() : this(false, None, None, None)
@@ -29,6 +30,8 @@ public abstract record SecretKey;
 
 public sealed record Totp : SecretKey
 {
+    public const OtpHashMode HashMode = OtpHashMode.Sha256;
+
     public static readonly Totp Invalid = new(nameof(Invalid));
     
     public string Value { get; init; }
@@ -102,6 +105,8 @@ public sealed record MagicLinkSettings(
     public const int DefaultRedeemLimit = 10;
     public static readonly TimeSpan DefaultRedeemWindow = TimeSpan.FromMinutes(10);
 }
+
+public sealed record ElevationSettings(bool Enabled, Option<SecretKey> DeveloperSecretKey = default);
 
 public sealed record DataProtectionSettings(
     string KeysPath,

@@ -65,6 +65,25 @@ public sealed class IdentityStoreAuditTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_AssignsUsersRoleWithReadGrants()
+    {
+        var user = NewUser("store-role@test.com");
+
+        await using (var ctx = Audited())
+        {
+            Assert.True((await StoreFor(ctx).CreateAsync(user, CancellationToken.None)).Succeeded);
+        }
+
+        await using var read = _factory.CreateContext();
+        var roles = await new RoleQueries(read).GetRolesByUserId(user.Id);
+        var role = Assert.Single(roles);
+        Assert.Equal(DomainConstants.UsersRole, role.Name);
+        Assert.True(await new UserQueries(read).HasGrant("store-role@test.com", "AuditLog.Read"));
+        Assert.False(await new UserQueries(read).HasGrant("store-role@test.com", "AuditLog.Write"));
+        Assert.False(await new UserQueries(read).HasGrant("store-role@test.com", "Configuration.Read"));
+    }
+
+    [Fact]
     public async Task UpdateAsync_PersistsDisplayName_AndAuditsDifference()
     {
         var user = NewUser("store-update@test.com");

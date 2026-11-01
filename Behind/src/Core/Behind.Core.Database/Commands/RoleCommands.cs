@@ -12,4 +12,10 @@ public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
         context.Entry(role).Property<Guid>("Id").CurrentValue = id;
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task AssignBuiltIn(Guid userId, BuiltInRole role, CancellationToken cancellationToken = default)
+    {
+        await context.EnsureBuiltInRolesAsync(cancellationToken);
+        await context.AssignRoleToUserAsync(userId, role.Id, cancellationToken);
+    }
 }

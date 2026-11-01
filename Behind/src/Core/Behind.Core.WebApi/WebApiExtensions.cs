@@ -17,6 +17,7 @@ using Behind.Core.Database.Queries;
 using Behind.Core.Database.Sqlite;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Auditing;
+using Behind.Core.WebApi.Authorization;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
@@ -46,6 +47,7 @@ public static class WebApiExtensions
             OptionTypeConverterRegistration.Register<JwtSettings>();
             OptionTypeConverterRegistration.Register<MagicLinkSettings>();
             OptionTypeConverterRegistration.Register<DataProtectionSettings>();
+            OptionTypeConverterRegistration.Register<ElevationSettings>();
             TypeDescriptor.AddAttributes(
                 typeof(AuditLogEntry.AuditAction),
                 new TypeConverterAttribute(typeof(AuditLogEntryAuditActionTypeConverter)));
@@ -101,6 +103,8 @@ public static class WebApiExtensions
                 Options.Create(securityConfiguration)
             );
 
+            builder.Services.AddElevationRateLimiting();
+
             builder.Services.AddMagicLink(
                 securityConfiguration,
                 new FileInfo(Path.Combine(builder.Environment.ContentRootPath, "security.json"))
@@ -154,7 +158,7 @@ public static class WebApiExtensions
                             options.TokenValidationParameters = jwtSettings.ValidationParameters;
                         });
 
-                    builder.Services.AddAuthorization();
+                    builder.Services.AddGrantAuthorization();
                     return builder;
                 });
         }
@@ -217,8 +221,10 @@ public static class WebApiExtensions
             application.UseETag();
             application.MapOpenApi();
 
-            application.MapGet("/config", ConfigEndpoint.ExecuteGet);
+            application.MapGet("/config", ConfigEndpoint.ExecuteGet)
+                .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read));
             application.MapGet("/auditLog", AuditLogEntryEndpoints.Get)
+                .RequireAuthorization(GrantName.Of(GrantArea.AuditLog, GrantAction.Read))
                 .Produces<IEnumerable<AuditLogEntry>>()
                 .Produces(204)
                 .Produces(400)
@@ -234,6 +240,28 @@ public static class WebApiExtensions
                 .Produces<SessionResponse>()
                 .Produces(401)
                 .Produces(409)
+                .Produces(500);
+
+            application.MapPost("/session/elevate/administrator", ElevationEndpoints.ElevateAdministrator)
+                .AddEndpointFilter<DataAnnotationValidationFilter<ElevationEndpoints.ElevationRequest>>()
+                .RequireRateLimiting(ElevationExtensions.RateLimitPolicy)
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(429)
+                .Produces(500);
+
+            application.MapPost("/session/elevate/developer", ElevationEndpoints.ElevateDeveloper)
+                .AddEndpointFilter<DataAnnotationValidationFilter<ElevationEndpoints.ElevationRequest>>()
+                .RequireRateLimiting(ElevationExtensions.RateLimitPolicy)
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(429)
                 .Produces(500);
 
             application.MapPost("/sign/up/password", SignUpEndpoints.SignUpPassword)

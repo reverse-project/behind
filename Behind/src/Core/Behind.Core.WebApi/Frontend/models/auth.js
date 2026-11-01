@@ -86,6 +86,20 @@ define(["models/http", "models/session"], function (http, session) {
             });
         },
 
+        elevate: function (target, code) {
+            return http.post("/session/elevate/" + target, { code: code }).then(function (response) {
+                return response.ok
+                    ? success("Your role was elevated.")
+                    : failure(response, {
+                        400: "Enter the 6 to 8 digit authenticator code.",
+                        401: "Your session has expired. Please sign in again.",
+                        403: "The code is not valid.",
+                        404: "Administrator elevation is not available.",
+                        429: "Too many attempts. Please wait before trying again."
+                    });
+            });
+        },
+
         signOut: function () {
             return http.post("/sign/out").then(function () {
                 session.end();

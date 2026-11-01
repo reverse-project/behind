@@ -1,0 +1,98 @@
+namespace Behind.Tests.Domain;
+
+public class BuiltInAccessTests
+{
+    private const string ConfigurationRead = "Configuration.Read";
+    private const string RawDatabaseManage = "RawDatabase.Manage";
+
+    private static IReadOnlyList<string> GrantNames(BuiltInRole role) =>
+        role.Grants.Select(grant => grant.Grant.Name).Order().ToList();
+
+    private static IReadOnlyList<string> AreaGrantNames =>
+        GrantArea.All
+            .SelectMany(area => GrantAction.All.Select(action => GrantName.Of(area, action)))
+            .Order()
+            .ToList();
+
+    [Fact]
+    public void Grants_CoverReadWriteDeleteAndManageForEveryAreaPlusRawDatabaseManage()
+    {
+        Assert.Equal(21, BuiltInAccess.Grants.Count);
+        Assert.Equal(
+            AreaGrantNames.Append(RawDatabaseManage).Order(),
+            BuiltInAccess.Grants.Select(grant => grant.Grant.Name).Order());
+        Assert.Equal(RawDatabaseManage, BuiltInAccess.RawDatabaseManage.Grant.Name);
+    }
+
+    [Fact]
+    public void Administrators_HaveEveryAreaGrantExceptConfiguration()
+    {
+        Assert.Equal(DomainConstants.AdministratorsRole, BuiltInAccess.Administrators.Role.Name);
+        Assert.Equal(
+            AreaGrantNames.Where(name => !name.StartsWith("Configuration.")),
+            GrantNames(BuiltInAccess.Administrators));
+    }
+
+    [Fact]
+    public void Users_HaveReadOnEveryAreaExceptConfiguration()
+    {
+        Assert.Equal(DomainConstants.UsersRole, BuiltInAccess.Users.Role.Name);
+        Assert.Equal(
+            GrantArea.All
+                .Where(area => area != GrantArea.Configuration)
+                .Select(area => GrantName.Of(area, GrantAction.Read))
+                .Order(),
+            GrantNames(BuiltInAccess.Users));
+    }
+
+    [Fact]
+    public void Developers_HaveReadOnEveryAreaAndRawDatabaseManage()
+    {
+        Assert.Equal(DomainConstants.DevelopersRole, BuiltInAccess.Developers.Role.Name);
+        Assert.Equal(
+            GrantArea.All.Select(area => GrantName.Of(area, GrantAction.Read)).Append(RawDatabaseManage).Order(),
+            GrantNames(BuiltInAccess.Developers));
+    }
+
+    [Fact]
+    public void ConfigurationRead_BelongsOnlyToDevelopers()
+    {
+        var holders = BuiltInAccess.Roles
+            .Where(role => GrantNames(role).Contains(ConfigurationRead))
+            .Select(role => role.Role.Name);
+
+        Assert.Equal([DomainConstants.DevelopersRole], holders);
+    }
+
+    [Fact]
+    public void RawDatabaseManage_BelongsOnlyToDevelopers()
+    {
+        var holders = BuiltInAccess.Roles
+            .Where(role => GrantNames(role).Contains(RawDatabaseManage))
+            .Select(role => role.Role.Name);
+
+        Assert.Equal([DomainConstants.DevelopersRole], holders);
+    }
+
+    [Fact]
+    public void RoleGrants_AreExposedOnTheDomainRole()
+    {
+        var grants = BuiltInAccess.Developers.Role.Grants.GetOrElse([]);
+
+        Assert.Equal(6, grants.Count());
+    }
+
+    [Fact]
+    public void Ids_AreUniqueAndDistinctFromBuiltInUsers()
+    {
+        Guid[] ids =
+        [
+            ..BuiltInAccess.Grants.Select(grant => grant.Id),
+            ..BuiltInAccess.Roles.Select(role => role.Id),
+            DomainConstants.SystemRoleId,
+            DomainConstants.GuestRoleId
+        ];
+
+        Assert.Equal(ids.Length, ids.Distinct().Count());
+    }
+}

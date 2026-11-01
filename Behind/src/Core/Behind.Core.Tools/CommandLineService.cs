@@ -1,11 +1,17 @@
 using System.CommandLine;
+using Behind.Core.Common.Configuration;
+using Behind.Core.Common.Converters;
 using Microsoft.Extensions.Hosting;
 using OtpNet;
+using TotpValue = Behind.Core.Common.Configuration.Totp;
 
 namespace Behind.Core.Tools;
 
 public sealed class CommandLineService(IHost host) : BackgroundService
 {
+    private const string DefaultAccount = "admin";
+    private const string Issuer = "Behind System";
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var rootCommand = new RootCommand("Behind Core Command Line Tools");
@@ -17,19 +23,37 @@ public sealed class CommandLineService(IHost host) : BackgroundService
         };
         generateSecretCommand.SetAction(arguments =>
         {
-            var size = arguments.GetValue<ushort?>("--size") ?? 20;
-
             switch (arguments.GetValue<string>("--type"))
             {
                 case "totp":
-                    var randomKey = KeyGeneration.GenerateRandomKey(size);
-                    Console.WriteLine("To security.json as TotpSecretKey: {0}", Base32Encoding.ToString(randomKey));
-                    Console.WriteLine("To your authenticator: {0}",
-                        new OtpUri(OtpType.Totp, randomKey, "admin", "Behind System", OtpHashMode.Sha256));
+                    var size = arguments.GetValue<ushort?>("--size");
+                    var randomKey = size is { } length
+                        ? KeyGeneration.GenerateRandomKey(length)
+                        : KeyGeneration.GenerateRandomKey(TotpValue.HashMode);
+                    TotpValue.TryCreate(Base32Encoding.ToString(randomKey), out var totp);
+                    PrintTotp(totp, DefaultAccount);
                     break;
             }
         });
+        var uriCommand = new Command("uri", "Print the authenticator URI of an existing totp secret key value")
+        {
+            new Option<string>("--value", "-v") { Required = true },
+            new Option<string>("--account", "-a") { DefaultValueFactory = _ => DefaultAccount },
+        };
+        uriCommand.SetAction(arguments =>
+        {
+            var value = new SecretKeyTypeConverter().ConvertFrom(arguments.GetValue<string>("--value")!);
+
+            if (value is TotpValue totp)
+            {
+                PrintTotp(totp, arguments.GetValue<string>("--account")!);
+                return;
+            }
+
+            Console.WriteLine("The value is not a totp secret key.");
+        });
         secretCommand.Add(generateSecretCommand);
+        secretCommand.Add(uriCommand);
         rootCommand.Add(secretCommand);
         rootCommand.AddDataProtectionCommands();
 
@@ -47,5 +71,11 @@ public sealed class CommandLineService(IHost host) : BackgroundService
         await result.InvokeAsync(null, stoppingToken);
 
         await host.StopAsync(stoppingToken);
+    }
+
+    private static void PrintTotp(TotpValue totp, string account)
+    {
+        Console.WriteLine("To security.json as a secret key value: {0}", totp.ToConfigurationValue());
+        Console.WriteLine("To your authenticator (paste the whole URI): {0}", totp.ToOtpUri(account, Issuer));
     }
 }

@@ -37,6 +37,7 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                         new HumanUser(user.DisplayName, user.Emails, None),
                         cancellationToken
                     );
+                    await roleCommands.AssignBuiltIn(user.Id, BuiltInAccess.Users, cancellationToken);
                     return IdentityResult.Success;
                 },
                 some: _ => Task.FromResult(IdentityResult.Failed(new IdentityError

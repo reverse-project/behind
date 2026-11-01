@@ -1,9 +1,5 @@
-using static Behind.Common.FunctionalExtensions;
-using Behind.Common;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Database;
-using Behind.Core.Domain;
-using Behind.Core.WebApi.Middleware;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 
@@ -11,8 +7,6 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class SignOutEndpoints
 {
-    private sealed record ActiveSession(Guid SessionId, Guid UserId);
-
     [Authorize]
     [IgnoreETag]
     public static Task<IResult> SignOut(
@@ -48,9 +42,9 @@ public sealed class SignOutEndpoints
     private static async Task<IResult> WithActiveSession(
         HttpContext httpContext,
         ISessionQueries sessionQueries,
-        Func<ActiveSession, Task> action)
+        Func<CurrentSession, Task> action)
     {
-        var active = await FindActiveSession(httpContext, sessionQueries);
+        var active = await httpContext.FindCurrentSession(sessionQueries);
 
         return await active.Match(
             () => Task.FromResult<IResult>(Results.Unauthorized()),
@@ -60,18 +54,4 @@ public sealed class SignOutEndpoints
                 return Results.NoContent();
             });
     }
-
-    private static async Task<Option<ActiveSession>> FindActiveSession(
-        HttpContext httpContext,
-        ISessionQueries sessionQueries) =>
-        await httpContext.User.SessionId.Match(
-            () => Task.FromResult<Option<ActiveSession>>(None),
-            async sessionId =>
-            {
-                var found = await sessionQueries.TryFindByIdWithUserId(sessionId, httpContext.RequestAborted);
-
-                return found
-                    .Where(result => result.Session is ValidSession)
-                    .Map(result => new ActiveSession(sessionId, result.UserId));
-            });
 }

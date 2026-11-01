@@ -43,4 +43,15 @@
         </dl>
     </div>
     <button type="button" class="btn btn-primary" data-bind="visible: isSignedIn, enable: !busy(), click: refresh">Refresh</button>
+    <form class="row g-2 mt-3" data-bind="visible: canElevate, submit: elevate">
+        <div class="col-auto">
+            <select class="form-select" aria-label="Role" data-bind="options: availableTargets, optionsText: 'label', optionsValue: 'value', value: target"></select>
+        </div>
+        <div class="col-auto">
+            <input type="text" class="form-control" inputmode="numeric" autocomplete="one-time-code" placeholder="Authenticator code" aria-label="Authenticator code" data-bind="textInput: code">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-danger" data-bind="enable: !busy() && code().trim() !== ''">Elevate</button>
+        </div>
+    </form>
 </section>

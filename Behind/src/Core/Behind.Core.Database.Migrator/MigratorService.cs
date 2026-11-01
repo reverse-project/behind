@@ -13,6 +13,8 @@ public sealed class MigratorService(IServiceProvider services) : BackgroundServi
         var sqlite = scope.ServiceProvider.GetRequiredService<CoreContextSqlite>();
         await sqlite.Database.MigrateAsync(stoppingToken);
         await sqlite.EnsureBuiltInUsersAsync(stoppingToken);
+        await sqlite.EnsureBuiltInRolesAsync(stoppingToken);
+        await sqlite.EnsureUsersHaveUsersRoleAsync(stoppingToken);
 
         var host = scope.ServiceProvider.GetRequiredService<IHost>();
         await host.StopAsync(stoppingToken);

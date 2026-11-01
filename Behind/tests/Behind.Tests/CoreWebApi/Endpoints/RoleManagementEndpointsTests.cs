@@ -64,37 +64,125 @@ public class RoleManagementEndpointsTests
 
     private static DefaultHttpContext Anonymous() => new() { User = new ClaimsPrincipal() };
 
+    private static PagedResult<IRoleQueries.RoleResult> Page(params IRoleQueries.RoleResult[] roles) =>
+        new(roles.Length, 1, 1, 10, roles.Length > 0 ? Some<IEnumerable<IRoleQueries.RoleResult>>(roles) : None);
+
+    private void RolesPage(DeletionState state, params IRoleQueries.RoleResult[] roles)
+    {
+        _roles.PageRoles(Arg.Any<Flipper>(), Arg.Any<Option<string>>(), Arg.Any<Option<string>>(), state, Arg.Any<CancellationToken>())
+            .Returns(Page(roles));
+        _roles.GetLetters(Arg.Any<Option<string>>(), state, Arg.Any<CancellationToken>()).Returns(["A", "S"]);
+    }
+
     [Fact]
     public async Task Get_ListsRolesWithWhatTheActorMayDo()
     {
-        _roles.ListRoles(Arg.Any<CancellationToken>()).Returns(
-        [
+        RolesPage(
+            DeletionState.Active,
             new IRoleQueries.RoleResult(BuiltInAccess.Administrators.Id, ActorRoles(BuiltInAccess.Administrators)),
             new IRoleQueries.RoleResult(BuiltInAccess.Developers.Id, ActorRoles(BuiltInAccess.Developers)),
-            new IRoleQueries.RoleResult(CustomRoleId, Custom(["User.Read"], ["User.Read"]))
-        ]);
+            new IRoleQueries.RoleResult(CustomRoleId, Custom(["User.Read"], ["User.Read"])));
         var context = SignedIn();
 
-        var result = await RoleManagementEndpoints.Get(context, _gate, _roles);
+        var result = await RoleManagementEndpoints.Get(context, _gate, _roles, new FakeAuthorizationService());
 
         var body = Assert.IsType<JsonHttpResult<RoleListResponse>>(result).Value!;
+        var roles = body.Roles.Items;
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
         Assert.Equal(BuiltInAccess.GrantNames, body.AvailableGrants);
-        Assert.True(body.Roles[0].IsBuiltIn);
-        Assert.True(body.Roles[0].CanEdit);
-        Assert.False(body.Roles[0].CanDelete);
-        Assert.False(body.Roles[1].CanEdit);
-        Assert.False(body.Roles[2].IsBuiltIn);
-        Assert.True(body.Roles[2].CanDelete);
-        Assert.Equal(["User.Read"], body.Roles[2].Restrictions);
+        Assert.Equal(["A", "S"], body.Letters);
+        Assert.True(roles[0].IsBuiltIn);
+        Assert.True(roles[0].CanEdit);
+        Assert.False(roles[0].CanDelete);
+        Assert.False(roles[1].CanEdit);
+        Assert.False(roles[2].IsBuiltIn);
+        Assert.True(roles[2].CanDelete);
+        Assert.False(roles[2].IsDeleted);
+        Assert.Equal(["User.Read"], roles[2].Restrictions);
+    }
+
+    [Fact]
+    public async Task Get_PassesTheSearchLetterAndPaging()
+    {
+        RolesPage(DeletionState.Active);
+
+        await RoleManagementEndpoints.Get(SignedIn(), _gate, _roles, new FakeAuthorizationService(), 2, 500, " sup ", "s");
+
+        await _roles.Received(1).PageRoles(
+            new Flipper(2, RoleManagementEndpoints.MaxPageSize),
+            Some("sup"),
+            Some("S"),
+            DeletionState.Active,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Get_UnknownLetter_ReturnsBadRequest()
+    {
+        var result = await RoleManagementEndpoints.Get(SignedIn(), _gate, _roles, new FakeAuthorizationService(), letter: "xx");
+
+        Assert.IsType<BadRequest>(result);
+    }
+
+    [Fact]
+    public async Task Get_DeletedRoles_NeedTheDeletedRecordsGrant()
+    {
+        var result = await RoleManagementEndpoints.Get(SignedIn(), _gate, _roles, new FakeAuthorizationService(), deleted: true);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_DeletedRoles_AreMarkedAndCannotBeEditedOrDeleted()
+    {
+        RolesPage(DeletionState.Deleted, new IRoleQueries.RoleResult(CustomRoleId, Custom(["User.Read"], [])));
+
+        var result = await RoleManagementEndpoints.Get(
+            SignedIn(),
+            _gate,
+            _roles,
+            new FakeAuthorizationService(RoleManagementEndpoints.DeletedRecordsGrant),
+            deleted: true);
+
+        var role = Assert.Single(Assert.IsType<JsonHttpResult<RoleListResponse>>(result).Value!.Roles.Items);
+        Assert.True(role.IsDeleted);
+        Assert.False(role.CanEdit);
+        Assert.False(role.CanDelete);
     }
 
     [Fact]
     public async Task Get_WithoutSession_ReturnsUnauthorized()
     {
-        var result = await RoleManagementEndpoints.Get(Anonymous(), _gate, _roles);
+        var result = await RoleManagementEndpoints.Get(Anonymous(), _gate, _roles, new FakeAuthorizationService());
 
         Assert.IsType<UnauthorizedHttpResult>(result);
+    }
+
+    [Fact]
+    public async Task Restore_DeletedRole_ReturnsNoContent()
+    {
+        _roleCommands.Restore(CustomRoleId, Arg.Any<CancellationToken>()).Returns(true);
+
+        Assert.IsType<NoContent>(await RoleManagementEndpoints.Restore(CustomRoleId, SignedIn(), _roleCommands));
+    }
+
+    [Fact]
+    public async Task Restore_RoleThatIsNotDeleted_ReturnsNotFound()
+    {
+        Assert.IsType<NotFound>(await RoleManagementEndpoints.Restore(CustomRoleId, SignedIn(), _roleCommands));
+    }
+
+    [Fact]
+    public async Task HardDelete_MapsTheOutcome()
+    {
+        _roleCommands.HardDelete(CustomRoleId, Arg.Any<CancellationToken>()).Returns(
+            HardDeleteResult.Deleted,
+            HardDeleteResult.NotFound,
+            HardDeleteResult.Rejected);
+
+        Assert.IsType<NoContent>(await RoleManagementEndpoints.HardDelete(CustomRoleId, SignedIn(), _roleCommands));
+        Assert.IsType<NotFound>(await RoleManagementEndpoints.HardDelete(CustomRoleId, SignedIn(), _roleCommands));
+        Assert.IsType<Conflict>(await RoleManagementEndpoints.HardDelete(CustomRoleId, SignedIn(), _roleCommands));
     }
 
     [Fact]

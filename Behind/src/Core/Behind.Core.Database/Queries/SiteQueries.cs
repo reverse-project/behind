@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -8,19 +9,27 @@ namespace Behind.Core.Database.Queries;
 
 public sealed class SiteQueries(AbstractCoreContext context, AbstractVersioningContext versions) : ISiteQueries
 {
-    public async Task<IReadOnlyList<ISiteQueries.SiteListing>> List(CancellationToken cancellationToken = default)
+    public async Task<PagedResult<ISiteQueries.SiteListing>> List(
+        Flipper flipper,
+        Option<string> search,
+        Option<string> letter,
+        DeletionState state,
+        CancellationToken cancellationToken = default)
     {
-        var latest = await context.Sites
-            .Where(site => EF.Property<long>(site, SiteConfiguration.VersionProperty) == context.Sites
-                .Where(other => EF.Property<Guid>(other, SiteConfiguration.SiteIdProperty)
-                                == EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty))
-                .Max(other => EF.Property<long>(other, SiteConfiguration.VersionProperty)))
-            .Select(site => new LatestRow(
-                EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty),
-                EF.Property<long>(site, SiteConfiguration.VersionProperty),
-                site.Title,
-                site.Slug,
-                site.CreatedAt))
+        using var scope = Scope(state);
+        var matching = Matching(search, state).InBucket(site => site.Title, letter);
+        var total = await matching.LongCountAsync(cancellationToken);
+
+        var latest = await flipper.Apply(
+                matching
+                    .OrderBy(site => site.Title.ToLower())
+                    .ThenBy(site => EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty))
+                    .Select(site => new LatestRow(
+                        EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty),
+                        EF.Property<long>(site, SiteConfiguration.VersionProperty),
+                        site.Title,
+                        site.Slug,
+                        site.CreatedAt)))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -28,8 +37,7 @@ public sealed class SiteQueries(AbstractCoreContext context, AbstractVersioningC
         var active = await versions.ActiveSiteVersionsAsync(siteIds, cancellationToken);
         var activeSlugs = await ActiveSlugsAsync(siteIds, active, cancellationToken);
 
-        return latest
-            .OrderByDescending(row => row.CreatedAt)
+        var listings = latest
             .Select(row => new ISiteQueries.SiteListing(
                 row.SiteId,
                 row.Title,
@@ -39,6 +47,43 @@ public sealed class SiteQueries(AbstractCoreContext context, AbstractVersioningC
                 activeSlugs.TryGetValue(row.SiteId, out var slug) ? Some(slug) : None,
                 row.CreatedAt))
             .ToList();
+
+        return new PagedResult<ISiteQueries.SiteListing>(
+            total,
+            flipper.Index,
+            flipper.PageCount(total),
+            flipper.Size,
+            listings.Count > 0 ? Some<IEnumerable<ISiteQueries.SiteListing>>(listings) : None);
+    }
+
+    public async Task<IReadOnlyList<string>> GetLetters(
+        Option<string> search,
+        DeletionState state,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = Scope(state);
+
+        return await Matching(search, state).LettersAsync(site => site.Title, cancellationToken);
+    }
+
+    private IDisposable? Scope(DeletionState state) =>
+        state == DeletionState.Deleted ? context.SoftDelete.IncludeDeleted() : null;
+
+    private IQueryable<Site> Matching(Option<string> search, DeletionState state)
+    {
+        var latest = context.Sites
+            .InDeletionState(context, AbstractCoreContext.DeletionRecorded, state)
+            .Where(site => EF.Property<long>(site, SiteConfiguration.VersionProperty) == context.Sites
+                .Where(other => EF.Property<Guid>(other, SiteConfiguration.SiteIdProperty)
+                                == EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty))
+                .Max(other => EF.Property<long>(other, SiteConfiguration.VersionProperty)));
+
+        return search
+            .Map(term => term.Trim().ToLowerInvariant())
+            .Where(term => term.Length > 0)
+            .Match(
+                () => latest,
+                term => latest.Where(site => site.Title.ToLower().Contains(term) || site.Slug.Contains(term)));
     }
 
     public async Task<Option<ISiteQueries.SiteHistory>> FindHistory(

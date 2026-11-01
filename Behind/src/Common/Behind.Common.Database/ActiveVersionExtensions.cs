@@ -41,5 +41,18 @@ public static class ActiveVersionExtensions
                 activeVersions.ToImmutableEntityRepository(context).UpdateImmutable([entityType, entityKey], next);
             }
         }
+
+        public async Task ClearActiveVersionAsync(
+            string entityType,
+            string entityKey,
+            CancellationToken cancellationToken = default)
+        {
+            var current = await context.Set<ActiveVersion>().FindAsync([entityType, entityKey], cancellationToken);
+
+            if (current is not null)
+            {
+                context.Remove(current);
+            }
+        }
     }
 }

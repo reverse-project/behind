@@ -1,4 +1,6 @@
 using Behind.Common.WebApi;
+using Behind.Tests.Helpers;
+using Behind.Common.Database;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
@@ -31,24 +33,133 @@ public class SiteEndpointsTests
         return commands;
     }
 
+    private static PagedResult<ISiteQueries.SiteListing> Page(params ISiteQueries.SiteListing[] listings) =>
+        new(listings.Length, 1, 1, 10, listings.Length > 0 ? Some<IEnumerable<ISiteQueries.SiteListing>>(listings) : None);
+
     [Fact]
     public async Task List_ReturnsTheSitesWithoutCaching()
     {
         var queries = Substitute.For<ISiteQueries>();
-        queries.List(Arg.Any<CancellationToken>()).Returns(
-        [
-            new ISiteQueries.SiteListing(SiteId, "About", "about", 3, Some(2L), Some("about-old"), Now),
-            new ISiteQueries.SiteListing(Guid.Empty, "Draft", "draft", 1, None, None, Now)
-        ]);
+        queries.List(new Flipper(1, SiteEndpoints.DefaultPageSize), None, None, DeletionState.Active, Arg.Any<CancellationToken>())
+            .Returns(Page(
+                new ISiteQueries.SiteListing(SiteId, "About", "about", 3, Some(2L), Some("about-old"), Now),
+                new ISiteQueries.SiteListing(Guid.Empty, "Draft", "draft", 1, None, None, Now)));
+        queries.GetLetters(None, DeletionState.Active, Arg.Any<CancellationToken>()).Returns(["A", "D"]);
         var context = new DefaultHttpContext();
 
-        var result = await SiteEndpoints.List(context, queries);
+        var result = await SiteEndpoints.List(context, queries, new FakeAuthorizationService());
 
         var body = Assert.IsType<JsonHttpResult<SiteListResponse>>(result).Value!;
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
+        Assert.Equal(["A", "D"], body.Letters);
         Assert.Equal(
             [new SiteListItem(SiteId, "About", "about", 3, 2, "about-old", Now), new SiteListItem(Guid.Empty, "Draft", "draft", 1, null, null, Now)],
-            body.Sites);
+            body.Sites.Items);
+    }
+
+    [Fact]
+    public async Task List_PassesTheSearchLetterAndPaging()
+    {
+        var queries = Substitute.For<ISiteQueries>();
+        queries.List(default!, default, default, default, default).ReturnsForAnyArgs(Page());
+        queries.GetLetters(default, default, default).ReturnsForAnyArgs([]);
+
+        await SiteEndpoints.List(new DefaultHttpContext(), queries, new FakeAuthorizationService(), 3, 1000, "  about ", "a");
+
+        await queries.Received(1).List(
+            new Flipper(3, SiteEndpoints.MaxPageSize),
+            Some("about"),
+            Some("A"),
+            DeletionState.Active,
+            Arg.Any<CancellationToken>());
+        await queries.Received(1).GetLetters(Some("about"), DeletionState.Active, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_UnknownLetter_ReturnsBadRequest()
+    {
+        var result = await SiteEndpoints.List(
+            new DefaultHttpContext(),
+            Substitute.For<ISiteQueries>(),
+            new FakeAuthorizationService(),
+            letter: "ab");
+
+        Assert.IsType<BadRequest>(result);
+    }
+
+    [Fact]
+    public async Task List_DeletedSites_NeedTheDeletedRecordsGrant()
+    {
+        var queries = Substitute.For<ISiteQueries>();
+
+        var result = await SiteEndpoints.List(new DefaultHttpContext(), queries, new FakeAuthorizationService(), deleted: true);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await queries.DidNotReceiveWithAnyArgs().List(default!, default, default, default, default);
+    }
+
+    [Fact]
+    public async Task List_DeletedSites_AreListedForHoldersOfTheGrant()
+    {
+        var queries = Substitute.For<ISiteQueries>();
+        queries.List(default!, default, default, default, default).ReturnsForAnyArgs(
+            Page(new ISiteQueries.SiteListing(SiteId, "Gone", "gone", 1, None, None, Now)));
+        queries.GetLetters(default, default, default).ReturnsForAnyArgs(["G"]);
+
+        var result = await SiteEndpoints.List(
+            new DefaultHttpContext(),
+            queries,
+            new FakeAuthorizationService(SiteEndpoints.DeletedRecordsGrant),
+            deleted: true);
+
+        var item = Assert.Single(Assert.IsType<JsonHttpResult<SiteListResponse>>(result).Value!.Sites.Items);
+        Assert.True(item.IsDeleted);
+        await queries.Received(1).List(Arg.Any<Flipper>(), None, None, DeletionState.Deleted, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Delete_ExistingSite_ReturnsNoContent()
+    {
+        var commands = Substitute.For<ISiteCommands>();
+        commands.Delete(SiteId, Arg.Any<CancellationToken>()).Returns(true);
+
+        Assert.IsType<NoContent>(await SiteEndpoints.Delete(SiteId, new DefaultHttpContext(), commands));
+    }
+
+    [Fact]
+    public async Task Delete_UnknownSite_ReturnsNotFound()
+    {
+        Assert.IsType<NotFound>(await SiteEndpoints.Delete(SiteId, new DefaultHttpContext(), Substitute.For<ISiteCommands>()));
+    }
+
+    [Fact]
+    public async Task Restore_ReturnsNoContentNotFoundOrConflict()
+    {
+        var commands = Substitute.For<ISiteCommands>();
+        commands.Restore(SiteId, Arg.Any<CancellationToken>()).Returns(
+            new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 2)),
+            new SiteSaveResult.NotFound(),
+            new SiteSaveResult.SlugTaken());
+
+        Assert.IsType<NoContent>(await SiteEndpoints.Restore(SiteId, new DefaultHttpContext(), commands));
+        Assert.IsType<NotFound>(await SiteEndpoints.Restore(SiteId, new DefaultHttpContext(), commands));
+        Assert.Equal(
+            new SiteConflictResponse("slug-taken"),
+            Assert.IsType<Conflict<SiteConflictResponse>>(await SiteEndpoints.Restore(SiteId, new DefaultHttpContext(), commands)).Value);
+    }
+
+    [Fact]
+    public async Task HardDelete_MapsTheOutcome()
+    {
+        var commands = Substitute.For<ISiteCommands>();
+        commands.HardDelete(SiteId, Arg.Any<CancellationToken>()).Returns(
+            HardDeleteResult.Deleted,
+            HardDeleteResult.NotFound,
+            HardDeleteResult.Rejected);
+
+        Assert.IsType<NoContent>(await SiteEndpoints.HardDelete(SiteId, new DefaultHttpContext(), commands));
+        Assert.IsType<NotFound>(await SiteEndpoints.HardDelete(SiteId, new DefaultHttpContext(), commands));
+        Assert.IsType<Conflict>(await SiteEndpoints.HardDelete(SiteId, new DefaultHttpContext(), commands));
     }
 
     [Fact]

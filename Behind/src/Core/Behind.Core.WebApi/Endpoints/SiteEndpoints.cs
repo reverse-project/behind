@@ -2,9 +2,14 @@ using System.ComponentModel.DataAnnotations;
 using Behind.Common;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
+using Behind.Core.WebApi.Authorization;
 using Behind.Core.Database;
 using Behind.Core.Domain;
+using Behind.Common.Database;
+using Behind.Common.WebApi;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Site = Behind.Core.Domain.Site;
 using static Behind.Common.FunctionalExtensions;
@@ -13,6 +18,10 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class SiteEndpoints
 {
+    public const int DefaultPageSize = 10;
+    public const int MaxPageSize = 100;
+    public const int MaxSearchLength = 200;
+    public const string DeletedRecordsGrant = "RawDatabase.Manage";
     public const string NoStore = "no-store";
     public const string NoCache = "no-cache";
 
@@ -23,14 +32,60 @@ public sealed class SiteEndpoints
         bool Publish);
 
     [IgnoreETag]
-    public static async Task<IResult> List(HttpContext httpContext, ISiteQueries queries)
+    public static async Task<IResult> List(
+        HttpContext httpContext,
+        ISiteQueries queries,
+        IAuthorizationService authorization,
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null,
+        [FromQuery] string? search = null,
+        [FromQuery] string? letter = null,
+        [FromQuery] bool deleted = false)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
 
-        var sites = await queries.List(httpContext.RequestAborted);
+        var letterFilter = LetterBucketExtensions.ParseLetterBucket(letter);
 
-        return Results.Json(new SiteListResponse(sites.Select(site => site.ToItem()).ToList()));
+        if (!string.IsNullOrWhiteSpace(letter) && letterFilter == None)
+        {
+            return Results.BadRequest();
+        }
+
+        if (deleted && !await authorization.HoldsGrantAsync(httpContext.User, DeletedRecordsGrant))
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var state = deleted ? DeletionState.Deleted : DeletionState.Active;
+        var searchTerm = search.ToSearchTerm(MaxSearchLength);
+
+        var sites = await queries.List(
+            Flipper.Create(page, pageSize, DefaultPageSize, MaxPageSize),
+            searchTerm,
+            letterFilter,
+            state,
+            httpContext.RequestAborted);
+
+        var letters = await queries.GetLetters(searchTerm, state, httpContext.RequestAborted);
+
+        return Results.Json(new SiteListResponse(sites.ToPageResponse(site => site.ToItem(state)), letters));
     }
+
+    [IgnoreETag]
+    public static async Task<IResult> Delete(Guid id, HttpContext httpContext, ISiteCommands commands) =>
+        await commands.Delete(id, httpContext.RequestAborted) ? Results.NoContent() : Results.NotFound();
+
+    [IgnoreETag]
+    public static async Task<IResult> Restore(Guid id, HttpContext httpContext, ISiteCommands commands)
+    {
+        var result = await commands.Restore(id, httpContext.RequestAborted);
+
+        return result is SiteSaveResult.Saved ? Results.NoContent() : result.ToResult();
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> HardDelete(Guid id, HttpContext httpContext, ISiteCommands commands) =>
+        (await commands.HardDelete(id, httpContext.RequestAborted)).ToResult();
 
     [IgnoreETag]
     public static IResult GetSettings(HttpContext httpContext, IOptions<SitesConfiguration> configuration)

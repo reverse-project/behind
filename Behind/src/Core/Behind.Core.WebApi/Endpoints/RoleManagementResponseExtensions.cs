@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 
@@ -7,15 +8,16 @@ public static class RoleManagementResponseExtensions
 {
     extension(IRoleQueries.RoleResult result)
     {
-        public RoleItem ToItem(UserManagementActor actor) =>
+        public RoleItem ToItem(UserManagementActor actor, DeletionState state = DeletionState.Active) =>
             new(
                 result.Id,
                 result.Role.Name,
                 BuiltInAccess.IsBuiltIn(result.Id),
                 result.Role.GrantNames,
                 result.Role.RestrictionNames,
-                actor.CanEditRole(result.Role),
-                actor.CanDeleteRole(result.Id, result.Role));
+                actor.CanEditRole(result.Role) && state == DeletionState.Active,
+                actor.CanDeleteRole(result.Id, result.Role) && state == DeletionState.Active,
+                state == DeletionState.Deleted);
 
         public AccessRoleItem ToAccessItem() =>
             new(

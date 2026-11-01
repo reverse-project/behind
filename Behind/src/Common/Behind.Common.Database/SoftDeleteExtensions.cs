@@ -10,6 +10,7 @@ public static class SoftDeleteExtensions
 {
     public const string SoftDeletableAnnotation = "Behind:SoftDeletable";
     public const string FilterName = "SoftDelete";
+    public const string KeySeparator = ":";
 
     extension(ModelBuilder modelBuilder)
     {
@@ -46,7 +47,10 @@ public static class SoftDeleteExtensions
             entry.Context is ISoftDeleteContext context && context.Restores.IsMarked(entry.Entity);
 
         private string SoftDeleteKey =>
-            entry.Property(entry.Metadata.FindPrimaryKey()!.Properties[0].Name).CurrentValue!.ToString()!.ToLowerInvariant();
+            string.Join(
+                KeySeparator,
+                entry.Metadata.FindPrimaryKey()!.Properties
+                    .Select(property => entry.Property(property.Name).CurrentValue!.ToString()!.ToLowerInvariant()));
 
         public Task<bool> IsDeletedAsync(CancellationToken cancellationToken = default) =>
             entry.Context is ISoftDeleteContext context
@@ -156,29 +160,33 @@ public static class SoftDeleteExtensions
         }
     }
 
+    extension<TEntity>(IQueryable<TEntity> source) where TEntity : class
+    {
+        public IQueryable<TEntity> InDeletionState<TContext>(
+            TContext context,
+            Expression<Func<TContext, string, string, bool>> isDeleted,
+            DeletionState state)
+            where TContext : DbContext, ISoftDeleteContext
+        {
+            var entityType = context.Model.FindEntityType(typeof(TEntity))?.GetRootType()
+                             ?? throw new InvalidOperationException($"{typeof(TEntity).Name} is not part of the model.");
+
+            var entity = Expression.Parameter(typeof(TEntity), "entity");
+            var recorded = DeletionRecorded(context, isDeleted, entityType, entity);
+            var condition = state == DeletionState.Deleted ? recorded : Expression.Not(recorded);
+
+            return source.Where(Expression.Lambda<Func<TEntity, bool>>(condition, entity));
+        }
+    }
+
     private static LambdaExpression SoftDeleteFilter<TContext>(
         TContext context,
         Expression<Func<TContext, string, string, bool>> isDeleted,
         IReadOnlyEntityType entityType)
         where TContext : DbContext, ISoftDeleteContext
     {
-        var key = entityType.FindPrimaryKey()?.Properties is [var single]
-            ? single
-            : throw new NotSupportedException($"{entityType.ClrType.Name} must have a single property key to be soft deletable.");
-
         var entity = Expression.Parameter(entityType.ClrType, "entity");
-        var keyText = Expression.Call(
-            Expression.Call(
-                Expression.Call(typeof(EF), nameof(EF.Property), [key.ClrType], entity, Expression.Constant(key.Name)),
-                nameof(ToString),
-                Type.EmptyTypes),
-            nameof(string.ToLower),
-            Type.EmptyTypes);
-
-        var deletionRecorded = ReplacingExpressionVisitor.Replace(
-            isDeleted.Parameters,
-            [Expression.Constant(context), Expression.Constant(entityType.ClrType.Name), keyText],
-            isDeleted.Body);
+        var deletionRecorded = DeletionRecorded(context, isDeleted, entityType, entity);
 
         var includesDeleted = Expression.Property(
             Expression.Property(Expression.Constant(context), nameof(ISoftDeleteContext.SoftDelete)),
@@ -186,4 +194,40 @@ public static class SoftDeleteExtensions
 
         return Expression.Lambda(Expression.OrElse(includesDeleted, Expression.Not(deletionRecorded)), entity);
     }
+
+    private static Expression DeletionRecorded<TContext>(
+        TContext context,
+        Expression<Func<TContext, string, string, bool>> isDeleted,
+        IReadOnlyEntityType entityType,
+        ParameterExpression entity)
+        where TContext : DbContext, ISoftDeleteContext =>
+        ReplacingExpressionVisitor.Replace(
+            isDeleted.Parameters,
+            [Expression.Constant(context), Expression.Constant(entityType.ClrType.Name), KeyText(entityType, entity)],
+            isDeleted.Body);
+
+    private static Expression KeyText(IReadOnlyEntityType entityType, Expression entity)
+    {
+        var keys = entityType.FindPrimaryKey()?.Properties
+                   ?? throw new NotSupportedException($"{entityType.ClrType.Name} must have a primary key to be soft deletable.");
+
+        return keys
+            .Select(key => LowerText(entity, key))
+            .Aggregate((left, right) => Concat(Concat(left, Expression.Constant(KeySeparator)), right));
+    }
+
+    private static Expression LowerText(Expression entity, IReadOnlyProperty key) =>
+        Expression.Call(
+            Expression.Call(
+                Expression.Call(typeof(EF), nameof(EF.Property), [key.ClrType], entity, Expression.Constant(key.Name)),
+                nameof(ToString),
+                Type.EmptyTypes),
+            nameof(string.ToLower),
+            Type.EmptyTypes);
+
+    private static Expression Concat(Expression left, Expression right) =>
+        Expression.Call(
+            typeof(string).GetMethod(nameof(string.Concat), [typeof(string), typeof(string)])!,
+            left,
+            right);
 }

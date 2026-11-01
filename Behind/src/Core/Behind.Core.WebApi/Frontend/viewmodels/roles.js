@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/access"], function (ko, auth, session, access) {
+define(["ko", "models/auth", "models/session", "models/access", "models/managedlist"], function (ko, auth, session, access, createManagedList) {
     return function RolesViewModel() {
         var self = this;
 
@@ -9,42 +9,18 @@ define(["ko", "models/auth", "models/session", "models/access"], function (ko, a
         self.isDenied = ko.pureComputed(function () {
             return session.isSignedIn() && session.grants() !== null && !self.canManage();
         });
-        self.busy = ko.observable(false);
-        self.message = ko.observable("");
         self.newName = ko.observable("");
-        self.roles = ko.observableArray([]);
-
-        self.hasMessage = ko.pureComputed(function () {
-            return self.message() !== "";
-        });
-
-        self.hasRoles = ko.pureComputed(function () {
-            return self.roles().length > 0;
-        });
 
         self.canCreate = ko.pureComputed(function () {
             return self.newName().trim() !== "" && !self.busy();
         });
 
-        var perform = function (action) {
-            self.busy(true);
-
-            return action()
-                .then(function (result) {
-                    return (result.ok ? self.refresh() : Promise.resolve()).then(function () {
-                        self.message(result.message);
-                    });
-                })
-                .finally(function () {
-                    self.busy(false);
-                });
-        };
-
-        var present = function (item, available) {
+        var present = function (item, data) {
             var row = {
                 id: item.id,
                 name: item.name,
                 isBuiltIn: item.isBuiltIn,
+                isDeleted: item.isDeleted,
                 grants: item.grants,
                 restrictions: item.restrictions,
                 canEdit: item.canEdit,
@@ -54,14 +30,14 @@ define(["ko", "models/auth", "models/session", "models/access"], function (ko, a
             };
 
             row.edit = function () {
-                row.editor.load(available, row.grants, row.restrictions);
+                row.editor.load(data.availableGrants, row.grants, row.restrictions);
                 row.editing(true);
             };
             row.cancel = function () {
                 row.editing(false);
             };
             row.save = function () {
-                return perform(function () {
+                return self.list.perform(function () {
                     return auth.saveRoleAccess(row.id, row.editor.request());
                 });
             };
@@ -70,43 +46,50 @@ define(["ko", "models/auth", "models/session", "models/access"], function (ko, a
                     return Promise.resolve();
                 }
 
-                return perform(function () {
+                return self.list.perform(function () {
                     return auth.deleteRole(row.id);
+                });
+            };
+            row.restore = function () {
+                return self.list.perform(function () {
+                    return auth.restoreRole(row.id);
+                });
+            };
+            row.hardDelete = function () {
+                if (!window.confirm("Permanently delete the " + row.name + " role? This cannot be undone.")) {
+                    return Promise.resolve();
+                }
+
+                return self.list.perform(function () {
+                    return auth.hardDeleteRole(row.id);
                 });
             };
 
             return row;
         };
 
-        self.refresh = function () {
-            if (!self.canManage()) {
-                self.roles([]);
-                return Promise.resolve();
-            }
+        self.list = createManagedList({
+            allowed: self.canManage,
+            load: auth.loadRoles,
+            pageOf: function (data) {
+                return data.roles;
+            },
+            present: present
+        });
 
-            self.busy(true);
-
-            return auth.loadRoles()
-                .then(function (result) {
-                    self.message(result.message);
-
-                    self.roles(result.ok
-                        ? result.data.roles.map(function (item) {
-                            return present(item, result.data.availableGrants);
-                        })
-                        : []);
-                })
-                .finally(function () {
-                    self.busy(false);
-                });
-        };
+        self.busy = self.list.busy;
+        self.message = self.list.message;
+        self.hasMessage = self.list.hasMessage;
+        self.roles = self.list.items;
+        self.hasRoles = self.list.hasItems;
+        self.refresh = self.list.refresh;
 
         self.create = function () {
             if (!self.canCreate()) {
                 return Promise.resolve();
             }
 
-            return perform(function () {
+            return self.list.perform(function () {
                 return auth.createRole(self.newName().trim()).then(function (result) {
                     if (result.ok) {
                         self.newName("");
@@ -117,14 +100,6 @@ define(["ko", "models/auth", "models/session", "models/access"], function (ko, a
             });
         };
 
-        self.activate = function () {
-            self.canManage.subscribe(function (allowed) {
-                if (allowed) {
-                    self.refresh();
-                }
-            });
-
-            return self.refresh();
-        };
+        self.activate = self.list.activate;
     };
 });

@@ -39,6 +39,13 @@ define(["models/http", "models/session", "models/user"], function (http, session
         409: "A role with this name already exists."
     };
 
+    var roleDeletedFailures = {
+        401: "Your session has expired. Please sign in again.",
+        403: "You need developer access to restore or permanently delete roles.",
+        404: "This role is not deleted.",
+        409: "This role is still referenced and cannot be permanently deleted."
+    };
+
     var userAccessFailures = {
         400: "The access selection is not valid. Every user keeps the Users role.",
         401: "Your session has expired. Please sign in again.",
@@ -198,11 +205,17 @@ define(["models/http", "models/session", "models/user"], function (http, session
             });
         },
 
-        loadRoles: function () {
-            return http.get("/roles").then(function (response) {
+        loadRoles: function (query) {
+            var url = "/roles?page=" + query.page + "&pageSize=" + query.pageSize
+                + "&search=" + encodeURIComponent(query.search) + "&letter=" + encodeURIComponent(query.letter)
+                + (query.deleted ? "&deleted=true" : "");
+
+            return http.get(url).then(function (response) {
                 return loaded(response, {
                     401: "Your session has expired. Please sign in again.",
-                    403: "You need role management access to see roles."
+                    403: query.deleted
+                        ? "You need developer access to see deleted roles."
+                        : "You need role management access to see roles."
                 });
             });
         },
@@ -222,6 +235,18 @@ define(["models/http", "models/session", "models/user"], function (http, session
         deleteRole: function (roleId) {
             return http.post("/roles/" + roleId + "/delete").then(function (response) {
                 return saved(response, "The role was deleted.", roleActionFailures);
+            });
+        },
+
+        restoreRole: function (roleId) {
+            return http.post("/roles/" + roleId + "/restore").then(function (response) {
+                return saved(response, "The role was restored.", roleDeletedFailures);
+            });
+        },
+
+        hardDeleteRole: function (roleId) {
+            return http.post("/roles/" + roleId + "/hard/delete").then(function (response) {
+                return saved(response, "The role was permanently deleted.", roleDeletedFailures);
             });
         },
 

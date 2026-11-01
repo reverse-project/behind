@@ -55,10 +55,11 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
             typeof(Grant),
             typeof(Restriction),
             typeof(Password),
-            typeof(WallOfShameEntry));
+            typeof(WallOfShameEntry),
+            typeof(Site));
     }
 
-    private static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =
+    public static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =
         (context, entityName, entityKey) =>
             context.AuditLogEntries.Count(audit =>
                 audit.EntityName == entityName && audit.EntityKey == entityKey && audit.Action == new AuditLogEntry.Deleted())

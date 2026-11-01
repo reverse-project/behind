@@ -601,6 +601,15 @@ There is no `IsDeleted` column. A record is deleted when it has more `Deleted` t
 - When a stored user id (audit `UserId` / `BehalfOfId`, wall of shame `UserId` / `GivenById`, session `InvalidatedById`) cannot be resolved to a user, for example because the user is soft deleted and the filter is active, the entity is populated with `UnknownUser(Id)` instead of failing (`UserResolutionExtensions.ToUser`).
 - `DeletedRecordsVisibilityMiddleware` opens the scope for the whole request of authenticated users holding the `ViewDeleted` grant (`DomainConstants.ViewDeletedGrant`, checked with `IUserQueries.HasGrant`), so those admins see deleted records in every query of that request.
 
+### Management lists
+
+Every management page (users, roles, sites) follows the same shape: a paged list with a search term, a first letter bucket and a deletion state, `Delete` (soft), and for developers (`RawDatabase.Manage`) `deleted=true` listing, `restore` and `hard/delete`.
+
+- `InDeletionState` (`Behind.Common.Database`) filters a query on whether the audit log says the row is deleted, even inside an `IncludeDeleted` scope. Soft delete keys are the primary key values joined with `:` (the same text as the audit `EntityKey`), so entities with a composite key such as `Site` (`SiteId`, `Version`) can be soft deleted, every row (version) gets its own `Deleted` / `Restored` entry.
+- `InBucket` / `LettersAsync` (`LetterBucketQueryExtensions`) implement the letter filter for any query, given the label expression.
+- Hard delete commands answer `HardDeleteResult` (`NotFound` when the record is not soft deleted, `Rejected` when the database refuses it, mapped to `404` / `409`).
+- Deleting a site soft deletes its `Sites` rows only. The `ActiveVersions` row stays, so a restore brings the live version back, and a hard delete removes it too.
+
 ### Users management
 
 - `POST /users/{id}/delete` soft deletes a user (`User.Delete` grant, same moderation rules as ban: not yourself, only developers may delete developers). The user's sessions are removed with it.

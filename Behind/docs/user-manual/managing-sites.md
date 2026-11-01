@@ -9,6 +9,15 @@
 
 Administrators have both grants by default.
 
+## Finding sites
+
+The list has a **Search** box (matches the title and the slug of the newest version), a letter filter on the title and page buttons, like the users page. Sites are listed alphabetically by title.
+
+## Deleting and restoring
+
+- **Delete** (the `Site.Delete` grant) soft deletes the whole site with all its versions. It stops being served, its slug is free again, and nothing is lost.
+- Developers (the `RawDatabase.Manage` grant) see a **Show deleted sites** switch. A deleted site shows **Restore**, which brings back every version and the version that was live, and **Delete permanently**, which removes the site, its versions and its live version for good. Restoring is refused when another site has taken the slug in the meantime.
+
 ## Versions, drafts and the live version
 
 Every save creates a **new version** of the site, nothing is ever overwritten.

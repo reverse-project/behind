@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Behind.Common\Behind.Common.csproj"/>
+        <ProjectReference Include="..\Behind.Common.Database\Behind.Common.Database.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

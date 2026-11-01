@@ -60,6 +60,107 @@ public sealed class SiteCommands(
         return await Save(id, cancellationToken, () => SetActive(id.Key, id.Version, cancellationToken));
     }
 
+    public async Task<bool> Delete(Guid siteId, CancellationToken cancellationToken = default)
+    {
+        var rows = await context.Sites.OfSite(siteId).ToListAsync(cancellationToken);
+
+        if (rows.Count == 0)
+        {
+            return false;
+        }
+
+        context.Sites.RemoveRange(rows);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return true;
+    }
+
+    public async Task<SiteSaveResult> Restore(Guid siteId, CancellationToken cancellationToken = default)
+    {
+        var deleted = await DeletedRows(siteId, cancellationToken);
+
+        if (deleted.Count == 0)
+        {
+            return new SiteSaveResult.NotFound();
+        }
+
+        var latest = deleted.Max(row => context.Entry(row).Property<long>(SiteConfiguration.VersionProperty).CurrentValue);
+        var active = await versions.ActiveSiteVersionsAsync([siteId], cancellationToken);
+
+        var contested = deleted
+            .Where(row => IsLiveCandidate(row, latest, active.GetValueOrDefault(siteId)))
+            .Select(row => row.Slug)
+            .Distinct()
+            .ToList();
+
+        foreach (var slug in contested)
+        {
+            if (await context.IsSiteSlugTakenAsync(versions, siteId, slug, cancellationToken))
+            {
+                return new SiteSaveResult.SlugTaken();
+            }
+        }
+
+        deleted.ForEach(row => context.Restores.Mark(row));
+
+        return await Save(new VersionedKey<Guid>(siteId, latest), cancellationToken);
+    }
+
+    public async Task<HardDeleteResult> HardDelete(Guid siteId, CancellationToken cancellationToken = default)
+    {
+        var deleted = await DeletedRows(siteId, cancellationToken);
+
+        if (deleted.Count == 0)
+        {
+            return HardDeleteResult.NotFound;
+        }
+
+        try
+        {
+            deleted.ForEach(context.HardDelete);
+            await context.SaveChangesAsync(cancellationToken);
+
+            await versions.ClearActiveVersionAsync(Site.EntityType, siteId.ToKey(), cancellationToken);
+            await versions.SaveChangesAsync(cancellationToken);
+
+            return HardDeleteResult.Deleted;
+        }
+        catch (DbUpdateException)
+        {
+            context.ChangeTracker.Clear();
+            return HardDeleteResult.Rejected;
+        }
+    }
+
+    private bool IsLiveCandidate(Site row, long latest, long active)
+    {
+        var version = context.Entry(row).Property<long>(SiteConfiguration.VersionProperty).CurrentValue;
+
+        return version == latest || version == active;
+    }
+
+    private async Task<List<Site>> DeletedRows(Guid siteId, CancellationToken cancellationToken)
+    {
+        List<Site> rows;
+
+        using (context.SoftDelete.IncludeDeleted())
+        {
+            rows = await context.Sites.OfSite(siteId).ToListAsync(cancellationToken);
+        }
+
+        var deleted = new List<Site>();
+
+        foreach (var row in rows)
+        {
+            if (await context.Entry(row).IsDeletedAsync(cancellationToken))
+            {
+                deleted.Add(row);
+            }
+        }
+
+        return deleted;
+    }
+
     private async Task<SiteSaveResult> AddVersion(
         Guid siteId,
         long previousVersion,

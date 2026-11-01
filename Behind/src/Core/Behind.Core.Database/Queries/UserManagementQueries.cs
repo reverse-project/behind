@@ -17,7 +17,7 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
         CancellationToken cancellationToken = default)
     {
         using var scope = Scope(state);
-        var matching = InBucket(Matching(search, state), letter);
+        var matching = Matching(search, state).InBucket(user => user.Label, letter);
         var total = await matching.LongCountAsync(cancellationToken);
 
         var rows = await flipper.Apply(
@@ -44,14 +44,8 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
         CancellationToken cancellationToken = default)
     {
         using var scope = Scope(state);
-        var firstCharacters = await Matching(search, state)
-            .Select(user => user.Label.ToLower().Substring(0, 1))
-            .Distinct()
-            .ToListAsync(cancellationToken);
 
-        var present = firstCharacters.Select(first => first.ToLetterBucket()).ToHashSet();
-
-        return LetterBucketExtensions.All.Where(present.Contains).ToList();
+        return await Matching(search, state).LettersAsync(user => user.Label, cancellationToken);
     }
 
     public async Task<Option<IUserManagementQueries.ManagedUser>> TryFindUser(
@@ -118,15 +112,6 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
                         EF.Property<Guid>(email, "UserId") == user.Id
                         && email.Value.Contains(term))));
     }
-
-    private static IQueryable<LabeledUser> InBucket(IQueryable<LabeledUser> users, Option<string> letter) =>
-        letter.Match(
-            () => users,
-            bucket => bucket == LetterBucketExtensions.Other
-                ? users.Where(user => user.Label == ""
-                                      || user.Label.ToLower().Substring(0, 1).CompareTo("a") < 0
-                                      || user.Label.ToLower().Substring(0, 1).CompareTo("z") > 0)
-                : users.Where(user => user.Label.ToLower().StartsWith(bucket.ToLowerInvariant())));
 
     private async Task<IReadOnlyList<IUserManagementQueries.ManagedUser>> Hydrate(
         IReadOnlyList<UserRow> rows,

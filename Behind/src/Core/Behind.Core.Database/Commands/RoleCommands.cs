@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using static Behind.Common.FunctionalExtensions;
@@ -39,6 +40,52 @@ public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
     {
         await context.GetRepository<UserRole, Guid>().DeleteAsync(roleId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> Restore(Guid roleId, CancellationToken cancellationToken = default)
+    {
+        var deleted = await IsDeleted(roleId, cancellationToken);
+
+        if (!deleted)
+        {
+            return false;
+        }
+
+        await context.GetRestoreRepository<UserRole, Guid>().RestoreAsync(roleId, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return true;
+    }
+
+    public async Task<HardDeleteResult> HardDelete(Guid roleId, CancellationToken cancellationToken = default)
+    {
+        var deleted = await IsDeleted(roleId, cancellationToken);
+
+        if (!deleted)
+        {
+            return HardDeleteResult.NotFound;
+        }
+
+        await context.GetHardDeleteRepository<UserRole, Guid>().HardDeleteAsync(roleId, cancellationToken);
+
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+            return HardDeleteResult.Deleted;
+        }
+        catch (DbUpdateException)
+        {
+            context.ChangeTracker.Clear();
+            return HardDeleteResult.Rejected;
+        }
+    }
+
+    private async Task<bool> IsDeleted(Guid roleId, CancellationToken cancellationToken)
+    {
+        using var scope = context.SoftDelete.IncludeDeleted();
+        var role = await context.Roles.FindAsync([roleId], cancellationToken);
+
+        return role is not null && await context.Entry(role).IsDeletedAsync(cancellationToken);
     }
 
     public async Task AssignBuiltIn(Guid userId, BuiltInRole role, CancellationToken cancellationToken = default)

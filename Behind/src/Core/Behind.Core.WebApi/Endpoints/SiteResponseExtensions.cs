@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
@@ -14,7 +15,7 @@ public static class SiteResponseExtensions
 
     extension(ISiteQueries.SiteListing listing)
     {
-        public SiteListItem ToItem() =>
+        public SiteListItem ToItem(DeletionState state) =>
             new(
                 listing.Id,
                 listing.Title,
@@ -22,7 +23,8 @@ public static class SiteResponseExtensions
                 listing.LatestVersion,
                 listing.ActiveVersion.ToNullable(),
                 listing.ActiveSlug.Match<string?>(() => null, slug => slug),
-                listing.UpdatedAt);
+                listing.UpdatedAt,
+                state == DeletionState.Deleted);
     }
 
     extension(SitesConfiguration configuration)

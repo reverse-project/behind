@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Domain;
 
 namespace Behind.Core.Database;
@@ -24,7 +25,17 @@ public interface ISiteQueries
 
     public sealed record SiteHistory(Guid Id, Option<long> ActiveVersion, IReadOnlyList<SiteVersionInfo> Versions);
 
-    Task<IReadOnlyList<SiteListing>> List(CancellationToken cancellationToken = default);
+    Task<PagedResult<SiteListing>> List(
+        Flipper flipper,
+        Option<string> search,
+        Option<string> letter,
+        DeletionState state,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<string>> GetLetters(
+        Option<string> search,
+        DeletionState state,
+        CancellationToken cancellationToken = default);
 
     Task<Option<SiteHistory>> FindHistory(Guid siteId, CancellationToken cancellationToken = default);
 

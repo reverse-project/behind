@@ -49,7 +49,10 @@ public class RoleManagementFrontendTests
     {
         var auth = Read("models/auth.js");
 
-        Assert.Contains("http.get(\"/roles\")", auth);
+        Assert.Contains("http.get(url)", auth);
+        Assert.Contains("var url = \"/roles?page=\"", auth);
+        Assert.Contains("http.post(\"/roles/\" + roleId + \"/restore\")", auth);
+        Assert.Contains("http.post(\"/roles/\" + roleId + \"/hard/delete\")", auth);
         Assert.Contains("http.post(\"/roles\", { name: name })", auth);
         Assert.Contains("http.put(\"/roles/\" + roleId + \"/access\", access)", auth);
         Assert.Contains("http.post(\"/roles/\" + roleId + \"/delete\")", auth);
@@ -111,5 +114,23 @@ public class RoleManagementFrontendTests
         var user = Read("models/user.js");
 
         Assert.Contains("Array.isArray(user.grants)", user);
+    }
+
+    [Fact]
+    public void RolesView_SearchesPagesAndHandlesDeletedRoles()
+    {
+        var view = Read("views/roles.html");
+        var viewModel = Read("viewmodels/roles.js");
+
+        Assert.All(
+            new[]
+            {
+                "submit: list.find", "value: list.search", "checked: list.showDeleted", "<letter-pager", "params=\"pager: list.letterPager\"",
+                "<pager class=\"d-block\" params=\"pager: list.pager\"", "click: restore", "click: hardDelete", "visible: isDeleted"
+            },
+            binding => Assert.Contains(binding, view));
+        Assert.Contains("createManagedList", viewModel);
+        Assert.Contains("auth.restoreRole(row.id)", viewModel);
+        Assert.Contains("auth.hardDeleteRole(row.id)", viewModel);
     }
 }

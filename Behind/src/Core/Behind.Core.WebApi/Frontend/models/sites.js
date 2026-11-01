@@ -44,6 +44,24 @@ define(["models/http"], function (http) {
         409: "The site could not be saved."
     };
 
+    var deletedReadFailures = {
+        401: sessionExpired,
+        403: "You need developer access to see deleted sites."
+    };
+
+    var removeFailures = {
+        401: sessionExpired,
+        403: "You are not allowed to delete sites.",
+        404: "This site no longer exists."
+    };
+
+    var deletedActionFailures = {
+        401: sessionExpired,
+        403: "You need developer access to restore or permanently delete sites.",
+        404: "This site is not deleted.",
+        409: "The site could not be changed."
+    };
+
     var imageFailures = {
         400: "Choose an image to upload.",
         401: sessionExpired,
@@ -66,9 +84,31 @@ define(["models/http"], function (http) {
     };
 
     return {
-        list: function () {
-            return http.get("/sites").then(function (response) {
-                return loaded(response, readFailures);
+        list: function (query) {
+            var url = "/sites?page=" + query.page + "&pageSize=" + query.pageSize
+                + "&search=" + encodeURIComponent(query.search) + "&letter=" + encodeURIComponent(query.letter)
+                + (query.deleted ? "&deleted=true" : "");
+
+            return http.get(url).then(function (response) {
+                return loaded(response, query.deleted ? deletedReadFailures : readFailures);
+            });
+        },
+
+        remove: function (id) {
+            return http.post("/sites/" + id + "/delete").then(function (response) {
+                return saved(response, "The site was deleted.", removeFailures);
+            });
+        },
+
+        restore: function (id) {
+            return http.post("/sites/" + id + "/restore").then(function (response) {
+                return saved(response, "The site was restored.", deletedActionFailures);
+            });
+        },
+
+        hardDelete: function (id) {
+            return http.post("/sites/" + id + "/hard/delete").then(function (response) {
+                return saved(response, "The site was permanently deleted.", deletedActionFailures);
             });
         },
 

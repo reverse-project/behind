@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Domain;
 
 namespace Behind.Core.Database;
@@ -21,4 +22,10 @@ public interface ISiteCommands
         CancellationToken cancellationToken = default);
 
     Task<SiteSaveResult> Activate(VersionedKey<Guid> id, CancellationToken cancellationToken = default);
+
+    Task<bool> Delete(Guid siteId, CancellationToken cancellationToken = default);
+
+    Task<SiteSaveResult> Restore(Guid siteId, CancellationToken cancellationToken = default);
+
+    Task<HardDeleteResult> HardDelete(Guid siteId, CancellationToken cancellationToken = default);
 }

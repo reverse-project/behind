@@ -12,6 +12,15 @@ public sealed class SiteCommandsTests : IDisposable
     private static readonly DateTimeOffset Now = new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
 
     private readonly TestDbContextFactory _factory = new();
+    private readonly AuditActor _actor;
+
+    public SiteCommandsTests()
+    {
+        using var seed = _factory.CreateContext();
+        var actorId = DatabaseSeedHelper.SeedHumanUserAsync(seed, "actor@test.com").GetAwaiter().GetResult();
+        DatabaseSeedHelper.EnsureBuiltInUsersAsync(seed).GetAwaiter().GetResult();
+        _actor = AuditActor.ForUser(actorId);
+    }
 
     public void Dispose() => _factory.Dispose();
 
@@ -216,16 +225,15 @@ public sealed class SiteCommandsTests : IDisposable
     [Fact]
     public async Task Save_WritesCreatedAndActiveVersionAuditEntries()
     {
-        var actorId = await SeedActorAsync();
         Guid siteId;
-        await using (var ctx = _factory.CreateAuditedContext(AuditActor.ForUser(actorId)))
-        await using (var versions = _factory.CreateAuditedVersioningContext(AuditActor.ForUser(actorId)))
+        await using (var ctx = _factory.CreateAuditedContext(_actor))
+        await using (var versions = _factory.CreateAuditedVersioningContext(_actor))
         {
             siteId = Saved(await new SiteCommands(ctx, versions, new FixedTimeProvider(Now)).Create("About", "about", "<p/>", true)).Key;
         }
 
-        await using (var ctx = _factory.CreateAuditedContext(AuditActor.ForUser(actorId)))
-        await using (var versions = _factory.CreateAuditedVersioningContext(AuditActor.ForUser(actorId)))
+        await using (var ctx = _factory.CreateAuditedContext(_actor))
+        await using (var versions = _factory.CreateAuditedVersioningContext(_actor))
         {
             await new SiteCommands(ctx, versions, new FixedTimeProvider(Now)).SaveVersion(siteId, "About", "about", "<p/>", true);
         }
@@ -243,12 +251,165 @@ public sealed class SiteCommandsTests : IDisposable
         Assert.Equal("2", change.NewValue?.ToString());
     }
 
-    private async Task<Guid> SeedActorAsync()
+    private async Task<Option<ISiteQueries.SiteHistory>> FindHistoryAsync(Guid id)
     {
-        await using var seed = _factory.CreateContext();
-        var actorId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "actor@test.com");
-        await DatabaseSeedHelper.EnsureBuiltInUsersAsync(seed);
+        await using var ctx = _factory.CreateContext();
+        await using var versions = _factory.CreateVersioningContext();
 
-        return actorId;
+        return await new SiteQueries(ctx, versions).FindHistory(id);
+    }
+
+    private async Task<bool> DeleteAsync(Guid id)
+    {
+        await using var ctx = _factory.CreateAuditedContext(_actor);
+        await using var versions = _factory.CreateAuditedVersioningContext(_actor);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now)).Delete(id);
+    }
+
+    private async Task<SiteSaveResult> RestoreAsync(Guid id)
+    {
+        await using var ctx = _factory.CreateAuditedContext(_actor);
+        await using var versions = _factory.CreateAuditedVersioningContext(_actor);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now)).Restore(id);
+    }
+
+    private async Task<HardDeleteResult> HardDeleteAsync(Guid id)
+    {
+        await using var ctx = _factory.CreateAuditedContext(_actor);
+        await using var versions = _factory.CreateAuditedVersioningContext(_actor);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now)).HardDelete(id);
+    }
+
+    private async Task<(int Sites, int Active)> CountRowsAsync()
+    {
+        await using var ctx = _factory.CreateContext();
+        await using var versions = _factory.CreateVersioningContext();
+        using var scope = ctx.SoftDelete.IncludeDeleted();
+
+        return (await ctx.Sites.CountAsync(), await versions.ActiveVersions.CountAsync());
+    }
+
+    [Fact]
+    public async Task Delete_SoftDeletesEveryVersionButKeepsTheRows()
+    {
+        var id = Saved(await CreateAsync("About", "about", publish: true));
+        await SaveAsync(id.Key, "About", "about");
+
+        Assert.True(await DeleteAsync(id.Key));
+
+        Assert.Equal((2, 1), await CountRowsAsync());
+        Assert.Equal(None, await FindHistoryAsync(id.Key));
+    }
+
+    [Fact]
+    public async Task Delete_UnknownOrAlreadyDeletedSite_ReturnsFalse()
+    {
+        var id = Saved(await CreateAsync("About", "about"));
+        await DeleteAsync(id.Key);
+
+        Assert.False(await DeleteAsync(id.Key));
+        Assert.False(await DeleteAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task Delete_FreesTheSlug()
+    {
+        var id = Saved(await CreateAsync("About", "about", publish: true));
+        await DeleteAsync(id.Key);
+
+        Assert.IsType<SiteSaveResult.Saved>(await CreateAsync("Other", "about"));
+    }
+
+    [Fact]
+    public async Task Restore_BringsEveryVersionAndTheLiveVersionBack()
+    {
+        var id = Saved(await CreateAsync("About", "about", publish: true));
+        await SaveAsync(id.Key, "About", "about");
+        await DeleteAsync(id.Key);
+
+        var result = await RestoreAsync(id.Key);
+
+        Assert.Equal(new VersionedKey<Guid>(id.Key, 2), Assert.IsType<SiteSaveResult.Saved>(result).Id);
+        var history = await HistoryAsync(id.Key);
+        Assert.Equal(Some(1L), history.ActiveVersion);
+        Assert.Equal(2, history.Versions.Count);
+    }
+
+    [Fact]
+    public async Task Restore_SiteThatIsNotDeleted_ReturnsNotFound()
+    {
+        var id = Saved(await CreateAsync("About", "about"));
+
+        Assert.IsType<SiteSaveResult.NotFound>(await RestoreAsync(id.Key));
+        Assert.IsType<SiteSaveResult.NotFound>(await RestoreAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task Restore_WhenAnotherSiteTookTheSlug_ReturnsSlugTaken()
+    {
+        var id = Saved(await CreateAsync("About", "about", publish: true));
+        await DeleteAsync(id.Key);
+        await CreateAsync("Other", "about");
+
+        Assert.IsType<SiteSaveResult.SlugTaken>(await RestoreAsync(id.Key));
+    }
+
+    [Fact]
+    public async Task HardDelete_RemovesTheVersionsAndTheActiveVersionForGood()
+    {
+        var id = Saved(await CreateAsync("About", "about", publish: true));
+        await SaveAsync(id.Key, "About", "about");
+        await DeleteAsync(id.Key);
+
+        Assert.Equal(HardDeleteResult.Deleted, await HardDeleteAsync(id.Key));
+
+        Assert.Equal((0, 0), await CountRowsAsync());
+    }
+
+    [Fact]
+    public async Task HardDelete_SiteThatIsNotDeleted_ReturnsNotFound()
+    {
+        var id = Saved(await CreateAsync("About", "about", publish: true));
+
+        Assert.Equal(HardDeleteResult.NotFound, await HardDeleteAsync(id.Key));
+        Assert.Equal(HardDeleteResult.NotFound, await HardDeleteAsync(Guid.NewGuid()));
+        Assert.Equal((1, 1), await CountRowsAsync());
+    }
+
+    [Fact]
+    public async Task Deletion_IsAuditedPerVersion()
+    {
+        Guid siteId;
+        await using (var ctx = _factory.CreateAuditedContext(_actor))
+        await using (var versions = _factory.CreateAuditedVersioningContext(_actor))
+        {
+            var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now));
+            siteId = Saved(await commands.Create("About", "about", "<p/>", true)).Key;
+            await commands.SaveVersion(siteId, "About", "about", "<p/>", false);
+        }
+
+        foreach (var step in new[] { "delete", "restore", "delete", "hard" })
+        {
+            await using var ctx = _factory.CreateAuditedContext(_actor);
+            await using var versions = _factory.CreateAuditedVersioningContext(_actor);
+            var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now));
+
+            _ = step switch
+            {
+                "delete" => await commands.Delete(siteId),
+                "restore" => await commands.Restore(siteId) is SiteSaveResult.Saved,
+                _ => await commands.HardDelete(siteId) == HardDeleteResult.Deleted
+            };
+        }
+
+        await using var read = _factory.CreateContext();
+        var actions = (await read.AuditLogEntries
+                .Where(entry => entry.EntityName == "Site" && entry.EntityKey == $"{siteId}:2")
+                .OrderBy(entry => entry.Timestamp)
+                .ToListAsync())
+            .Select(entry => entry.Action.GetType().Name)
+            .ToList();
+
+        Assert.Equal(["Created", "Deleted", "Restored", "Deleted", "HardDeleted"], actions);
     }
 }

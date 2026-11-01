@@ -1,3 +1,5 @@
+using Behind.Common.WebApi;
+
 namespace Behind.Core.WebApi.Endpoints;
 
 public sealed record SiteListItem(
@@ -7,9 +9,10 @@ public sealed record SiteListItem(
     long LatestVersion,
     long? ActiveVersion,
     string? ActiveSlug,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    bool IsDeleted = false);
 
-public sealed record SiteListResponse(IReadOnlyList<SiteListItem> Sites);
+public sealed record SiteListResponse(PageResponse<SiteListItem> Sites, IReadOnlyList<string> Letters);
 
 public sealed record SiteVersionItem(
     long Version,

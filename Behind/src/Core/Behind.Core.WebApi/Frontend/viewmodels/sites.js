@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/sites"], function (ko, session, sites) {
+define(["ko", "models/session", "models/sites", "models/managedlist"], function (ko, session, sites, createManagedList) {
     var formatDate = function (value) {
         return value ? new Date(value).toLocaleString() : "";
     };
@@ -13,25 +13,9 @@ define(["ko", "models/session", "models/sites"], function (ko, session, sites) {
             : { label: "Live", css: "text-bg-success" };
     };
 
-    var present = function (item, indexSlug) {
-        var status = statusOf(item);
-
-        return {
-            id: item.id,
-            title: item.title,
-            slug: item.slug,
-            latestVersion: item.latestVersion,
-            activeVersion: item.activeVersion === null ? "none" : item.activeVersion,
-            updatedAt: formatDate(item.updatedAt),
-            status: status.label,
-            statusCss: status.css,
-            isIndex: indexSlug !== "" && item.activeSlug === indexSlug,
-            href: "#/sites/" + item.id
-        };
-    };
-
     return function SitesViewModel() {
         var self = this;
+        var indexSlug = "";
 
         self.isSignedIn = session.isSignedIn;
         self.canRead = ko.pureComputed(function () {
@@ -40,52 +24,71 @@ define(["ko", "models/session", "models/sites"], function (ko, session, sites) {
         self.canWrite = ko.pureComputed(function () {
             return session.hasGrant("Site.Write");
         });
+        self.canDelete = ko.pureComputed(function () {
+            return session.hasGrant("Site.Delete");
+        });
         self.isDenied = ko.pureComputed(function () {
             return session.isSignedIn() && session.grants() !== null && !self.canRead();
         });
-        self.busy = ko.observable(false);
-        self.message = ko.observable("");
-        self.sites = ko.observableArray([]);
 
-        self.hasMessage = ko.pureComputed(function () {
-            return self.message() !== "";
-        });
+        var present = function (item) {
+            var status = statusOf(item);
+            var row = {
+                id: item.id,
+                title: item.title,
+                slug: item.slug,
+                latestVersion: item.latestVersion,
+                activeVersion: item.activeVersion === null ? "none" : item.activeVersion,
+                updatedAt: formatDate(item.updatedAt),
+                status: status.label,
+                statusCss: status.css,
+                isDeleted: item.isDeleted,
+                isIndex: indexSlug !== "" && item.activeSlug === indexSlug,
+                href: "#/sites/" + item.id
+            };
 
-        self.hasSites = ko.pureComputed(function () {
-            return self.sites().length > 0;
-        });
-
-        self.refresh = function () {
-            if (!self.canRead()) {
-                self.sites([]);
-                return Promise.resolve();
-            }
-
-            self.busy(true);
-
-            return Promise.all([sites.list(), sites.settings()])
-                .then(function (results) {
-                    var result = results[0];
-                    var indexSlug = results[1].ok ? results[1].data.indexSlug || "" : "";
-
-                    self.message(result.message);
-                    self.sites(result.ok ? result.data.sites.map(function (item) {
-                        return present(item, indexSlug);
-                    }) : []);
-                })
-                .finally(function () {
-                    self.busy(false);
-                });
-        };
-
-        self.activate = function () {
-            self.canRead.subscribe(function (allowed) {
-                if (allowed) {
-                    self.refresh();
+            row.remove = function () {
+                if (!window.confirm("Delete " + row.title + "? It stops being served and can be restored by a developer.")) {
+                    return Promise.resolve();
                 }
-            });
 
-            return self.refresh();
+                return self.list.perform(function () {
+                    return sites.remove(item.id);
+                });
+            };
+            row.restore = function () {
+                return self.list.perform(function () {
+                    return sites.restore(item.id);
+                });
+            };
+            row.hardDelete = function () {
+                if (!window.confirm("Permanently delete " + row.title + " with all its versions? This cannot be undone.")) {
+                    return Promise.resolve();
+                }
+
+                return self.list.perform(function () {
+                    return sites.hardDelete(item.id);
+                });
+            };
+
+            return row;
         };
+
+        self.list = createManagedList({
+            allowed: self.canRead,
+            load: function (query) {
+                return Promise.all([sites.list(query), sites.settings()]).then(function (results) {
+                    indexSlug = results[1].ok ? results[1].data.indexSlug || "" : "";
+
+                    return results[0];
+                });
+            },
+            pageOf: function (data) {
+                return data.sites;
+            },
+            present: present
+        });
+
+        self.activate = self.list.activate;
     };
 });

@@ -385,6 +385,7 @@ public static class WebApiExtensions
             application.MapGet("/roles", RoleManagementEndpoints.Get)
                 .RequireAuthorization(roleManagement)
                 .Produces<RoleListResponse>()
+                .Produces(400)
                 .Produces(401)
                 .Produces(403)
                 .Produces(500);
@@ -407,6 +408,22 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(403)
                 .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/roles/{id:guid}/restore", RoleManagementEndpoints.Restore)
+                .RequireAuthorization(RoleManagementEndpoints.DeletedRecordsGrant)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/roles/{id:guid}/hard/delete", RoleManagementEndpoints.HardDelete)
+                .RequireAuthorization(RoleManagementEndpoints.DeletedRecordsGrant)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(409)
                 .Produces(500);
 
             application.MapPost("/roles/{id:guid}/delete", RoleManagementEndpoints.Delete)
@@ -456,6 +473,7 @@ public static class WebApiExtensions
             application.MapGet("/sites", SiteEndpoints.List)
                 .RequireAuthorization(siteRead)
                 .Produces<SiteListResponse>()
+                .Produces(400)
                 .Produces(401)
                 .Produces(403)
                 .Produces(500);
@@ -495,6 +513,31 @@ public static class WebApiExtensions
                 .Produces(403)
                 .Produces(404)
                 .Produces<SiteConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/sites/{id:guid}/delete", SiteEndpoints.Delete)
+                .RequireAuthorization(GrantName.Of(GrantArea.Site, GrantAction.Delete))
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/sites/{id:guid}/restore", SiteEndpoints.Restore)
+                .RequireAuthorization(SiteEndpoints.DeletedRecordsGrant)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces<SiteConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/sites/{id:guid}/hard/delete", SiteEndpoints.HardDelete)
+                .RequireAuthorization(SiteEndpoints.DeletedRecordsGrant)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
                 .Produces(500);
 
             application.MapPost("/sites/{id:guid}/versions/{version:long}/activate", SiteEndpoints.Activate)

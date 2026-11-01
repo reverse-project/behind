@@ -53,7 +53,15 @@ A grant can be either granted or restricted on one role, not both. Restrictions 
 
 ### Deleting a role
 
-Choose **Delete** on a custom role and confirm. This needs the `Role.Delete` grant. Users lose the access the role gave them. Built-in roles cannot be deleted.
+Choose **Delete** on a custom role and confirm. This needs the `Role.Delete` grant. Users lose the access the role gave them. Built-in roles cannot be deleted. A deleted role is kept and can be restored by a developer.
+
+### Searching and paging
+
+The list has a **Search** box (matches the role name), a letter filter and page buttons, like the users page.
+
+### Deleted roles (developers)
+
+Developers see a **Show deleted roles** switch. Deleted roles show a **Deleted** badge with **Restore**, which brings the role back, and **Delete permanently**, which removes it for good. A role that is still referenced cannot be deleted permanently.
 
 ## Limits
 

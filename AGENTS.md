@@ -15,3 +15,4 @@ MUST use TypeDescriptor and JsonConverterFactory for JSON related serialization 
 MUST ask the user whether to fix the identified bugs or not (list them and use the ask_user tool), and do exactly as answered
 MUST fill up the changelog (Behind/src/Core/Behind.Core.WebApi/Frontend/changelog.json) with every new feature or relevant modification, under the current version from Behind/Directory.Build.props (add a new release entry at the top when the version is bumped)
 MUST update the audit log label resolution (Behind/src/Core/Behind.Core.Database/AuditLabelExtensions.cs) and its tests whenever a new entity is created or an entity is used anywhere in the code, so the audit log UI shows human readable names instead of UUIDs
+MUST give every management page (users, roles, sites and any new one) soft delete, hard delete and restore functionality: deleting soft deletes, developers can list deleted records, restore them and delete them permanently

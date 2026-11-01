@@ -8,12 +8,21 @@
             <input class="form-control" type="text" maxlength="100" placeholder="New role name" aria-label="New role name" data-bind="value: newName, valueUpdate: 'input'">
             <button type="submit" class="btn btn-primary" data-bind="enable: canCreate">Create role</button>
         </form>
+        <form class="input-group mb-3" data-bind="submit: list.find">
+            <input class="form-control" type="search" maxlength="200" placeholder="Search by name" aria-label="Search roles" data-bind="value: list.search">
+            <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Search</button>
+        </form>
+        <div class="form-check form-switch mb-3" data-bind="visible: list.canViewDeleted">
+            <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: list.showDeleted, enable: !busy()"> Show deleted roles</label>
+        </div>
+        <letter-pager class="d-block mb-3" params="pager: list.letterPager"></letter-pager>
         <p class="text-body-secondary" data-bind="visible: !hasRoles()">No roles found.</p>
         <ul class="list-group mb-3" data-bind="foreach: roles">
             <li class="list-group-item">
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <strong class="text-break" data-bind="text: name"></strong>
                     <span class="badge text-bg-secondary" data-bind="visible: isBuiltIn">Built-in</span>
+                    <span class="badge text-bg-dark" data-bind="visible: isDeleted">Deleted</span>
                 </div>
                 <div class="small text-body-secondary mt-2">Grants</div>
                 <p class="small mb-2" data-bind="visible: grants.length === 0">None</p>
@@ -28,6 +37,8 @@
                 <div class="d-flex flex-wrap gap-2" data-bind="visible: !editing()">
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: canEdit, enable: !$root.busy(), click: edit">Edit access</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, enable: !$root.busy(), click: remove">Delete</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $root.list.canViewDeleted(), enable: !$root.busy(), click: restore">Restore</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $root.list.canViewDeleted(), enable: !$root.busy(), click: hardDelete">Delete permanently</button>
                 </div>
                 <div class="mt-3" data-bind="visible: editing">
                     <p class="small text-body-secondary mb-2">A restriction always wins over a grant, for every user who has this role.</p>
@@ -39,5 +50,6 @@
                 </div>
             </li>
         </ul>
+        <pager class="d-block" params="pager: list.pager"></pager>
     </div>
 </section>

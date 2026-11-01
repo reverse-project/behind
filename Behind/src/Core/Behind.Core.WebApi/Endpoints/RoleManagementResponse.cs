@@ -1,3 +1,5 @@
+using Behind.Common.WebApi;
+
 namespace Behind.Core.WebApi.Endpoints;
 
 public sealed record RoleItem(
@@ -7,9 +9,13 @@ public sealed record RoleItem(
     IReadOnlyList<string> Grants,
     IReadOnlyList<string> Restrictions,
     bool CanEdit,
-    bool CanDelete);
+    bool CanDelete,
+    bool IsDeleted = false);
 
-public sealed record RoleListResponse(IReadOnlyList<RoleItem> Roles, IReadOnlyList<string> AvailableGrants);
+public sealed record RoleListResponse(
+    PageResponse<RoleItem> Roles,
+    IReadOnlyList<string> AvailableGrants,
+    IReadOnlyList<string> Letters);
 
 public sealed record AccessRoleItem(
     Guid Id,

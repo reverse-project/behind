@@ -30,6 +30,7 @@ public class SiteFrontendTests
     [InlineData("views/siteeditor.html")]
     [InlineData("models/sites.js")]
     [InlineData("models/slug.js")]
+    [InlineData("models/managedlist.js")]
     [InlineData("bindings/richeditor.js")]
     [InlineData("libraries/quill.min.js")]
     [InlineData("libraries/quill-LICENSE.txt")]
@@ -92,7 +93,10 @@ public class SiteFrontendTests
     {
         var model = Read("models/sites.js");
 
-        Assert.Contains("http.get(\"/sites\")", model);
+        Assert.Contains("var url = \"/sites?page=\"", model);
+        Assert.Contains("http.post(\"/sites/\" + id + \"/delete\")", model);
+        Assert.Contains("http.post(\"/sites/\" + id + \"/restore\")", model);
+        Assert.Contains("http.post(\"/sites/\" + id + \"/hard/delete\")", model);
         Assert.Contains("http.get(\"/sites/\" + id)", model);
         Assert.Contains("http.get(\"/sites/\" + id + \"/versions/\" + version)", model);
         Assert.Contains("http.post(\"/sites\", draft(fields))", model);
@@ -153,7 +157,11 @@ public class SiteFrontendTests
         var view = Read("views/sites.html");
 
         Assert.All(
-            new[] { "foreach: sites", "href=\"#/sites/new\"", "visible: canWrite", "visible: isDenied", "text: status" },
+            new[]
+            {
+                "foreach: items", "href=\"#/sites/new\"", "visible: canWrite", "visible: isDenied", "text: status", "submit: find",
+                "value: search", "checked: showDeleted", "<letter-pager", "<pager", "click: remove", "click: restore", "click: hardDelete"
+            },
             binding => Assert.Contains(binding, view));
         Assert.DoesNotContain("<!--", view);
     }
@@ -212,5 +220,18 @@ public class SiteFrontendTests
     {
         Assert.Contains("visible: isIndex", Read("views/sites.html"));
         Assert.Contains("item.activeSlug === indexSlug", Read("viewmodels/sites.js"));
+        Assert.Contains("createManagedList", Read("viewmodels/sites.js"));
+    }
+
+    [Fact]
+    public void ManagedList_SearchesPagesAndSwitchesToDeletedRecordsForDevelopers()
+    {
+        var list = Read("models/managedlist.js");
+
+        Assert.Contains("models/pager", list);
+        Assert.Contains("models/letterpager", list);
+        Assert.Contains("session.hasGrant(\"RawDatabase.Manage\")", list);
+        Assert.Contains("deleted: list.showDeleted()", list);
+        Assert.Contains("list.perform = function", list);
     }
 }

@@ -148,7 +148,7 @@ public sealed class BuiltInRolesTests : IDisposable
         await ctx.EnsureBuiltInRolesAsync();
 
         Assert.Equal(3, await ctx.Roles.CountAsync());
-        Assert.Equal(29, await ctx.Grants.CountAsync());
+        Assert.Equal(33, await ctx.Grants.CountAsync());
         Assert.Equal(BuiltInAccess.Roles.Sum(role => role.Grants.Count), await ctx.Set<Dictionary<string, object>>("RoleGrants").CountAsync());
     }
 

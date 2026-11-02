@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ public static class AuditLabelExtensions
     private const string PasswordKind = "Password";
     private const string MagicLinkKind = "Magic link";
     private const string WallOfShameKind = "Wall of shame entry";
+    private const string NewsCommentKind = "News comment";
     private const string GuestLabel = "Guest";
 
     private sealed record Named(Guid Id, string Label);
@@ -94,6 +96,20 @@ public static class AuditLabelExtensions
                 .Where(image => ids.Contains(EF.Property<Guid>(image, "Id")))
                 .Select(image => new Named(EF.Property<Guid>(image, "Id"), image.FileName))
                 .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.NewsEntries
+                .Where(news => ids.Contains(EF.Property<Guid>(news, VersionedColumns.Key)))
+                .OrderByDescending(news => EF.Property<long>(news, VersionedColumns.Version))
+                .Select(news => new Named(EF.Property<Guid>(news, VersionedColumns.Key), news.Title))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.NewsCategories
+                .Where(category => ids.Contains(EF.Property<Guid>(category, VersionedColumns.Key)))
+                .OrderByDescending(category => EF.Property<long>(category, VersionedColumns.Version))
+                .Select(category => new Named(
+                    EF.Property<Guid>(category, VersionedColumns.Key),
+                    category.Name))
+                .AsNoTracking()
                 .ToListAsync(cancellationToken)
         ];
 
@@ -129,6 +145,15 @@ public static class AuditLabelExtensions
                     EF.Property<Guid>(entry, "Id"),
                     WallOfShameKind,
                     EF.Property<Guid>(entry, "UserId")))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.NewsComments
+                .Where(comment => ids.Contains(EF.Property<Guid>(comment, VersionedColumns.Key)))
+                .OrderByDescending(comment => EF.Property<long>(comment, VersionedColumns.Version))
+                .Select(comment => new Owned(
+                    EF.Property<Guid>(comment, VersionedColumns.Key),
+                    NewsCommentKind,
+                    EF.Property<Guid>(comment, NewsCommentConfiguration.AuthorIdProperty)))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken)
         ];

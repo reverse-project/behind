@@ -1,0 +1,49 @@
+<article class="behind-wide">
+    <p class="text-body-secondary" data-bind="visible: loading">Loading...</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: missing, text: message"></div>
+    <div data-bind="visible: found">
+        <a class="d-inline-block mb-3" href="#/news">Back to news</a>
+        <img class="news-header-image mb-3" data-bind="visible: hasImage, attr: { src: imageUrl, alt: categoryName }">
+        <h1 class="mb-2 text-break" data-bind="text: title"></h1>
+        <div class="d-flex flex-wrap align-items-center gap-2 small text-body-secondary mb-4">
+            <span data-bind="text: author"></span>
+            <span data-bind="text: stamp, attr: { title: created }"></span>
+            <span class="badge text-bg-warning" data-bind="visible: isHighlighted">Highlighted</span>
+            <span class="badge text-bg-secondary" data-bind="visible: hasCategory, text: categoryName"></span>
+        </div>
+        <div class="site-content mb-5" data-bind="html: content"></div>
+        <section aria-labelledby="news-comments-heading">
+            <h2 class="h4" id="news-comments-heading">Comments</h2>
+            <div class="alert alert-info" role="alert" data-bind="visible: hasCommentMessage, text: commentMessage"></div>
+            <p class="text-body-secondary" data-bind="visible: !hasComments()">No comments yet.</p>
+            <ul class="list-group mb-3" data-bind="foreach: comments">
+                <li class="list-group-item">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <strong class="text-break" data-bind="text: author"></strong>
+                        <span class="small text-body-secondary" data-bind="text: createdAt"></span>
+                        <span class="small text-body-secondary fst-italic" data-bind="visible: isEdited, text: editedAt"></span>
+                        <span class="ms-auto d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: canEdit && !isEditing(), enable: !$root.busy(), click: startEdit">Edit</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, enable: !$root.busy(), click: remove">Delete</button>
+                        </span>
+                    </div>
+                    <div class="text-break news-comment" data-bind="visible: !isEditing(), text: content"></div>
+                    <form class="mt-2" data-bind="visible: isEditing, submit: saveEdit">
+                        <textarea class="form-control mb-2" rows="3" maxlength="2000" aria-label="Edit comment" data-bind="value: draft, valueUpdate: 'input'"></textarea>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-primary" data-bind="enable: canSaveEdit">Save</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: cancelEdit">Cancel</button>
+                        </div>
+                    </form>
+                </li>
+            </ul>
+            <pager class="d-block mb-3" params="pager: pager"></pager>
+            <form data-bind="visible: isSignedIn, submit: post">
+                <label class="form-label" for="news-new-comment">Add a comment</label>
+                <textarea id="news-new-comment" class="form-control mb-2" rows="3" maxlength="2000" data-bind="value: newComment, valueUpdate: 'input'"></textarea>
+                <button type="submit" class="btn btn-primary" data-bind="enable: canPost">Comment</button>
+            </form>
+            <p data-bind="visible: !isSignedIn()"><a href="#/sign-in">Sign in</a> to comment.</p>
+        </section>
+    </div>
+</article>

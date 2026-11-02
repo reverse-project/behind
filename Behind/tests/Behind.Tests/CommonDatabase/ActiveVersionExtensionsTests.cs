@@ -66,12 +66,13 @@ public sealed class ActiveVersionExtensionsTests : IDisposable
     }
 
     [Fact]
-    public async Task ActiveVersions_LiveInTheirOwnContextAndTable()
+    public async Task ActiveVersions_AreOwnedByTheVersioningContextAndOnlyReadByTheCoreContext()
     {
         await using var core = _factory.CreateContext();
         await using var versioning = _factory.CreateVersioningContext();
 
-        Assert.Null(core.Model.FindEntityType(typeof(ActiveVersion)));
+        Assert.True(core.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(ActiveVersion))!.IsTableExcludedFromMigrations());
+        Assert.False(versioning.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(ActiveVersion))!.IsTableExcludedFromMigrations());
         Assert.NotNull(versioning.Model.FindEntityType(typeof(ActiveVersion)));
         Assert.True(versioning.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(AuditLogEntry))!.IsTableExcludedFromMigrations());
     }

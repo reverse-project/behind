@@ -191,6 +191,12 @@ public static class WebApiExtensions
             builder.Services.AddScoped<ISiteCommands, SiteCommands>();
             builder.Services.AddScoped<ISiteImageQueries, SiteImageQueries>();
             builder.Services.AddScoped<ISiteImageCommands, SiteImageCommands>();
+            builder.Services.AddScoped<INewsQueries, NewsQueries>();
+            builder.Services.AddScoped<INewsCommands, NewsCommands>();
+            builder.Services.AddScoped<INewsCategoryQueries, NewsCategoryQueries>();
+            builder.Services.AddScoped<INewsCategoryCommands, NewsCategoryCommands>();
+            builder.Services.AddScoped<INewsCommentQueries, NewsCommentQueries>();
+            builder.Services.AddScoped<INewsCommentCommands, NewsCommentCommands>();
             builder.Services.AddScoped<UserManagementGate>();
             builder.Services.AddScoped<IMagicLinkCommands, MagicLinkCommands>();
             builder.Services.AddScoped<IMagicLinkQueries, MagicLinkQueries>();
@@ -548,6 +554,200 @@ public static class WebApiExtensions
                 .Produces(403)
                 .Produces(404)
                 .Produces<SiteConflictResponse>(409)
+                .Produces(500);
+
+            var newsRead = GrantName.Of(GrantArea.News, GrantAction.Read);
+            var newsWrite = GrantName.Of(GrantArea.News, GrantAction.Write);
+            var newsDelete = GrantName.Of(GrantArea.News, GrantAction.Delete);
+
+            application.MapGet("/news", NewsEndpoints.List)
+                .Produces<PublicNewsListResponse>()
+                .Produces(400)
+                .Produces(500);
+
+            application.MapGet("/news/categories", NewsCategoryEndpoints.ListActive)
+                .Produces<IReadOnlyList<NewsCategoryItem>>()
+                .Produces(500);
+
+            application.MapGet("/news/manage", NewsEndpoints.Manage)
+                .RequireAuthorization(newsRead)
+                .Produces<NewsManageResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
+            application.MapGet("/news/categories/manage", NewsCategoryEndpoints.Manage)
+                .RequireAuthorization(newsRead)
+                .Produces<NewsCategoryManageResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
+            application.MapGet("/news/{id:guid}/versions", NewsEndpoints.GetHistory)
+                .RequireAuthorization(newsRead)
+                .Produces<NewsHistoryResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapGet("/news/{id:guid}/versions/{version:long}", NewsEndpoints.GetVersion)
+                .RequireAuthorization(newsRead)
+                .Produces<NewsDetailResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/news/images", SiteImageEndpoints.Upload)
+                .RequireAuthorization(newsWrite)
+                .DisableAntiforgery()
+                .Produces<SiteImageResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces<SiteImageLimitResponse>(413)
+                .Produces(415)
+                .Produces(500);
+
+            application.MapGet("/news/{id:guid}", NewsEndpoints.Get)
+                .Produces<NewsDetailResponse>()
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/news", NewsEndpoints.Create)
+                .RequireAuthorization(newsWrite)
+                .AddEndpointFilter<DataAnnotationValidationFilter<NewsEndpoints.SaveNewsRequest>>()
+                .Produces<NewsSavedResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces<NewsConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/news/{id:guid}/versions", NewsEndpoints.SaveVersion)
+                .RequireAuthorization(newsWrite)
+                .AddEndpointFilter<DataAnnotationValidationFilter<NewsEndpoints.SaveNewsRequest>>()
+                .Produces<NewsSavedResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces<NewsConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/news/{id:guid}/versions/{version:long}/activate", NewsEndpoints.Activate)
+                .RequireAuthorization(newsWrite)
+                .Produces<NewsSavedResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces<NewsConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/news/{id:guid}/delete", NewsEndpoints.Delete)
+                .RequireAuthorization(newsDelete)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/news/{id:guid}/restore", NewsEndpoints.Restore)
+                .RequireAuthorization(NewsEndpoints.DeletedRecordsGrant)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/news/{id:guid}/hard/delete", NewsEndpoints.HardDelete)
+                .RequireAuthorization(NewsEndpoints.DeletedRecordsGrant)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(409)
+                .Produces(500);
+
+            application.MapPost("/news/categories", NewsCategoryEndpoints.Create)
+                .RequireAuthorization(newsWrite)
+                .AddEndpointFilter<DataAnnotationValidationFilter<NewsCategoryEndpoints.SaveNewsCategoryRequest>>()
+                .Produces<NewsSavedResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces<NewsConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/news/categories/{id:guid}", NewsCategoryEndpoints.Update)
+                .RequireAuthorization(newsWrite)
+                .AddEndpointFilter<DataAnnotationValidationFilter<NewsCategoryEndpoints.SaveNewsCategoryRequest>>()
+                .Produces<NewsSavedResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces<NewsConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/news/categories/{id:guid}/delete", NewsCategoryEndpoints.Delete)
+                .RequireAuthorization(newsDelete)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/news/categories/{id:guid}/restore", NewsCategoryEndpoints.Restore)
+                .RequireAuthorization(NewsEndpoints.DeletedRecordsGrant)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces<NewsConflictResponse>(409)
+                .Produces(500);
+
+            application.MapPost("/news/categories/{id:guid}/hard/delete", NewsCategoryEndpoints.HardDelete)
+                .RequireAuthorization(NewsEndpoints.DeletedRecordsGrant)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(409)
+                .Produces(500);
+
+            application.MapGet("/news/{id:guid}/comments", NewsCommentEndpoints.List)
+                .Produces<PageResponse<NewsCommentItem>>()
+                .Produces(500);
+
+            application.MapPost("/news/{id:guid}/comments", NewsCommentEndpoints.Add)
+                .RequireAuthorization()
+                .AddEndpointFilter<DataAnnotationValidationFilter<NewsCommentEndpoints.SaveNewsCommentRequest>>()
+                .Produces<NewsSavedResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/news/comments/{commentId:guid}", NewsCommentEndpoints.Update)
+                .RequireAuthorization()
+                .AddEndpointFilter<DataAnnotationValidationFilter<NewsCommentEndpoints.SaveNewsCommentRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/news/comments/{commentId:guid}/delete", NewsCommentEndpoints.Delete)
+                .RequireAuthorization()
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
                 .Produces(500);
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)

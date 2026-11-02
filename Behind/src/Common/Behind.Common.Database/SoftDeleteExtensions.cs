@@ -72,7 +72,7 @@ public static class SoftDeleteExtensions
             }
         }
 
-        private ISoftDeleteContext SoftDeleteContext =>
+        internal ISoftDeleteContext SoftDeleteContext =>
             context as ISoftDeleteContext
             ?? throw new InvalidOperationException($"{context.GetType().Name} does not support soft delete.");
 

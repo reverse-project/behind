@@ -24,5 +24,5 @@ public sealed class CoreContextSqlite(DbContextOptions<CoreContextSqlite> option
         modelBuilder.Entity<MagicLink>().Property<Guid>("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<Password>().Property<Guid>("Id").HasValueGenerator<Uuid7ValueGenerator>();
         modelBuilder.Entity<SiteImage>().Property<Guid>("Id").HasValueGenerator<Uuid7ValueGenerator>();
-    }
+                            }
 }

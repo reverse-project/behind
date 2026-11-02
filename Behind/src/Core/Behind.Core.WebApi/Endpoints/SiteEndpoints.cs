@@ -18,11 +18,10 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class SiteEndpoints
 {
-    public const int DefaultPageSize = 10;
-    public const int MaxPageSize = 100;
-    public const int MaxSearchLength = 200;
-    public const string DeletedRecordsGrant = "RawDatabase.Manage";
-    public const string NoStore = "no-store";
+    public const int DefaultPageSize = ManagedListExtensions.DefaultPageSize;
+    public const int MaxPageSize = ManagedListExtensions.MaxPageSize;
+    public const string DeletedRecordsGrant = ManagedListExtensions.DeletedRecordsGrant;
+    public const string NoStore = ManagedListExtensions.NoStore;
     public const string NoCache = "no-cache";
 
     public sealed record SaveSiteRequest(
@@ -32,7 +31,7 @@ public sealed class SiteEndpoints
         bool Publish);
 
     [IgnoreETag]
-    public static async Task<IResult> List(
+    public static Task<IResult> List(
         HttpContext httpContext,
         ISiteQueries queries,
         IAuthorizationService authorization,
@@ -40,36 +39,25 @@ public sealed class SiteEndpoints
         [FromQuery] int? pageSize = null,
         [FromQuery] string? search = null,
         [FromQuery] string? letter = null,
-        [FromQuery] bool deleted = false)
-    {
-        httpContext.Response.Headers.CacheControl = NoStore;
+        [FromQuery] bool deleted = false) =>
+        httpContext.WithManagedList(
+            authorization,
+            search,
+            letter,
+            deleted,
+            async query =>
+            {
+                var sites = await queries.List(
+                    Flipper.Create(page, pageSize, DefaultPageSize, MaxPageSize),
+                    query.Search,
+                    query.Letter,
+                    query.State,
+                    httpContext.RequestAborted);
 
-        var letterFilter = LetterBucketExtensions.ParseLetterBucket(letter);
+                var letters = await queries.GetLetters(query.Search, query.State, httpContext.RequestAborted);
 
-        if (!string.IsNullOrWhiteSpace(letter) && letterFilter == None)
-        {
-            return Results.BadRequest();
-        }
-
-        if (deleted && !await authorization.HoldsGrantAsync(httpContext.User, DeletedRecordsGrant))
-        {
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }
-
-        var state = deleted ? DeletionState.Deleted : DeletionState.Active;
-        var searchTerm = search.ToSearchTerm(MaxSearchLength);
-
-        var sites = await queries.List(
-            Flipper.Create(page, pageSize, DefaultPageSize, MaxPageSize),
-            searchTerm,
-            letterFilter,
-            state,
-            httpContext.RequestAborted);
-
-        var letters = await queries.GetLetters(searchTerm, state, httpContext.RequestAborted);
-
-        return Results.Json(new SiteListResponse(sites.ToPageResponse(site => site.ToItem(state)), letters));
-    }
+                return Results.Json(new SiteListResponse(sites.ToPageResponse(site => site.ToItem(query.State)), letters));
+            });
 
     [IgnoreETag]
     public static async Task<IResult> Delete(Guid id, HttpContext httpContext, ISiteCommands commands) =>

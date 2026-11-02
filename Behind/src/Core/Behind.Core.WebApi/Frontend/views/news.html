@@ -1,0 +1,26 @@
+<section class="behind-wide">
+    <h1 class="mb-3">News</h1>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="News categories" data-bind="foreach: filters">
+        <button type="button" class="btn btn-sm" data-bind="text: name, css: isSelected ? 'btn-primary' : 'btn-outline-primary', click: select"></button>
+    </div>
+    <img class="news-header-image mb-3" data-bind="visible: hasBanner, attr: { src: bannerUrl, alt: bannerName }">
+    <p class="text-body-secondary" data-bind="visible: isEmpty">There is no news yet.</p>
+    <div data-bind="foreach: items">
+        <article class="card mb-3" data-bind="css: { 'border-warning': isHighlighted }">
+            <img class="card-img-top news-card-image" data-bind="visible: imageUrl !== null, attr: { src: imageUrl, alt: categoryName }">
+            <div class="card-body">
+                <h2 class="h4 card-title"><span class="badge text-bg-warning me-2" data-bind="visible: isHighlighted"><i class="fa-solid fa-star" aria-hidden="true"></i> Highlighted</span><a class="text-break" data-bind="attr: { href: href }, text: title"></a></h2>
+                <div class="d-flex flex-wrap align-items-center gap-2 small text-body-secondary mb-2">
+                    <span data-bind="text: author"></span>
+                    <span data-bind="text: stamp, attr: { title: created }"></span>
+                    <span class="badge text-bg-secondary" data-bind="visible: hasCategory, text: categoryName"></span>
+                </div>
+                <div class="site-content mb-2" data-bind="html: summary"></div>
+                <a class="me-2" data-bind="attr: { href: href }">Read more</a>
+                <span class="small text-body-secondary" data-bind="text: commentLabel"></span>
+            </div>
+        </article>
+    </div>
+    <pager class="d-block" params="pager: pager"></pager>
+</section>

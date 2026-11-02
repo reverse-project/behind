@@ -1,34 +1,15 @@
-define(["models/http"], function (http) {
-    var genericFailure = "Something went wrong. Please try again.";
-
-    var sessionExpired = "Your session has expired. Please sign in again.";
-
-    var failure = function (response, messages) {
-        return { ok: false, message: messages[response.status] || genericFailure };
-    };
+define(["models/http", "models/results"], function (http, results) {
+    var sessionExpired = results.sessionExpired;
 
     var conflictMessages = {
         "slug-taken": "Another site already uses this slug. Choose a different one.",
         "version-conflict": "The site was changed at the same time by someone else. Reload it and try again."
     };
 
-    var conflict = function (response, messages) {
-        var reason = response.data && response.data.reason ? response.data.reason : "";
-
-        return { ok: false, message: conflictMessages[reason] || messages[409] || genericFailure };
-    };
-
-    var loaded = function (response, messages) {
-        return response.ok ? { ok: true, message: "", data: response.data } : failure(response, messages);
-    };
-
-    var saved = function (response, done, messages) {
-        if (response.ok) {
-            return { ok: true, message: done, data: response.data };
-        }
-
-        return response.status === 409 ? conflict(response, messages) : failure(response, messages);
-    };
+    var outcome = results.create(conflictMessages);
+    var failure = outcome.failure;
+    var loaded = outcome.loaded;
+    var saved = outcome.saved;
 
     var readFailures = {
         401: sessionExpired,

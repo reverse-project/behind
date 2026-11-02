@@ -33,6 +33,7 @@ Behind.Core.Domain/
 ├── Password.cs             # Password value object
 ├── Site.cs                 # Site version record (VersionedKey id, draft / published)
 ├── SiteImage.cs            # Uploaded site image
+├── News.cs                 # News, news category and news comment records
 └── Reason.cs              # Business reason value object
 ```
 

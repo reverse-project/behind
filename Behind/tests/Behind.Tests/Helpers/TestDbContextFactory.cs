@@ -41,11 +41,11 @@ public sealed class TestDbContextFactory : IDisposable
     public VersioningContextSqlite CreateVersioningContext() =>
         new(new DbContextOptionsBuilder<VersioningContextSqlite>().UseSqlite(_connection).Options);
 
-    public VersioningContextSqlite CreateAuditedVersioningContext(AuditActor actor)
+    public VersioningContextSqlite CreateAuditedVersioningContext(AuditActor actor, TimeProvider? timeProvider = null)
     {
         var interceptor = new AuditSaveChangesInterceptor(
             () => new FixedAuditActorProvider(actor),
-            TimeProvider.System
+            timeProvider ?? TimeProvider.System
         );
 
         var options = new DbContextOptionsBuilder<VersioningContextSqlite>()
@@ -56,11 +56,11 @@ public sealed class TestDbContextFactory : IDisposable
         return new VersioningContextSqlite(options);
     }
 
-    public CoreContextSqlite CreateAuditedContext(AuditActor actor)
+    public CoreContextSqlite CreateAuditedContext(AuditActor actor, TimeProvider? timeProvider = null)
     {
         var interceptor = new AuditSaveChangesInterceptor(
             () => new FixedAuditActorProvider(actor),
-            TimeProvider.System
+            timeProvider ?? TimeProvider.System
         );
 
         var options = new DbContextOptionsBuilder<CoreContextSqlite>()

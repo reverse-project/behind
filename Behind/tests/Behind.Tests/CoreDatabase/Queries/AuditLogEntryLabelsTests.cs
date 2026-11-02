@@ -116,6 +116,51 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesNewsAfterTheirNewestTitleAndCategoriesAfterTheirName()
+    {
+        using var bed = new NewsTestBed();
+        var categoryId = await bed.CreateCategoryAsync("Releases");
+        var first = await bed.SaveNewsAsync(null, "Version 2", categoryId);
+        await bed.SaveNewsAsync(first.Key, "Version 2 final", categoryId);
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([first.Key, categoryId]);
+
+        Assert.Equal("Version 2 final", labels.Label(first.Key.ToString()));
+        Assert.Equal("Releases", labels.Label(categoryId.ToString()));
+        Assert.Equal("Version 2 final: 1", labels.LabelKey($"{first.Key}:1"));
+        Assert.Equal("News: Version 2 final", labels.LabelKey($"News:{first.Key}"));
+        Assert.Equal("Releases: 1", labels.LabelKey($"{categoryId}:1"));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesNewsCommentsAfterTheirAuthor()
+    {
+        using var bed = new NewsTestBed();
+        var news = await bed.CreateNewsAsync();
+        var commentId = await bed.AddCommentAsync(news, "Hi", bed.OtherAuthorId);
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([commentId]);
+
+        Assert.Equal("News comment of Test User", labels.Label(commentId.ToString()));
+        Assert.Equal("News comment of Test User: 1", labels.LabelKey($"{commentId}:1"));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesDeletedNewsBecauseTheAuditLogIncludesDeletedRecords()
+    {
+        using var bed = new NewsTestBed();
+        var newsId = await bed.CreateNewsAsync("Gone");
+        await bed.WithNewsCommandsAsync(commands => commands.Delete(newsId));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([newsId]);
+
+        Assert.Equal("Gone", labels.Label(newsId.ToString()));
+    }
+
+    [Fact]
     public async Task ResolveLabels_UnknownIdentifierIsKeptAsIs()
     {
         var unknown = Guid.NewGuid();

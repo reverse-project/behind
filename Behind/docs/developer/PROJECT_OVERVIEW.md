@@ -111,6 +111,7 @@ Core business logic and domain implementation.
   - Audit log entries
   - Wall of Shame entries
   - Sites (versioned with `VersionedKey` and `ActiveVersion`) and site images
+  - News with categories (header image) and comments
 
 - **Behind.Core.Database** (Data implementation)
   - DbContext configuration

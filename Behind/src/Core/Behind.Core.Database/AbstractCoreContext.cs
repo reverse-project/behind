@@ -41,6 +41,8 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AbstractCoreContext).Assembly);
+        modelBuilder.ApplyConfiguration(new ActiveVersionConfiguration());
+        modelBuilder.Entity<ActiveVersion>().ToTable("ActiveVersions", table => table.ExcludeFromMigrations());
         UserConfiguration.ApplyHumanUser(modelBuilder);
         UserConfiguration.ApplyUserRoles(modelBuilder);
         UserConfiguration.ApplyUserAccess(modelBuilder);
@@ -56,7 +58,10 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
             typeof(Restriction),
             typeof(Password),
             typeof(WallOfShameEntry),
-            typeof(Site));
+            typeof(Site),
+            typeof(News),
+            typeof(NewsCategory),
+            typeof(NewsComment));
     }
 
     public static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =

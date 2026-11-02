@@ -64,6 +64,27 @@ The `Frontend:Sites` section (`SitesConfiguration`, for example in `frontend.jso
 
 `GET /sites/settings` (`Site.Read`) returns both values to the editor.
 
+### News Endpoints
+
+| Endpoint | Access |
+|----------|--------|
+| `GET /news?page&pageSize&category` | public, the live version of the news that is running now, and the active categories |
+| `GET /news/{id}` | public, the live version, only while the news is running |
+| `GET /news/categories` | public, active categories |
+| `GET /news/{id}/comments?page&pageSize` | public, `canDelete` is set for the author and for `News.Delete` holders, `canEdit` for the author and for `News.Manage` holders, `updatedAt` comes from the audit log |
+| `POST /news/{id}/comments` | any signed in user |
+| `POST /news/comments/{id}` | edit: the comment author or `News.Manage`, body `{ "content": ... }`, inserts a new comment version, `204` |
+| `POST /news/comments/{id}/delete` | the comment author or `News.Delete` |
+| `GET /news/manage`, `GET /news/categories/manage` | `News.Read`, with `search`, `letter`, `deleted` (`RawDatabase.Manage` for `deleted`) |
+| `GET /news/{id}/versions`, `GET /news/{id}/versions/{version}` | `News.Read`, the version list and one version in full |
+| `POST /news`, `POST /news/{id}/versions` | `News.Write`, create / save a new version, `publish: true` also makes it live |
+| `POST /news/{id}/versions/{version}/activate` | `News.Write`, make a version live |
+| `POST /news/categories`, `POST /news/categories/{id}`, `POST /news/images` | `News.Write`, saving a category inserts a new version |
+| `POST /news/{id}/delete`, `POST /news/categories/{id}/delete` | `News.Delete` |
+| `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
+
+Ids in the URLs are the key of the entity, responses report the `version` that was saved or shown. The managed lists share `WithManagedList` (`ManagedListExtensions`), which validates the letter filter and the deleted switch for `Sites` and `News`. Saving answers `409` with `{ "reason": ... }` (`unknown-category`, `invalid-schedule`, `version-conflict`, `name-taken`, `unknown-image`).
+
 ### Startup Example
 
 ```csharp

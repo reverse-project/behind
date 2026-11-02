@@ -14,6 +14,7 @@ This manual describes what you can do in the Behind web application today.
 - **[Managing users](./managing-users.md)** - searching users, banning, deleting, restoring, signing users out, and editing a user's access.
 - **[Managing roles and access](./managing-roles-and-access.md)** - roles, grants, restrictions, and how a user's calculated grants are worked out.
 - **[Managing sites](./managing-sites.md)** - writing pages with the rich text editor, versions, drafts, publishing and addresses.
+- **[News](./managing-news.md)** - reading and commenting on the news, writing news and managing the news categories.
 - **[Impersonation](./impersonation.md)** - acting as another user to see what they see, and how it shows in the audit log.
 - **[Audit log](./audit-log.md)** - browsing who changed what and when.
 - **[Elevating your own role](./elevation.md)** - becoming an administrator or developer with an authenticator code.

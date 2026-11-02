@@ -1,0 +1,54 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0">News categories</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/manage/news">Back to news</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage news categories.</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need news access to manage news categories.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
+    <div data-bind="visible: canRead">
+        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
+            <h2 class="h5" data-bind="text: heading"></h2>
+            <div class="mb-3">
+                <label class="form-label" for="news-category-name">Name</label>
+                <input id="news-category-name" class="form-control" type="text" maxlength="100" data-bind="value: name, valueUpdate: 'input'">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="news-category-image">Header image</label>
+                <input id="news-category-image" class="form-control" type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-bind="event: { change: chooseImage }, enable: !busy()">
+                <div class="form-text text-danger" data-bind="visible: hasUploadMessage, text: uploadMessage"></div>
+                <div class="mt-2" data-bind="visible: hasHeaderImage">
+                    <img class="news-category-preview" alt="Header image preview" data-bind="attr: { src: headerImageUrl }">
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" data-bind="click: removeImage">Remove image</button>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isEditing, click: reset">Cancel</button>
+            </div>
+        </form>
+        <div data-bind="with: list">
+            <form class="input-group mb-3" data-bind="submit: find">
+                <input class="form-control" type="search" maxlength="200" placeholder="Search by name" aria-label="Search categories" data-bind="value: search">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Search</button>
+            </form>
+            <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+                <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> Show deleted categories</label>
+            </div>
+            <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
+            <p class="text-body-secondary" data-bind="visible: !hasItems()">No categories found.</p>
+            <ul class="list-group mb-3" data-bind="foreach: items">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <img class="news-category-thumbnail" data-bind="visible: hasImage, attr: { src: headerImageUrl, alt: name }">
+                    <strong class="me-auto text-break" data-bind="text: name"></strong>
+                    <span class="badge text-bg-dark" data-bind="visible: isDeleted">Deleted</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove">Delete</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore">Restore</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete">Delete permanently</button>
+                </li>
+            </ul>
+            <pager class="d-block" params="pager: pager"></pager>
+        </div>
+    </div>
+</section>

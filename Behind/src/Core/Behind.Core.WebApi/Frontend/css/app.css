@@ -60,3 +60,37 @@
 .site-content .ql-indent-6 { padding-left: 18rem; }
 .site-content .ql-indent-7 { padding-left: 21rem; }
 .site-content .ql-indent-8 { padding-left: 24rem; }
+
+.news-summary-editor .ql-container {
+    min-height: 8rem;
+}
+
+.news-header-image {
+    display: block;
+    width: 100%;
+    max-height: 16rem;
+    object-fit: cover;
+    border-radius: var(--bs-border-radius);
+}
+
+.news-card-image {
+    max-height: 12rem;
+    object-fit: cover;
+}
+
+.news-category-preview {
+    max-width: 100%;
+    max-height: 8rem;
+    border-radius: var(--bs-border-radius);
+}
+
+.news-category-thumbnail {
+    width: 4rem;
+    height: 2.5rem;
+    object-fit: cover;
+    border-radius: var(--bs-border-radius-sm);
+}
+
+.news-comment {
+    white-space: pre-wrap;
+}

@@ -61,7 +61,9 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
             typeof(Site),
             typeof(News),
             typeof(NewsCategory),
-            typeof(NewsComment));
+            typeof(NewsComment),
+            typeof(Article),
+            typeof(ArticleCategory));
     }
 
     public static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =

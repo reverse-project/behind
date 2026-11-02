@@ -161,6 +161,37 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesArticlesAfterTheirNewestTitleAndArticleCategoriesAfterTheirName()
+    {
+        using var bed = new NewsTestBed();
+        var categoryId = await bed.CreateArticleCategoryAsync("Tutorials");
+        var first = await bed.SaveArticleAsync(null, "Setup", categoryId);
+        await bed.SaveArticleAsync(first.Key, "Setup final", categoryId);
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([first.Key, categoryId]);
+
+        Assert.Equal("Setup final", labels.Label(first.Key.ToString()));
+        Assert.Equal("Tutorials", labels.Label(categoryId.ToString()));
+        Assert.Equal("Setup final: 1", labels.LabelKey($"{first.Key}:1"));
+        Assert.Equal("Article: Setup final", labels.LabelKey($"Article:{first.Key}"));
+        Assert.Equal("Tutorials: 1", labels.LabelKey($"{categoryId}:1"));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesDeletedArticlesBecauseTheAuditLogIncludesDeletedRecords()
+    {
+        using var bed = new NewsTestBed();
+        var articleId = await bed.CreateArticleAsync("Gone");
+        await bed.WithArticleCommandsAsync(commands => commands.Delete(articleId));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([articleId]);
+
+        Assert.Equal("Gone", labels.Label(articleId.ToString()));
+    }
+
+    [Fact]
     public async Task ResolveLabels_UnknownIdentifierIsKeptAsIs()
     {
         var unknown = Guid.NewGuid();

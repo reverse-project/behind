@@ -34,6 +34,7 @@ Behind.Core.Domain/
 ├── Site.cs                 # Site version record (VersionedKey id, draft / published)
 ├── SiteImage.cs            # Uploaded site image
 ├── News.cs                 # News, news category and news comment records
+├── Article.cs              # Article and article category records
 └── Reason.cs              # Business reason value object
 ```
 

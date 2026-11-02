@@ -112,6 +112,7 @@ Core business logic and domain implementation.
   - Wall of Shame entries
   - Sites (versioned with `VersionedKey` and `ActiveVersion`) and site images
   - News with categories (header image) and comments
+  - Articles with their own categories (header image), searchable by title and content
 
 - **Behind.Core.Database** (Data implementation)
   - DbContext configuration

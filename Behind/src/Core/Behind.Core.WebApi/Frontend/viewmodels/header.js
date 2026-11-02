@@ -9,7 +9,7 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
         });
 
         self.canAdminister = ko.pureComputed(function () {
-            return self.canManageUsers() || session.hasGrant("Role.Manage") || session.hasGrant("Site.Read") || session.hasGrant("News.Read") || session.hasGrant("AuditLog.Read");
+            return self.canManageUsers() || session.hasGrant("Role.Manage") || session.hasGrant("Site.Read") || session.hasGrant("News.Read") || session.hasGrant("Article.Read") || session.hasGrant("AuditLog.Read");
         });
 
         self.label = ko.pureComputed(function () {
@@ -41,6 +41,6 @@ define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
         };
 
         needsIdentity.subscribe(identify);
-        identify(needsIdentity());
+        identify(session.isSignedIn());
     };
 });

@@ -166,6 +166,7 @@ public class EmbeddedFrontendTests
         Assert.Equal(1, index.Split("click: signOut").Length - 1);
         Assert.Contains("session.displayName()", header);
         Assert.Contains("auth.loadSession()", header);
+        Assert.Contains("identify(session.isSignedIn())", header);
     }
 
     [Fact]
@@ -191,7 +192,7 @@ public class EmbeddedFrontendTests
         var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
-        Assert.Equal(6, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Equal(8, viewModel.Split("icon: \"fa-").Length - 1);
         Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);
         Assert.Contains("name: \"Sites\", icon: \"fa-file-lines\", href: \"#/sites\", allowed: canReadSites", viewModel);
         Assert.Contains("name: \"News\", icon: \"fa-newspaper\", href: \"#/manage/news\", allowed: canReadNews", viewModel);

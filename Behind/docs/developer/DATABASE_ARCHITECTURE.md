@@ -652,6 +652,16 @@ The `Site` grant area (`Site.Read`, `Write`, `Delete`, `Manage`) is administrati
 
 The `News` grant area (`News.Read`, `Write`, `Delete`, `Manage`) is administration only: `Users` do not get `News.Read`. Reading the news is public, commenting needs a signed in session, deleting a comment needs to be its author or to hold `News.Delete`.
 
+## Articles
+
+`Article` and `ArticleCategory` are versioned entities exactly like `News` and `NewsCategory` (`VersionedKey<Guid>` id, drafts, `ActiveVersions` with `Article.EntityType`, soft delete, hard delete, restore), with these differences: an article has only `Title`, `Summary` and `Content` (plus the shadow `AuthorId` and `CategoryId`), no schedule, no highlight and no comments, and it has its own categories (`ArticleCategory`, `Name`, optional `HeaderImageId`) which are independent from the news categories.
+
+- Search: `ArticleQueryExtensions.Matching` filters on the lower cased title or content (`IArticleQueries.List` searches the live versions, `ListManaged` and `GetLetters` the latest versions).
+- Audit labels: `AuditLabelExtensions` names an article by the title of its newest version and an article category by its name.
+- Migration: `AddArticles` creates `Articles` and `ArticleCategories`.
+
+The `Article` grant area (`Article.Read`, `Write`, `Delete`, `Manage`) is administration only, like `News`: `Users` do not get `Article.Read`. Reading the articles is public.
+
 ## Migrations
 
 ### Creating Migrations

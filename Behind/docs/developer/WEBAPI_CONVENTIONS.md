@@ -85,6 +85,25 @@ The `Frontend:Sites` section (`SitesConfiguration`, for example in `frontend.jso
 
 Ids in the URLs are the key of the entity, responses report the `version` that was saved or shown. The managed lists share `WithManagedList` (`ManagedListExtensions`), which validates the letter filter and the deleted switch for `Sites` and `News`. Saving answers `409` with `{ "reason": ... }` (`unknown-category`, `invalid-schedule`, `version-conflict`, `name-taken`, `unknown-image`).
 
+### Articles Endpoints
+
+Articles follow the news endpoints under `/articles` (`ArticleRoutesExtensions.MapArticleEndpoints`), without comments, schedule and highlight, and with their own categories.
+
+| Endpoint | Access |
+|----------|--------|
+| `GET /articles?page&pageSize&category&search` | public, the live version of the published articles and the active article categories; `search` matches the title or the content of the live version, ignoring case |
+| `GET /articles/{id}` | public, the live version |
+| `GET /articles/categories` | public, active article categories |
+| `GET /articles/manage`, `GET /articles/categories/manage` | `Article.Read`, with `search` (title or content for articles), `letter`, `deleted` (`RawDatabase.Manage` for `deleted`); the article status is `draft` or `published` |
+| `GET /articles/{id}/versions`, `GET /articles/{id}/versions/{version}` | `Article.Read`, the version list and one version in full |
+| `POST /articles`, `POST /articles/{id}/versions` | `Article.Write`, create / save a new version, `publish: true` also makes it live |
+| `POST /articles/{id}/versions/{version}/activate` | `Article.Write`, make a version live |
+| `POST /articles/categories`, `POST /articles/categories/{id}`, `POST /articles/images` | `Article.Write`, saving a category inserts a new version |
+| `POST /articles/{id}/delete`, `POST /articles/categories/{id}/delete` | `Article.Delete` |
+| `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
+
+The responses reuse `NewsCategoryItem`, `NewsSavedResponse` and `NewsConflictResponse` (reasons `unknown-category`, `version-conflict`, `name-taken`, `unknown-image`).
+
 ### Startup Example
 
 ```csharp

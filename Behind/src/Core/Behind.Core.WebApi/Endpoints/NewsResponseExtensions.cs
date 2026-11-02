@@ -149,7 +149,7 @@ public static class NewsResponseExtensions
 
     extension(Guid id)
     {
-        private NewsCategoryItem ToCategoryItem(string name, Option<Guid> headerImageId, bool isDeleted) =>
+        internal NewsCategoryItem ToCategoryItem(string name, Option<Guid> headerImageId, bool isDeleted) =>
             new(
                 id,
                 name,

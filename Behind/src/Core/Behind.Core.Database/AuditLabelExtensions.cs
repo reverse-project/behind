@@ -110,6 +110,20 @@ public static class AuditLabelExtensions
                     EF.Property<Guid>(category, VersionedColumns.Key),
                     category.Name))
                 .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.Articles
+                .Where(article => ids.Contains(EF.Property<Guid>(article, VersionedColumns.Key)))
+                .OrderByDescending(article => EF.Property<long>(article, VersionedColumns.Version))
+                .Select(article => new Named(EF.Property<Guid>(article, VersionedColumns.Key), article.Title))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.ArticleCategories
+                .Where(category => ids.Contains(EF.Property<Guid>(category, VersionedColumns.Key)))
+                .OrderByDescending(category => EF.Property<long>(category, VersionedColumns.Version))
+                .Select(category => new Named(
+                    EF.Property<Guid>(category, VersionedColumns.Key),
+                    category.Name))
+                .AsNoTracking()
                 .ToListAsync(cancellationToken)
         ];
 

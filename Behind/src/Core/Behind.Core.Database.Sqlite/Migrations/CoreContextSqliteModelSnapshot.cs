@@ -39,6 +39,71 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.Article", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("Articles", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.ArticleCategory", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("HeaderImageId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("HeaderImageId");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("ArticleCategories", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.AuditLogEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -627,6 +692,23 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasIndex("DisplayName");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.Article", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.ArticleCategory", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.SiteImage", null)
+                        .WithMany()
+                        .HasForeignKey("HeaderImageId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.AuditLogEntry", b =>

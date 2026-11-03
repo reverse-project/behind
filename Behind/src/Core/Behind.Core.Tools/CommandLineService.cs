@@ -2,7 +2,6 @@ using System.CommandLine;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Common.Converters;
 using Microsoft.Extensions.Hosting;
-using OtpNet;
 using TotpValue = Behind.Core.Common.Configuration.Totp;
 
 namespace Behind.Core.Tools;
@@ -10,7 +9,6 @@ namespace Behind.Core.Tools;
 public sealed class CommandLineService(IHost host) : BackgroundService
 {
     private const string DefaultAccount = "admin";
-    private const string Issuer = "Behind System";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -26,12 +24,7 @@ public sealed class CommandLineService(IHost host) : BackgroundService
             switch (arguments.GetValue<string>("--type"))
             {
                 case "totp":
-                    var size = arguments.GetValue<ushort?>("--size");
-                    var randomKey = size is { } length
-                        ? KeyGeneration.GenerateRandomKey(length)
-                        : KeyGeneration.GenerateRandomKey(TotpValue.HashMode);
-                    TotpValue.TryCreate(Base32Encoding.ToString(randomKey), out var totp);
-                    PrintTotp(totp, DefaultAccount);
+                    PrintTotp(TotpValue.Generate(arguments.GetValue<ushort?>("--size")), DefaultAccount);
                     break;
             }
         });
@@ -76,6 +69,6 @@ public sealed class CommandLineService(IHost host) : BackgroundService
     private static void PrintTotp(TotpValue totp, string account)
     {
         Console.WriteLine("To security.json as a secret key value: {0}", totp.ToConfigurationValue());
-        Console.WriteLine("To your authenticator (paste the whole URI): {0}", totp.ToOtpUri(account, Issuer));
+        Console.WriteLine("To your authenticator (paste the whole URI): {0}", totp.ToOtpUri(account, TotpValue.Issuer));
     }
 }

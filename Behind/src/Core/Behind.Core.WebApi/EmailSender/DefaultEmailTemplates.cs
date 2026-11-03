@@ -13,4 +13,7 @@ public static class DefaultEmailTemplates
     public static readonly SimpleTemplate PasswordResetLinkEmail = new("PasswordResetLinkEmail", "<p>Please reset your password for email ({{Email}}) by clicking <a href=\"{{ResetLink}}\">here</a>.</p>");
 
     public static readonly SimpleTemplate MagicLinkEmail = new("MagicLinkEmail", "<p>Sign in with email ({{Email}}) by clicking <a href=\"{{MagicLink}}\">here</a>. If you did not request this, you can ignore this message.</p>");
+
+    public static readonly IReadOnlyList<SimpleTemplate> All =
+        [ConfirmationEmail, PasswordResetCodeEmail, PasswordResetLinkEmail, MagicLinkEmail];
 }

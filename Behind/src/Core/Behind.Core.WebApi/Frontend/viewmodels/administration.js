@@ -35,6 +35,10 @@ define(["ko", "models/session"], function (ko, session) {
         return session.hasGrant("Menu.Read");
     };
 
+    var canReadConfiguration = function () {
+        return session.hasGrant("Configuration.Read");
+    };
+
     var pages = [
         { name: "Users", icon: "fa-users", href: "#/users", allowed: canManageUsers },
         { name: "Roles", icon: "fa-user-shield", href: "#/roles", allowed: canManageRoles },
@@ -46,7 +50,8 @@ define(["ko", "models/session"], function (ko, session) {
         { name: "Galleries", icon: "fa-images", href: "#/manage/galleries", allowed: canReadGalleries },
         { name: "Downloads", icon: "fa-download", href: "#/manage/downloads", allowed: canReadDownloads },
         { name: "Menus", icon: "fa-bars", href: "#/manage/menus", allowed: canReadMenus },
-        { name: "Audit log", icon: "fa-clipboard-list", href: "#/audit-log", allowed: canReadAuditLog }
+        { name: "Audit log", icon: "fa-clipboard-list", href: "#/audit-log", allowed: canReadAuditLog },
+        { name: "Settings", icon: "fa-sliders", href: "#/settings", allowed: canReadConfiguration }
     ];
 
     return function AdministrationViewModel() {

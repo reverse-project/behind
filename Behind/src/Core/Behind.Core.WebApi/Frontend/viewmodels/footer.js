@@ -1,9 +1,14 @@
-define(["ko", "models/about"], function (ko, about) {
+define(["ko", "models/about", "models/branding"], function (ko, about, branding) {
     return function FooterViewModel() {
         var self = this;
 
         self.name = "Behind";
         self.version = ko.observable("");
+        self.copyright = branding.copyright;
+
+        self.hasCopyright = ko.pureComputed(function () {
+            return self.copyright() !== "";
+        });
 
         self.hasVersion = ko.pureComputed(function () {
             return self.version() !== "";

@@ -259,3 +259,10 @@
     text-align: center;
     color: var(--bs-secondary-color);
 }
+
+.settings-qrcode svg {
+    width: 14rem;
+    height: 14rem;
+    background-color: #fff;
+    padding: 0.5rem;
+}

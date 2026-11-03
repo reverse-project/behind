@@ -249,3 +249,44 @@ public class TemplatesTests
         Assert.Throws<ArgumentNullException>(() => templates.GetOrDefault("name", null!));
     }
 }
+
+public class TemplatesConvertersTests
+{
+    [Fact]
+    public void TypeConverter_CreatesTemplatesFromADictionaryAndSkipsBlankContents()
+    {
+        var values = new Dictionary<string, string?> { ["a"] = "one", ["b"] = " ", ["c"] = null };
+
+        var templates = Assert.IsType<Templates>(
+            System.ComponentModel.TypeDescriptor.GetConverter(typeof(Templates)).ConvertFrom(
+                null,
+                System.Globalization.CultureInfo.InvariantCulture,
+                values));
+
+        Assert.Equal([("a", "one")], templates.Select(template => (template.Name, template.Content)));
+    }
+
+    [Fact]
+    public void TypeConverter_OnlyConvertsFromADictionary()
+    {
+        var converter = System.ComponentModel.TypeDescriptor.GetConverter(typeof(Templates));
+
+        Assert.True(converter.CanConvertFrom(typeof(IReadOnlyDictionary<string, string?>)));
+        Assert.False(converter.CanConvertFrom(typeof(int)));
+        Assert.Throws<NotSupportedException>(() => converter.ConvertFrom(5));
+    }
+
+    [Fact]
+    public void JsonConverter_WritesAnObjectAndReadsItBack()
+    {
+        var templates = new Templates { { "a", "one" }, { "b", "<p>two</p>" } };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(templates);
+        var back = System.Text.Json.JsonSerializer.Deserialize<Templates>(json)!;
+
+        Assert.Equal("""{"a":"one","b":"\u003Cp\u003Etwo\u003C/p\u003E"}""", json);
+        Assert.Equal(
+            templates.Select(template => (template.Name, template.Content)),
+            back.Select(template => (template.Name, template.Content)));
+    }
+}

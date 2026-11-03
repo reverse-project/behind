@@ -79,6 +79,50 @@ public sealed class JsonConfigurationFileExtensionsTests : IDisposable
     }
 
     [Fact]
+    public async Task SetJsonNodesAsync_KeepsTheTypesOfTheValues()
+    {
+        var file = FileWith("""{ "A": { "On": false, "Count": 1 } }""");
+
+        await file.SetJsonNodesAsync(
+            new Dictionary<string, JsonNode?> { ["A:On"] = JsonValue.Create(true), ["A:Count"] = JsonValue.Create(7) });
+
+        var section = Read(file)["A"]!;
+        Assert.True((bool?)section["On"]);
+        Assert.Equal(7, (int?)section["Count"]);
+    }
+
+    [Fact]
+    public async Task SetJsonNodesAsync_ReplacesAnArrayItem()
+    {
+        var file = FileWith("""{ "A": { "List": ["x", "y"] } }""");
+
+        await file.SetJsonNodesAsync(new Dictionary<string, JsonNode?> { ["A:List:1"] = JsonValue.Create("z") });
+
+        Assert.Equal(["x", "z"], Read(file)["A"]!["List"]!.AsArray().Select(item => (string?)item));
+    }
+
+    [Fact]
+    public async Task ReadJsonAsync_ListsEveryLeafWithItsPath()
+    {
+        var file = FileWith("""{ "A": { "B": "x", "C": [1, { "D": true }] }, "E": null }""");
+
+        var fields = (await file.ReadJsonAsync()).Fields();
+
+        Assert.Equal(["A:B", "A:C:0", "A:C:1:D"], fields.Select(field => field.Path));
+    }
+
+    [Fact]
+    public async Task FindValue_ReturnsTheLeafOrNothing()
+    {
+        var root = await FileWith("""{ "A": { "B": "x" } }""").ReadJsonAsync();
+
+        Assert.Equal("x", root.FindValue("A:B")!.GetValue<string>());
+        Assert.Null(root.FindValue("A:Missing"));
+        Assert.Null(root.FindValue("A"));
+        Assert.Null(root.FindValue("Missing:Deeper"));
+    }
+
+    [Fact]
     public async Task SetJsonValuesAsync_LeavesNoTemporaryFiles()
     {
         var file = FileWith("{}");

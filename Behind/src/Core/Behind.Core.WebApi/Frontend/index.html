@@ -15,7 +15,7 @@
 <header id="header-container">
     <nav class="navbar navbar-expand-md border-bottom">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#/">Behind</a>
+            <a class="navbar-brand fw-bold" href="#/" data-bind="text: title">Behind</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navigation" aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -53,6 +53,7 @@
 <footer id="footer-container" class="border-top py-3 mt-auto">
     <div class="container d-flex flex-wrap align-items-center gap-2 text-body-secondary">
         <strong data-bind="text: name"></strong>
+        <span data-bind="visible: hasCopyright, text: copyright"></span>
         <a class="link-secondary" href="#/changelog" data-bind="visible: hasVersion, text: label" title="Changelog"></a>
         <a class="link-secondary" href="#/licenses" title="Licenses">Licenses</a>
         <menu-nav params="name: 'footer'"></menu-nav>

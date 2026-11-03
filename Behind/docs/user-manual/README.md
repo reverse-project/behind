@@ -21,6 +21,7 @@ This manual describes what you can do in the Behind web application today.
 - **[Menus](./managing-menus.md)** - the main menu and other menus, their items, sub items, targets and who sees them.
 - **[Impersonation](./impersonation.md)** - acting as another user to see what they see, and how it shows in the audit log.
 - **[Audit log](./audit-log.md)** - browsing who changed what and when.
+- **[Settings](./managing-settings.md)** - the configuration files as tabs, masked secrets, generating and rotating secrets (developers).
 - **[Elevating your own role](./elevation.md)** - becoming an administrator or developer with an authenticator code.
 
 ## Good to know

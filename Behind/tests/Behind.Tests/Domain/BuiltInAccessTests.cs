@@ -3,6 +3,7 @@ namespace Behind.Tests.Domain;
 public class BuiltInAccessTests
 {
     private const string ConfigurationRead = "Configuration.Read";
+    private const string ConfigurationManage = "Configuration.Manage";
     private const string RawDatabaseManage = "RawDatabase.Manage";
 
     private static IReadOnlyList<string> GrantNames(BuiltInRole role) =>
@@ -46,12 +47,26 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void Developers_HaveReadOnEveryAreaAndRawDatabaseManage()
+    public void Developers_HaveReadOnEveryAreaConfigurationManageAndRawDatabaseManage()
     {
         Assert.Equal(DomainConstants.DevelopersRole, BuiltInAccess.Developers.Role.Name);
         Assert.Equal(
-            GrantArea.All.Select(area => GrantName.Of(area, GrantAction.Read)).Append(RawDatabaseManage).Order(),
+            GrantArea.All
+                .Select(area => GrantName.Of(area, GrantAction.Read))
+                .Append(ConfigurationManage)
+                .Append(RawDatabaseManage)
+                .Order(),
             GrantNames(BuiltInAccess.Developers));
+    }
+
+    [Fact]
+    public void ConfigurationManage_BelongsOnlyToDevelopers()
+    {
+        var holders = BuiltInAccess.Roles
+            .Where(role => GrantNames(role).Contains(ConfigurationManage))
+            .Select(role => role.Role.Name);
+
+        Assert.Equal([DomainConstants.DevelopersRole], holders);
     }
 
     [Fact]
@@ -226,7 +241,7 @@ public class BuiltInAccessTests
     {
         var grants = BuiltInAccess.Developers.Role.Grants.GetOrElse([]);
 
-        Assert.Equal(13, grants.Count());
+        Assert.Equal(14, grants.Count());
     }
 
     [Fact]

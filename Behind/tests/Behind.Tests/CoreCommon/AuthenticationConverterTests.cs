@@ -129,4 +129,42 @@ public class EmailAuthenticationJsonConverterTests
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public void Read_BasicAuthenticationObject_KeepsTheCredentials()
+    {
+        var result = JsonSerializer.Deserialize<Authentication>(
+            """{ "Type": "Basic", "Username": "user", "Password": "pass" }""",
+            _options);
+
+        var basic = Assert.IsType<BasicAuthentication>(result);
+        Assert.Equal(("user", "pass"), (basic.Username, basic.Password));
+    }
+
+    [Fact]
+    public void Read_NoAuthenticationObject_ReturnsNoAuthentication()
+    {
+        Assert.IsType<NoAuthentication>(JsonSerializer.Deserialize<Authentication>("""{ "Type": "No" }""", _options));
+    }
+
+    [Fact]
+    public void Read_ObjectWithoutAType_ReturnsNull()
+    {
+        Assert.Null(JsonSerializer.Deserialize<Authentication>("""{ "Username": "user" }""", _options));
+    }
+
+    [Fact]
+    public void Write_BasicAuthentication_WritesAnObjectThatReadsBack()
+    {
+        var json = JsonSerializer.Serialize<Authentication>(new BasicAuthentication("user", "pass"), _options);
+
+        Assert.Equal("""{"Type":"Basic","Username":"user","Password":"pass"}""", json);
+        Assert.Equal(new BasicAuthentication("user", "pass"), JsonSerializer.Deserialize<Authentication>(json, _options));
+    }
+
+    [Fact]
+    public void Write_NoAuthentication_WritesOnlyTheType()
+    {
+        Assert.Equal("""{"Type":"No"}""", JsonSerializer.Serialize<Authentication>(new NoAuthentication(), _options));
+    }
 }

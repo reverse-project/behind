@@ -47,7 +47,7 @@ public static class BuiltInAccess
     public static readonly BuiltInRole Developers = NewRole(
         5,
         DomainConstants.DevelopersRole,
-        [..AreaGrants.Where(grant => grant.Action == GrantAction.Read), RawDatabaseManage]);
+        [..AreaGrants.Where(grant => grant.Action == GrantAction.Read || grant.IsConfigurationManage), RawDatabaseManage]);
 
     public static readonly IReadOnlyList<BuiltInRole> Roles = [Administrators, Users, Developers];
 
@@ -60,6 +60,8 @@ public static class BuiltInAccess
     extension(BuiltInGrant grant)
     {
         private bool IsDeveloperOnly => grant.Area == GrantArea.Configuration;
+
+        private bool IsConfigurationManage => grant.Area == GrantArea.Configuration && grant.Action == GrantAction.Manage;
 
         private bool IsAdministrationOnly => grant.Area is GrantArea.AuditLog or GrantArea.Impersonation or GrantArea.Site or GrantArea.News or GrantArea.Article or GrantArea.Menu or GrantArea.Gallery or GrantArea.Download;
     }

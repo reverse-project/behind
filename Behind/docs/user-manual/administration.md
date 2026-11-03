@@ -13,6 +13,7 @@
 | Downloads | the `Download.Read` grant (`Download.Write` to change them) | [Downloads](./managing-downloads.md) |
 | Menus | the `Menu.Read` grant (`Menu.Write` to change them) | [Menus](./managing-menus.md) |
 | Audit log | the `AuditLog.Read` grant | [Audit log](./audit-log.md) |
+| Settings | the `Configuration.Read` grant (`Configuration.Manage` to change them) | [Settings](./managing-settings.md) |
 
 Administrators have all of these grants by default. Impersonating a user needs the `Impersonation.Manage` grant, see [Impersonation](./impersonation.md). If you open an administration page without the needed access you see a message such as "You need administrator access to manage users."
 

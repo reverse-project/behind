@@ -1,8 +1,12 @@
 using System.Collections;
+using System.ComponentModel;
+using System.Text.Json.Serialization;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Common.Templating;
 
+[TypeConverter(typeof(TemplatesTypeConverter))]
+[JsonConverter(typeof(TemplatesJsonConverter))]
 public sealed class Templates : IEnumerable<Template>
 {
     private readonly List<Template> _templates = [];

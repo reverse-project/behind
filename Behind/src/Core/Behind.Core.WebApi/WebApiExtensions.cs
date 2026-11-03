@@ -24,6 +24,7 @@ using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.MagicLinks;
 using Behind.Core.WebApi.Middleware;
+using Behind.Core.WebApi.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -103,6 +104,11 @@ public static class WebApiExtensions
                 Options.Create(emailConfiguration)
             );
 
+            if (emailConfiguration is SmtpEmailConfiguration smtpConfiguration)
+            {
+                builder.Services.AddSingleton(Options.Create(smtpConfiguration));
+            }
+
             builder.Services.AddTransient<IEmailSender>(emailConfiguration.GetInstance);
             builder.Services.AddTransient<IEmailSender<ApplicationUser>>(emailConfiguration.GetInstance);
             builder.Services.AddTransient<IMagicLinkEmailSender>(emailConfiguration.GetInstance);
@@ -124,6 +130,7 @@ public static class WebApiExtensions
 
             builder.Services.AddElevationRateLimiting();
 
+            builder.Services.AddSingleton(ConfigurationFileCatalog.For(builder.Environment.ContentRootPath));
             builder.Services.AddMagicLink(
                 securityConfiguration,
                 new FileInfo(Path.Combine(builder.Environment.ContentRootPath, "security.json"))
@@ -282,6 +289,82 @@ public static class WebApiExtensions
 
             application.MapGet("/config", ConfigEndpoint.ExecuteGet)
                 .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read));
+
+            var configurationManage = GrantName.Of(GrantArea.Configuration, GrantAction.Manage);
+
+            application.MapGet("/settings", SettingsEndpoints.Get)
+                .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read))
+                .Produces<SettingsResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
+            application.MapGet("/settings/email", SettingsEndpoints.GetEmail)
+                .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read))
+                .Produces<EmailSettingsResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPut("/settings/email", SettingsEndpoints.UpdateEmail)
+                .RequireAuthorization(configurationManage)
+                .AddEndpointFilter<DataAnnotationValidationFilter<EmailSettingsRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces<ConfigurationForbiddenResponse>(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapGet("/settings/{file}/logging", SettingsEndpoints.GetLogging)
+                .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read))
+                .Produces<LoggingSettingsResponse>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPut("/settings/{file}/logging", SettingsEndpoints.UpdateLogging)
+                .RequireAuthorization(configurationManage)
+                .AddEndpointFilter<DataAnnotationValidationFilter<LoggingSettingsRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces<ConfigurationForbiddenResponse>(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPut("/settings/{file}", SettingsEndpoints.Update)
+                .RequireAuthorization(configurationManage)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SettingsUpdateRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces<ConfigurationForbiddenResponse>(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/settings/{file}/generate", SettingsEndpoints.Generate)
+                .RequireAuthorization(configurationManage)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SettingsActionRequest>>()
+                .Produces<SettingsActionResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces<ConfigurationForbiddenResponse>(403)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapPost("/settings/{file}/rotate", SettingsEndpoints.Rotate)
+                .RequireAuthorization(configurationManage)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SettingsActionRequest>>()
+                .Produces<SettingsActionResponse>()
+                .Produces(400)
+                .Produces(401)
+                .Produces<ConfigurationForbiddenResponse>(403)
+                .Produces(404)
+                .Produces(500);
+
             application.MapGet("/auditLog", AuditLogEntryEndpoints.Get)
                 .RequireAuthorization(GrantName.Of(GrantArea.AuditLog, GrantAction.Read))
                 .Produces<PageResponse<AuditLogItem>>()

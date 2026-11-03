@@ -19,6 +19,21 @@ public sealed class MagicLinkSecretRotator(
             },
             some: current => AdvanceAsync(current, cancellationToken));
 
+    public Task<bool> RotateNowAsync(CancellationToken cancellationToken = default) =>
+        store.Current.Match(
+            none: () => Task.FromResult(false),
+            some: async current =>
+            {
+                var rotated = current.Rotate(timeProvider.GetUtcNow());
+
+                await persister.PersistAsync(rotated, cancellationToken);
+                store.Replace(rotated);
+
+                logger.LogInformation("Magic link secrets rotated on request");
+
+                return true;
+            });
+
     private async Task<bool> AdvanceAsync(MagicLinkSettings current, CancellationToken cancellationToken)
     {
         var advanced = current.Advance(timeProvider.GetUtcNow());

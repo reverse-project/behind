@@ -29,6 +29,16 @@ public static class OptionConfigurationBinder
             return ConvertScalar(targetType, scalarValue);
         }
 
+        if (targetType.IsAbstract && configuration.GetChildren().Any())
+        {
+            return BindPolymorphic(targetType, configuration);
+        }
+
+        if (TryConvertFromChildren(targetType, configuration, out object? converted))
+        {
+            return converted;
+        }
+
         object? instance = CreateInstance(targetType, configuration);
 
         if (instance is null)
@@ -56,6 +66,51 @@ public static class OptionConfigurationBinder
         }
 
         return instance;
+    }
+
+    private static object? BindPolymorphic(Type abstractType, IConfiguration configuration)
+    {
+        string? discriminator = DiscriminatorName(abstractType);
+        string? kind = discriminator is null ? null : GetSectionValue(configuration.GetSection(discriminator));
+
+        if (kind is null)
+        {
+            return null;
+        }
+
+        object? concrete = TypeDescriptor
+            .GetConverter(abstractType)
+            .ConvertFrom(null, CultureInfo.InvariantCulture, kind);
+
+        return concrete is null ? null : BindValue(concrete.GetType(), configuration);
+    }
+
+    private static string? DiscriminatorName(Type abstractType)
+    {
+        return abstractType
+            .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+            .Select(constructor => constructor.GetParameters())
+            .FirstOrDefault(parameters => parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+            ?[0].Name;
+    }
+
+    private static bool TryConvertFromChildren(Type targetType, IConfiguration configuration, out object? result)
+    {
+        TypeConverter converter = TypeDescriptor.GetConverter(targetType);
+
+        if (!converter.CanConvertFrom(typeof(IReadOnlyDictionary<string, string?>)))
+        {
+            result = null;
+            return false;
+        }
+
+        Dictionary<string, string?> values = configuration
+            .GetChildren()
+            .Where(child => child.Value is not null)
+            .ToDictionary(child => child.Key, child => child.Value);
+
+        result = converter.ConvertFrom(null, CultureInfo.InvariantCulture, values);
+        return true;
     }
 
     private static object BindOption(

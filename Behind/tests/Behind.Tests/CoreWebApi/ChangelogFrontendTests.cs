@@ -89,4 +89,20 @@ public class ChangelogFrontendTests
         Assert.Contains("text: 'v' + version", view);
         Assert.DoesNotContain("<!-- ko", view);
     }
+
+    [Fact]
+    public void Branding_ShowsTheConfiguredTitleAndCopyright()
+    {
+        var index = Read("index.html");
+        var branding = Read("models/branding.js");
+        var app = Read("app.js");
+
+        Assert.Contains("data-bind=\"text: title\"", index);
+        Assert.Contains("visible: hasCopyright, text: copyright", index);
+        Assert.Contains("about.loadSite()", branding);
+        Assert.Contains("document.title = title", app);
+        Assert.Contains("branding.load()", app);
+        Assert.Contains("self.title = branding.title", Read("viewmodels/header.js"));
+        Assert.Contains("self.copyright = branding.copyright", Read("viewmodels/footer.js"));
+    }
 }

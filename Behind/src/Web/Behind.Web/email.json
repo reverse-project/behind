@@ -1,5 +1,5 @@
 {
-    "Email": {
-        "Provider": "Logger"
-    }
+  "Email": {
+    "Provider": "Logger"
+  }
 }

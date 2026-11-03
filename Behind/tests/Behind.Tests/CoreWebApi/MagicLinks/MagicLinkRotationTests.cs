@@ -112,6 +112,48 @@ public sealed class MagicLinkRotationTests : IDisposable
     }
 
     [Fact]
+    public async Task Rotator_RotateNow_RotatesBeforeTheIntervalAndPersists()
+    {
+        var settings = SettingsCreatedAt(Start);
+        var store = new MagicLinkSettingsStore(Some(settings));
+        var persister = Substitute.For<IMagicLinkSettingsPersister>();
+        var now = Start + TimeSpan.FromDays(1);
+
+        var rotated = await RotatorAt(now, store, persister).RotateNowAsync();
+
+        var current = CurrentOf(store);
+        Assert.True(rotated);
+        Assert.Equal(Some(settings.ActualSecret), current.OldSecret);
+        Assert.Equal(Some(now), current.ActualSecret.CreatedAt);
+        await persister.Received(1).PersistAsync(current, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Rotator_RotateNow_WithoutSettings_DoesNothing()
+    {
+        var persister = Substitute.For<IMagicLinkSettingsPersister>();
+
+        var rotated = await RotatorAt(Start, new MagicLinkSettingsStore(None), persister).RotateNowAsync();
+
+        Assert.False(rotated);
+        await persister.DidNotReceiveWithAnyArgs().PersistAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task Rotator_RotateNow_PersistFailure_KeepsTheCurrentSecrets()
+    {
+        var settings = SettingsCreatedAt(Start);
+        var store = new MagicLinkSettingsStore(Some(settings));
+        var persister = Substitute.For<IMagicLinkSettingsPersister>();
+        persister.PersistAsync(Arg.Any<MagicLinkSettings>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new IOException("disk")));
+
+        await Assert.ThrowsAsync<IOException>(() => RotatorAt(Start, store, persister).RotateNowAsync());
+
+        Assert.Equal(Some(settings), store.Current);
+    }
+
+    [Fact]
     public async Task Rotator_PersistFailure_KeepsRotationInMemoryAndLogs()
     {
         var settings = SettingsCreatedAt(Start);

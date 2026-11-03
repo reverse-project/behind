@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Security.Cryptography;
 using System.Text.Json.Serialization;
 using Behind.Common;
 using Behind.Core.Common.Converters;
@@ -33,11 +34,23 @@ public sealed record Totp : SecretKey
 {
     public const OtpHashMode HashMode = OtpHashMode.Sha256;
 
+    public const string Issuer = "Behind System";
+
     public static readonly Totp Invalid = new(nameof(Invalid));
     
     public string Value { get; init; }
     
     private Totp(string value) => Value = value;
+
+    public static Totp Generate(ushort? size = null) =>
+        TryCreate(
+            Base32Encoding.ToString(
+                size is { } length
+                    ? KeyGeneration.GenerateRandomKey(length)
+                    : KeyGeneration.GenerateRandomKey(HashMode)),
+            out var generated)
+            ? generated
+            : Invalid;
 
     public static bool TryCreate(string value, out Totp result)
     {
@@ -82,7 +95,15 @@ public sealed record Uuid : SecretKey
     }
 }
 
-public sealed record JwtSettings(string Issuer, string Audience, [property: Sensible] string SigningKey);
+public sealed record JwtSettings(string Issuer, string Audience, [property: Sensible] string SigningKey)
+{
+    public const int GeneratedSigningKeyLength = 64;
+
+    private const string SigningKeyAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    public static string GenerateSigningKey() =>
+        RandomNumberGenerator.GetString(SigningKeyAlphabet, GeneratedSigningKeyLength);
+}
 
 public sealed record MagicLinkSettings(
     Uuid ActualSecret,

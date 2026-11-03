@@ -81,7 +81,7 @@ public sealed class ArticleCommandsTests : IDisposable
         var deleted = await _bed.CreateArticleCategoryAsync("Gone");
         await using (var ctx = _bed.Write())
         {
-            await new ArticleCategoryCommands(ctx).Delete(deleted);
+            await new ArticleCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Delete(deleted);
         }
 
         foreach (var category in new[] { Guid.NewGuid(), deleted })

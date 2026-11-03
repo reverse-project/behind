@@ -1,3 +1,4 @@
+using Behind.Common;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
@@ -5,22 +6,44 @@ using Behind.Core.Database;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using Microsoft.Net.Http.Headers;
 
 namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class SiteImageEndpoints
 {
-    public const string ImagePath = "/sites/images";
-    public const string ImmutableCache = "public, max-age=31536000, immutable";
-    public const string NoSniff = "nosniff";
+    public const string ImagePath = VfsTypes.SiteImageUrl;
+    public const string ImmutableCache = ImageResponseExtensions.ImmutableCache;
+    public const string NoSniff = ImageResponseExtensions.NoSniff;
 
     [IgnoreETag]
-    public static async Task<IResult> Upload(
+    public static Task<IResult> Upload(
         IFormFile? file,
         HttpContext httpContext,
-        ISiteImageCommands commands,
-        TimeProvider timeProvider,
+        IVfsCommands commands,
+        IOptionsSnapshot<SitesConfiguration> configuration) =>
+        Store(VfsTypes.Sites, file, httpContext, commands, configuration);
+
+    [IgnoreETag]
+    public static Task<IResult> UploadNews(
+        IFormFile? file,
+        HttpContext httpContext,
+        IVfsCommands commands,
+        IOptionsSnapshot<SitesConfiguration> configuration) =>
+        Store(VfsTypes.News, file, httpContext, commands, configuration);
+
+    [IgnoreETag]
+    public static Task<IResult> UploadArticle(
+        IFormFile? file,
+        HttpContext httpContext,
+        IVfsCommands commands,
+        IOptionsSnapshot<SitesConfiguration> configuration) =>
+        Store(VfsTypes.Articles, file, httpContext, commands, configuration);
+
+    private static async Task<IResult> Store(
+        string type,
+        IFormFile? file,
+        HttpContext httpContext,
+        IVfsCommands commands,
         IOptionsSnapshot<SitesConfiguration> configuration)
     {
         if (file is null || file.Length == 0)
@@ -41,31 +64,25 @@ public sealed class SiteImageEndpoints
             () => Task.FromResult<IResult>(Results.StatusCode(StatusCodes.Status415UnsupportedMediaType)),
             async contentType =>
             {
-                var image = new SiteImage(
-                    file.FileName.ToSiteImageFileName("image"),
-                    contentType,
-                    content,
-                    timeProvider.GetUtcNow());
-
-                var id = await commands.Add(image, httpContext.RequestAborted);
+                var id = await commands.Add(
+                    new IVfsCommands.Upload(
+                        type,
+                        file.FileName.ToVfsFileName("image"),
+                        contentType,
+                        content),
+                    httpContext.RequestAborted);
 
                 return Results.Json(new SiteImageResponse(id, $"{ImagePath}/{id}"));
             });
     }
 
     [IgnoreETag]
-    public static async Task<IResult> Get(Guid id, HttpContext httpContext, ISiteImageQueries queries)
+    public static async Task<IResult> Get(Guid id, HttpContext httpContext, IVfsQueries queries)
     {
-        var image = await queries.Find(id, httpContext.RequestAborted);
+        var image = await queries.Open(VfsTypes.Sites, id, httpContext.RequestAborted);
 
         return image.Match(
             () => Results.NotFound(),
-            found =>
-            {
-                httpContext.Response.Headers.CacheControl = ImmutableCache;
-                httpContext.Response.Headers[HeaderNames.XContentTypeOptions] = NoSniff;
-
-                return Results.File(found.Content, found.ContentType);
-            });
+            found => httpContext.ToImmutableImage(found.File.ContentType, found.Bytes));
     }
 }

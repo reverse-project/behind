@@ -9,6 +9,8 @@
     <ItemGroup>
       <PackageReference Include="OpenTelemetry" />
       <PackageReference Include="QRCoder" />
+      <PackageReference Include="SkiaSharp" />
+      <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
       <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
       <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
       <PackageReference Include="OpenTelemetry.Instrumentation.Http" />

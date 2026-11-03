@@ -6,7 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Core.Database.Commands;
 
-public sealed class ArticleCommands(AbstractCoreContext context, AbstractVersioningContext versions) : IArticleCommands
+public sealed class ArticleCommands(
+    AbstractCoreContext context,
+    AbstractVersioningContext versions,
+    IVfsCommands files) : IArticleCommands
 {
     public Task<ArticleSaveResult> Create(
         Guid authorId,
@@ -128,6 +131,8 @@ public sealed class ArticleCommands(AbstractCoreContext context, AbstractVersion
 
             return new ArticleSaveResult.VersionConflict();
         }
+
+        await files.AttachSiteImagesOf(VfsTypes.Articles, id.Key, [draft.Summary, draft.Content], cancellationToken);
 
         if (publish)
         {

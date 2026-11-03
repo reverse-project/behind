@@ -17,11 +17,6 @@ public sealed class NewsCategoryConfiguration : IEntityTypeConfiguration<NewsCat
         builder.Property(category => category.Name).HasMaxLength(NewsCategory.MaxNameLength).IsRequired();
 
         builder.Property<Guid?>(HeaderImageIdProperty).IsRequired(false);
-        builder.HasOne<SiteImage>()
-            .WithMany()
-            .HasForeignKey(HeaderImageIdProperty)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(category => category.Name);
     }

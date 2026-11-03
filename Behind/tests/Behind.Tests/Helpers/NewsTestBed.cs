@@ -1,3 +1,4 @@
+using Behind.Common.Storage;
 using Behind.Core.Database;
 using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Commands;
@@ -14,12 +15,17 @@ public sealed class NewsTestBed : IDisposable
 
     public NewsTestBed()
     {
+        ContentStore = new DirectoryContentStore(ContentRoot);
         using var seed = _factory.CreateContext();
         AuthorId = DatabaseSeedHelper.SeedHumanUserAsync(seed, "author@test.com").GetAwaiter().GetResult();
         OtherAuthorId = DatabaseSeedHelper.SeedHumanUserAsync(seed, "other@test.com").GetAwaiter().GetResult();
         DatabaseSeedHelper.EnsureBuiltInUsersAsync(seed).GetAwaiter().GetResult();
         Actor = AuditActor.ForUser(AuthorId);
     }
+
+    public IContentStore ContentStore { get; }
+
+    public string ContentRoot { get; } = Path.Combine(Path.GetTempPath(), $"behind-vfs-{Guid.NewGuid():N}");
 
     public Guid AuthorId { get; }
 
@@ -44,7 +50,7 @@ public sealed class NewsTestBed : IDisposable
         await using var ctx = Write(at);
         await using var versions = WriteVersions(at);
 
-        return await action(new NewsCommands(ctx, versions));
+        return await action(new NewsCommands(ctx, versions, new VfsCommands(ctx, ContentStore)));
     }
 
     public async Task<VersionedKey<Guid>> SaveNewsAsync(
@@ -87,7 +93,7 @@ public sealed class NewsTestBed : IDisposable
     public async Task<Guid> CreateCategoryAsync(string name = "Releases", Option<Guid> headerImageId = default)
     {
         await using var ctx = Write();
-        var result = await new NewsCategoryCommands(ctx).Create(
+        var result = await new NewsCategoryCommands(ctx, new VfsCommands(ctx, ContentStore)).Create(
             new INewsCategoryCommands.NewsCategoryDraft(name, headerImageId));
 
         return Assert.IsType<NewsCategorySaveResult.Saved>(result).Id.Key;
@@ -106,12 +112,20 @@ public sealed class NewsTestBed : IDisposable
         return added.Match(() => throw new InvalidOperationException(), id => id);
     }
 
-    public async Task<Guid> AddImageAsync()
+    public async Task<Guid> AddVfsFileAsync(
+        string directory,
+        string fileName = "photo.png",
+        string contentType = "image/png",
+        byte[]? content = null)
     {
         await using var ctx = Write();
 
-        return await new SiteImageCommands(ctx).Add(new SiteImage("header.png", "image/png", [1, 2, 3], Now));
+        return await new VfsCommands(ctx, ContentStore).Add(
+            new IVfsCommands.Upload(directory, fileName, contentType, content ?? [1, 2, 3]));
     }
+
+    public Task<Guid> AddImageAsync(string fileName = "header.png") =>
+        AddVfsFileAsync(VfsTypes.Sites, fileName);
 
     public async Task<AuditTimes> TimesAsync<TEntity>(Guid key, long shownVersion) where TEntity : class
     {
@@ -133,5 +147,13 @@ public sealed class NewsTestBed : IDisposable
         return entries.Select(entry => entry.Action.GetType().Name).ToList();
     }
 
-    public void Dispose() => _factory.Dispose();
+    public void Dispose()
+    {
+        _factory.Dispose();
+
+        if (Directory.Exists(ContentRoot))
+        {
+            Directory.Delete(ContentRoot, true);
+        }
+    }
 }

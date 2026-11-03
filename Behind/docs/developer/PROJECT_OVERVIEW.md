@@ -110,9 +110,10 @@ Core business logic and domain implementation.
   - Email value object
   - Audit log entries
   - Wall of Shame entries
-  - Sites (versioned with `VersionedKey` and `ActiveVersion`) and site images
+  - Sites (versioned with `VersionedKey` and `ActiveVersion`) and the uploaded files of the virtual file system
   - News with categories (header image) and comments
   - Articles with their own categories (header image), searchable by title and content
+  - Galleries of images with optional descriptions with server side thumbnails, drafts and publishing
   - Menus with menu items (sub items, target, user menu items, visibility by role) and the built-in main menu
 
 - **Behind.Core.Database** (Data implementation)

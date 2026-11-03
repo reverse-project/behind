@@ -57,7 +57,7 @@ public static class ArticleRoutesExtensions
                 .Produces(404)
                 .Produces(500);
 
-            application.MapPost("/articles/images", SiteImageEndpoints.Upload)
+            application.MapPost("/articles/images", SiteImageEndpoints.UploadArticle)
                 .RequireAuthorization(write)
                 .DisableAntiforgery()
                 .Produces<SiteImageResponse>()

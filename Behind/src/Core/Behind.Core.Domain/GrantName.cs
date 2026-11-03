@@ -12,10 +12,11 @@ public static class GrantArea
     public const string News = nameof(News);
     public const string Article = nameof(Article);
     public const string Menu = nameof(Menu);
+    public const string Gallery = nameof(Gallery);
 
     public const string RawDatabase = nameof(RawDatabase);
 
-    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu];
+    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery];
 }
 
 public static class GrantAction

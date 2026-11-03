@@ -942,6 +942,45 @@
     "text": "licenses/Apache-2.0.txt"
   },
   {
+    "name": "SkiaSharp",
+    "version": "4.154.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/mono/SkiaSharp",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "SkiaSharp.NativeAssets.Linux.NoDependencies",
+    "version": "4.154.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/mono/SkiaSharp",
+    "scope": "server",
+    "text": "licenses/MIT.txt",
+    "note": "Bundles the Skia graphics library, which is licensed under BSD-3-Clause (Copyright 2006 Google Inc.)."
+  },
+  {
+    "name": "SkiaSharp.NativeAssets.macOS",
+    "version": "4.154.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/mono/SkiaSharp",
+    "scope": "server",
+    "text": "licenses/MIT.txt",
+    "note": "Bundles the Skia graphics library, which is licensed under BSD-3-Clause (Copyright 2006 Google Inc.)."
+  },
+  {
+    "name": "SkiaSharp.NativeAssets.Win32",
+    "version": "4.154.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://github.com/mono/SkiaSharp",
+    "scope": "server",
+    "text": "licenses/MIT.txt",
+    "note": "Bundles the Skia graphics library, which is licensed under BSD-3-Clause (Copyright 2006 Google Inc.)."
+  },
+  {
     "name": "SQLitePCLRaw.bundle_e_sqlite3",
     "version": "2.1.11",
     "license": "Apache-2.0",

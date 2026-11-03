@@ -10,7 +10,8 @@ namespace Behind.Core.Database.Commands;
 public sealed class SiteCommands(
     AbstractCoreContext context,
     AbstractVersioningContext versions,
-    TimeProvider timeProvider) : ISiteCommands
+    TimeProvider timeProvider,
+    IVfsCommands files) : ISiteCommands
 {
     public Task<SiteSaveResult> Create(
         string title,
@@ -186,10 +187,17 @@ public sealed class SiteCommands(
         entry.Property<long>(SiteConfiguration.VersionProperty).CurrentValue = version;
         entry.Property<DateTimeOffset?>(SiteConfiguration.PublishedAtProperty).CurrentValue = publish ? now : null;
 
-        return await Save(
+        var result = await Save(
             new VersionedKey<Guid>(siteId, version),
             cancellationToken,
             publish ? () => SetActive(siteId, version, cancellationToken) : null);
+
+        if (result is SiteSaveResult.Saved)
+        {
+            await files.AttachSiteImagesOf(VfsTypes.Sites, siteId, [content], cancellationToken);
+        }
+
+        return result;
     }
 
     private async Task SetActive(Guid siteId, long version, CancellationToken cancellationToken)

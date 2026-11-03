@@ -1,3 +1,4 @@
+using Behind.Common;
 using Behind.Common.Database;
 using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
@@ -13,6 +14,8 @@ public static class AuditLabelExtensions
     private const string WallOfShameKind = "Wall of shame entry";
     private const string NewsCommentKind = "News comment";
     private const string GuestLabel = "Guest";
+    private const string GalleryItemKind = "Image";
+    private const int GalleryItemLabelLength = 80;
 
     private sealed record Named(Guid Id, string Label);
 
@@ -23,6 +26,12 @@ public static class AuditLabelExtensions
         new(DomainConstants.SystemUserId, DomainConstants.System),
         new(DomainConstants.GuestUserId, GuestLabel)
     ];
+
+    extension(string description)
+    {
+        private string Labelled(int maxLength) =>
+            string.IsNullOrWhiteSpace(description) ? GalleryItemKind : description.Shortened(maxLength);
+    }
 
     extension(AbstractCoreContext context)
     {
@@ -92,11 +101,6 @@ public static class AuditLabelExtensions
                 .Select(site => new Named(EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty), site.Title))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken),
-            .. await context.SiteImages
-                .Where(image => ids.Contains(EF.Property<Guid>(image, "Id")))
-                .Select(image => new Named(EF.Property<Guid>(image, "Id"), image.FileName))
-                .AsNoTracking()
-                .ToListAsync(cancellationToken),
             .. await context.NewsEntries
                 .Where(news => ids.Contains(EF.Property<Guid>(news, VersionedColumns.Key)))
                 .OrderByDescending(news => EF.Property<long>(news, VersionedColumns.Version))
@@ -123,6 +127,24 @@ public static class AuditLabelExtensions
                 .Select(category => new Named(
                     EF.Property<Guid>(category, VersionedColumns.Key),
                     category.Name))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.Galleries
+                .Where(gallery => ids.Contains(EF.Property<Guid>(gallery, VersionedColumns.Key)))
+                .OrderByDescending(gallery => EF.Property<long>(gallery, VersionedColumns.Version))
+                .Select(gallery => new Named(EF.Property<Guid>(gallery, VersionedColumns.Key), gallery.Title))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. (await context.GalleryItems
+                    .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                    .OrderByDescending(item => EF.Property<long>(item, VersionedColumns.Version))
+                    .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key), item.Description))
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken))
+                .Select(item => item with { Label = item.Label.Labelled(GalleryItemLabelLength) }),
+            .. await context.VfsFiles
+                .Where(file => ids.Contains(EF.Property<Guid>(file, VersionedColumns.Key)))
+                .Select(file => new Named(EF.Property<Guid>(file, VersionedColumns.Key), file.FileName))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken),
             .. await context.Menus

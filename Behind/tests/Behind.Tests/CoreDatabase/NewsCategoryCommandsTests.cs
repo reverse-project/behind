@@ -18,7 +18,7 @@ public sealed class NewsCategoryCommandsTests : IDisposable
     {
         await using var ctx = _bed.Write();
 
-        return await action(new NewsCategoryCommands(ctx));
+        return await action(new NewsCategoryCommands(ctx, Substitute.For<IVfsCommands>()));
     }
 
     private async Task<IReadOnlyList<(long Version, string Name, Guid? Image)>> VersionsAsync(Guid key)
@@ -70,6 +70,15 @@ public sealed class NewsCategoryCommandsTests : IDisposable
     {
         Assert.IsType<NewsCategorySaveResult.UnknownImage>(
             await CommandsAsync(commands => commands.Create(Draft(image: Guid.NewGuid()))));
+    }
+
+    [Fact]
+    public async Task Create_GalleryImageAsHeaderImage_IsRejected()
+    {
+        var galleryImage = await _bed.AddGalleryImageAsync();
+
+        Assert.IsType<NewsCategorySaveResult.UnknownImage>(
+            await CommandsAsync(commands => commands.Create(Draft(image: galleryImage))));
     }
 
     [Fact]

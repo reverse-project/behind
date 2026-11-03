@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Core.Database.Commands;
 
-public sealed class ArticleCategoryCommands(AbstractCoreContext context) : IArticleCategoryCommands
+public sealed class ArticleCategoryCommands(AbstractCoreContext context, IVfsCommands files) : IArticleCategoryCommands
 {
     public Task<ArticleCategorySaveResult> Create(
         IArticleCategoryCommands.ArticleCategoryDraft draft,
@@ -123,6 +123,12 @@ public sealed class ArticleCategoryCommands(AbstractCoreContext context) : IArti
             return new ArticleCategorySaveResult.VersionConflict();
         }
 
+        await files.Attach(
+            VfsTypes.ArticleCategories,
+            id.Key,
+            draft.HeaderImageId.AsEnumerable().ToList(),
+            cancellationToken);
+
         return new ArticleCategorySaveResult.Saved(id);
     }
 
@@ -131,9 +137,10 @@ public sealed class ArticleCategoryCommands(AbstractCoreContext context) : IArti
         CancellationToken cancellationToken) =>
         draft.HeaderImageId.Match(
             () => Task.FromResult(false),
-            async imageId => !await context.SiteImages.AnyAsync(
-                image => EF.Property<Guid>(image, "Id") == imageId,
-                cancellationToken));
+            async imageId => !await context.VfsFiles
+                .InSameKindAs(VfsTypes.Sites)
+                .OfKey(imageId)
+                .AnyAsync(cancellationToken));
 
     private async Task<string> LatestName(Guid categoryId, CancellationToken cancellationToken)
     {

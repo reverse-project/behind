@@ -171,7 +171,7 @@ public sealed class ArticleQueriesTests : IDisposable
         await _bed.WithArticleCommandsAsync(commands => commands.Delete(deleted));
         await using (var ctx = _bed.Write())
         {
-            await new ArticleCategoryCommands(ctx).Delete(category);
+            await new ArticleCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Delete(category);
         }
 
         var item = Assert.Single((await ListAsync()).Results.Match(() => [], found => found.ToList()));

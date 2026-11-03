@@ -74,6 +74,14 @@ public static class WebApiExtensions
             return builder;
         }
 
+        WebApplicationBuilder AddBackend()
+        {
+            builder.Configuration.AddJsonFile("backend.json", false, true);
+            builder.Services.AddVfsContentStore(builder.Configuration);
+
+            return builder;
+        }
+
         WebApplicationBuilder AddEmail()
         {
             builder.Configuration.AddJsonFile("email.json", false, true);
@@ -118,6 +126,10 @@ public static class WebApiExtensions
             );
             builder.Services.Configure<SitesConfiguration>(
                 builder.Configuration.GetSection(SitesConfiguration.SectionName)
+            );
+
+            builder.Services.Configure<GalleriesConfiguration>(
+                builder.Configuration.GetSection(GalleriesConfiguration.SectionName)
             );
 
             securityConfiguration.DataProtection.Match(
@@ -189,8 +201,6 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IWallOfShameCommands, WallOfShameCommands>();
             builder.Services.AddScoped<ISiteQueries, SiteQueries>();
             builder.Services.AddScoped<ISiteCommands, SiteCommands>();
-            builder.Services.AddScoped<ISiteImageQueries, SiteImageQueries>();
-            builder.Services.AddScoped<ISiteImageCommands, SiteImageCommands>();
             builder.Services.AddScoped<INewsQueries, NewsQueries>();
             builder.Services.AddScoped<INewsCommands, NewsCommands>();
             builder.Services.AddScoped<INewsCategoryQueries, NewsCategoryQueries>();
@@ -201,6 +211,11 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IArticleCommands, ArticleCommands>();
             builder.Services.AddScoped<IArticleCategoryQueries, ArticleCategoryQueries>();
             builder.Services.AddScoped<IArticleCategoryCommands, ArticleCategoryCommands>();
+            builder.Services.AddScoped<IGalleryQueries, GalleryQueries>();
+            builder.Services.AddScoped<IGalleryCommands, GalleryCommands>();
+            builder.Services.AddScoped<IVfsQueries, VfsQueries>();
+            builder.Services.AddScoped<IVfsCommands, VfsCommands>();
+            builder.Services.AddScoped<GalleryThumbnails>();
             builder.Services.AddScoped<IMenuQueries, MenuQueries>();
             builder.Services.AddScoped<IMenuCommands, MenuCommands>();
             builder.Services.AddScoped<IMenuItemQueries, MenuItemQueries>();
@@ -233,6 +248,7 @@ public static class WebApiExtensions
                 .AddTypeDescriptors()
                 .AddOpenApi()
                 .AddDatabase()
+                .AddBackend()
                 .AddEmail()
                 .AddServices()
                 .AddSecurity()
@@ -615,7 +631,7 @@ public static class WebApiExtensions
                 .Produces(404)
                 .Produces(500);
 
-            application.MapPost("/news/images", SiteImageEndpoints.Upload)
+            application.MapPost("/news/images", SiteImageEndpoints.UploadNews)
                 .RequireAuthorization(newsWrite)
                 .DisableAntiforgery()
                 .Produces<SiteImageResponse>()
@@ -765,6 +781,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapArticleEndpoints();
+            application.MapGalleryEndpoints();
             application.MapMenuEndpoints();
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)

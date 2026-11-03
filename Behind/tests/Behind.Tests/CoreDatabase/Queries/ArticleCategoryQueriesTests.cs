@@ -43,7 +43,7 @@ public sealed class ArticleCategoryQueriesTests : IDisposable
         var key = await _bed.CreateArticleCategoryAsync("Old name");
         await using (var ctx = _bed.Write())
         {
-            await new ArticleCategoryCommands(ctx).Update(
+            await new ArticleCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Update(
                 key,
                 new IArticleCategoryCommands.ArticleCategoryDraft("New name", None));
         }
@@ -75,7 +75,7 @@ public sealed class ArticleCategoryQueriesTests : IDisposable
         await _bed.CreateArticleCategoryAsync("Here");
         await using (var ctx = _bed.Write())
         {
-            await new ArticleCategoryCommands(ctx).Delete(gone);
+            await new ArticleCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Delete(gone);
         }
 
         Assert.Equal(["Gone"], Names(await ListAsync(new Flipper(1, 10), state: DeletionState.Deleted)));
@@ -102,7 +102,7 @@ public sealed class ArticleCategoryQueriesTests : IDisposable
         var gone = await _bed.CreateArticleCategoryAsync("Gone");
         await using (var ctx = _bed.Write())
         {
-            await new ArticleCategoryCommands(ctx).Delete(gone);
+            await new ArticleCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Delete(gone);
         }
         await using var read = _bed.Read();
 

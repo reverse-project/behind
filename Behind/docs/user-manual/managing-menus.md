@@ -1,6 +1,6 @@
 # Menus
 
-**Menus** are the lists of links the application shows. The **main menu** is built in: it holds the tabs of the top bar (**Index**, **News**, **Articles**, **Wall of shame**) and the entries of your name menu (**Profile**, **Session**, **Sessions** and **Administration**). You can add more menus, for example a **footer** menu, which is shown at the bottom of every page next to the version and the licenses.
+**Menus** are the lists of links the application shows. The **main menu** is built in: it holds the tabs of the top bar (**Index**, **News**, **Articles**, **Galleries**, **Wall of shame**) and the entries of your name menu (**Profile**, **Session**, **Sessions** and **Administration**). You can add more menus, for example a **footer** menu, which is shown at the bottom of every page next to the version and the licenses.
 
 You find the tools under **Administration > Menus** (`#/manage/menus`).
 

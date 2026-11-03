@@ -1,4 +1,5 @@
 using Behind.Common.Logging;
+using Behind.Common.Storage;
 using Behind.Core.Database.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +20,7 @@ public sealed class MigratorService(IServiceProvider services, ILogger<MigratorS
             "Applying {PendingMigrationCount} pending migrations: {PendingMigrations}",
             () => [pending.Count, pending]);
 
-        await sqlite.Database.MigrateAsync(stoppingToken);
+        await sqlite.MigrateWithVfsAsync(scope.ServiceProvider.GetRequiredService<IContentStore>(), stoppingToken);
         logger.LogInformation("Database migrations applied");
 
         var versioning = scope.ServiceProvider.GetRequiredService<VersioningContextSqlite>();

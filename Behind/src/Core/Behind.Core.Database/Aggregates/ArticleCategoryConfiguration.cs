@@ -17,11 +17,6 @@ public sealed class ArticleCategoryConfiguration : IEntityTypeConfiguration<Arti
         builder.Property(category => category.Name).HasMaxLength(ArticleCategory.MaxNameLength).IsRequired();
 
         builder.Property<Guid?>(HeaderImageIdProperty).IsRequired(false);
-        builder.HasOne<SiteImage>()
-            .WithMany()
-            .HasForeignKey(HeaderImageIdProperty)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(category => category.Name);
     }

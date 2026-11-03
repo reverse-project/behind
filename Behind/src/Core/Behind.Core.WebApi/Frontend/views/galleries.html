@@ -1,0 +1,29 @@
+<section class="behind-wide">
+    <h1 class="mb-3">Galleries</h1>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <form class="input-group mb-3" data-bind="submit: find">
+        <input class="form-control" type="search" maxlength="200" placeholder="Search by title or description" aria-label="Search galleries" data-bind="value: search">
+        <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Search</button>
+    </form>
+    <p class="text-body-secondary" data-bind="visible: isEmpty">There are no galleries to show.</p>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-3" data-bind="foreach: items">
+        <div class="col">
+            <article class="card h-100 gallery-card">
+                <a class="gallery-card-link" data-bind="attr: { href: href, 'aria-label': title }">
+                    <img class="card-img-top gallery-card-image" alt="" loading="lazy" data-bind="visible: hasThumbnail, attr: { src: thumbnailUrl }">
+                    <div class="gallery-card-placeholder" data-bind="visible: !hasThumbnail"><i class="fa-solid fa-images fa-2x" aria-hidden="true"></i></div>
+                </a>
+                <div class="card-body">
+                    <h2 class="h5 card-title"><a class="text-break" data-bind="attr: { href: href }, text: title"></a></h2>
+                    <div class="d-flex flex-wrap align-items-center gap-2 small text-body-secondary mb-2">
+                        <span data-bind="text: count"></span>
+                        <span data-bind="text: author"></span>
+                        <span data-bind="text: stamp, attr: { title: created }"></span>
+                    </div>
+                    <p class="card-text gallery-description" data-bind="text: description"></p>
+                </div>
+            </article>
+        </div>
+    </div>
+    <pager class="d-block" params="pager: pager"></pager>
+</section>

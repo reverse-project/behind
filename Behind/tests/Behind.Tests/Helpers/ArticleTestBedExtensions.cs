@@ -14,7 +14,7 @@ public static class ArticleTestBedExtensions
             await using var ctx = bed.Write(at);
             await using var versions = bed.WriteVersions(at);
 
-            return await action(new ArticleCommands(ctx, versions));
+            return await action(new ArticleCommands(ctx, versions, new VfsCommands(ctx, bed.ContentStore)));
         }
 
         public async Task<VersionedKey<Guid>> SaveArticleAsync(
@@ -53,7 +53,7 @@ public static class ArticleTestBedExtensions
             Option<Guid> headerImageId = default)
         {
             await using var ctx = bed.Write();
-            var result = await new ArticleCategoryCommands(ctx).Create(
+            var result = await new ArticleCategoryCommands(ctx, new VfsCommands(ctx, bed.ContentStore)).Create(
                 new IArticleCategoryCommands.ArticleCategoryDraft(name, headerImageId));
 
             return Assert.IsType<ArticleCategorySaveResult.Saved>(result).Id.Key;

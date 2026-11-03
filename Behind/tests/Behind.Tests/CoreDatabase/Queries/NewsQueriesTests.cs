@@ -198,7 +198,7 @@ public sealed class NewsQueriesTests : IDisposable
         await _bed.CreateNewsAsync("Version 2", category);
         await using (var ctx = _bed.Write())
         {
-            await new NewsCategoryCommands(ctx).Delete(category);
+            await new NewsCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Delete(category);
         }
 
         Assert.Equal(None, Assert.Single(Items(await ListAsync())).Category);
@@ -211,7 +211,7 @@ public sealed class NewsQueriesTests : IDisposable
         await _bed.CreateNewsAsync("Version 2", category);
         await using (var ctx = _bed.Write())
         {
-            await new NewsCategoryCommands(ctx).Update(category, new INewsCategoryCommands.NewsCategoryDraft("Announcements", None));
+            await new NewsCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Update(category, new INewsCategoryCommands.NewsCategoryDraft("Announcements", None));
         }
 
         var found = Assert.Single(Items(await ListAsync())).Category.Match(() => throw new InvalidOperationException(), info => info);

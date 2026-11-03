@@ -95,8 +95,6 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasKey("Key", "Version");
 
-                    b.HasIndex("HeaderImageId");
-
                     b.HasIndex("Name");
 
                     b.ToTable("ArticleCategories", (string)null);
@@ -171,6 +169,79 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.ToTable("Emails");
 
                     b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.Gallery", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ThumbnailGenerated")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("ThumbnailImageId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("Title");
+
+                    b.ToTable("Galleries", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.GalleryItem", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("GalleryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ImageId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("ThumbnailId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("ImageId");
+
+                    b.HasIndex("ThumbnailId");
+
+                    b.HasIndex("GalleryId", "Version");
+
+                    b.ToTable("GalleryItems", (string)null);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Grant", b =>
@@ -367,8 +438,6 @@ namespace Behind.Core.Database.Sqlite.Migrations
 
                     b.HasKey("Key", "Version");
 
-                    b.HasIndex("HeaderImageId");
-
                     b.HasIndex("Name");
 
                     b.ToTable("NewsCategories", (string)null);
@@ -508,34 +577,6 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
-            modelBuilder.Entity("Behind.Core.Domain.SiteImage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<byte[]>("Content")
-                        .IsRequired()
-                        .HasColumnType("BLOB");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SiteImages");
-                });
-
             modelBuilder.Entity("Behind.Core.Domain.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -637,6 +678,44 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Sessions", (string)null);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.VfsFile", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Length")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("Type");
+
+                    b.ToTable("VfsFiles", (string)null);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.WallOfShameEntry", b =>
@@ -796,14 +875,6 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Behind.Core.Domain.ArticleCategory", b =>
-                {
-                    b.HasOne("Behind.Core.Domain.SiteImage", null)
-                        .WithMany()
-                        .HasForeignKey("HeaderImageId")
-                        .OnDelete(DeleteBehavior.SetNull);
-                });
-
             modelBuilder.Entity("Behind.Core.Domain.AuditLogEntry", b =>
                 {
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
@@ -826,6 +897,15 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.Gallery", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.MagicLink", b =>
                 {
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
@@ -842,14 +922,6 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Behind.Core.Domain.NewsCategory", b =>
-                {
-                    b.HasOne("Behind.Core.Domain.SiteImage", null)
-                        .WithMany()
-                        .HasForeignKey("HeaderImageId")
-                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.NewsComment", b =>

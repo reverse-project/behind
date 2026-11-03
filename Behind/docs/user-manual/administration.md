@@ -9,6 +9,7 @@
 | Sites | the `Site.Read` grant (`Site.Write` to change them) | [Managing sites](./managing-sites.md) |
 | News and news categories | the `News.Read` grant (`News.Write` to change them) | [News](./managing-news.md) |
 | Articles and article categories | the `Article.Read` grant (`Article.Write` to change them) | [Articles](./managing-articles.md) |
+| Galleries | the `Gallery.Read` grant (`Gallery.Write` to change them) | [Galleries](./managing-galleries.md) |
 | Menus | the `Menu.Read` grant (`Menu.Write` to change them) | [Menus](./managing-menus.md) |
 | Audit log | the `AuditLog.Read` grant | [Audit log](./audit-log.md) |
 

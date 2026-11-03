@@ -16,6 +16,7 @@ This manual describes what you can do in the Behind web application today.
 - **[Managing sites](./managing-sites.md)** - writing pages with the rich text editor, versions, drafts, publishing and addresses.
 - **[News](./managing-news.md)** - reading and commenting on the news, writing news and managing the news categories.
 - **[Articles](./managing-articles.md)** - reading and searching the articles, writing articles and managing the article categories.
+- **[Galleries](./managing-galleries.md)** - browsing the galleries, uploading images in batches, describing them and publishing a gallery.
 - **[Menus](./managing-menus.md)** - the main menu and other menus, their items, sub items, targets and who sees them.
 - **[Impersonation](./impersonation.md)** - acting as another user to see what they see, and how it shows in the audit log.
 - **[Audit log](./audit-log.md)** - browsing who changed what and when.

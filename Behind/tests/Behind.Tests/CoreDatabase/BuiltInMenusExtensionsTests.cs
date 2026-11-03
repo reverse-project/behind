@@ -17,9 +17,9 @@ public sealed class BuiltInMenusExtensionsTests : IDisposable
         var main = Assert.Single(await _bed.ResolveMenusAsync(None, BuiltInMenus.MainName));
         Assert.Equal(BuiltInMenus.Main.Id, main.Id);
         Assert.Equal(
-            ["Index", "News", "Articles", "Wall of shame"],
+            ["Index", "News", "Articles", "Galleries", "Wall of shame"],
             main.Items.Where(item => item.Kind == MenuItemKind.Link).Select(item => item.Title));
-        Assert.Equal(7, main.Items.Count);
+        Assert.Equal(8, main.Items.Count);
         Assert.DoesNotContain(main.Items, item => item.Title == "Administration");
     }
 

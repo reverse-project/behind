@@ -74,23 +74,4 @@ public class SiteImageExtensionsTests
     {
         Assert.Equal(None, System.Text.Encoding.UTF8.GetBytes(text).DetectImageContentType());
     }
-
-    [Theory]
-    [InlineData("logo.png", "logo.png")]
-    [InlineData("C:\\temp\\logo.png", "logo.png")]
-    [InlineData("/tmp/logo.png", "logo.png")]
-    [InlineData("  ", "fallback")]
-    [InlineData(null, "fallback")]
-    public void ToSiteImageFileName_KeepsOnlyTheFileName(string? fileName, string expected)
-    {
-        Assert.Equal(expected, fileName.ToSiteImageFileName("fallback"));
-    }
-
-    [Fact]
-    public void ToSiteImageFileName_TruncatesLongNames()
-    {
-        var name = new string('a', SiteImage.MaxFileNameLength + 20);
-
-        Assert.Equal(SiteImage.MaxFileNameLength, name.ToSiteImageFileName("fallback").Length);
-    }
 }

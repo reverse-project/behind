@@ -7,7 +7,7 @@ using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Database.Commands;
 
-public sealed class NewsCategoryCommands(AbstractCoreContext context) : INewsCategoryCommands
+public sealed class NewsCategoryCommands(AbstractCoreContext context, IVfsCommands files) : INewsCategoryCommands
 {
     public Task<NewsCategorySaveResult> Create(
         INewsCategoryCommands.NewsCategoryDraft draft,
@@ -115,6 +115,12 @@ public sealed class NewsCategoryCommands(AbstractCoreContext context) : INewsCat
             return new NewsCategorySaveResult.VersionConflict();
         }
 
+        await files.Attach(
+            VfsTypes.NewsCategories,
+            id.Key,
+            draft.HeaderImageId.AsEnumerable().ToList(),
+            cancellationToken);
+
         return new NewsCategorySaveResult.Saved(id);
     }
 
@@ -123,9 +129,10 @@ public sealed class NewsCategoryCommands(AbstractCoreContext context) : INewsCat
         CancellationToken cancellationToken) =>
         draft.HeaderImageId.Match(
             () => Task.FromResult(false),
-            async imageId => !await context.SiteImages.AnyAsync(
-                image => EF.Property<Guid>(image, "Id") == imageId,
-                cancellationToken));
+            async imageId => !await context.VfsFiles
+                .InSameKindAs(VfsTypes.Sites)
+                .OfKey(imageId)
+                .AnyAsync(cancellationToken));
 
     private async Task<string> LatestName(Guid categoryId, CancellationToken cancellationToken)
     {

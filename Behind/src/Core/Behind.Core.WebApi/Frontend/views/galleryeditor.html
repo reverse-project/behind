@@ -1,0 +1,87 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="text: heading"></h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/manage/galleries">Back to galleries</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage galleries.</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need gallery access to manage galleries.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: canRead">
+        <form data-bind="submit: saveDraft">
+            <div class="mb-3">
+                <label class="form-label" for="gallery-title">Title</label>
+                <input id="gallery-title" class="form-control" type="text" maxlength="200" data-bind="value: title, valueUpdate: 'input', enable: canWrite">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="gallery-description">Description</label>
+                <textarea id="gallery-description" class="form-control" rows="3" maxlength="20000" data-bind="value: description, valueUpdate: 'input', enable: canWrite"></textarea>
+            </div>
+            <fieldset class="mb-4">
+                <legend class="h5">Thumbnail</legend>
+                <div class="d-flex flex-wrap align-items-start gap-3">
+                    <div class="gallery-editor-cover">
+                        <img class="gallery-editor-cover-image" alt="Gallery thumbnail preview" data-bind="visible: hasPreview, attr: { src: previewUrl }">
+                        <div class="gallery-card-placeholder" data-bind="visible: !hasPreview()"><i class="fa-solid fa-images fa-2x" aria-hidden="true"></i></div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="gallery-thumbnail-source">Source</label>
+                        <select id="gallery-thumbnail-source" class="form-select mb-2" data-bind="options: thumbnailSources, optionsText: 'label', optionsValue: 'value', value: thumbnailMode, enable: canWrite"></select>
+                        <input class="form-control" type="file" accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Upload a thumbnail" data-bind="event: { change: addThumbnail }, enable: canUpload">
+                    </div>
+                </div>
+            </fieldset>
+            <div class="mb-4">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <h2 class="h5 mb-0">Images</h2>
+                    <span class="badge text-bg-secondary" data-bind="text: count"></span>
+                </div>
+                <label class="form-label" for="gallery-files">Upload images</label>
+                <input id="gallery-files" class="form-control mb-2" type="file" multiple accept="image/png,image/jpeg,image/gif,image/webp" data-bind="event: { change: addFiles }, enable: canUpload">
+                <div class="form-text mb-2">Choose as many images as you like. They are added to the end of the gallery, the thumbnails are generated for you.</div>
+                <div class="alert alert-secondary" role="status" data-bind="visible: hasProgress, text: progress"></div>
+                <div class="alert alert-danger" role="alert" data-bind="visible: hasUploadErrors">
+                    <ul class="mb-0" data-bind="foreach: uploadErrors">
+                        <li class="text-break" data-bind="text: $data"></li>
+                    </ul>
+                </div>
+                <p class="text-body-secondary" data-bind="visible: !hasItems()">No images yet. Upload some to describe them.</p>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3" data-bind="foreach: items">
+                    <div class="col">
+                        <div class="card h-100">
+                            <img class="card-img-top gallery-editor-image" data-bind="attr: { src: thumbnailUrl, alt: description() }">
+                            <div class="card-body">
+                                <label class="form-label small">Description (optional)</label>
+                                <textarea class="form-control" rows="2" maxlength="2000" data-bind="value: description, valueUpdate: 'input', enable: $root.canWrite"></textarea>
+                            </div>
+                            <div class="card-footer d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Move earlier" data-bind="click: moveUp, enable: canMoveUp() && $root.canWrite()"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Move later" data-bind="click: moveDown, enable: canMoveDown() && $root.canWrite()"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-danger ms-auto" aria-label="Remove image" data-bind="click: remove, enable: $root.canWrite"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-text mb-3" data-bind="visible: basedOnLabel() !== '', text: basedOnLabel"></div>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <button type="submit" class="btn btn-outline-primary" data-bind="enable: canSave">Save draft</button>
+                <button type="button" class="btn btn-primary" data-bind="enable: canSave, click: publish">Save and publish</button>
+            </div>
+        </form>
+        <div data-bind="visible: !isNew">
+            <h2 class="h5">Versions</h2>
+            <p class="text-body-secondary" data-bind="visible: !hasVersions()">No versions found.</p>
+            <ul class="list-group mb-3" data-bind="foreach: versions">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <strong>Version <span data-bind="text: version"></span></strong>
+                    <span class="badge" data-bind="text: status, css: statusCss"></span>
+                    <span class="text-break" data-bind="text: title"></span>
+                    <span class="badge text-bg-secondary" data-bind="text: count"></span>
+                    <span class="small text-body-secondary ms-md-auto">Saved <span data-bind="text: createdAt"></span></span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: load, enable: !$root.busy()">Load into editor</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: $root.canWrite() && !isActive, enable: canActivate, click: activate">Make live</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>

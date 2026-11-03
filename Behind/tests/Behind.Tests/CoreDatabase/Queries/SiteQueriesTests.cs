@@ -34,7 +34,7 @@ public sealed class SiteQueriesTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
         await using var versions = _factory.CreateVersioningContext();
-        var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now.AddMinutes(minutes)));
+        var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now.AddMinutes(minutes)), Substitute.For<IVfsCommands>());
         var result = siteId is { } id
             ? await commands.SaveVersion(id, title, slug, content, publish)
             : await commands.Create(title, slug, content, publish);
@@ -70,7 +70,7 @@ public sealed class SiteQueriesTests : IDisposable
     {
         await using var ctx = _factory.CreateAuditedContext(_actor);
         await using var versions = _factory.CreateAuditedVersioningContext(_actor);
-        await new SiteCommands(ctx, versions, new FixedTimeProvider(Now)).Delete(siteId);
+        await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>()).Delete(siteId);
     }
 
     [Fact]

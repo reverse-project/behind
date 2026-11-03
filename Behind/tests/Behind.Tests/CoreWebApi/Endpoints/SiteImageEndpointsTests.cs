@@ -26,60 +26,77 @@ public class SiteImageEndpointsTests
     public async Task Upload_StoresTheImageAndReturnsItsUrl()
     {
         var id = Guid.NewGuid();
-        var commands = Substitute.For<ISiteImageCommands>();
-        commands.Add(Arg.Any<SiteImage>(), Arg.Any<CancellationToken>()).Returns(id);
+        var commands = Substitute.For<IVfsCommands>();
+        commands.Add(Arg.Any<IVfsCommands.Upload>(), Arg.Any<CancellationToken>()).Returns(id);
 
         var result = await SiteImageEndpoints.Upload(
             File(Png, "C:\\pics\\logo.png"),
             new DefaultHttpContext(),
             commands,
-            new FixedTimeProvider(Now), Options());
+            Options());
 
         var body = Assert.IsType<JsonHttpResult<SiteImageResponse>>(result).Value!;
         Assert.Equal(new SiteImageResponse(id, $"/sites/images/{id}"), body);
         await commands.Received(1).Add(
-            Arg.Is<SiteImage>(image =>
-                image.FileName == "logo.png"
-                && image.ContentType == "image/png"
-                && image.Content.SequenceEqual(Png)
-                && image.CreatedAt == Now),
+            Arg.Is<IVfsCommands.Upload>(upload =>
+                upload.Type == VfsTypes.Sites
+                && upload.FileName == "logo.png"
+                && upload.ContentType == "image/png"
+                && upload.Content.SequenceEqual(Png)),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UploadNews_AndUploadArticle_StoreTheImageUnderTheirOwnType()
+    {
+        var commands = Substitute.For<IVfsCommands>();
+        commands.Add(Arg.Any<IVfsCommands.Upload>(), Arg.Any<CancellationToken>()).Returns(Guid.NewGuid());
+
+        await SiteImageEndpoints.UploadNews(File(Png), new DefaultHttpContext(), commands, Options());
+        await SiteImageEndpoints.UploadArticle(File(Png), new DefaultHttpContext(), commands, Options());
+
+        await commands.Received(1).Add(
+            Arg.Is<IVfsCommands.Upload>(upload => upload.Type == VfsTypes.News),
+            Arg.Any<CancellationToken>());
+        await commands.Received(1).Add(
+            Arg.Is<IVfsCommands.Upload>(upload => upload.Type == VfsTypes.Articles),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Upload_TrustsTheContentNotTheDeclaredType()
     {
-        var commands = Substitute.For<ISiteImageCommands>();
+        var commands = Substitute.For<IVfsCommands>();
         var file = new FormFile(new MemoryStream(Png), 0, Png.Length, "file", "x.png")
         {
             Headers = new HeaderDictionary(),
             ContentType = "text/html"
         };
 
-        await SiteImageEndpoints.Upload(file, new DefaultHttpContext(), commands, new FixedTimeProvider(Now), Options());
+        await SiteImageEndpoints.Upload(file, new DefaultHttpContext(), commands, Options());
 
-        await commands.Received(1).Add(Arg.Is<SiteImage>(image => image.ContentType == "image/png"), Arg.Any<CancellationToken>());
+        await commands.Received(1).Add(Arg.Is<IVfsCommands.Upload>(upload => upload.ContentType == "image/png"), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Upload_NoFile_ReturnsBadRequest()
     {
-        var commands = Substitute.For<ISiteImageCommands>();
+        var commands = Substitute.For<IVfsCommands>();
 
-        Assert.IsType<BadRequest>(await SiteImageEndpoints.Upload(null, new DefaultHttpContext(), commands, new FixedTimeProvider(Now), Options()));
-        Assert.IsType<BadRequest>(await SiteImageEndpoints.Upload(File([]), new DefaultHttpContext(), commands, new FixedTimeProvider(Now), Options()));
+        Assert.IsType<BadRequest>(await SiteImageEndpoints.Upload(null, new DefaultHttpContext(), commands, Options()));
+        Assert.IsType<BadRequest>(await SiteImageEndpoints.Upload(File([]), new DefaultHttpContext(), commands, Options()));
     }
 
     [Fact]
     public async Task Upload_NotAnImage_ReturnsUnsupportedMediaType()
     {
-        var commands = Substitute.For<ISiteImageCommands>();
+        var commands = Substitute.For<IVfsCommands>();
 
         var result = await SiteImageEndpoints.Upload(
             File("<svg onload=alert(1)/>"u8.ToArray(), "x.svg"),
             new DefaultHttpContext(),
             commands,
-            new FixedTimeProvider(Now), Options());
+            Options());
 
         Assert.Equal(StatusCodes.Status415UnsupportedMediaType, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
         await commands.DidNotReceiveWithAnyArgs().Add(default!);
@@ -88,10 +105,10 @@ public class SiteImageEndpointsTests
     [Fact]
     public async Task Upload_TooLarge_ReturnsPayloadTooLarge()
     {
-        var commands = Substitute.For<ISiteImageCommands>();
+        var commands = Substitute.For<IVfsCommands>();
         var large = new byte[SitesConfiguration.DefaultMaxImageBytes + 1];
 
-        var result = await SiteImageEndpoints.Upload(File(large), new DefaultHttpContext(), commands, new FixedTimeProvider(Now), Options());
+        var result = await SiteImageEndpoints.Upload(File(large), new DefaultHttpContext(), commands, Options());
 
         var body = Assert.IsType<JsonHttpResult<SiteImageLimitResponse>>(result);
         Assert.Equal(StatusCodes.Status413PayloadTooLarge, body.StatusCode);
@@ -102,11 +119,11 @@ public class SiteImageEndpointsTests
     [Fact]
     public async Task Upload_UsesTheConfiguredLimit()
     {
-        var commands = Substitute.For<ISiteImageCommands>();
-        commands.Add(Arg.Any<SiteImage>(), Arg.Any<CancellationToken>()).Returns(Guid.NewGuid());
+        var commands = Substitute.For<IVfsCommands>();
+        commands.Add(Arg.Any<IVfsCommands.Upload>(), Arg.Any<CancellationToken>()).Returns(Guid.NewGuid());
 
-        var rejected = await SiteImageEndpoints.Upload(File(Png), new DefaultHttpContext(), commands, new FixedTimeProvider(Now), Options(Png.Length - 1));
-        var accepted = await SiteImageEndpoints.Upload(File(Png), new DefaultHttpContext(), commands, new FixedTimeProvider(Now), Options(Png.Length));
+        var rejected = await SiteImageEndpoints.Upload(File(Png), new DefaultHttpContext(), commands, Options(Png.Length - 1));
+        var accepted = await SiteImageEndpoints.Upload(File(Png), new DefaultHttpContext(), commands, Options(Png.Length));
 
         Assert.Equal(new SiteImageLimitResponse(Png.Length - 1), Assert.IsType<JsonHttpResult<SiteImageLimitResponse>>(rejected).Value);
         Assert.IsType<JsonHttpResult<SiteImageResponse>>(accepted);
@@ -116,8 +133,9 @@ public class SiteImageEndpointsTests
     public async Task Get_ServesTheImageForeverWithoutSniffing()
     {
         var id = Guid.NewGuid();
-        var queries = Substitute.For<ISiteImageQueries>();
-        queries.Find(id, Arg.Any<CancellationToken>()).Returns(Some(new SiteImage("logo.png", "image/png", Png, Now)));
+        var queries = Substitute.For<IVfsQueries>();
+        queries.Open(VfsTypes.Sites, id, Arg.Any<CancellationToken>())
+            .Returns(Some(new IVfsQueries.Content(new VfsFile(VfsTypes.Sites, "logo.png", "image/png", Png.Length), Png)));
         var context = new DefaultHttpContext();
 
         var result = await SiteImageEndpoints.Get(id, context, queries);
@@ -132,8 +150,8 @@ public class SiteImageEndpointsTests
     [Fact]
     public async Task Get_UnknownImage_ReturnsNotFound()
     {
-        var queries = Substitute.For<ISiteImageQueries>();
-        queries.Find(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(None);
+        var queries = Substitute.For<IVfsQueries>();
+        queries.Open(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(None);
 
         Assert.IsType<NotFound>(await SiteImageEndpoints.Get(Guid.NewGuid(), new DefaultHttpContext(), queries));
     }

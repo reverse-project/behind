@@ -27,7 +27,7 @@ public sealed class NewsCategoryQueriesTests : IDisposable
     private async Task EditAsync(Guid key, string name)
     {
         await using var ctx = _bed.Write();
-        await new NewsCategoryCommands(ctx).Update(key, new INewsCategoryCommands.NewsCategoryDraft(name, None));
+        await new NewsCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Update(key, new INewsCategoryCommands.NewsCategoryDraft(name, None));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class NewsCategoryQueriesTests : IDisposable
         var gone = await _bed.CreateCategoryAsync("Gone");
         await using (var ctx = _bed.Write())
         {
-            await new NewsCategoryCommands(ctx).Delete(gone);
+            await new NewsCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Delete(gone);
         }
 
         Assert.Equal(["Alive"], Names(await ListAsync(new Flipper(1, 10))));
@@ -134,7 +134,7 @@ public sealed class NewsCategoryQueriesTests : IDisposable
         var gone = await _bed.CreateCategoryAsync("Gone");
         await using (var ctx = _bed.Write())
         {
-            await new NewsCategoryCommands(ctx).Delete(gone);
+            await new NewsCategoryCommands(ctx, Substitute.For<IVfsCommands>()).Delete(gone);
         }
 
         await using var read = _bed.Read();

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
@@ -82,14 +83,14 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await using (var seed = _factory.CreateContext())
         {
             await using var seedVersions = _factory.CreateVersioningContext();
-            var commands = new SiteCommands(seed, seedVersions, TimeProvider.System);
+            var commands = new SiteCommands(seed, seedVersions, TimeProvider.System, Substitute.For<IVfsCommands>());
             siteId = ((SiteSaveResult.Saved)await commands.Create("Old title", "old", "<p/>", true)).Id.Key;
         }
 
         await using (var update = _factory.CreateContext())
         {
             await using var updateVersions = _factory.CreateVersioningContext();
-            await new SiteCommands(update, updateVersions, TimeProvider.System).SaveVersion(siteId, "New title", "new", "<p/>", false);
+            await new SiteCommands(update, updateVersions, TimeProvider.System, Substitute.For<IVfsCommands>()).SaveVersion(siteId, "New title", "new", "<p/>", false);
         }
 
         await using var ctx = _factory.CreateContext();
@@ -103,16 +104,14 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     [Fact]
     public async Task ResolveLabels_NamesSiteImagesAfterTheirFileName()
     {
-        Guid imageId;
-        await using (var seed = _factory.CreateContext())
-        {
-            imageId = await new SiteImageCommands(seed).Add(new SiteImage("logo.png", "image/png", [1], DateTimeOffset.UnixEpoch));
-        }
+        using var bed = new NewsTestBed();
+        var imageId = await bed.AddImageAsync("logo.png");
 
-        await using var ctx = _factory.CreateContext();
+        await using var ctx = bed.Read();
         var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([imageId]);
 
         Assert.Equal("logo.png", labels.Label(imageId.ToString()));
+        Assert.Equal("VfsFile: logo.png", labels.LabelKey($"VfsFile:{imageId}"));
     }
 
     [Fact]
@@ -189,6 +188,79 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([articleId]);
 
         Assert.Equal("Gone", labels.Label(articleId.ToString()));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesGalleriesAfterTheirNewestTitleAndGalleryItemsAfterTheirDescription()
+    {
+        using var bed = new NewsTestBed();
+        var items = await bed.NewGalleryItemsAsync("Sunset on the beach");
+        var first = await bed.SaveGalleryAsync(null, "Trip", items: items);
+        await bed.SaveGalleryAsync(first.Key, "Trip final", items: items);
+
+        await using var ctx = bed.Read();
+        var itemKey = await ctx.GalleryItems.Select(item => EF.Property<Guid>(item, VersionedColumns.Key)).FirstAsync();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([first.Key, itemKey]);
+
+        Assert.Equal("Trip final", labels.Label(first.Key.ToString()));
+        Assert.Equal("Sunset on the beach", labels.Label(itemKey.ToString()));
+        Assert.Equal("Trip final: 1", labels.LabelKey($"{first.Key}:1"));
+        Assert.Equal("Gallery: Trip final", labels.LabelKey($"Gallery:{first.Key}"));
+        Assert.Equal("GalleryItem: Sunset on the beach", labels.LabelKey($"GalleryItem:{itemKey}"));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_ShortensLongGalleryItemDescriptions()
+    {
+        using var bed = new NewsTestBed();
+        var items = await bed.NewGalleryItemsAsync(new string('x', 500));
+        await bed.CreateGalleryAsync(items: items);
+
+        await using var ctx = bed.Read();
+        var itemKey = await ctx.GalleryItems.Select(item => EF.Property<Guid>(item, VersionedColumns.Key)).FirstAsync();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([itemKey]);
+
+        Assert.Equal(80, labels.Label(itemKey.ToString()).Length);
+        Assert.EndsWith("…", labels.Label(itemKey.ToString()));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesGalleryImagesAfterTheirFileName()
+    {
+        using var bed = new NewsTestBed();
+        var imageId = await bed.AddGalleryImageAsync("sunset.png");
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([imageId]);
+
+        Assert.Equal("sunset.png", labels.Label(imageId.ToString()));
+        Assert.Equal("VfsFile: sunset.png", labels.LabelKey($"VfsFile:{imageId}"));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesGalleryItemsWithoutADescriptionImage()
+    {
+        using var bed = new NewsTestBed();
+        await bed.CreateGalleryAsync(items: await bed.NewGalleryItemsAsync(" "));
+
+        await using var ctx = bed.Read();
+        var itemKey = await ctx.GalleryItems.Select(item => EF.Property<Guid>(item, VersionedColumns.Key)).FirstAsync();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([itemKey]);
+
+        Assert.Equal("Image", labels.Label(itemKey.ToString()));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesDeletedGalleriesBecauseTheAuditLogIncludesDeletedRecords()
+    {
+        using var bed = new NewsTestBed();
+        var galleryId = await bed.CreateGalleryAsync("Gone");
+        await bed.WithGalleryCommandsAsync(commands => commands.Delete(galleryId));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([galleryId]);
+
+        Assert.Equal("Gone", labels.Label(galleryId.ToString()));
     }
 
     [Fact]

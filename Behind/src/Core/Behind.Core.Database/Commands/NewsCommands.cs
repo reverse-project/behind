@@ -7,7 +7,10 @@ using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Database.Commands;
 
-public sealed class NewsCommands(AbstractCoreContext context, AbstractVersioningContext versions) : INewsCommands
+public sealed class NewsCommands(
+    AbstractCoreContext context,
+    AbstractVersioningContext versions,
+    IVfsCommands files) : INewsCommands
 {
     public Task<NewsSaveResult> Create(
         Guid authorId,
@@ -173,6 +176,8 @@ public sealed class NewsCommands(AbstractCoreContext context, AbstractVersioning
 
             return new NewsSaveResult.VersionConflict();
         }
+
+        await files.AttachSiteImagesOf(VfsTypes.News, id.Key, [draft.Summary, draft.Content], cancellationToken);
 
         if (publish)
         {

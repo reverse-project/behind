@@ -1,12 +1,9 @@
-using Behind.Common;
 using static Behind.Common.FunctionalExtensions;
 
-namespace Behind.Core.Domain;
+namespace Behind.Common;
 
-public static class SiteImageExtensions
+public static class ImageContentTypeExtensions
 {
-    private static readonly char[] PathSeparators = ['/', '\\'];
-
     private sealed record Signature(string ContentType, int Offset, byte[] Bytes);
 
     private static readonly byte[] RiffMarker = "RIFF"u8.ToArray();
@@ -39,16 +36,5 @@ public static class SiteImageExtensions
         private bool Matches(Signature signature) =>
             content.Length >= signature.Offset + signature.Bytes.Length
             && content.AsSpan(signature.Offset, signature.Bytes.Length).SequenceEqual(signature.Bytes);
-    }
-
-    extension(string? fileName)
-    {
-        public string ToSiteImageFileName(string fallback)
-        {
-            var name = (fileName ?? string.Empty).Split(PathSeparators).Last().Trim();
-            var limited = name.Length > SiteImage.MaxFileNameLength ? name[..SiteImage.MaxFileNameLength] : name;
-
-            return limited.Length == 0 ? fallback : limited;
-        }
     }
 }

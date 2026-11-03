@@ -64,6 +64,20 @@ The `Frontend:Sites` section (`SitesConfiguration`, for example in `frontend.jso
 
 `GET /sites/settings` (`Site.Read`) returns both values to the editor.
 
+### Backend Settings
+
+`backend.json` (required, section `Backend`, `BackendConfiguration`) holds the settings that are not part of the frontend:
+
+```json
+{ "Backend": { "DataDirectory": "/app/data" } }
+```
+
+- `DataDirectory`: the directory of the data of the server. The content of every uploaded file (site and gallery images) is stored below `<DataDirectory>/vfs`, the database only keeps the metadata (see "Virtual file system" in the database architecture). The application and the migrator fail at startup when it is missing, and both must use the same directory.
+
+### Galleries Settings
+
+The `Frontend:Galleries` section (`GalleriesConfiguration`) has `MaxImageBytes`, the largest accepted gallery image or thumbnail upload (default 10 MB, zero or negative falls back to the default). Larger files are reported per file as `too-large` in a batch upload, and answer `413` for the thumbnail upload. The gallery upload endpoints accept request bodies up to `GalleryImageEndpoints.MaxRequestBytes` (128 MB), so the web client sends five files per request.
+
 ### News Endpoints
 
 | Endpoint | Access |
@@ -103,6 +117,26 @@ Articles follow the news endpoints under `/articles` (`ArticleRoutesExtensions.M
 | `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
 
 The responses reuse `NewsCategoryItem`, `NewsSavedResponse` and `NewsConflictResponse` (reasons `unknown-category`, `version-conflict`, `name-taken`, `unknown-image`).
+
+### Galleries Endpoints
+
+Galleries are versioned like the articles and live under `/galleries` (`GalleryRoutesExtensions.MapGalleryEndpoints`). A gallery version owns its items: saving a version inserts the gallery row and one `GalleryItem` row per image with the same version number, so older versions keep their own images, order and descriptions.
+
+| Endpoint | Access |
+|----------|--------|
+| `GET /galleries?page&pageSize&search` | public, the live version of the published galleries; `search` matches the title or the description |
+| `GET /galleries/{id}` | public, the live version with its items (`imageUrl`, `thumbnailUrl`, `description`) |
+| `GET /galleries/manage` | `Gallery.Read`, with `search`, `letter`, `deleted` (`RawDatabase.Manage` for `deleted`); the status is `draft` or `published` |
+| `GET /galleries/{id}/versions`, `GET /galleries/{id}/versions/{version}` | `Gallery.Read`, the version list and one version in full |
+| `POST /galleries`, `POST /galleries/{id}/versions` | `Gallery.Write`, create / save a new version; `publish: true` also makes it live; item descriptions are optional |
+| `POST /galleries/{id}/versions/{version}/activate` | `Gallery.Write`, make a version live |
+| `GET /galleries/images/{id}` | public, a file of the `Galleries` VFS type with `immutable` caching and `nosniff` |
+| `POST /galleries/images` | `Gallery.Write`, multipart `files` (at most `GalleryImageEndpoints.MaxUploadFiles`, request limit `MaxRequestBytes`), stores every original and its server generated WebP thumbnail (`ThumbnailSide`) as VFS files and returns one entry per file, with an `error` (`unsupported`, `unreadable`, `too-large`) for the files that were skipped |
+| `POST /galleries/thumbnail` | `Gallery.Write`, one `file`, stored scaled to `CoverSide` as a VFS file, answers `{ id, url }`, `413` with `{ maxBytes }` above the limit and `415` for other files |
+| `POST /galleries/{id}/delete` | `Gallery.Delete` |
+| `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
+
+The gallery images do not use the site image endpoints or the `Frontend:Sites` limit; they are files of the `Galleries` VFS type, the site images are files of the `Sites`, `News`, `Articles`, `NewsCategories` or `ArticleCategories` types. A draft sends `thumbnailImageId: null` for the generated gallery thumbnail: `GalleryThumbnails` then composes a collage of the first four item thumbnails (`ImageThumbnailExtensions.ToMosaic`) and stores it as a VFS file; the response tells with `thumbnailGenerated` which kind it is. The responses reuse `NewsSavedResponse` and `NewsConflictResponse` (reasons `unknown-image`, `version-conflict`).
 
 ### Menus Endpoints
 

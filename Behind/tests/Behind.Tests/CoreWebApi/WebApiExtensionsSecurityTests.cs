@@ -22,6 +22,9 @@ public sealed class WebApiExtensionsSecurityTests : IDisposable
               }
               """);
         File.WriteAllText(Path.Combine(_contentRoot, "email.json"), "{}");
+        File.WriteAllText(
+            Path.Combine(_contentRoot, "backend.json"),
+            $$"""{ "Backend": { "DataDirectory": "{{Path.Combine(_contentRoot, "data").Replace("\\", "\\\\")}}" } }""");
     }
 
     public void Dispose()

@@ -292,4 +292,22 @@ public class NewsFrontendTests
         Assert.Contains("self.letterPager.selected(\"\")", viewModel);
         Assert.Contains("\"&letter=\" + encodeURIComponent(query.letter)", model);
     }
+
+    [Fact]
+    public void CommentsSwitch_HidesTheCommentsOfTheNewsPagesWhenTheServerTurnsThemOff()
+    {
+        var model = Read("models/comments.js");
+        var article = Read("viewmodels/newsarticle.js");
+        var list = Read("viewmodels/news.js");
+        var manager = Read("viewmodels/newsmanager.js");
+
+        Assert.Contains("http.get(\"/comments/settings\")", model);
+        Assert.Contains("settings.news ? self.refreshComments() : undefined", article);
+        Assert.Contains("self.commentsEnabled(settings.news)", article);
+        Assert.Contains("self.commentsEnabled(settings.news)", list);
+        Assert.Contains("self.commentsEnabled(settings.news)", manager);
+        Assert.Contains("visible: commentsEnabled", Read("views/newsarticle.html"));
+        Assert.Contains("visible: $root.commentsEnabled, text: commentLabel", Read("views/news.html"));
+        Assert.Contains("visible: $root.commentsEnabled", Read("views/newsmanager.html"));
+    }
 }

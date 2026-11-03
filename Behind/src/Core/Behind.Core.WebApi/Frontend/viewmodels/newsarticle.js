@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"], function (ko, session, news, meta, createPager) {
+define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager", "models/comments"], function (ko, session, news, meta, createPager, comments) {
     var commentPageSize = 10;
 
     return function NewsArticleViewModel(context) {
@@ -18,6 +18,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
         self.isHighlighted = ko.observable(false);
 
         self.busy = ko.observable(false);
+        self.commentsEnabled = ko.observable(true);
         self.commentMessage = ko.observable("");
         self.newComment = ko.observable("");
         self.comments = ko.observableArray([]);
@@ -180,7 +181,11 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
                     self.categoryName(category ? category.name : "");
                     self.imageUrl(category && category.headerImageUrl ? category.headerImageUrl : null);
 
-                    return self.refreshComments();
+                    return comments.settings().then(function (settings) {
+                        self.commentsEnabled(settings.news);
+
+                        return settings.news ? self.refreshComments() : undefined;
+                    });
                 })
                 .finally(function () {
                     self.loading(false);

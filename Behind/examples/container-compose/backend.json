@@ -3,6 +3,9 @@
     "DataDirectory": "/app/data",
     "Downloads": {
       "MaxFileBytes": 104857600
+    },
+    "Comments": {
+      "News": true
     }
   }
 }

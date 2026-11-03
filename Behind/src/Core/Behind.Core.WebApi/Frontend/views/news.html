@@ -19,7 +19,7 @@
                 </div>
                 <div class="site-content mb-2" data-bind="html: summary"></div>
                 <a class="me-2" data-bind="attr: { href: href }">Read more</a>
-                <span class="small text-body-secondary" data-bind="text: commentLabel"></span>
+                <span class="small text-body-secondary" data-bind="visible: $root.commentsEnabled, text: commentLabel"></span>
             </div>
         </article>
     </div>

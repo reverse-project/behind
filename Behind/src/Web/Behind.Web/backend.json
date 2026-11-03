@@ -3,6 +3,9 @@
     "DataDirectory": "/workspaces/behind/Data",
     "Downloads": {
       "MaxFileBytes": 104857600
+    },
+    "Comments": {
+      "News": true
     }
   }
 }

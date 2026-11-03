@@ -1,4 +1,4 @@
-define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpager"], function (ko, news, meta, createPager, createLetterPager) {
+define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpager", "models/comments"], function (ko, news, meta, createPager, createLetterPager, comments) {
     var pageSize = 10;
 
     var plural = function (count) {
@@ -28,6 +28,7 @@ define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpa
         var self = this;
 
         self.busy = ko.observable(false);
+        self.commentsEnabled = ko.observable(true);
         self.message = ko.observable("");
         self.items = ko.observableArray([]);
         self.categories = ko.observableArray([]);
@@ -123,7 +124,11 @@ define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpa
         };
 
         self.activate = function () {
-            return self.refresh();
+            return comments.settings().then(function (settings) {
+                self.commentsEnabled(settings.news);
+
+                return self.refresh();
+            });
         };
     };
 });

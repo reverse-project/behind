@@ -1,8 +1,9 @@
-define(["ko", "models/session", "models/news", "models/newsmeta", "models/managedlist"], function (ko, session, news, meta, createManagedList) {
+define(["ko", "models/session", "models/news", "models/newsmeta", "models/managedlist", "models/comments"], function (ko, session, news, meta, createManagedList, comments) {
     return function NewsManagerViewModel() {
         var self = this;
 
         self.isSignedIn = session.isSignedIn;
+        self.commentsEnabled = ko.observable(true);
         self.canRead = ko.pureComputed(function () {
             return session.hasGrant("News.Read");
         });
@@ -73,6 +74,12 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/manage
             present: present
         });
 
-        self.activate = self.list.activate;
+        self.activate = function () {
+            return comments.settings().then(function (settings) {
+                self.commentsEnabled(settings.news);
+
+                return self.list.activate();
+            });
+        };
     };
 });

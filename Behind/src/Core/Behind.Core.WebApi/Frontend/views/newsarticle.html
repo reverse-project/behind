@@ -12,7 +12,7 @@
             <span class="badge text-bg-secondary" data-bind="visible: hasCategory, text: categoryName"></span>
         </div>
         <div class="site-content mb-5" data-bind="html: content"></div>
-        <section aria-labelledby="news-comments-heading">
+        <section aria-labelledby="news-comments-heading" data-bind="visible: commentsEnabled">
             <h2 class="h4" id="news-comments-heading">Comments</h2>
             <div class="alert alert-info" role="alert" data-bind="visible: hasCommentMessage, text: commentMessage"></div>
             <p class="text-body-secondary" data-bind="visible: !hasComments()">No comments yet.</p>

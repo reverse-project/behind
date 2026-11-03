@@ -13,6 +13,9 @@
 
 ## Comments
 
+The administrator of the server can switch the comments of the news off in `backend.json` (`Backend:Comments:News`). While they are off the comment counts and the comments section are not shown and nobody can write, edit or delete comments; the existing comments are kept and appear again when the setting is switched back on.
+
+
 - Signed in users write a comment under the news and send it with **Comment**. Comments are plain text of up to 2000 characters, listed oldest first with page buttons.
 - You can **edit** and delete your own comments. **Edit** opens the comment in place, **Save** stores it as a new version of the comment and the comment then shows *edited* with the time of the change (taken from the [audit log](./audit-log.md)). Holders of the `News.Manage` grant (administrators, and the future moderators) can edit any comment, holders of the `News.Delete` grant can delete any comment. A deleted comment is soft deleted, see below.
 - Without being signed in you can read the comments and are asked to sign in to write one.

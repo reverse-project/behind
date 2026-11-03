@@ -31,7 +31,7 @@
                 <span class="badge text-bg-info" data-bind="visible: isScheduled && !isDeleted">Scheduled</span>
                 <span class="badge text-bg-secondary" data-bind="visible: isExpired && !isDeleted">Expired</span>
                 <span class="badge text-bg-secondary" data-bind="visible: hasCategory, text: categoryName"></span>
-                <span class="small text-body-secondary"><span data-bind="text: commentCount"></span> comments</span>
+                <span class="small text-body-secondary" data-bind="visible: $root.commentsEnabled"><span data-bind="text: commentCount"></span> comments</span>
                 <span class="small text-body-secondary" data-bind="text: version"></span>
                 <span class="small text-body-secondary" data-bind="text: schedule"></span>
                 <span class="small text-body-secondary" data-bind="text: stamp"></span>

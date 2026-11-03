@@ -78,6 +78,9 @@ public static class WebApiExtensions
         {
             builder.Configuration.AddJsonFile("backend.json", false, true);
             builder.Services.AddVfsContentStore(builder.Configuration);
+            builder.Services.Configure<CommentsConfiguration>(
+                builder.Configuration.GetSection(CommentsConfiguration.SectionName)
+            );
             builder.Services.Configure<DownloadsConfiguration>(
                 builder.Configuration.GetSection(DownloadsConfiguration.SectionName)
             );
@@ -760,11 +763,18 @@ public static class WebApiExtensions
                 .Produces(409)
                 .Produces(500);
 
+            application.MapGet("/comments/settings", CommentsEndpoints.GetSettings)
+                .Produces<CommentsSettingsResponse>()
+                .Produces(500);
+
             application.MapGet("/news/{id:guid}/comments", NewsCommentEndpoints.List)
+                .RequireCommentsOf(CommentsConfiguration.NewsEntity)
                 .Produces<PageResponse<NewsCommentItem>>()
+                .Produces(404)
                 .Produces(500);
 
             application.MapPost("/news/{id:guid}/comments", NewsCommentEndpoints.Add)
+                .RequireCommentsOf(CommentsConfiguration.NewsEntity)
                 .RequireAuthorization()
                 .AddEndpointFilter<DataAnnotationValidationFilter<NewsCommentEndpoints.SaveNewsCommentRequest>>()
                 .Produces<NewsSavedResponse>()
@@ -774,6 +784,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/news/comments/{commentId:guid}", NewsCommentEndpoints.Update)
+                .RequireCommentsOf(CommentsConfiguration.NewsEntity)
                 .RequireAuthorization()
                 .AddEndpointFilter<DataAnnotationValidationFilter<NewsCommentEndpoints.SaveNewsCommentRequest>>()
                 .Produces(204)
@@ -784,6 +795,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/news/comments/{commentId:guid}/delete", NewsCommentEndpoints.Delete)
+                .RequireCommentsOf(CommentsConfiguration.NewsEntity)
                 .RequireAuthorization()
                 .Produces(204)
                 .Produces(401)

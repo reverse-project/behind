@@ -278,6 +278,12 @@ public static class WebApiExtensions
             application.MapGet("/about", AboutEndpoints.Get)
                 .Produces<AboutResponse>();
 
+            application.MapGet("/generator/qrcode/{data}", QrCodeGeneratorEndpoints.Get)
+                .RequireAuthorization()
+                .Produces<string>(200, QrCodeGeneratorEndpoints.SvgContentType)
+                .Produces(400)
+                .Produces(401);
+
             application.MapGet("/wallOfShame", WallOfShameEndpoints.Get)
                 .Produces<PageResponse<WallOfShameItem>>()
                 .Produces(500);

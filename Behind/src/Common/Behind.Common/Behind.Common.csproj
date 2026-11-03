@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="OpenTelemetry" />
+      <PackageReference Include="QRCoder" />
       <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
       <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
       <PackageReference Include="OpenTelemetry.Instrumentation.Http" />

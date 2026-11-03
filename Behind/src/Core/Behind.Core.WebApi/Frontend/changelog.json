@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [
+      { "type": "added", "text": "QR codes: signed in users can request GET /generator/qrcode/<data> with the text to encode as base64 (the URL safe alphabet is accepted too) and get the QR code as an SVG image, for example to show the secret of a TOTP authenticator app. Invalid or too long data is answered with 400 and nothing is stored or cached." },
       { "type": "fixed", "text": "The grants of a signed in user are refreshed every time the page is loaded, so new grants (for example Article.Read) show their administration links without signing in again." },
       { "type": "added", "text": "Articles: public pages with a title, a short content and a content, grouped in their own article categories (with a header image) and searchable by title and content. Like news they are versioned with drafts, publishing, history, soft delete, restore and permanent delete for developers, but they cannot be scheduled, highlighted or commented. Read them at Articles, manage them under Administration (Article.Read, Article.Write, Article.Delete grants)." },
       { "type": "added", "text": "News, news categories and news comments are versioned like sites: every save inserts a new version and never changes an old one. News can be saved as a draft or published, an older version can be loaded into the editor or made live again, and the news list shows the live version only. The Ids of these entities are versioned keys." },

@@ -735,6 +735,15 @@
     "text": "licenses/MIT.txt"
   },
   {
+    "name": "Microsoft.Win32.SystemEvents",
+    "version": "6.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
     "name": "Microsoft.VisualStudio.SolutionPersistence",
     "version": "1.0.52",
     "license": "MIT",
@@ -866,6 +875,15 @@
     "license": "MIT",
     "copyright": "Kyle Spearrin",
     "url": "https://github.com/kspearrin/Otp.NET",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "QRCoder",
+    "version": "1.8.1",
+    "license": "MIT",
+    "copyright": "Raffael Herrmann, Shane Krueger",
+    "url": "https://github.com/codebude/QRCoder",
     "scope": "server",
     "text": "licenses/MIT.txt"
   },
@@ -1034,6 +1052,15 @@
   {
     "name": "System.Diagnostics.EventLog",
     "version": "10.0.10",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Drawing.Common",
+    "version": "6.0.0",
     "license": "MIT",
     "copyright": "© Microsoft Corporation. All rights reserved.",
     "url": "https://dot.net/",

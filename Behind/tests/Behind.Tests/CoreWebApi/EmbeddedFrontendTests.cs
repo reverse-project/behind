@@ -75,6 +75,17 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
+    public void IndexHtml_ShowsLoadingSpinnerInsideTheMainContainer()
+    {
+        var index = Read(Provider.GetFileInfo("index.html"));
+        var main = index[index.IndexOf("<main id=\"main-container\"", StringComparison.Ordinal)..index.IndexOf("</main>", StringComparison.Ordinal)];
+
+        Assert.Contains("spinner-border", main);
+        Assert.Contains("role=\"status\"", main);
+        Assert.Contains("visually-hidden", main);
+    }
+
+    [Fact]
     public void ConfigPaths_PointToExistingLibraries()
     {
         var config = Read(Provider.GetFileInfo("config.js"));

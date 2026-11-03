@@ -43,7 +43,13 @@
         </div>
     </div>
 </header>
-<main id="main-container" class="container my-4 behind-main flex-grow-1"></main>
+<main id="main-container" class="container my-4 behind-main flex-grow-1">
+    <div id="page-loading" class="d-flex justify-content-center align-items-center py-5" role="status">
+        <div class="spinner-border text-primary">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</main>
 <footer id="footer-container" class="border-top py-3 mt-auto">
     <div class="container d-flex flex-wrap align-items-center gap-2 text-body-secondary">
         <strong data-bind="text: name"></strong>

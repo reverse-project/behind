@@ -35,13 +35,11 @@ public class RoleManagementFrontendTests
     {
         var app = Read("app.js");
         var administration = Read("viewmodels/administration.js");
-        var header = Read("viewmodels/header.js");
 
         Assert.Contains("\"#/roles\": \"controllers/roles\"", app);
         Assert.Contains("ko.components.register(\"access-editor\", { require: \"components/accesseditor\" })", app);
         Assert.Contains("name: \"Roles\", icon: \"fa-user-shield\", href: \"#/roles\", allowed: canManageRoles", administration);
         Assert.Contains("session.hasGrant(\"Role.Manage\")", administration);
-        Assert.Contains("self.canManageUsers() || session.hasGrant(\"Role.Manage\")", header);
     }
 
     [Fact]

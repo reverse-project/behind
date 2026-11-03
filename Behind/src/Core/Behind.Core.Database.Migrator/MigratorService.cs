@@ -35,6 +35,9 @@ public sealed class MigratorService(IServiceProvider services, ILogger<MigratorS
         await sqlite.EnsureUsersHaveUsersRoleAsync(stoppingToken);
         logger.LogDebug("Users role ensured for all users");
 
+        await sqlite.EnsureBuiltInMenusAsync(stoppingToken);
+        logger.LogDebug("Built-in menus ensured");
+
         var host = scope.ServiceProvider.GetRequiredService<IHost>();
         await host.StopAsync(stoppingToken);
     }

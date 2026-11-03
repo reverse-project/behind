@@ -4,6 +4,7 @@
     <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="News categories" data-bind="foreach: filters">
         <button type="button" class="btn btn-sm" data-bind="text: name, css: isSelected ? 'btn-primary' : 'btn-outline-primary', click: select"></button>
     </div>
+    <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
     <img class="news-header-image mb-3" data-bind="visible: hasBanner, attr: { src: bannerUrl, alt: bannerName }">
     <p class="text-body-secondary" data-bind="visible: isEmpty">There is no news yet.</p>
     <div data-bind="foreach: items">

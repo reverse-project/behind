@@ -148,22 +148,22 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void Header_ShowsUserNameMenuWithAccountPagesAdministrationAndSignOutWhenSignedIn_AndSignInLinksOtherwise()
+    public void Header_ShowsUserNameMenuWithTheUserMenuItemsAndSignOutWhenSignedIn_AndSignInLinksOtherwise()
     {
         var index = Read(Provider.GetFileInfo("index.html"));
         var header = Read(Provider.GetFileInfo("viewmodels/header.js"));
         var menu = index[index.IndexOf("nav-item dropdown", StringComparison.Ordinal)..];
-        menu = menu[..menu.IndexOf("</ul>", StringComparison.Ordinal)];
+        menu = menu[..menu.IndexOf("</div>", StringComparison.Ordinal)];
 
         Assert.Contains("<li class=\"nav-item dropdown\" data-bind=\"visible: isSignedIn\">", index);
         Assert.Contains("data-bs-toggle=\"dropdown\" aria-expanded=\"false\" data-bind=\"text: label\"", index);
-        Assert.All(
-            new[] { "href=\"#/profile\"", "href=\"#/session\"", "href=\"#/sessions\"", "<li data-bind=\"visible: canAdminister\"><a class=\"dropdown-item\" href=\"#/administration\">Administration</a></li>", "click: signOut" },
-            item => Assert.Contains(item, menu));
-        Assert.Contains("<a class=\"nav-link\" href=\"#/wall-of-shame\">Wall of shame</a>", index);
+        Assert.Contains("params=\"items: userItems, variant: 'dropdown'\"", menu);
+        Assert.Contains("click: signOut", menu);
+        Assert.Contains("params=\"items: links, variant: 'navbar'\"", index);
         Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-in\">", index);
         Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn()\"><a class=\"nav-link\" href=\"#/sign-up\">", index);
         Assert.Equal(1, index.Split("click: signOut").Length - 1);
+        Assert.Contains("menus.follow(\"main\")", header);
         Assert.Contains("session.displayName()", header);
         Assert.Contains("auth.loadSession()", header);
         Assert.Contains("identify(session.isSignedIn())", header);
@@ -187,12 +187,14 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void AdministrationViewModel_ListsTheUsersRolesSitesNewsAndAuditLogPagesForTheirManagers()
+    public void AdministrationViewModel_ListsTheUsersRolesSitesNewsMenusAndAuditLogPagesForTheirManagers()
     {
         var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
-        Assert.Equal(8, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Equal(9, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Contains("name: \"Menus\", icon: \"fa-bars\", href: \"#/manage/menus\", allowed: canReadMenus", viewModel);
+        Assert.Contains("hasGrant(\"Menu.Read\")", viewModel);
         Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);
         Assert.Contains("name: \"Sites\", icon: \"fa-file-lines\", href: \"#/sites\", allowed: canReadSites", viewModel);
         Assert.Contains("name: \"News\", icon: \"fa-newspaper\", href: \"#/manage/news\", allowed: canReadNews", viewModel);
@@ -255,7 +257,7 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void SessionPageLink_IsOnlyInTheHeader()
+    public void SessionPageLink_IsOnlyInTheBuiltInMainMenu()
     {
         var links = Walk("/")
             .Where(file => file.Name.EndsWith(".html"))
@@ -263,7 +265,8 @@ public class EmbeddedFrontendTests
             .Select(file => file.Name)
             .ToList();
 
-        Assert.Equal(["index.html"], links);
+        Assert.Empty(links);
+        Assert.True(BuiltInMenus.Main.HasItem("Session", "#/session", MenuItemKind.User));
     }
 
     [Fact]
@@ -344,7 +347,7 @@ public class EmbeddedFrontendTests
         var http = Read(Provider.GetFileInfo("models/http.js"));
 
         Assert.Contains("\"#/profile\": \"controllers/profile\"", app);
-        Assert.Contains("<a class=\"dropdown-item\" href=\"#/profile\">Profile</a>", Read(Provider.GetFileInfo("index.html")));
+        Assert.True(BuiltInMenus.Main.HasItem("Profile", "#/profile", MenuItemKind.User));
         Assert.Contains("value: displayName", view);
         Assert.Contains("submit: submit", view);
         Assert.Contains("http.put(\"/profile/displayName\"", auth);
@@ -355,10 +358,9 @@ public class EmbeddedFrontendTests
     public void SessionsRoute_IsRegisteredAndLinkedUnderTheDisplayNameMenu()
     {
         var app = Read(Provider.GetFileInfo("app.js"));
-        var index = Read(Provider.GetFileInfo("index.html"));
 
         Assert.Contains("\"#/sessions\": \"controllers/sessions\"", app);
-        Assert.Contains("<a class=\"dropdown-item\" href=\"#/sessions\">Sessions</a>", index);
+        Assert.True(BuiltInMenus.Main.HasItem("Sessions", "#/sessions", MenuItemKind.User));
     }
 
     [Fact]

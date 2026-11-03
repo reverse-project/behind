@@ -33,25 +33,26 @@ public class UserManagementFrontendTests
     public void Routes_AreRegisteredAndLinked()
     {
         var app = Read("app.js");
-        var index = Read("index.html");
         var administration = Read("viewmodels/administration.js");
 
         Assert.Contains("\"#/users\": \"controllers/users\"", app);
         Assert.Contains("\"#/wall-of-shame\": \"controllers/wallofshame\"", app);
         Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", administration);
-        Assert.Contains("<a class=\"nav-link\" href=\"#/wall-of-shame\">Wall of shame</a>", index);
-        Assert.Contains("href=\"#/administration\">Administration</a>", index);
+        Assert.True(BuiltInMenus.Main.HasItem("Wall of shame", "#/wall-of-shame", MenuItemKind.Link));
+        Assert.True(BuiltInMenus.Main.HasItem("Administration", "#/administration", MenuItemKind.User));
     }
 
     [Fact]
-    public void Header_ShowsTheAdministrationLinkOnlyToUserManagers()
+    public void Header_ShowsTheAdministrationLinkOnlyToTheRolesOfTheAdministrationMenuItem()
     {
         var header = Read("viewmodels/header.js");
         var session = Read("models/session.js");
         var auth = Read("models/auth.js");
+        var administration = BuiltInMenus.Main.Items.Single(item => item.Url == "#/administration");
 
-        Assert.Contains("session.hasGrant(\"User.Manage\")", header);
-        Assert.Contains("visible: canAdminister", Read("index.html"));
+        Assert.Equal([BuiltInAccess.Administrators.Id, BuiltInAccess.Developers.Id], administration.RoleIds);
+        Assert.DoesNotContain("canAdminister", header);
+        Assert.DoesNotContain("canAdminister", Read("index.html"));
         Assert.Contains("session.grants() === null", header);
         Assert.Contains("hasGrant: function", session);
         Assert.Contains("session.identify(user.label(response.data.user), user.grants(response.data.user))", auth);

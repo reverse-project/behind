@@ -20,21 +20,15 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navigation">
+                <menu-items params="items: links, variant: 'navbar'"></menu-items>
                 <ul class="navbar-nav me-auto mb-2 mb-md-0">
-                    <li class="nav-item"><a class="nav-link" href="#/">Index</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#/news">News</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#/articles">Articles</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#/wall-of-shame">Wall of shame</a></li>
                     <li class="nav-item dropdown" data-bind="visible: isSignedIn">
                         <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: label"></button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#/profile">Profile</a></li>
-                            <li><a class="dropdown-item" href="#/session">Session</a></li>
-                            <li><a class="dropdown-item" href="#/sessions">Sessions</a></li>
-                            <li data-bind="visible: canAdminister"><a class="dropdown-item" href="#/administration">Administration</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><button type="button" class="dropdown-item" data-bind="click: signOut">Sign out</button></li>
-                        </ul>
+                        <div class="dropdown-menu">
+                            <menu-items params="items: userItems, variant: 'dropdown'"></menu-items>
+                            <hr class="dropdown-divider">
+                            <button type="button" class="dropdown-item" data-bind="click: signOut">Sign out</button>
+                        </div>
                     </li>
                     <li class="nav-item" data-bind="visible: !isSignedIn()"><a class="nav-link" href="#/sign-in">Sign in</a></li>
                     <li class="nav-item" data-bind="visible: !isSignedIn()"><a class="nav-link" href="#/sign-up">Sign up</a></li>
@@ -55,6 +49,7 @@
         <strong data-bind="text: name"></strong>
         <a class="link-secondary" href="#/changelog" data-bind="visible: hasVersion, text: label" title="Changelog"></a>
         <a class="link-secondary" href="#/licenses" title="Licenses">Licenses</a>
+        <menu-nav params="name: 'footer'"></menu-nav>
     </div>
 </footer>
 <noscript>

@@ -1,4 +1,4 @@
-define(["models/http", "models/results"], function (http, results) {
+define(["models/http", "models/results", "models/paging"], function (http, results, pagination) {
     var sessionExpired = results.sessionExpired;
 
     var outcome = results.create({
@@ -122,19 +122,15 @@ define(["models/http", "models/results"], function (http, results) {
         };
     };
 
-    var paging = function (query) {
-        return "page=" + query.page + "&pageSize=" + query.pageSize;
-    };
+    var paging = pagination.paging;
 
-    var managing = function (path, query) {
-        return path + "?" + paging(query)
-            + "&search=" + encodeURIComponent(query.search) + "&letter=" + encodeURIComponent(query.letter)
-            + (query.deleted ? "&deleted=true" : "");
-    };
+    var managing = pagination.managing;
 
     return {
         list: function (query) {
-            var url = "/news?" + paging(query) + (query.category ? "&category=" + encodeURIComponent(query.category) : "");
+            var url = "/news?" + paging(query)
+                + (query.category ? "&category=" + encodeURIComponent(query.category) : "")
+                + (query.letter ? "&letter=" + encodeURIComponent(query.letter) : "");
 
             return http.get(url).then(function (response) {
                 return loaded(response, publicFailures);

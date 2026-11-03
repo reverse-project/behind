@@ -1,0 +1,11 @@
+<ul data-bind="foreach: items, css: listClass">
+    <li data-bind="visible: !hasChildren || $component.isDropdown, css: $component.itemClass">
+        <a data-bind="attr: attributes, text: title, click: open, css: $component.linkClass"></a>
+    </li>
+    <li class="nav-item dropdown" data-bind="visible: hasChildren && !$component.isDropdown">
+        <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: title"></button>
+        <ul class="dropdown-menu" data-bind="foreach: children">
+            <li><a class="dropdown-item" data-bind="attr: attributes, text: title, click: open"></a></li>
+        </ul>
+    </li>
+</ul>

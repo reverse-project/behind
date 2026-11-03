@@ -74,11 +74,9 @@ public class ArticlesFrontendTests
     }
 
     [Fact]
-    public void Navigation_LinksToTheArticlesPageAndOffersAdministrationToArticleReaders()
+    public void Navigation_LinksToTheArticlesPageFromTheBuiltInMenuAndOffersAdministrationToArticleReaders()
     {
-        Assert.Contains("href=\"#/articles\"", Read("index.html"));
-        Assert.Contains("session.hasGrant(\"Article.Read\")", Read("viewmodels/header.js"));
-
+        Assert.True(BuiltInMenus.Main.HasItem("Articles", "#/articles", MenuItemKind.Link));
         var administration = Read("viewmodels/administration.js");
         Assert.Contains("href: \"#/manage/articles\", allowed: canReadArticles", administration);
         Assert.Contains("href: \"#/manage/article-categories\", allowed: canReadArticles", administration);

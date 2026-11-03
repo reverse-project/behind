@@ -192,6 +192,42 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesMenusAfterTheirNewestTitleAndMenuItemsAfterTheirTitle()
+    {
+        using var bed = new NewsTestBed();
+        var menuId = await bed.CreateMenuAsync("footer", "Footer");
+        await bed.WithMenuCommandsAsync(commands => commands.Update(
+            menuId,
+            new IMenuCommands.MenuDraft("footer", "Page footer")));
+        var first = await bed.SaveMenuItemAsync(null, menuId, MenuTestBedExtensions.ItemDraft("Docs"));
+        await bed.SaveMenuItemAsync(first.Key, menuId, MenuTestBedExtensions.ItemDraft("Documentation"));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([menuId, first.Key]);
+
+        Assert.Equal("Page footer", labels.Label(menuId.ToString()));
+        Assert.Equal("Documentation", labels.Label(first.Key.ToString()));
+        Assert.Equal("Page footer: 1", labels.LabelKey($"{menuId}:1"));
+        Assert.Equal("MenuItem: Documentation", labels.LabelKey($"MenuItem:{first.Key}"));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesDeletedMenusAndMenuItemsBecauseTheAuditLogIncludesDeletedRecords()
+    {
+        using var bed = new NewsTestBed();
+        var menuId = await bed.CreateMenuAsync("footer", "Footer");
+        var itemId = await bed.CreateMenuItemAsync(menuId, "Docs");
+        await bed.WithMenuItemCommandsAsync(commands => commands.Delete(itemId));
+        await bed.WithMenuCommandsAsync(commands => commands.Delete(menuId));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([menuId, itemId]);
+
+        Assert.Equal("Footer", labels.Label(menuId.ToString()));
+        Assert.Equal("Docs", labels.Label(itemId.ToString()));
+    }
+
+    [Fact]
     public async Task ResolveLabels_UnknownIdentifierIsKeptAsIs()
     {
         var unknown = Guid.NewGuid();

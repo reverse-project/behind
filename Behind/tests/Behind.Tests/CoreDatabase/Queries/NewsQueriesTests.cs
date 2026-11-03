@@ -17,11 +17,19 @@ public sealed class NewsQueriesTests : IDisposable
     private async Task<PagedResult<INewsQueries.NewsListing>> ListAsync(
         Flipper? flipper = null,
         Option<Guid> category = default,
-        DateTimeOffset? now = null)
+        DateTimeOffset? now = null,
+        Option<string> letter = default)
     {
         await using var ctx = _bed.Read();
 
-        return await new NewsQueries(ctx).List(flipper ?? FirstPage, category, now ?? Clock);
+        return await new NewsQueries(ctx).List(flipper ?? FirstPage, category, letter, now ?? Clock);
+    }
+
+    private async Task<IReadOnlyList<string>> LiveLettersAsync(Option<Guid> category = default, DateTimeOffset? now = null)
+    {
+        await using var ctx = _bed.Read();
+
+        return await new NewsQueries(ctx).GetLiveLetters(category, now ?? Clock);
     }
 
     private async Task<PagedResult<INewsQueries.ManagedNewsListing>> ManagedAsync(
@@ -44,6 +52,33 @@ public sealed class NewsQueriesTests : IDisposable
     private static IReadOnlyList<INewsQueries.ManagedNewsListing> ManagedItems(
         PagedResult<INewsQueries.ManagedNewsListing> page) =>
         page.Results.Match(() => [], items => items.ToList());
+
+    [Fact]
+    public async Task List_LetterShowsOnlyTheLiveNewsWhoseTitleStartsWithIt()
+    {
+        await _bed.CreateNewsAsync("Alpha", startAt: NewsTestBed.Now);
+        await _bed.CreateNewsAsync("Beta", startAt: NewsTestBed.Now);
+        await _bed.CreateNewsAsync("42 days", startAt: NewsTestBed.Now);
+
+        Assert.Equal(["Alpha"], Titles(await ListAsync(letter: Some("A"))));
+        Assert.Equal(["42 days"], Titles(await ListAsync(letter: Some("#"))));
+        Assert.Empty(Titles(await ListAsync(letter: Some("Z"))));
+        Assert.Equal(3, (await ListAsync()).Total);
+    }
+
+    [Fact]
+    public async Task GetLiveLetters_ReturnsTheFirstLettersOfTheLiveNewsOfTheCategoryOnly()
+    {
+        var releases = await _bed.CreateCategoryAsync("Releases");
+        await _bed.CreateNewsAsync("Alpha", releases, NewsTestBed.Now);
+        await _bed.CreateNewsAsync("Beta", default, NewsTestBed.Now);
+        await _bed.CreateNewsAsync("Gamma", releases, startAt: NewsTestBed.Now.AddDays(30));
+        var draft = await _bed.CreateNewsAsync("Delta", publish: false);
+
+        Assert.NotEqual(Guid.Empty, draft);
+        Assert.Equal(["A", "B"], await LiveLettersAsync());
+        Assert.Equal(["A"], await LiveLettersAsync(releases));
+    }
 
     [Fact]
     public async Task List_ReturnsTheNewestStartFirst()

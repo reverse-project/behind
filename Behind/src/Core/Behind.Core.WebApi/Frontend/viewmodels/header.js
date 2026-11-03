@@ -1,16 +1,21 @@
-define(["ko", "models/auth", "models/session"], function (ko, auth, session) {
+define(["ko", "models/auth", "models/session", "models/menus"], function (ko, auth, session, menus) {
     return function HeaderViewModel(context) {
         var self = this;
+        var main = menus.follow("main");
+
+        var itemsOfKind = function (kind) {
+            return ko.pureComputed(function () {
+                return main().items.filter(function (item) {
+                    return item.kind === kind;
+                });
+            });
+        };
 
         self.isSignedIn = session.isSignedIn;
 
-        self.canManageUsers = ko.pureComputed(function () {
-            return session.hasGrant("User.Manage");
-        });
+        self.links = itemsOfKind("Link");
 
-        self.canAdminister = ko.pureComputed(function () {
-            return self.canManageUsers() || session.hasGrant("Role.Manage") || session.hasGrant("Site.Read") || session.hasGrant("News.Read") || session.hasGrant("Article.Read") || session.hasGrant("AuditLog.Read");
-        });
+        self.userItems = itemsOfKind("User");
 
         self.label = ko.pureComputed(function () {
             return session.displayName() || "Account";

@@ -35,15 +35,25 @@ public static class ManagedListExtensions
                 return Results.BadRequest();
             }
 
+            return await httpContext.WithDeletionState(
+                authorization,
+                deleted,
+                state => execute(new ManagedListQuery(search.ToSearchTerm(MaxSearchLength), letterFilter, state)));
+        }
+
+        public async Task<IResult> WithDeletionState(
+            IAuthorizationService authorization,
+            bool deleted,
+            Func<DeletionState, Task<IResult>> execute)
+        {
+            httpContext.Response.Headers.CacheControl = NoStore;
+
             if (deleted && !await authorization.HoldsGrantAsync(httpContext.User, DeletedRecordsGrant))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
 
-            return await execute(new ManagedListQuery(
-                search.ToSearchTerm(MaxSearchLength),
-                letterFilter,
-                deleted ? DeletionState.Deleted : DeletionState.Active));
+            return await execute(deleted ? DeletionState.Deleted : DeletionState.Active);
         }
     }
 }

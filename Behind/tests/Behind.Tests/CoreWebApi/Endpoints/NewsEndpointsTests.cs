@@ -93,8 +93,9 @@ public class NewsEndpointsTests
     public async Task List_ReturnsTheLiveNewsAndCategoriesWithoutCaching()
     {
         var queries = Substitute.For<INewsQueries>();
-        queries.List(new Flipper(1, NewsEndpoints.DefaultPageSize), None, Now, Arg.Any<CancellationToken>())
+        queries.List(new Flipper(1, NewsEndpoints.DefaultPageSize), None, None, Now, Arg.Any<CancellationToken>())
             .Returns(Page(Listing(Some(Category))));
+        queries.GetLiveLetters(None, Now, Arg.Any<CancellationToken>()).Returns(["L", "R"]);
         var categories = CategoryQueries(new INewsCategoryQueries.NewsCategoryListing(new VersionedKey<Guid>(CategoryId, 1), "Releases", Some(ImageId)));
         var context = new DefaultHttpContext();
 
@@ -108,13 +109,14 @@ public class NewsEndpointsTests
             [new NewsListItem(NewsId, 3, "Launch", "<p>short</p>", "Ada", Now, Now.AddHours(1), category, 3, false, Now, null)],
             body.News.Items);
         Assert.Equal([category], body.Categories);
+        Assert.Equal(["L", "R"], body.Letters);
     }
 
     [Fact]
     public async Task List_ItemWithoutCategoryOrUpdate_HasNullsInTheResponse()
     {
         var queries = Substitute.For<INewsQueries>();
-        queries.List(default!, default, default, default).ReturnsForAnyArgs(
+        queries.List(default!, default, default, default, default).ReturnsForAnyArgs(
             Page(Listing() with { UpdatedAt = None, CreatedAt = None }));
 
         var result = await NewsEndpoints.List(new DefaultHttpContext(), queries, CategoryQueries(), Clock);
@@ -127,22 +129,50 @@ public class NewsEndpointsTests
     public async Task List_PassesThePagingTheCategoryFilterAndTheCurrentTime()
     {
         var queries = Substitute.For<INewsQueries>();
-        queries.List(default!, default, default, default).ReturnsForAnyArgs(Page<INewsQueries.NewsListing>());
+        queries.List(default!, default, default, default, default).ReturnsForAnyArgs(Page<INewsQueries.NewsListing>());
 
-        await NewsEndpoints.List(new DefaultHttpContext(), queries, CategoryQueries(), Clock, 3, 1000, CategoryId);
+        await NewsEndpoints.List(new DefaultHttpContext(), queries, CategoryQueries(), Clock, 3, 1000, CategoryId, " r ");
 
         await queries.Received(1).List(
             new Flipper(3, NewsEndpoints.MaxPageSize),
             CategoryId,
+            Some("R"),
             Now,
             Arg.Any<CancellationToken>());
+        await queries.Received(1).GetLiveLetters(CategoryId, Now, Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData("RR")]
+    [InlineData("1")]
+    [InlineData("-")]
+    public async Task List_UnknownLetter_IsABadRequestAndNothingIsQueried(string letter)
+    {
+        var queries = Substitute.For<INewsQueries>();
+
+        var result = await NewsEndpoints.List(
+            new DefaultHttpContext(), queries, CategoryQueries(), Clock, letter: letter);
+
+        Assert.IsType<BadRequest>(result);
+        await queries.DidNotReceiveWithAnyArgs().List(default!, default, default, default, default);
+    }
+
+    [Fact]
+    public async Task List_BlankLetter_MeansNoLetterFilter()
+    {
+        var queries = Substitute.For<INewsQueries>();
+        queries.List(default!, default, default, default, default).ReturnsForAnyArgs(Page<INewsQueries.NewsListing>());
+
+        await NewsEndpoints.List(new DefaultHttpContext(), queries, CategoryQueries(), Clock, letter: "  ");
+
+        await queries.Received(1).List(Arg.Any<Flipper>(), None, None, Now, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task List_ReportsWhichNewsIsHighlightedAndItsSchedule()
     {
         var queries = Substitute.For<INewsQueries>();
-        queries.List(default!, default, default, default).ReturnsForAnyArgs(Page(
+        queries.List(default!, default, default, default, default).ReturnsForAnyArgs(Page(
             Listing() with { IsHighlighted = true, EndAt = Some(Now.AddDays(1)) },
             Listing()));
 

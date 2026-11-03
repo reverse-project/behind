@@ -201,6 +201,10 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IArticleCommands, ArticleCommands>();
             builder.Services.AddScoped<IArticleCategoryQueries, ArticleCategoryQueries>();
             builder.Services.AddScoped<IArticleCategoryCommands, ArticleCategoryCommands>();
+            builder.Services.AddScoped<IMenuQueries, MenuQueries>();
+            builder.Services.AddScoped<IMenuCommands, MenuCommands>();
+            builder.Services.AddScoped<IMenuItemQueries, MenuItemQueries>();
+            builder.Services.AddScoped<IMenuItemCommands, MenuItemCommands>();
             builder.Services.AddScoped<UserManagementGate>();
             builder.Services.AddScoped<IMagicLinkCommands, MagicLinkCommands>();
             builder.Services.AddScoped<IMagicLinkQueries, MagicLinkQueries>();
@@ -761,6 +765,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapArticleEndpoints();
+            application.MapMenuEndpoints();
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEndpoints.DisplayNameRequest>>()

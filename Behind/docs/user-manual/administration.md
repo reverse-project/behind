@@ -1,6 +1,6 @@
 # Administration
 
-**Administration** is a page of shortcuts to the management tools you may use. It appears in your name menu only when your account may use at least one of them.
+**Administration** is a page of shortcuts to the management tools you may use. Its entry in your name menu is an item of the main menu that only the `Administrators` and `Developers` roles see by default; who sees it can be changed in [Menus](./managing-menus.md).
 
 | Tool | You need | Manual |
 |------|----------|--------|
@@ -9,6 +9,7 @@
 | Sites | the `Site.Read` grant (`Site.Write` to change them) | [Managing sites](./managing-sites.md) |
 | News and news categories | the `News.Read` grant (`News.Write` to change them) | [News](./managing-news.md) |
 | Articles and article categories | the `Article.Read` grant (`Article.Write` to change them) | [Articles](./managing-articles.md) |
+| Menus | the `Menu.Read` grant (`Menu.Write` to change them) | [Menus](./managing-menus.md) |
 | Audit log | the `AuditLog.Read` grant | [Audit log](./audit-log.md) |
 
 Administrators have all of these grants by default. Impersonating a user needs the `Impersonation.Manage` grant, see [Impersonation](./impersonation.md). If you open an administration page without the needed access you see a message such as "You need administrator access to manage users."

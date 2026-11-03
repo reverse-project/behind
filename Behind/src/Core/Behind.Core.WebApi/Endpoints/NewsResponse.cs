@@ -35,7 +35,10 @@ public sealed record ManagedNewsItem(
     DateTimeOffset? StartAt,
     DateTimeOffset? EndAt);
 
-public sealed record PublicNewsListResponse(PageResponse<NewsListItem> News, IReadOnlyList<NewsCategoryItem> Categories);
+public sealed record PublicNewsListResponse(
+    PageResponse<NewsListItem> News,
+    IReadOnlyList<NewsCategoryItem> Categories,
+    IReadOnlyList<string> Letters);
 
 public sealed record NewsManageResponse(PageResponse<ManagedNewsItem> News, IReadOnlyList<string> Letters);
 

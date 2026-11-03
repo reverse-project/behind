@@ -26,6 +26,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/manage/articles/new": "controllers/articleeditor",
         "#/manage/articles/:id": "controllers/articleeditor",
         "#/manage/article-categories": "controllers/articlecategories",
+        "#/manage/menus": "controllers/menus",
+        "#/manage/menus/:id": "controllers/menuitems",
         "#/changelog": "controllers/changelog",
         "#/licenses": "controllers/licenses",
         "#/sign/in/magiclink": "controllers/magiclink",
@@ -40,6 +42,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     ko.components.register("pager", { require: "components/pager" });
     ko.components.register("letter-pager", { require: "components/letterpager" });
     ko.components.register("access-editor", { require: "components/accesseditor" });
+    ko.components.register("menu-items", { require: "components/menuitems" });
+    ko.components.register("menu-nav", { require: "components/menunav" });
 
     var container = function () {
         return $("#main-container");

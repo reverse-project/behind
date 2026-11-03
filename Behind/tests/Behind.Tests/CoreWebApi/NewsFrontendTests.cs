@@ -61,11 +61,9 @@ public class NewsFrontendTests
     }
 
     [Fact]
-    public void Navigation_LinksToTheNewsPageAndOffersAdministrationToNewsReaders()
+    public void Navigation_LinksToTheNewsPageFromTheBuiltInMenuAndOffersAdministrationToNewsReaders()
     {
-        Assert.Contains("href=\"#/news\"", Read("index.html"));
-        Assert.Contains("session.hasGrant(\"News.Read\")", Read("viewmodels/header.js"));
-
+        Assert.True(BuiltInMenus.Main.HasItem("News", "#/news", MenuItemKind.Link));
         var administration = Read("viewmodels/administration.js");
         Assert.Contains("href: \"#/manage/news\", allowed: canReadNews", administration);
         Assert.Contains("href: \"#/manage/news-categories\", allowed: canReadNews", administration);
@@ -277,5 +275,21 @@ public class NewsFrontendTests
         Assert.Contains("news.uploadImage(file)", viewModel);
         Assert.Contains("createManagedList", viewModel);
         Assert.DoesNotContain("<!--", view);
+    }
+
+    [Fact]
+    public void PublicNewsPage_HasALetterPagerThatSendsTheLetterAndResetsWithTheCategoryAndThePage()
+    {
+        var view = Read("views/news.html");
+        var viewModel = Read("viewmodels/news.js");
+        var model = Read("models/news.js");
+
+        Assert.Contains("<letter-pager", view);
+        Assert.Contains("<pager", view);
+        Assert.Contains("params=\"pager: letterPager\"", view);
+        Assert.Contains("letter: self.letterPager.selected()", viewModel);
+        Assert.Contains("self.letterPager.update(result.data.letters)", viewModel);
+        Assert.Contains("self.letterPager.selected(\"\")", viewModel);
+        Assert.Contains("\"&letter=\" + encodeURIComponent(query.letter)", model);
     }
 }

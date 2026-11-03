@@ -662,6 +662,20 @@ The `News` grant area (`News.Read`, `Write`, `Delete`, `Manage`) is administrati
 
 The `Article` grant area (`Article.Read`, `Write`, `Delete`, `Manage`) is administration only, like `News`: `Users` do not get `Article.Read`. Reading the articles is public.
 
+## Menus
+
+`Menu` and `MenuItem` are versioned entities (`VersionedKey<Guid>` id, a save inserts the next version and never updates a row, soft delete, hard delete, restore) without drafts: the latest version is the current one, like the categories.
+
+- `Menu`: `Name` (a slug, unique among the active menus ignoring case, used to request the menu) and `Title`. The built-in `main` menu (`BuiltInMenus.Main`, fixed ids) cannot be renamed, deleted or permanently deleted.
+- `MenuItem`: `Title`, `Url`, `Target` (`CurrentPage`, `NewTab`, `NewWindow`, stored as text), `Kind` (`Link`, `User`) and `Position`, plus the shadow `MenuId` and `ParentId` (keys, not versions, no foreign keys because the keys are composite). A `ParentId` makes the item a sub item: the parent must be an active top level `Link` of the same menu, sub items are one level deep. `User` items are the entries of the user menu, only allowed at the top level of the main menu (`MenuItemKind` is checked in `MenuItemCommands`).
+- Visibility: the shared join entity `MenuItemRoles` (`MenuItemKey`, `MenuItemVersion`, `RoleId`, cascade delete with the item version, no database foreign key to the roles because `Role` is mapped table per concrete type) stores the roles of every item version. No row means every role and visitors who are not signed in. `MenuVisibilityExtensions.IsVisibleTo` and `MenuTreeExtensions.ToVisibleTree` decide what a viewer sees; a sub item is hidden together with its parent. Deleting a role softly makes its items invisible to everybody until the role is restored.
+- Deletion: deleting a menu or an item is soft and hides the item together with its sub items; hard deleting a menu removes all of its items, hard deleting an item removes its sub items.
+- Seeding: `EnsureBuiltInMenusAsync` (called by the migrator after the built-in roles) creates the main menu with the tabs (`Index`, `News`, `Articles`, `Wall of shame`) and the user menu items (`Profile`, `Session`, `Sessions`, and `Administration` for the `Administrators` and `Developers` roles) once; items that were deleted or changed by an administrator are not recreated.
+- Audit labels: `AuditLabelExtensions` names a menu by the title of its newest version and a menu item by its title, so the audit keys of `MenuItemRoles` show the item and the role names.
+- Migration: `AddMenus` creates `Menus`, `MenuItems` and `MenuItemRoles`.
+
+The `Menu` grant area (`Menu.Read`, `Write`, `Delete`, `Manage`) is administration only: `Users` do not get `Menu.Read`. Resolving a menu for the page is public.
+
 ## Migrations
 
 ### Creating Migrations

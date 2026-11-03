@@ -113,6 +113,7 @@ Core business logic and domain implementation.
   - Sites (versioned with `VersionedKey` and `ActiveVersion`) and site images
   - News with categories (header image) and comments
   - Articles with their own categories (header image), searchable by title and content
+  - Menus with menu items (sub items, target, user menu items, visibility by role) and the built-in main menu
 
 - **Behind.Core.Database** (Data implementation)
   - DbContext configuration

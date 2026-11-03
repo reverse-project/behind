@@ -7,6 +7,7 @@
 - The **News** page lists the news that is running now, newest first (by its start when it has a schedule, by its creation otherwise), ten per page, with page buttons at the bottom.
 - Every entry shows its title, its **short content**, the **author**, the time it was created (or, once it was edited, the time it was last updated: "Updated ..."), both taken from the [audit log](./audit-log.md), its category and the number of comments.
 - A **highlighted** news is shown at the top of the first page, with a *Highlighted* badge and a coloured border, before the newer news.
+- The **letter buttons** above the list show only the news whose title starts with that letter (`#` for other characters). Only letters that have news in the selected category can be clicked, **All** removes the filter. Choosing another category clears the letter.
 - The buttons above the list filter the news by **category**. **All** shows everything. While a category with a header image is selected, its image is shown above the list, and every entry of a category shows that image too.
 - **Read more** (or the title) opens the news, which shows its **content** (the short content when no content was written), the author, the created or updated time and the comments.
 

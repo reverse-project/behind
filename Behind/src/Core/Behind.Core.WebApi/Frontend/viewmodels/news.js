@@ -1,4 +1,4 @@
-define(["ko", "models/news", "models/newsmeta", "models/pager"], function (ko, news, meta, createPager) {
+define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpager"], function (ko, news, meta, createPager, createLetterPager) {
     var pageSize = 10;
 
     var plural = function (count) {
@@ -33,6 +33,10 @@ define(["ko", "models/news", "models/newsmeta", "models/pager"], function (ko, n
         self.categories = ko.observableArray([]);
         self.selected = ko.observable(context.params.category || "");
         self.pager = createPager(function () {
+            return self.refresh();
+        });
+        self.letterPager = createLetterPager(function () {
+            self.pager.page(1);
             return self.refresh();
         });
 
@@ -77,7 +81,7 @@ define(["ko", "models/news", "models/newsmeta", "models/pager"], function (ko, n
         self.refresh = function () {
             self.busy(true);
 
-            return news.list({ page: self.pager.page(), pageSize: pageSize, category: self.selected() })
+            return news.list({ page: self.pager.page(), pageSize: pageSize, category: self.selected(), letter: self.letterPager.selected() })
                 .then(function (result) {
                     self.message(result.message);
 
@@ -95,6 +99,7 @@ define(["ko", "models/news", "models/newsmeta", "models/pager"], function (ko, n
                         return self.refresh();
                     }
 
+                    self.letterPager.update(result.data.letters);
                     self.pager.update(result.data.news);
                     self.items(result.data.news.items.map(present));
 
@@ -111,6 +116,7 @@ define(["ko", "models/news", "models/newsmeta", "models/pager"], function (ko, n
             }
 
             self.selected(categoryId);
+            self.letterPager.selected("");
             self.pager.page(1);
 
             return self.refresh();

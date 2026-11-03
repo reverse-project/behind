@@ -61,9 +61,9 @@ public class SiteFrontendTests
     }
 
     [Fact]
-    public void Header_OffersAdministrationToSiteReaders()
+    public void Header_OffersAdministrationToSiteReadersThroughTheAdministrationPage()
     {
-        Assert.Contains("session.hasGrant(\"Site.Read\")", Read("viewmodels/header.js"));
+        Assert.Contains("allowed: canReadSites", Read("viewmodels/administration.js"));
     }
 
     [Fact]

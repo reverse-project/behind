@@ -64,6 +64,12 @@ public interface INewsQueries
     Task<PagedResult<NewsListing>> List(
         Flipper flipper,
         Option<Guid> category,
+        Option<string> letter,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<string>> GetLiveLetters(
+        Option<Guid> category,
         DateTimeOffset now,
         CancellationToken cancellationToken = default);
 

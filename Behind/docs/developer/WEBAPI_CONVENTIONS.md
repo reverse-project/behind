@@ -68,7 +68,7 @@ The `Frontend:Sites` section (`SitesConfiguration`, for example in `frontend.jso
 
 | Endpoint | Access |
 |----------|--------|
-| `GET /news?page&pageSize&category` | public, the live version of the news that is running now, and the active categories |
+| `GET /news?page&pageSize&category&letter` | public, the live version of the news that is running now, and the active categories; `letter` keeps the news whose title starts with it (`A`-`Z`, `#`, otherwise `400`) and `letters` in the response are the first letters of the news of the selected category |
 | `GET /news/{id}` | public, the live version, only while the news is running |
 | `GET /news/categories` | public, active categories |
 | `GET /news/{id}/comments?page&pageSize` | public, `canDelete` is set for the author and for `News.Delete` holders, `canEdit` for the author and for `News.Manage` holders, `updatedAt` comes from the audit log |
@@ -103,6 +103,21 @@ Articles follow the news endpoints under `/articles` (`ArticleRoutesExtensions.M
 | `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
 
 The responses reuse `NewsCategoryItem`, `NewsSavedResponse` and `NewsConflictResponse` (reasons `unknown-category`, `version-conflict`, `name-taken`, `unknown-image`).
+
+### Menus Endpoints
+
+Menus are under `/menus` (`MenuRoutesExtensions.MapMenuEndpoints`). The page builds its navigation from them: the header shows the `main` menu (the `Link` items as tabs, the `User` items in the user menu) and the `menu-nav` frontend component shows any other menu by name, for example `footer`.
+
+| Endpoint | Access |
+|----------|--------|
+| `GET /menus?name=main&name=footer` | public, up to 10 menus by name in one request (`400` without a name or with too many); unknown names are left out. The items are filtered for the signed in user: an item without roles is shown to everybody, an item with roles only to the users holding one of them. Sub items are nested under their parent, `kind` is `Link` or `User`, `target` is `CurrentPage`, `NewTab` or `NewWindow`. Not cached |
+| `GET /menus/manage`, `GET /menus/{id}/items/manage` | `Menu.Read`, both paged (`page`, `pageSize`) with `search`, `letter` (first letter of the title) and `deleted` (`RawDatabase.Manage` for `deleted`) and the available `letters`; the items response also lists the possible `parents` (active top level links), the roles to choose from and whether `User` items are allowed |
+| `POST /menus`, `POST /menus/{id}` | `Menu.Write`, saving inserts a new version; the name is turned into a slug |
+| `POST /menus/{id}/items`, `POST /menus/items/{itemId}` | `Menu.Write`, saving inserts a new version with its own roles; `400` for a blank title or an unsafe URL (only relative URLs and `http`, `https`, `mailto`, `tel`) |
+| `POST /menus/{id}/delete`, `POST /menus/items/{itemId}/delete` | `Menu.Delete` |
+| `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
+
+Saving answers `409` with `{ "reason": ... }`: `name-taken`, `built-in` (renaming or deleting the main menu), `unknown-menu`, `invalid-parent`, `kind-not-allowed`, `unknown-role`, `version-conflict`.
 
 ### Startup Example
 

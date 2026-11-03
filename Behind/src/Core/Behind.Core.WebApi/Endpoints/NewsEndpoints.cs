@@ -37,21 +37,34 @@ public sealed class NewsEndpoints
         TimeProvider timeProvider,
         [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null,
-        [FromQuery] Guid? category = null)
+        [FromQuery] Guid? category = null,
+        [FromQuery] string? letter = null)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
+
+        var letterFilter = LetterBucketExtensions.ParseLetterBucket(letter);
+
+        if (!string.IsNullOrWhiteSpace(letter) && letterFilter.Match(() => true, _ => false))
+        {
+            return Results.BadRequest();
+        }
+
+        var now = timeProvider.GetUtcNow();
 
         var news = await queries.List(
             Flipper.Create(page, pageSize, DefaultPageSize, MaxPageSize),
             category.ToOption(),
-            timeProvider.GetUtcNow(),
+            letterFilter,
+            now,
             httpContext.RequestAborted);
 
+        var letters = await queries.GetLiveLetters(category.ToOption(), now, httpContext.RequestAborted);
         var active = await categories.ListActive(httpContext.RequestAborted);
 
         return Results.Json(new PublicNewsListResponse(
             news.ToPageResponse(item => item.ToItem()),
-            active.Select(item => item.ToItem(DeletionState.Active)).ToList()));
+            active.Select(item => item.ToItem(DeletionState.Active)).ToList(),
+            letters));
     }
 
     [IgnoreETag]

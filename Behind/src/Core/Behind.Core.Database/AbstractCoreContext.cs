@@ -48,6 +48,7 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
         UserConfiguration.ApplyUserAccess(modelBuilder);
         RoleConfiguration.ApplyRoleGrants(modelBuilder);
         RoleConfiguration.ApplyRoleRestrictions(modelBuilder);
+        MenuItemConfiguration.ApplyMenuItemRoles(modelBuilder);
         modelBuilder.ApplySoftDelete(
             this,
             DeletionRecorded,
@@ -63,7 +64,9 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
             typeof(NewsCategory),
             typeof(NewsComment),
             typeof(Article),
-            typeof(ArticleCategory));
+            typeof(ArticleCategory),
+            typeof(Menu),
+            typeof(MenuItem));
     }
 
     public static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =

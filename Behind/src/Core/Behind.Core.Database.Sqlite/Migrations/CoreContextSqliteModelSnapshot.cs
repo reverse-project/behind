@@ -225,6 +225,81 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.ToTable("MagicLinks", (string)null);
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.Menu", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Menus", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.MenuItem", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("MenuId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("MenuId");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("MenuItems", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.News", b =>
                 {
                     b.Property<Guid>("Key")
@@ -596,6 +671,24 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
+            modelBuilder.Entity("MenuItemRoles", b =>
+                {
+                    b.Property<Guid>("MenuItemKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("MenuItemVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("MenuItemKey", "MenuItemVersion", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("MenuItemRoles");
+                });
+
             modelBuilder.Entity("RoleGrants", b =>
                 {
                     b.Property<Guid>("RoleId")
@@ -813,6 +906,21 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MenuItemRoles", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Behind.Core.Domain.MenuItem", null)
+                        .WithMany()
+                        .HasForeignKey("MenuItemKey", "MenuItemVersion")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

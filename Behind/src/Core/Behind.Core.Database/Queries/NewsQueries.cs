@@ -12,15 +12,11 @@ public sealed class NewsQueries(AbstractCoreContext context) : INewsQueries
     public async Task<PagedResult<INewsQueries.NewsListing>> List(
         Flipper flipper,
         Option<Guid> category,
+        Option<string> letter,
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
-        var live = context.LiveNews().ActiveAt(now);
-
-        var matching = category.Match(
-            () => live,
-            categoryId => live.Where(news =>
-                EF.Property<Guid?>(news, NewsConfiguration.CategoryIdProperty) == categoryId));
+        var matching = Live(category, now).InBucket(news => news.Title, letter);
 
         var total = await matching.LongCountAsync(cancellationToken);
 
@@ -44,6 +40,12 @@ public sealed class NewsQueries(AbstractCoreContext context) : INewsQueries
                 ? Some<IEnumerable<INewsQueries.NewsListing>>(rows.Select(row => ToListing(row, lookups)).ToList())
                 : None);
     }
+
+    public async Task<IReadOnlyList<string>> GetLiveLetters(
+        Option<Guid> category,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default) =>
+        await Live(category, now).LettersAsync(news => news.Title, cancellationToken);
 
     public async Task<PagedResult<INewsQueries.ManagedNewsListing>> ListManaged(
         Flipper flipper,
@@ -212,6 +214,16 @@ public sealed class NewsQueries(AbstractCoreContext context) : INewsQueries
 
     private static readonly System.Linq.Expressions.Expression<Func<News, DateTimeOffset?>> StartOf =
         news => EF.Property<DateTimeOffset?>(news, NewsConfiguration.StartAtProperty);
+
+    private IQueryable<News> Live(Option<Guid> category, DateTimeOffset now)
+    {
+        var live = context.LiveNews().ActiveAt(now);
+
+        return category.Match(
+            () => live,
+            categoryId => live.Where(news =>
+                EF.Property<Guid?>(news, NewsConfiguration.CategoryIdProperty) == categoryId));
+    }
 
     private IDisposable? Scope(DeletionState state) =>
         state == DeletionState.Deleted ? context.SoftDelete.IncludeDeleted() : null;

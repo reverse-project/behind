@@ -179,7 +179,7 @@ public class GalleryImageEndpointsTests
     {
         var id = Guid.NewGuid();
         var queries = Substitute.For<IVfsQueries>();
-        queries.Open(VfsTypes.Galleries, id, Arg.Any<CancellationToken>())
+        queries.Open(VfsTypes.GalleryImages, id, Arg.Any<CancellationToken>())
             .Returns(new IVfsQueries.Content(new VfsFile(VfsTypes.Galleries, "a.webp", "image/webp", 3), [1, 2, 3]));
         var context = new DefaultHttpContext();
 

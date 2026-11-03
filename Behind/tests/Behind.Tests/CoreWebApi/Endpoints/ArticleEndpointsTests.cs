@@ -79,7 +79,7 @@ public class ArticleEndpointsTests
         var result = await ArticleEndpoints.List(context, queries, categories);
 
         var body = Assert.IsType<JsonHttpResult<PublicArticleListResponse>>(result).Value!;
-        var category = new NewsCategoryItem(CategoryId, "Tutorials", ImageId, $"/sites/images/{ImageId}");
+        var category = new NewsCategoryItem(CategoryId, "Tutorials", ImageId, $"/articles/images/{ImageId}");
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
         Assert.Equal(
             [new ArticleListItem(ArticleId, 3, "Setup", "<p>short</p>", "Ada", Now, Now.AddHours(1), category)],

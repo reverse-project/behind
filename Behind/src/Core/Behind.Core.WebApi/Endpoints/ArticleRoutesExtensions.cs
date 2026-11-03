@@ -57,6 +57,11 @@ public static class ArticleRoutesExtensions
                 .Produces(404)
                 .Produces(500);
 
+            application.MapGet($"{VfsTypes.ArticleImageUrl}/{{id:guid}}", SiteImageEndpoints.GetArticle)
+                .Produces(200)
+                .Produces(404)
+                .Produces(500);
+
             application.MapPost("/articles/images", SiteImageEndpoints.UploadArticle)
                 .RequireAuthorization(write)
                 .DisableAntiforgery()

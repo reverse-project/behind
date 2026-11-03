@@ -17,13 +17,17 @@ public static class NewsResponseExtensions
 
     extension(INewsQueries.NewsCategoryInfo category)
     {
-        public NewsCategoryItem ToItem() => category.Id.ToCategoryItem(category.Name, category.HeaderImageId, false);
+        public NewsCategoryItem ToItem() => category.Id.ToCategoryItem(category.Name, category.HeaderImageId, false, VfsTypes.NewsImageUrl);
     }
 
     extension(INewsCategoryQueries.NewsCategoryListing category)
     {
         public NewsCategoryItem ToItem(DeletionState state) =>
-            category.Id.Key.ToCategoryItem(category.Name, category.HeaderImageId, state == DeletionState.Deleted);
+            category.Id.Key.ToCategoryItem(
+                category.Name,
+                category.HeaderImageId,
+                state == DeletionState.Deleted,
+                VfsTypes.NewsImageUrl);
     }
 
     extension(INewsQueries.NewsListing news)
@@ -149,12 +153,16 @@ public static class NewsResponseExtensions
 
     extension(Guid id)
     {
-        internal NewsCategoryItem ToCategoryItem(string name, Option<Guid> headerImageId, bool isDeleted) =>
+        internal NewsCategoryItem ToCategoryItem(
+            string name,
+            Option<Guid> headerImageId,
+            bool isDeleted,
+            string imageUrl) =>
             new(
                 id,
                 name,
                 headerImageId.ToNullable(),
-                headerImageId.Match<string?>(() => null, imageId => $"{SiteImageEndpoints.ImagePath}/{imageId}"),
+                headerImageId.Match<string?>(() => null, imageId => $"{imageUrl}/{imageId}"),
                 isDeleted);
     }
 }

@@ -26,7 +26,7 @@ public sealed class GalleryThumbnails(IVfsQueries images, IVfsCommands commands)
 
         foreach (var item in draft.Items.Take(MosaicItems))
         {
-            var image = await images.Open(VfsTypes.Galleries, item.ThumbnailId, cancellationToken);
+            var image = await images.Open(VfsTypes.GalleryImages, item.ThumbnailId, cancellationToken);
 
             contents.AddRange(image.Map(found => found.Bytes).AsEnumerable());
         }

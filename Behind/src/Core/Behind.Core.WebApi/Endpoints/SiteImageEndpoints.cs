@@ -11,8 +11,7 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class SiteImageEndpoints
 {
-    public const string ImagePath = VfsTypes.SiteImageUrl;
-    public const string ImmutableCache = ImageResponseExtensions.ImmutableCache;
+        public const string ImmutableCache = ImageResponseExtensions.ImmutableCache;
     public const string NoSniff = ImageResponseExtensions.NoSniff;
 
     [IgnoreETag]
@@ -72,14 +71,29 @@ public sealed class SiteImageEndpoints
                         content),
                     httpContext.RequestAborted);
 
-                return Results.Json(new SiteImageResponse(id, $"{ImagePath}/{id}"));
+                return Results.Json(new SiteImageResponse(id, $"{VfsTypes.ImageUrlOf(type)}/{id}"));
             });
     }
 
     [IgnoreETag]
-    public static async Task<IResult> Get(Guid id, HttpContext httpContext, IVfsQueries queries)
+    public static Task<IResult> Get(Guid id, HttpContext httpContext, IVfsQueries queries) =>
+        Serve(VfsTypes.AllSiteImages, id, httpContext, queries);
+
+    [IgnoreETag]
+    public static Task<IResult> GetNews(Guid id, HttpContext httpContext, IVfsQueries queries) =>
+        Serve(VfsTypes.NewsImages, id, httpContext, queries);
+
+    [IgnoreETag]
+    public static Task<IResult> GetArticle(Guid id, HttpContext httpContext, IVfsQueries queries) =>
+        Serve(VfsTypes.ArticleImages, id, httpContext, queries);
+
+    private static async Task<IResult> Serve(
+        IReadOnlyList<string> types,
+        Guid id,
+        HttpContext httpContext,
+        IVfsQueries queries)
     {
-        var image = await queries.Open(VfsTypes.Sites, id, httpContext.RequestAborted);
+        var image = await queries.Open(types, id, httpContext.RequestAborted);
 
         return image.Match(
             () => Results.NotFound(),

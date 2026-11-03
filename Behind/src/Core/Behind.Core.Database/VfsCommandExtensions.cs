@@ -14,7 +14,10 @@ public static class VfsCommandExtensions
             files.Attach(
                 type,
                 parentId,
-                contents.SelectMany(content => content.ReferencedKeys(VfsTypes.SiteImageUrl)).Distinct().ToList(),
+                contents
+                    .SelectMany(content => VfsTypes.ReferencedImageUrlsOf(type).SelectMany(content.ReferencedKeys))
+                    .Distinct()
+                    .ToList(),
                 cancellationToken);
     }
 }

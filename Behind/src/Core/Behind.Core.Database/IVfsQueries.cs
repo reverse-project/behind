@@ -7,5 +7,8 @@ public interface IVfsQueries
 {
     public sealed record Content(VfsFile File, byte[] Bytes);
 
-    Task<Option<Content>> Open(string type, Guid key, CancellationToken cancellationToken = default);
+    Task<Option<Content>> Open(
+        IReadOnlyList<string> types,
+        Guid key,
+        CancellationToken cancellationToken = default);
 }

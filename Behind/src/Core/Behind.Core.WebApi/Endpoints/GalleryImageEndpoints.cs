@@ -20,7 +20,7 @@ public sealed class GalleryImageEndpoints
     [IgnoreETag]
     public static async Task<IResult> Get(Guid id, HttpContext httpContext, IVfsQueries queries)
     {
-        var image = await queries.Open(VfsTypes.Galleries, id, httpContext.RequestAborted);
+        var image = await queries.Open(VfsTypes.GalleryImages, id, httpContext.RequestAborted);
 
         return image.Match(
             () => Results.NotFound(),

@@ -93,7 +93,8 @@ The `Frontend:Galleries` section (`GalleriesConfiguration`) has `MaxImageBytes`,
 | `GET /news/{id}/versions`, `GET /news/{id}/versions/{version}` | `News.Read`, the version list and one version in full |
 | `POST /news`, `POST /news/{id}/versions` | `News.Write`, create / save a new version, `publish: true` also makes it live |
 | `POST /news/{id}/versions/{version}/activate` | `News.Write`, make a version live |
-| `POST /news/categories`, `POST /news/categories/{id}`, `POST /news/images` | `News.Write`, saving a category inserts a new version |
+| `POST /news/categories`, `POST /news/categories/{id}`, `POST /news/images` | `News.Write`, saving a category inserts a new version; an image upload answers `{ id, url }` with the URL `/news/images/{id}` |
+| `GET /news/images/{id}` | public, an image of the news or of a news category with `immutable` caching and `nosniff` |
 | `POST /news/{id}/delete`, `POST /news/categories/{id}/delete` | `News.Delete` |
 | `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
 
@@ -112,7 +113,8 @@ Articles follow the news endpoints under `/articles` (`ArticleRoutesExtensions.M
 | `GET /articles/{id}/versions`, `GET /articles/{id}/versions/{version}` | `Article.Read`, the version list and one version in full |
 | `POST /articles`, `POST /articles/{id}/versions` | `Article.Write`, create / save a new version, `publish: true` also makes it live |
 | `POST /articles/{id}/versions/{version}/activate` | `Article.Write`, make a version live |
-| `POST /articles/categories`, `POST /articles/categories/{id}`, `POST /articles/images` | `Article.Write`, saving a category inserts a new version |
+| `POST /articles/categories`, `POST /articles/categories/{id}`, `POST /articles/images` | `Article.Write`, saving a category inserts a new version; an image upload answers `{ id, url }` with the URL `/articles/images/{id}` |
+| `GET /articles/images/{id}` | public, an image of an article or of an article category with `immutable` caching and `nosniff` |
 | `POST /articles/{id}/delete`, `POST /articles/categories/{id}/delete` | `Article.Delete` |
 | `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
 

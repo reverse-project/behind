@@ -25,7 +25,7 @@ public sealed class SiteImageAttachTests : IDisposable
             : await commands.Create("About", slug, content, true);
     }
 
-    private static string Image(Guid id) => $"""<img src="{VfsTypes.SiteImageUrl}/{id}">""";
+    private static string Image(Guid id, string url = VfsTypes.SiteImageUrl) => $"""<img src="{url}/{id}">""";
 
     private async Task<bool> ExistsAsync(string path) => (await _bed.ContentStore.Read(path)).Match(() => false, _ => true);
 
@@ -84,7 +84,7 @@ public sealed class SiteImageAttachTests : IDisposable
         var inSummary = await _bed.AddImageAsync();
         var inContent = await _bed.AddImageAsync();
 
-        var news = await _bed.SaveNewsAsync(null, summary: Image(inSummary), content: Image(inContent));
+        var news = await _bed.SaveNewsAsync(null, summary: Image(inSummary, VfsTypes.NewsImageUrl), content: Image(inContent, VfsTypes.NewsImageUrl));
 
         Assert.True(await ExistsAsync(VfsTestPaths.Of(VfsTypes.News, inSummary, news.Key)));
         Assert.True(await ExistsAsync(VfsTestPaths.Of(VfsTypes.News, inContent, news.Key)));
@@ -96,7 +96,7 @@ public sealed class SiteImageAttachTests : IDisposable
         var inSummary = await _bed.AddImageAsync();
         var inContent = await _bed.AddImageAsync();
 
-        var article = await _bed.SaveArticleAsync(null, summary: Image(inSummary), content: Image(inContent));
+        var article = await _bed.SaveArticleAsync(null, summary: Image(inSummary, VfsTypes.ArticleImageUrl), content: Image(inContent, VfsTypes.ArticleImageUrl));
 
         Assert.True(await ExistsAsync(VfsTestPaths.Of(VfsTypes.Articles, inSummary, article.Key)));
         Assert.True(await ExistsAsync(VfsTestPaths.Of(VfsTypes.Articles, inContent, article.Key)));
@@ -131,5 +131,25 @@ public sealed class SiteImageAttachTests : IDisposable
         await _bed.CreateArticleCategoryAsync("Guides");
 
         Assert.True(await ExistsAsync(VfsTestPaths.Of(VfsTypes.Sites, image)));
+    }
+
+    [Fact]
+    public async Task News_AlsoAttachesTheImagesThatItStillReferencesWithTheLegacySiteImageUrl()
+    {
+        var legacy = await _bed.AddImageAsync();
+
+        var news = await _bed.SaveNewsAsync(null, content: Image(legacy));
+
+        Assert.True(await ExistsAsync(VfsTestPaths.Of(VfsTypes.News, legacy, news.Key)));
+    }
+
+    [Fact]
+    public async Task News_IgnoresTheImageUrlsOfOtherContent()
+    {
+        var image = await _bed.AddVfsFileAsync(VfsTypes.Articles);
+
+        await _bed.SaveNewsAsync(null, content: Image(image, VfsTypes.ArticleImageUrl));
+
+        Assert.True(await ExistsAsync(VfsTestPaths.Of(VfsTypes.Articles, image)));
     }
 }

@@ -24,7 +24,7 @@ public sealed class VfsStoreTests : IDisposable
         var id = await _bed.AddVfsFileAsync(VfsTypes.Sites, "logo.png", "image/png", bytes);
 
         await using var read = _bed.Read();
-        var found = Found(await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.Sites, id));
+        var found = Found(await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.AllSiteImages, id));
         Assert.NotEqual(Guid.Empty, id);
         Assert.Equal(new VersionedKey<Guid>(id, 1), found.File.Id);
         Assert.Equal((VfsTypes.Sites, "logo.png", "image/png", 4L), (found.File.Type, found.File.FileName, found.File.ContentType, found.File.Length));
@@ -75,7 +75,7 @@ public sealed class VfsStoreTests : IDisposable
     {
         await using var read = _bed.Read();
 
-        Assert.Equal(None, await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.Sites, Guid.NewGuid()));
+        Assert.Equal(None, await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.AllSiteImages, Guid.NewGuid()));
     }
 
     [Fact]
@@ -86,24 +86,49 @@ public sealed class VfsStoreTests : IDisposable
 
         await using var read = _bed.Read();
         var queries = new VfsQueries(read, _bed.ContentStore);
-        Assert.Equal(None, await queries.Open(VfsTypes.Galleries, siteImage));
-        Assert.Equal(None, await queries.Open(VfsTypes.Sites, galleryImage));
-        Assert.NotEqual(None, await queries.Open(VfsTypes.Sites, siteImage));
+        Assert.Equal(None, await queries.Open(VfsTypes.GalleryImages, siteImage));
+        Assert.Equal(None, await queries.Open(VfsTypes.AllSiteImages, galleryImage));
+        Assert.NotEqual(None, await queries.Open(VfsTypes.AllSiteImages, siteImage));
     }
 
     [Theory]
+    [InlineData(VfsTypes.Sites, VfsTypes.Sites, 1)]
+    [InlineData(VfsTypes.News, VfsTypes.News, 1)]
+    [InlineData(VfsTypes.NewsCategories, VfsTypes.News, 1)]
+    [InlineData(VfsTypes.Articles, VfsTypes.Articles, 1)]
+    [InlineData(VfsTypes.ArticleCategories, VfsTypes.Articles, 1)]
+    [InlineData(VfsTypes.News, VfsTypes.Articles, 0)]
+    [InlineData(VfsTypes.Articles, VfsTypes.News, 0)]
+    [InlineData(VfsTypes.Sites, VfsTypes.News, 0)]
+    public async Task Open_ServesAFileOnlyThroughTheImagesOfItsOwnContent(string type, string served, int expected)
+    {
+        var id = await _bed.AddVfsFileAsync(type);
+        var servedTypes = served switch
+        {
+            VfsTypes.News => VfsTypes.NewsImages,
+            VfsTypes.Articles => VfsTypes.ArticleImages,
+            _ => (IReadOnlyList<string>)[VfsTypes.Sites]
+        };
+
+        await using var read = _bed.Read();
+        var queries = new VfsQueries(read, _bed.ContentStore);
+        Assert.Equal(expected, (await queries.Open(servedTypes, id)).Match(() => 0, _ => 1));
+        Assert.Equal(None, await queries.Open(VfsTypes.GalleryImages, id));
+    }
+
+    [Theory]
+    [InlineData(VfsTypes.Sites)]
     [InlineData(VfsTypes.News)]
-    [InlineData(VfsTypes.Articles)]
     [InlineData(VfsTypes.NewsCategories)]
+    [InlineData(VfsTypes.Articles)]
     [InlineData(VfsTypes.ArticleCategories)]
-    public async Task Open_ServesEveryOwnerTypeOfASiteImageAsASiteImage(string type)
+    public async Task Open_TheLegacySiteImageUrlServesEverySiteImageType(string type)
     {
         var id = await _bed.AddVfsFileAsync(type);
 
         await using var read = _bed.Read();
-        var queries = new VfsQueries(read, _bed.ContentStore);
-        Assert.NotEqual(None, await queries.Open(VfsTypes.Sites, id));
-        Assert.Equal(None, await queries.Open(VfsTypes.Galleries, id));
+
+        Assert.NotEqual(None, await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.AllSiteImages, id));
     }
 
     [Fact]
@@ -114,7 +139,7 @@ public sealed class VfsStoreTests : IDisposable
 
         await using var read = _bed.Read();
 
-        Assert.Equal(None, await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.Sites, id));
+        Assert.Equal(None, await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.AllSiteImages, id));
     }
 
     [Fact]
@@ -130,9 +155,9 @@ public sealed class VfsStoreTests : IDisposable
 
         await using var read = _bed.Read();
         var queries = new VfsQueries(read, _bed.ContentStore);
-        Assert.Equal(None, await queries.Open(VfsTypes.Sites, removed));
+        Assert.Equal(None, await queries.Open(VfsTypes.AllSiteImages, removed));
         Assert.Equal(None, await _bed.ContentStore.Read(VfsTestPaths.Of(VfsTypes.Sites, removed)));
-        Assert.NotEqual(None, await queries.Open(VfsTypes.Sites, kept));
+        Assert.NotEqual(None, await queries.Open(VfsTypes.AllSiteImages, kept));
         Assert.Equal(1, await read.VfsFiles.CountAsync());
     }
 
@@ -145,7 +170,7 @@ public sealed class VfsStoreTests : IDisposable
         await AttachAsync(parent, id);
 
         await using var read = _bed.Read();
-        var found = Found(await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.Sites, id));
+        var found = Found(await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.AllSiteImages, id));
         Assert.Equal((new VersionedKey<Guid>(id, 2), (Guid?)parent), (found.File.Id, found.File.ParentId));
         Assert.Equal(new byte[] { 4, 5, 6 }, found.Bytes);
         Assert.Equal(None, await _bed.ContentStore.Read(VfsTestPaths.Of(VfsTypes.Sites, id)));
@@ -163,7 +188,7 @@ public sealed class VfsStoreTests : IDisposable
         await AttachAsync(VfsTypes.Galleries, Guid.NewGuid(), id);
 
         await using var read = _bed.Read();
-        var found = Found(await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.Galleries, id));
+        var found = Found(await new VfsQueries(read, _bed.ContentStore).Open(VfsTypes.GalleryImages, id));
         Assert.Equal((2L, (Guid?)first), (found.File.Id.Version, found.File.ParentId));
         Assert.Equal(2, await read.VfsFiles.CountAsync());
     }

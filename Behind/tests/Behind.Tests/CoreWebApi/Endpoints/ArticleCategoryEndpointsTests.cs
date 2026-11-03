@@ -48,7 +48,7 @@ public class ArticleCategoryEndpointsTests
 
         var items = Assert.IsType<JsonHttpResult<List<NewsCategoryItem>>>(result).Value!;
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
-        Assert.Equal(new NewsCategoryItem(CategoryId, "Tutorials", ImageId, $"/sites/images/{ImageId}"), items[0]);
+        Assert.Equal(new NewsCategoryItem(CategoryId, "Tutorials", ImageId, $"/articles/images/{ImageId}"), items[0]);
         Assert.Equal(new NewsCategoryItem(CategoryId, "Tutorials", null, null), items[1]);
     }
 

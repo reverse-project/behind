@@ -52,8 +52,13 @@ public class SiteImageEndpointsTests
         var commands = Substitute.For<IVfsCommands>();
         commands.Add(Arg.Any<IVfsCommands.Upload>(), Arg.Any<CancellationToken>()).Returns(Guid.NewGuid());
 
-        await SiteImageEndpoints.UploadNews(File(Png), new DefaultHttpContext(), commands, Options());
-        await SiteImageEndpoints.UploadArticle(File(Png), new DefaultHttpContext(), commands, Options());
+        var news = await SiteImageEndpoints.UploadNews(File(Png), new DefaultHttpContext(), commands, Options());
+        var article = await SiteImageEndpoints.UploadArticle(File(Png), new DefaultHttpContext(), commands, Options());
+
+        var newsImage = Assert.IsType<JsonHttpResult<SiteImageResponse>>(news).Value!;
+        var articleImage = Assert.IsType<JsonHttpResult<SiteImageResponse>>(article).Value!;
+        Assert.Equal($"/news/images/{newsImage.Id}", newsImage.Url);
+        Assert.Equal($"/articles/images/{articleImage.Id}", articleImage.Url);
 
         await commands.Received(1).Add(
             Arg.Is<IVfsCommands.Upload>(upload => upload.Type == VfsTypes.News),
@@ -134,7 +139,7 @@ public class SiteImageEndpointsTests
     {
         var id = Guid.NewGuid();
         var queries = Substitute.For<IVfsQueries>();
-        queries.Open(VfsTypes.Sites, id, Arg.Any<CancellationToken>())
+        queries.Open(VfsTypes.AllSiteImages, id, Arg.Any<CancellationToken>())
             .Returns(Some(new IVfsQueries.Content(new VfsFile(VfsTypes.Sites, "logo.png", "image/png", Png.Length), Png)));
         var context = new DefaultHttpContext();
 
@@ -151,8 +156,24 @@ public class SiteImageEndpointsTests
     public async Task Get_UnknownImage_ReturnsNotFound()
     {
         var queries = Substitute.For<IVfsQueries>();
-        queries.Open(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(None);
+        queries.Open(Arg.Any<IReadOnlyList<string>>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(None);
 
         Assert.IsType<NotFound>(await SiteImageEndpoints.Get(Guid.NewGuid(), new DefaultHttpContext(), queries));
+    }
+
+    [Fact]
+    public async Task GetNews_AndGetArticle_OnlyServeTheirOwnImages()
+    {
+        var id = Guid.NewGuid();
+        var queries = Substitute.For<IVfsQueries>();
+        queries.Open(Arg.Any<IReadOnlyList<string>>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(None);
+        queries.Open(VfsTypes.NewsImages, id, Arg.Any<CancellationToken>())
+            .Returns(Some(new IVfsQueries.Content(new VfsFile(VfsTypes.News, "n.png", "image/png", Png.Length), Png)));
+        queries.Open(VfsTypes.ArticleImages, id, Arg.Any<CancellationToken>())
+            .Returns(Some(new IVfsQueries.Content(new VfsFile(VfsTypes.Articles, "a.png", "image/png", Png.Length), Png)));
+
+        Assert.IsType<FileContentHttpResult>(await SiteImageEndpoints.GetNews(id, new DefaultHttpContext(), queries));
+        Assert.IsType<FileContentHttpResult>(await SiteImageEndpoints.GetArticle(id, new DefaultHttpContext(), queries));
+        Assert.IsType<NotFound>(await SiteImageEndpoints.Get(id, new DefaultHttpContext(), queries));
     }
 }

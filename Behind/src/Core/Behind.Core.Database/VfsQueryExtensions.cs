@@ -9,12 +9,11 @@ public static class VfsQueryExtensions
 {
     extension(IQueryable<VfsFile> files)
     {
-        public IQueryable<VfsFile> InSameKindAs(string type)
-        {
-            var types = VfsTypes.SameKindAs(type);
+        public IQueryable<VfsFile> InTypes(IReadOnlyList<string> types) =>
+            files.Where(file => types.Contains(file.Type));
 
-            return files.Where(file => types.Contains(file.Type));
-        }
+        public IQueryable<VfsFile> InSameKindAs(string type) =>
+            files.InTypes(VfsTypes.SameKindAs(type));
 
         public async Task<IReadOnlyList<VfsFile>> ToFilesAsync(CancellationToken cancellationToken = default)
         {

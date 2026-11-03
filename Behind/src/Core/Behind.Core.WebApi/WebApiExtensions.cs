@@ -631,6 +631,11 @@ public static class WebApiExtensions
                 .Produces(404)
                 .Produces(500);
 
+            application.MapGet($"{VfsTypes.NewsImageUrl}/{{id:guid}}", SiteImageEndpoints.GetNews)
+                .Produces(200)
+                .Produces(404)
+                .Produces(500);
+
             application.MapPost("/news/images", SiteImageEndpoints.UploadNews)
                 .RequireAuthorization(newsWrite)
                 .DisableAntiforgery()

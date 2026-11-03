@@ -17,7 +17,7 @@ public class GalleryThumbnailsTests
         IReadOnlyDictionary<Guid, byte[]> images)
     {
         var queries = Substitute.For<IVfsQueries>();
-        queries.Open(VfsTypes.Galleries, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(call =>
+        queries.Open(VfsTypes.GalleryImages, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(call =>
             images.TryGetValue(call.ArgAt<Guid>(1), out var content)
                 ? Some(new IVfsQueries.Content(new VfsFile(VfsTypes.Galleries, "t.png", "image/png", content.Length), content))
                 : None);

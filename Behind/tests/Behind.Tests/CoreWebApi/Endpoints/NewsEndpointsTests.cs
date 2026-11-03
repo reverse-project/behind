@@ -102,7 +102,7 @@ public class NewsEndpointsTests
         var result = await NewsEndpoints.List(context, queries, categories, Clock);
 
         var body = Assert.IsType<JsonHttpResult<PublicNewsListResponse>>(result).Value!;
-        var headerUrl = $"/sites/images/{ImageId}";
+        var headerUrl = $"/news/images/{ImageId}";
         var category = new NewsCategoryItem(CategoryId, "Releases", ImageId, headerUrl);
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
         Assert.Equal(

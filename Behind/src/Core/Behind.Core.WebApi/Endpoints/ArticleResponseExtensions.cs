@@ -1,6 +1,7 @@
 using Behind.Common;
 using Behind.Common.Database;
 using Behind.Core.Database;
+using Behind.Core.Domain;
 using Microsoft.AspNetCore.Http;
 
 namespace Behind.Core.WebApi.Endpoints;
@@ -11,13 +12,17 @@ public static class ArticleResponseExtensions
 
     extension(IArticleQueries.ArticleCategoryInfo category)
     {
-        public NewsCategoryItem ToItem() => category.Id.ToCategoryItem(category.Name, category.HeaderImageId, false);
+        public NewsCategoryItem ToItem() => category.Id.ToCategoryItem(category.Name, category.HeaderImageId, false, VfsTypes.ArticleImageUrl);
     }
 
     extension(IArticleCategoryQueries.ArticleCategoryListing category)
     {
         public NewsCategoryItem ToItem(DeletionState state) =>
-            category.Id.Key.ToCategoryItem(category.Name, category.HeaderImageId, state == DeletionState.Deleted);
+            category.Id.Key.ToCategoryItem(
+                category.Name,
+                category.HeaderImageId,
+                state == DeletionState.Deleted,
+                VfsTypes.ArticleImageUrl);
     }
 
     extension(IArticleQueries.ArticleListing article)

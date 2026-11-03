@@ -1,0 +1,1 @@
+MUST serve the VFS files of every kind of content under its own URL, like /sites/images/<id>, /news/images/<id>, /articles/images/<id> and /galleries/images/<id> (the upload endpoint answers with that URL and the content refers to it), never through the URL of another kind of content, and a new kind of content gets its own

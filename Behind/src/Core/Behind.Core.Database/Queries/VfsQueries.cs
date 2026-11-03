@@ -9,12 +9,12 @@ namespace Behind.Core.Database.Queries;
 public sealed class VfsQueries(AbstractCoreContext context, IContentStore store) : IVfsQueries
 {
     public async Task<Option<IVfsQueries.Content>> Open(
-        string type,
+        IReadOnlyList<string> types,
         Guid key,
         CancellationToken cancellationToken = default)
     {
         var files = await context.VfsFiles
-            .InSameKindAs(type)
+            .InTypes(types)
             .OfKey(key)
             .ToFilesAsync(cancellationToken);
 

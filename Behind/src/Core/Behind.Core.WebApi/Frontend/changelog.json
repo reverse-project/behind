@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [
+      { "type": "added", "text": "ETag support in the web client: GET responses are remembered per signed in user together with their ETag, sent back as If-None-Match and reused when the server answers 304 Not Modified, so unchanged data is not downloaded again." },
       { "type": "added", "text": "Loading spinner: a spinner is shown in the page area while the application loads, until the first page is displayed." },
       { "type": "added", "text": "Letter filter and paging: the public news list can be filtered by the first letter of the title, and the menu items of a menu now have a search box, letter buttons and page buttons like the other management lists. Sub items are listed flat with the name of their parent." },
       { "type": "changed", "text": "The Administration entry of the user menu is now shown by role (administrators and developers by default, changeable in Administration > Menus) instead of by the grants of the user, so a user with a custom role that only holds a grant such as News.Read needs the role added to that menu item to see the link, or can open the Administration page by its address." },

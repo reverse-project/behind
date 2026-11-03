@@ -6,6 +6,10 @@
     },
     "Comments": {
       "News": true
+    },
+    "Accounts": {
+      "SignIn": true,
+      "SignUp": true
     }
   }
 }

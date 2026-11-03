@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/menus"], function (ko, auth, session, menus) {
+define(["ko", "models/auth", "models/session", "models/menus", "models/accounts"], function (ko, auth, session, menus, accounts) {
     return function HeaderViewModel(context) {
         var self = this;
         var main = menus.follow("main");
@@ -12,6 +12,8 @@ define(["ko", "models/auth", "models/session", "models/menus"], function (ko, au
         };
 
         self.isSignedIn = session.isSignedIn;
+        self.canSignIn = accounts.signIn;
+        self.canSignUp = accounts.signUp;
 
         self.links = itemsOfKind("Link");
 

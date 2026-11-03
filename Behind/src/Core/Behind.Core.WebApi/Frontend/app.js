@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts) {
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
@@ -124,6 +124,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     return {
         start: function () {
             applyColorScheme();
+            accounts.load();
             ko.applyBindings(new HeaderViewModel(context), $("#header-container")[0]);
 
             var footer = new FooterViewModel();

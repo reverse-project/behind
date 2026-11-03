@@ -18,7 +18,7 @@ If you have no display name, your email address is shown in the menu.
 3. Optionally enter a **display name**. If you leave it empty your email address is shown instead.
 4. Choose **Create account**.
 
-If the email is already in use you are told so. After the account is created, sign in.
+If the email is already in use you are told so. The administrator of the server can hide the **Sign up** and **Sign in** buttons of the top menu in `backend.json`; this only hides the buttons, the pages themselves still work when you open their address. After the account is created, sign in.
 
 Unless the installation has turned email confirmation off, you also receive an email with a link to confirm your address. Follow it to mark your email as confirmed. If confirmation is turned off, your email counts as confirmed the moment you sign up.
 

@@ -78,6 +78,9 @@ public static class WebApiExtensions
         {
             builder.Configuration.AddJsonFile("backend.json", false, true);
             builder.Services.AddVfsContentStore(builder.Configuration);
+            builder.Services.Configure<AccountsConfiguration>(
+                builder.Configuration.GetSection(AccountsConfiguration.SectionName)
+            );
             builder.Services.Configure<CommentsConfiguration>(
                 builder.Configuration.GetSection(CommentsConfiguration.SectionName)
             );
@@ -835,6 +838,10 @@ public static class WebApiExtensions
                 .Produces(403)
                 .Produces(404)
                 .Produces(429)
+                .Produces(500);
+
+            application.MapGet("/accounts/settings", AccountsEndpoints.GetSettings)
+                .Produces<AccountsSettingsResponse>()
                 .Produces(500);
 
             application.MapPost("/sign/up/password", SignUpEndpoints.SignUpPassword)

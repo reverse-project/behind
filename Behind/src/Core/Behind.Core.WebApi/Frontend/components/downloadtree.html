@@ -1,0 +1,18 @@
+<ul class="list-unstyled download-tree mb-0" data-bind="foreach: nodes">
+    <li>
+        <div class="d-flex align-items-center gap-1 download-tree-row" data-bind="css: { 'download-tree-selected': selected }">
+            <button type="button" class="btn btn-sm btn-link p-0 download-tree-toggle" data-bind="visible: hasChildren, click: toggle, attr: { 'aria-expanded': expanded() ? 'true' : 'false', 'aria-label': (expanded() ? 'Collapse ' : 'Expand ') + displayName }">
+                <i class="fa-solid" aria-hidden="true" data-bind="css: expanded() ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+            </button>
+            <span class="download-tree-toggle" data-bind="visible: !hasChildren"></span>
+            <a class="text-break text-decoration-none" data-bind="attr: { href: href, 'aria-current': selected() ? 'page' : null }">
+                <i class="fa-solid me-1" aria-hidden="true" data-bind="css: isOpen() ? 'fa-folder-open' : 'fa-folder'"></i><span data-bind="text: displayName"></span>
+            </a>
+        </div>
+        <!-- ko if: hasChildren && expanded() -->
+        <div class="ms-3">
+            <download-tree params="nodes: children"></download-tree>
+        </div>
+        <!-- /ko -->
+    </li>
+</ul>

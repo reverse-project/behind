@@ -29,6 +29,7 @@ public static class VfsTypes
     public const string NewsCategories = "NewsCategories";
     public const string ArticleCategories = "ArticleCategories";
     public const string Galleries = "Galleries";
+    public const string Downloads = "Downloads";
     public const string SiteImageUrl = "/sites/images";
     public const string NewsImageUrl = "/news/images";
     public const string ArticleImageUrl = "/articles/images";
@@ -39,10 +40,12 @@ public static class VfsTypes
 
     public static readonly IReadOnlyList<string> GalleryImages = [Galleries];
 
+    public static readonly IReadOnlyList<string> DownloadFiles = [Downloads];
+
     public static readonly IReadOnlyList<string> AllSiteImages = [Sites, .. NewsImages, .. ArticleImages];
 
     public static IReadOnlyList<string> SameKindAs(string type) =>
-        type == Galleries ? GalleryImages : AllSiteImages;
+        type == Galleries ? GalleryImages : type == Downloads ? DownloadFiles : AllSiteImages;
 
     public static string ImageUrlOf(string type) =>
         NewsImages.Contains(type)

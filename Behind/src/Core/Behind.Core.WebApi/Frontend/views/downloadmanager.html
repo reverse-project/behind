@@ -1,0 +1,152 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0 text-break" data-bind="text: browser.heading"></h1>
+        <div class="ms-auto d-flex flex-wrap gap-2" data-bind="visible: canRead() && browser.found()">
+            <button type="button" class="btn btn-outline-primary" data-bind="visible: canWrite, enable: !busy(), click: startCreateFolder"><i class="fa-solid fa-folder-plus me-1" aria-hidden="true"></i>New folder</button>
+            <button type="button" class="btn btn-outline-primary" data-bind="visible: canWrite() && browser.inFolder(), enable: !busy(), click: startEditFolder"><i class="fa-solid fa-pen me-1" aria-hidden="true"></i>Edit folder</button>
+            <button type="button" class="btn btn-outline-danger" data-bind="visible: canDelete() && browser.inFolder(), enable: !busy(), click: deleteFolder"><i class="fa-solid fa-trash me-1" aria-hidden="true"></i>Delete folder</button>
+            <a class="btn btn-outline-secondary" href="#/administration">Back to administration</a>
+        </div>
+    </div>
+    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage downloads.</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need download access to manage downloads.</div>
+    <p class="text-body-secondary" data-bind="visible: canRead() && browser.loading()">Loading...</p>
+    <div class="alert alert-info" role="alert" data-bind="visible: browser.hasMessage, text: browser.message"></div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: canRead() && browser.missing()">This folder does not exist. <a href="#/manage/downloads">Go to the downloads</a>.</div>
+    <div class="row g-4" data-bind="visible: canRead() && browser.found()">
+        <div class="col-md-4 col-lg-3">
+            <nav aria-label="Download folders" class="card card-body">
+                <a class="text-decoration-none mb-2" data-bind="attr: { href: browser.rootHref }, css: { 'download-tree-selected': browser.rootSelected }"><i class="fa-solid fa-house me-1" aria-hidden="true"></i>All downloads</a>
+                <p class="text-body-secondary mb-0" data-bind="visible: !browser.hasFolders()">There are no folders yet.</p>
+                <download-tree params="nodes: browser.roots"></download-tree>
+            </nav>
+        </div>
+        <div class="col-md-8 col-lg-9">
+            <nav aria-label="breadcrumb" data-bind="visible: browser.inFolder">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a data-bind="attr: { href: browser.rootHref }">Downloads</a></li>
+                    <!-- ko foreach: browser.breadcrumbs -->
+                    <li class="breadcrumb-item"><a data-bind="attr: { href: href }, text: displayName"></a></li>
+                    <!-- /ko -->
+                </ol>
+            </nav>
+            <form class="card card-body mb-4" data-bind="visible: canWrite() && isFolderFormOpen(), submit: saveFolder">
+                <h2 class="h5" data-bind="text: folderFormHeading"></h2>
+                <div class="mb-3">
+                    <label class="form-label" for="download-folder-name">Display name</label>
+                    <input id="download-folder-name" class="form-control" type="text" maxlength="200" data-bind="value: folderName, valueUpdate: 'input'">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="download-folder-slug">Slug</label>
+                    <input id="download-folder-slug" class="form-control" type="text" maxlength="100" data-bind="value: folderSlugInput, valueUpdate: 'input'">
+                    <div class="form-text">The slug is used in the address of the folder, for example <code>#/downloads/manuals</code>.</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" data-bind="enable: canSaveFolder">Save</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bind="click: closeFolderForm">Cancel</button>
+                </div>
+            </form>
+            <div class="card card-body mb-4" data-bind="visible: canWrite() && browser.inFolder()">
+                <h2 class="h5">Upload files</h2>
+                <label class="form-label" for="download-files">Choose one or more files</label>
+                <input id="download-files" class="form-control mb-2" type="file" multiple data-bind="event: { change: addFiles }, enable: !busy()">
+                <div class="form-text mb-3">The largest allowed file is <span data-bind="text: browser.maxFileSize"></span>.</div>
+                <ul class="list-group mb-3" data-bind="visible: hasPending, foreach: pending">
+                    <li class="list-group-item">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <i aria-hidden="true" data-bind="css: icon"></i>
+                            <span class="text-break" data-bind="text: fileName"></span>
+                            <span class="text-body-secondary small" data-bind="text: size"></span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" data-bind="click: remove, enable: !$root.busy()">Remove</button>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label small mb-1">Display name</label>
+                            <input class="form-control form-control-sm" type="text" maxlength="200" aria-label="Display name" data-bind="value: name, valueUpdate: 'input', enable: !$root.busy()">
+                        </div>
+                        <div class="text-danger small mt-1" data-bind="visible: error() !== '', text: error"></div>
+                    </li>
+                </ul>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <button type="button" class="btn btn-primary" data-bind="enable: canUpload, click: upload"><i class="fa-solid fa-upload me-1" aria-hidden="true"></i>Upload</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bind="visible: hasPending, enable: !busy(), click: clearPending">Clear</button>
+                    <span class="text-body-secondary" data-bind="text: uploadProgress"></span>
+                </div>
+            </div>
+            <div class="table-responsive" data-bind="visible: browser.hasFiles">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col" class="text-end">Size</th>
+                            <th scope="col">Uploaded at</th>
+                            <th scope="col">Uploaded by</th>
+                            <th scope="col"><span class="visually-hidden">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: browser.files">
+                        <tr>
+                            <td class="text-break">
+                                <i class="me-2 download-file-icon" aria-hidden="true" data-bind="css: icon"></i>
+                                <!-- ko ifnot: editing -->
+                                <a data-bind="attr: { href: url, download: fileName }, text: name"></a>
+                                <div class="text-body-secondary small" data-bind="visible: showFileName, text: fileName"></div>
+                                <!-- /ko -->
+                                <!-- ko if: editing -->
+                                <form class="input-group input-group-sm d-inline-flex w-auto" data-bind="submit: rename">
+                                    <input class="form-control" type="text" maxlength="200" aria-label="Display name" data-bind="value: newName, valueUpdate: 'input'">
+                                    <button type="submit" class="btn btn-primary" data-bind="enable: canRename() && !$root.busy()">Save</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-bind="click: cancel">Cancel</button>
+                                </form>
+                                <!-- /ko -->
+                            </td>
+                            <td class="text-end text-nowrap" data-bind="text: size"></td>
+                            <td class="text-nowrap" data-bind="text: uploadedAt"></td>
+                            <td class="text-break" data-bind="text: uploadedBy"></td>
+                            <td class="text-nowrap text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: $root.canWrite() && !editing(), enable: !$root.busy(), click: edit">Rename</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: $root.canDelete(), enable: !$root.busy(), click: remove">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-body-secondary" data-bind="visible: browser.inFolder() && !browser.hasFiles()">There are no files in this folder.</p>
+            <p class="text-body-secondary" data-bind="visible: !browser.inFolder()">Choose a folder to see its files.</p>
+            <div data-bind="visible: canViewDeleted">
+                <div class="form-check form-switch mb-3">
+                    <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> Show deleted folders and files</label>
+                </div>
+                <div data-bind="visible: showDeleted">
+                    <h2 class="h5">Deleted folders</h2>
+                    <p class="text-body-secondary" data-bind="visible: deletedFolders().length === 0">There are no deleted folders.</p>
+                    <ul class="list-group mb-4" data-bind="foreach: deletedFolders">
+                        <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                            <div class="me-auto">
+                                <strong class="text-break" data-bind="text: name"></strong>
+                                <code class="ms-2" data-bind="text: slug"></code>
+                            </div>
+                            <span class="badge text-bg-dark">Deleted</span>
+                            <button type="button" class="btn btn-sm btn-outline-success" data-bind="enable: !$root.busy(), click: restore">Restore</button>
+                            <button type="button" class="btn btn-sm btn-danger" data-bind="enable: !$root.busy(), click: hardDelete">Delete permanently</button>
+                        </li>
+                    </ul>
+                    <h2 class="h5">Deleted files</h2>
+                    <p class="text-body-secondary" data-bind="visible: deletedFiles().length === 0">There are no deleted files.</p>
+                    <ul class="list-group mb-3" data-bind="foreach: deletedFiles">
+                        <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                            <div class="me-auto text-break">
+                                <i class="me-2" aria-hidden="true" data-bind="css: icon"></i>
+                                <strong data-bind="text: name"></strong>
+                                <span class="text-body-secondary small ms-2" data-bind="text: size"></span>
+                                <span class="text-body-secondary small ms-2" data-bind="text: folderName()"></span>
+                            </div>
+                            <span class="badge text-bg-dark">Deleted</span>
+                            <button type="button" class="btn btn-sm btn-outline-success" data-bind="enable: !$root.busy(), click: restore">Restore</button>
+                            <button type="button" class="btn btn-sm btn-danger" data-bind="enable: !$root.busy(), click: hardDelete">Delete permanently</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

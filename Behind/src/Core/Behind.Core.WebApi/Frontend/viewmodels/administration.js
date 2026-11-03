@@ -27,6 +27,10 @@ define(["ko", "models/session"], function (ko, session) {
         return session.hasGrant("Gallery.Read");
     };
 
+    var canReadDownloads = function () {
+        return session.hasGrant("Download.Read");
+    };
+
     var canReadMenus = function () {
         return session.hasGrant("Menu.Read");
     };
@@ -40,6 +44,7 @@ define(["ko", "models/session"], function (ko, session) {
         { name: "Articles", icon: "fa-book-open", href: "#/manage/articles", allowed: canReadArticles },
         { name: "Article categories", icon: "fa-tags", href: "#/manage/article-categories", allowed: canReadArticles },
         { name: "Galleries", icon: "fa-images", href: "#/manage/galleries", allowed: canReadGalleries },
+        { name: "Downloads", icon: "fa-download", href: "#/manage/downloads", allowed: canReadDownloads },
         { name: "Menus", icon: "fa-bars", href: "#/manage/menus", allowed: canReadMenus },
         { name: "Audit log", icon: "fa-clipboard-list", href: "#/audit-log", allowed: canReadAuditLog }
     ];

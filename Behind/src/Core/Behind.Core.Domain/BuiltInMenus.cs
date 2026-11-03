@@ -23,6 +23,7 @@ public static class BuiltInMenus
             Link(2, "News", "#/news", 20),
             Link(3, "Articles", "#/articles", 30),
             Link(9, "Galleries", "#/galleries", 35),
+            Link(10, "Downloads", "#/downloads", 37),
             Link(4, "Wall of shame", "#/wall-of-shame", 40),
             User(5, "Profile", "#/profile", 10),
             User(6, "Session", "#/session", 20),

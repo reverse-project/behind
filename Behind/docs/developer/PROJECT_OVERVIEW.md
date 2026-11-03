@@ -114,6 +114,7 @@ Core business logic and domain implementation.
   - News with categories (header image) and comments
   - Articles with their own categories (header image), searchable by title and content
   - Galleries of images with optional descriptions with server side thumbnails, drafts and publishing
+  - Downloads: a tree of folders (slug and display name) with the uploaded files (display name, size, uploaded at and by) of the virtual file system
   - Menus with menu items (sub items, target, user menu items, visibility by role) and the built-in main menu
 
 - **Behind.Core.Database** (Data implementation)

@@ -264,6 +264,42 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesDownloadFoldersAndDownloadsAfterTheirNewestDisplayName()
+    {
+        using var bed = new NewsTestBed();
+        var folder = await bed.CreateDownloadFolderAsync("Manuals", "manuals");
+        await bed.WithDownloadFolderCommandsAsync(
+            commands => commands.Update(folder, new IDownloadFolderCommands.FolderDraft("guides", "Guides")));
+        var download = await bed.UploadDownloadAsync(folder, "User guide");
+        await bed.WithDownloadCommandsAsync(commands => commands.Rename(download, "Handbook"));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([folder, download]);
+
+        Assert.Equal("Guides", labels.Label(folder.ToString()));
+        Assert.Equal("Handbook", labels.Label(download.ToString()));
+        Assert.Equal("DownloadFolder: Guides", labels.LabelKey($"DownloadFolder:{folder}"));
+        Assert.Equal("Download: Handbook", labels.LabelKey($"Download:{download}"));
+        Assert.Equal("Handbook: 2", labels.LabelKey($"{download}:2"));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesDeletedDownloadsBecauseTheAuditLogIncludesDeletedRecords()
+    {
+        using var bed = new NewsTestBed();
+        var folder = await bed.CreateDownloadFolderAsync("Gone folder", "gone");
+        var download = await bed.UploadDownloadAsync(folder, "Gone file");
+        await bed.WithDownloadCommandsAsync(commands => commands.Delete(download));
+        await bed.WithDownloadFolderCommandsAsync(commands => commands.Delete(folder));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([folder, download]);
+
+        Assert.Equal("Gone folder", labels.Label(folder.ToString()));
+        Assert.Equal("Gone file", labels.Label(download.ToString()));
+    }
+
+    [Fact]
     public async Task ResolveLabels_NamesMenusAfterTheirNewestTitleAndMenuItemsAfterTheirTitle()
     {
         using var bed = new NewsTestBed();

@@ -142,6 +142,18 @@ public static class AuditLabelExtensions
                     .AsNoTracking()
                     .ToListAsync(cancellationToken))
                 .Select(item => item with { Label = item.Label.Labelled(GalleryItemLabelLength) }),
+            .. await context.DownloadFolders
+                .Where(folder => ids.Contains(EF.Property<Guid>(folder, VersionedColumns.Key)))
+                .OrderByDescending(folder => EF.Property<long>(folder, VersionedColumns.Version))
+                .Select(folder => new Named(EF.Property<Guid>(folder, VersionedColumns.Key), folder.DisplayName))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.Downloads
+                .Where(download => ids.Contains(EF.Property<Guid>(download, VersionedColumns.Key)))
+                .OrderByDescending(download => EF.Property<long>(download, VersionedColumns.Version))
+                .Select(download => new Named(EF.Property<Guid>(download, VersionedColumns.Key), download.DisplayName))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
             .. await context.VfsFiles
                 .Where(file => ids.Contains(EF.Property<Guid>(file, VersionedColumns.Key)))
                 .Select(file => new Named(EF.Property<Guid>(file, VersionedColumns.Key), file.FileName))

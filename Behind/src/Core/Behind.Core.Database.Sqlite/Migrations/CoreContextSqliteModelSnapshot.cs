@@ -145,6 +145,71 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.ToTable("AuditLogEntries");
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.Download", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FolderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UploadedById")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("FileId");
+
+                    b.HasIndex("FolderId");
+
+                    b.HasIndex("UploadedById");
+
+                    b.ToTable("Downloads", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.DownloadFolder", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("DownloadFolders", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.Email", b =>
                 {
                     b.Property<Guid>("Id")
@@ -886,6 +951,15 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.Download", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Email", b =>

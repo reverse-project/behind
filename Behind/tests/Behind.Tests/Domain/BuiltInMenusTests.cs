@@ -7,10 +7,10 @@ public class BuiltInMenusTests
     {
         Assert.Equal("main", BuiltInMenus.Main.Name);
         Assert.Equal(
-            ["Index", "News", "Articles", "Galleries", "Wall of shame"],
+            ["Index", "News", "Articles", "Galleries", "Downloads", "Wall of shame"],
             BuiltInMenus.Main.Items.Where(item => item.Kind == MenuItemKind.Link).OrderBy(item => item.Position).Select(item => item.Title));
         Assert.Equal(
-            ["#/", "#/news", "#/articles", "#/galleries", "#/wall-of-shame"],
+            ["#/", "#/news", "#/articles", "#/galleries", "#/downloads", "#/wall-of-shame"],
             BuiltInMenus.Main.Items.Where(item => item.Kind == MenuItemKind.Link).OrderBy(item => item.Position).Select(item => item.Url));
     }
 

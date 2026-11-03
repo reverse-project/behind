@@ -31,6 +31,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/manage/galleries": "controllers/gallerymanager",
         "#/manage/galleries/new": "controllers/galleryeditor",
         "#/manage/galleries/:id": "controllers/galleryeditor",
+        "#/downloads": "controllers/downloads",
+        "#/manage/downloads": "controllers/downloadmanager",
         "#/manage/menus": "controllers/menus",
         "#/manage/menus/:id": "controllers/menuitems",
         "#/changelog": "controllers/changelog",
@@ -38,6 +40,11 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/sign/in/magiclink": "controllers/magiclink",
         "#/sign/up/confirm": "controllers/confirmemail"
     };
+
+    var patternRoutes = [
+        { pattern: /(?:^|\/)#\/downloads\/(.*)$/, controller: "controllers/downloads" },
+        { pattern: /(?:^|\/)#\/manage\/downloads\/(.*)$/, controller: "controllers/downloadmanager" }
+    ];
 
     var siteRoutes = {
         "#/site/:slug": "controllers/site",
@@ -47,6 +54,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     ko.components.register("pager", { require: "components/pager" });
     ko.components.register("letter-pager", { require: "components/letterpager" });
     ko.components.register("access-editor", { require: "components/accesseditor" });
+    ko.components.register("download-tree", { require: "components/downloadtree" });
     ko.components.register("menu-items", { require: "components/menuitems" });
     ko.components.register("menu-nav", { require: "components/menunav" });
 
@@ -79,8 +87,20 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         });
     };
 
+    var ignoreFormSubmissions = function () {
+        return false;
+    };
+
     var router = Sammy(function () {
         var app = this;
+
+        app._checkFormSubmission = ignoreFormSubmissions;
+
+        patternRoutes.forEach(function (route) {
+            app.get(route.pattern, function () {
+                execute(route.controller, this.params.toHash());
+            });
+        });
 
         [routes, siteRoutes].forEach(function (table) {
             Object.keys(table).forEach(function (path) {

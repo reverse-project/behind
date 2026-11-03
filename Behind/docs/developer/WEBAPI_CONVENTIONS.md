@@ -69,10 +69,12 @@ The `Frontend:Sites` section (`SitesConfiguration`, for example in `frontend.jso
 `backend.json` (required, section `Backend`, `BackendConfiguration`) holds the settings that are not part of the frontend:
 
 ```json
-{ "Backend": { "DataDirectory": "/app/data" } }
+{ "Backend": { "DataDirectory": "/app/data", "Downloads": { "MaxFileBytes": 104857600 } } }
 ```
 
-- `DataDirectory`: the directory of the data of the server. The content of every uploaded file (site and gallery images) is stored below `<DataDirectory>/vfs`, the database only keeps the metadata (see "Virtual file system" in the database architecture). The application and the migrator fail at startup when it is missing, and both must use the same directory.
+- `DataDirectory`: the directory of the data of the server. The content of every uploaded file (site and gallery images, downloads) is stored below `<DataDirectory>/vfs`, the database only keeps the metadata (see "Virtual file system" in the database architecture). The application and the migrator fail at startup when it is missing, and both must use the same directory.
+
+- `Downloads:MaxFileBytes` (`DownloadsConfiguration`, section `Backend:Downloads`): the largest accepted file of a download upload (default 100 MB, zero or negative or missing falls back to the default). A larger file is reported per file as `too-large`. The web client reads the limit from `GET /downloads/folders` and refuses larger files before uploading them. The request limits of the upload endpoint (`RequestSizeLimit`, `MultipartBodyLengthLimit`) are derived from this value when the endpoints are mapped (the limit times `DownloadEndpoints.MaxUploadFiles` plus 1 MB for the request, the limit plus 1 MB for one file), so a change needs a restart of the application; a request above the request limit is answered with `413`.
 
 ### Galleries Settings
 
@@ -139,6 +141,25 @@ Galleries are versioned like the articles and live under `/galleries` (`GalleryR
 | `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage` |
 
 The gallery images do not use the site image endpoints or the `Frontend:Sites` limit; they are files of the `Galleries` VFS type, the site images are files of the `Sites`, `News`, `Articles`, `NewsCategories` or `ArticleCategories` types. A draft sends `thumbnailImageId: null` for the generated gallery thumbnail: `GalleryThumbnails` then composes a collage of the first four item thumbnails (`ImageThumbnailExtensions.ToMosaic`) and stores it as a VFS file; the response tells with `thumbnailGenerated` which kind it is. The responses reuse `NewsSavedResponse` and `NewsConflictResponse` (reasons `unknown-image`, `version-conflict`).
+
+### Downloads Endpoints
+
+The downloads are folders (`DownloadFolder`, a `Slug` and a `DisplayName`, any depth) with files (`Download`, a `DisplayName`) under `/downloads` (`DownloadRoutesExtensions.MapDownloadEndpoints`). Browsing is public. The web client shows `#/downloads/<folder path>` where the path is the slugs of the folders from the top, for example `#/downloads/manuals/drivers`, resolved from the folder tree on the client (`#/downloads` alone is the top). The management page is separate, `#/manage/downloads/<folder path>` (`downloadmanager` controller, view and viewmodel); both pages share the tree and file loading in `models/downloadbrowser.js` and the `download-tree` component.
+
+| Endpoint | Access |
+|----------|--------|
+| `GET /downloads/folders` | public, every folder that is reachable (not deleted and without a deleted ancestor) as a flat list (`id`, `parentId`, `slug`, `displayName`) together with `maxFileBytes` |
+| `GET /downloads/folders/{id}/files` | public, the files of a folder (`id`, `displayName`, `fileName`, `contentType`, `length`, `uploadedBy`, `uploadedAt` from the audit log, `url`), `404` for an unknown, deleted or hidden folder |
+| `GET /downloads/files/{id}` | public, the content of a download as an attachment with its original file name, `nosniff` and revalidation; `{id}` is the id of the download, not of the VFS file |
+| `GET /downloads/deleted` | `RawDatabase.Manage`, the deleted folders and files |
+| `POST /downloads/folders`, `POST /downloads/folders/{id}/folders` | `Download.Write`, create a top level folder / a subfolder from `displayName` and an optional `slug` (default: the slug of the display name); `409` with `slug-taken` when a sibling uses the slug |
+| `POST /downloads/folders/{id}` | `Download.Write`, save the next version of the folder (display name and slug) |
+| `POST /downloads/folders/{id}/files` | `Download.Write`, multipart `files` (at most `DownloadEndpoints.MaxUploadFiles`) and a repeated `displayNames` field in the same order (blank or missing: the file name); every file is reported as `{ fileName, id, error }` with the error `empty`, `too-large` or `version-conflict` |
+| `POST /downloads/files/{id}` | `Download.Write`, rename a download (`displayName`) |
+| `POST /downloads/folders/{id}/delete`, `POST /downloads/files/{id}/delete` | `Download.Delete`, soft delete; a deleted folder hides its subfolders and files |
+| `POST .../restore`, `POST .../hard/delete` | `RawDatabase.Manage`; restoring answers `409` with `parent-deleted`, `folder-deleted` or `slug-taken`; hard deleting a folder removes its subfolders, files and their content |
+
+The files are files of the `Downloads` VFS type stored as `vfs/Downloads/<download uuid>/<file uuid>`; they are served by the download endpoint only (never through another kind of content) and never inline, so an uploaded HTML file cannot run in the origin of the application.
 
 ### Menus Endpoints
 

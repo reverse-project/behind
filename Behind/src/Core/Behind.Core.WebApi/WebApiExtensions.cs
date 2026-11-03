@@ -78,6 +78,9 @@ public static class WebApiExtensions
         {
             builder.Configuration.AddJsonFile("backend.json", false, true);
             builder.Services.AddVfsContentStore(builder.Configuration);
+            builder.Services.Configure<DownloadsConfiguration>(
+                builder.Configuration.GetSection(DownloadsConfiguration.SectionName)
+            );
 
             return builder;
         }
@@ -216,6 +219,9 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IVfsQueries, VfsQueries>();
             builder.Services.AddScoped<IVfsCommands, VfsCommands>();
             builder.Services.AddScoped<GalleryThumbnails>();
+            builder.Services.AddScoped<IDownloadQueries, DownloadQueries>();
+            builder.Services.AddScoped<IDownloadFolderCommands, DownloadFolderCommands>();
+            builder.Services.AddScoped<IDownloadCommands, DownloadCommands>();
             builder.Services.AddScoped<IMenuQueries, MenuQueries>();
             builder.Services.AddScoped<IMenuCommands, MenuCommands>();
             builder.Services.AddScoped<IMenuItemQueries, MenuItemQueries>();
@@ -787,6 +793,7 @@ public static class WebApiExtensions
 
             application.MapArticleEndpoints();
             application.MapGalleryEndpoints();
+            application.MapDownloadEndpoints();
             application.MapMenuEndpoints();
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)

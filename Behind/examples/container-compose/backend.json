@@ -1,5 +1,8 @@
 {
   "Backend": {
-    "DataDirectory": "/app/data"
+    "DataDirectory": "/app/data",
+    "Downloads": {
+      "MaxFileBytes": 104857600
+    }
   }
 }

@@ -35,6 +35,8 @@ Behind.Core.Domain/
 ├── News.cs                 # News, news category and news comment records
 ├── Article.cs              # Article and article category records
 ├── Gallery.cs              # Gallery and gallery item records
+├── Download.cs             # Download folder and download (uploaded file) records
+├── DownloadExtensions.cs   # The display name of a download, defaulting to the file name
 ├── VfsFile.cs              # Metadata of an uploaded file of the virtual file system
 ├── VfsFileExtensions.cs    # File name sanitising and the storage key of a file
 ├── Menu.cs                 # Menu and menu item records, the target and kind enums

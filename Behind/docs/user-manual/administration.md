@@ -10,6 +10,7 @@
 | News and news categories | the `News.Read` grant (`News.Write` to change them) | [News](./managing-news.md) |
 | Articles and article categories | the `Article.Read` grant (`Article.Write` to change them) | [Articles](./managing-articles.md) |
 | Galleries | the `Gallery.Read` grant (`Gallery.Write` to change them) | [Galleries](./managing-galleries.md) |
+| Downloads | the `Download.Read` grant (`Download.Write` to change them) | [Downloads](./managing-downloads.md) |
 | Menus | the `Menu.Read` grant (`Menu.Write` to change them) | [Menus](./managing-menus.md) |
 | Audit log | the `AuditLog.Read` grant | [Audit log](./audit-log.md) |
 

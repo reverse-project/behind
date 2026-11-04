@@ -115,6 +115,18 @@ public class MiddlewareLoggingTests
         Assert.Equal("InvalidOperationException", Assert.Single(logger.Entries).State["ExceptionType"]);
     }
 
+    [Fact]
+    public async Task UnhandledExceptionHandler_AnyException_AnswersInternalServerError()
+    {
+        var context = new DefaultHttpContext { Response = { Body = new MemoryStream() } };
+
+        var handled = await new UnhandledExceptionHandler()
+            .TryHandleAsync(context, new UnauthorizedAccessException(), CancellationToken.None);
+
+        Assert.True(handled);
+        Assert.Equal(StatusCodes.Status500InternalServerError, context.Response.StatusCode);
+    }
+
     private static EndpointFilterInvocationContext FilterContext(params object?[] arguments) =>
         new DefaultEndpointFilterInvocationContext(new DefaultHttpContext(), arguments);
 

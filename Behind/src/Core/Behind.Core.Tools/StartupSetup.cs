@@ -16,12 +16,15 @@ public sealed record StartupSetupRequest(
     public const string SecurityFileName = "security.json";
     public const string DatabaseFileName = "database.json";
     public const string BackendFileName = "backend.json";
+    public const string FrontendFileName = "frontend.json";
     public const string CertificateFileName = "dataprotection.pfx";
     public const string KeysDirectoryName = "DataProtection-Keys";
     public const string DatabaseFileNameInData = "web.db";
     public const string ConnectionStringName = "DefaultConnection";
     public const string DefaultIssuer = "Behind Backend";
     public const string DefaultAudience = "Behind Frontend";
+    public const string DefaultTitle = "Behind";
+    public const string DefaultLocale = "en-US";
     public const string AdminAccount = "admin";
     public const string DeveloperAccount = "developer";
 }
@@ -65,3 +68,12 @@ public sealed record StartupDatabaseFile(
 public sealed record StartupBackendFile(StartupBackendSection Backend);
 
 public sealed record StartupBackendSection(string DataDirectory);
+
+
+public sealed record StartupFrontendFile(StartupFrontendSection Frontend);
+
+public sealed record StartupFrontendSection(StartupSiteSection Site, StartupSitesSection Sites);
+
+public sealed record StartupSiteSection(string Title, string Copyright, string DefaultLocale);
+
+public sealed record StartupSitesSection(string IndexSlug, long MaxImageBytes);

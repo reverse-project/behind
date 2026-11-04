@@ -64,4 +64,4 @@ Generating an authenticator secret shows its authenticator address and a QR code
 
 If the installation runs with a read-only configuration (`Security:ReadOnlyConfiguration`), the page shows the masked values but refuses every change, generation and rotation. Change such an installation through its external configuration provider.
 
-Changes are written to the files next to the application. Take care with settings such as the database connection: a wrong value can stop the application from starting.
+Changes are written to the files next to the application. In a container the file must be writable by the user the container runs as, so mount `frontend.json` (and any other file you want to edit) from a writable host path, like `security.json` in the example compose file. Take care with settings such as the database connection: a wrong value can stop the application from starting.

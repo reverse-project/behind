@@ -138,7 +138,7 @@ Core business logic and domain implementation.
 - **Behind.Core.Tools**
   - CLI tools and utilities
   - `dataprotection create`: creates the data protection certificate (random or prompted password) and a `security.json` with the `Security:DataProtection` section
-  - `startup create`: generates `security.json` (data protection certificate and keys path, TOTP secret key, JWT signing key, developer elevation TOTP key, magic link secret), `database.json` (SQLite) and `backend.json`. Options: `--data-directory` (default `data`), `--config-directory` (default `.`), `--issuer`, `--audience`, `--email-confirmation`, `--prompt`, `--force`, `--skip-existing`. Exits with a non-zero code on failure
+  - `startup create`: generates `security.json` (data protection certificate and keys path, TOTP secret key, JWT signing key, developer elevation TOTP key, magic link secret), `database.json` (SQLite), `backend.json` and `frontend.json` (site title, default locale and sites settings, so the Settings page can edit them). Options: `--data-directory` (default `data`), `--config-directory` (default `.`), `--issuer`, `--audience`, `--email-confirmation`, `--prompt`, `--force`, `--skip-existing`. Exits with a non-zero code on failure
   - Runs as a container too (`tools/publish-core-tools-container.sh` publishes `reverse-project/behind/core-tools`); the paths written to the configuration files are absolute, so mount the data directory where the other containers see it:
 
     ```bash

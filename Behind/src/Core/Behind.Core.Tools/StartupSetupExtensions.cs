@@ -45,7 +45,11 @@ public static class StartupSetupExtensions
             new(
                 request.ConfigPath(StartupSetupRequest.BackendFileName),
                 [request.ConfigPath(StartupSetupRequest.BackendFileName)],
-                request.RenderBackend)
+                request.RenderBackend),
+            new(
+                request.ConfigPath(StartupSetupRequest.FrontendFileName),
+                [request.ConfigPath(StartupSetupRequest.FrontendFileName)],
+                request.RenderFrontend)
         ];
 
         public IReadOnlyList<StartupPlanStep> Plan =>
@@ -118,6 +122,17 @@ public static class StartupSetupExtensions
         private StartupRendering RenderBackend() =>
             new(
                 new StartupBackendFile(new StartupBackendSection(Path.GetFullPath(request.DataDirectory)))
+                    .ToConfigurationJson(),
+                []);
+
+        private StartupRendering RenderFrontend() =>
+            new(
+                new StartupFrontendFile(new StartupFrontendSection(
+                    new StartupSiteSection(
+                        StartupSetupRequest.DefaultTitle,
+                        string.Empty,
+                        StartupSetupRequest.DefaultLocale),
+                    new StartupSitesSection(string.Empty, SitesConfiguration.DefaultMaxImageBytes)))
                     .ToConfigurationJson(),
                 []);
     }

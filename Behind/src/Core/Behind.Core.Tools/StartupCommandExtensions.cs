@@ -15,7 +15,7 @@ public static class StartupCommandExtensions
             };
             var configDirectory = new Option<string>("--config-directory", "-c")
             {
-                Description = "Directory where security.json, database.json and backend.json are generated",
+                Description = "Directory where security.json, database.json, backend.json and frontend.json are generated",
                 DefaultValueFactory = _ => "."
             };
             var issuer = new Option<string>("--issuer")

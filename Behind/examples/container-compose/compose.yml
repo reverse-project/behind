@@ -52,3 +52,4 @@ services:
       - ./config/backend.json:/app/backend.json:Z
       - ./data:/app/data:Z
       - ./config/security.json:/app/security.json:Z
+      - ./config/frontend.json:/app/frontend.json:Z

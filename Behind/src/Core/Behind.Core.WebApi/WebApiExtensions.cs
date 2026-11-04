@@ -269,6 +269,7 @@ public static class WebApiExtensions
         public WebApplicationBuilder AddCore()
         {
             builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
+            builder.Services.AddExceptionHandler<UnhandledExceptionHandler>();
             builder.Services.AddHttpContextAccessor();
                         
             return builder

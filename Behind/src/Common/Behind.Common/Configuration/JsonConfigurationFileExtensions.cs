@@ -66,6 +66,10 @@ public static class JsonConfigurationFileExtensions
                 await File.WriteAllTextAsync(temporary, content, cancellationToken);
                 File.Move(temporary, file.FullName, overwrite: true);
             }
+            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+            {
+                await File.WriteAllTextAsync(file.FullName, content, cancellationToken);
+            }
             finally
             {
                 File.Delete(temporary);

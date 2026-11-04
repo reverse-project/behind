@@ -25,6 +25,8 @@ public sealed class StartupSetupTests : IDisposable
 
     private string BackendPath => Path.Combine(ConfigDirectory, "backend.json");
 
+    private string FrontendPath => Path.Combine(ConfigDirectory, "frontend.json");
+
     private string CertificatePath => Path.Combine(DataDirectory, "dataprotection.pfx");
 
     public void Dispose()
@@ -57,6 +59,7 @@ public sealed class StartupSetupTests : IDisposable
         Assert.True(File.Exists(SecurityPath));
         Assert.True(File.Exists(DatabasePath));
         Assert.True(File.Exists(BackendPath));
+        Assert.True(File.Exists(FrontendPath));
         using var certificate = CertificatePath.LoadCertificate(Password);
         Assert.True(certificate.HasPrivateKey);
         Assert.True(Directory.Exists(Path.Combine(DataDirectory, "DataProtection-Keys")));
@@ -126,6 +129,19 @@ public sealed class StartupSetupTests : IDisposable
         Assert.Equal(
             Path.GetFullPath(DataDirectory),
             Section(BackendPath, "Backend").GetProperty("DataDirectory").GetString());
+    }
+
+    [Fact]
+    public void Run_FrontendFileHasEditableSiteAndSitesSettings()
+    {
+        Request().Run(new StringWriter());
+
+        var frontend = Section(FrontendPath, "Frontend");
+        Assert.Equal("Behind", frontend.GetProperty("Site").GetProperty("Title").GetString());
+        Assert.Equal("en-US", frontend.GetProperty("Site").GetProperty("DefaultLocale").GetString());
+        Assert.Equal(
+            SitesConfiguration.DefaultMaxImageBytes,
+            frontend.GetProperty("Sites").GetProperty("MaxImageBytes").GetInt64());
     }
 
     [Fact]

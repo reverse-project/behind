@@ -133,6 +133,25 @@ public sealed class JsonConfigurationFileExtensionsTests : IDisposable
     }
 
     [Fact]
+    public async Task SetJsonValuesAsync_DirectoryNotWritable_WritesFileInPlace()
+    {
+        var file = FileWith("""{ "A": "old" }""");
+        File.SetUnixFileMode(_directory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        try
+        {
+            await file.SetJsonValuesAsync(new Dictionary<string, string?> { ["A"] = "new" });
+        }
+        finally
+        {
+            File.SetUnixFileMode(_directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        Assert.Equal("new", (string?)Read(file)["A"]);
+        Assert.Single(Directory.GetFiles(_directory));
+    }
+
+    [Fact]
     public async Task SetJsonValuesAsync_ConcurrentWrites_KeepFileValid()
     {
         var file = FileWith("{}");

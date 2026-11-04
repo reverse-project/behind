@@ -25,10 +25,9 @@ Behind.Core.Database/
 │   ├── UserConfiguration.cs
 │   ├── RoleConfiguration.cs
 │   └── ...
-└── Migrations/                     # EF Migrations
-    ├── [timestamp]_InitialMigration.cs
-    └── ...
 ```
+
+EF Migrations live in `Behind.Core.Database.Sqlite/Migrations` (core context, `CoreContextSqlite`) and `Behind.Core.Database.Sqlite/Migrations/Versioning` (versioning context, `VersioningContextSqlite`).
 
 ### DbContext Implementation
 
@@ -719,19 +718,30 @@ The `Menu` grant area (`Menu.Read`, `Write`, `Delete`, `Manage`) is administrati
 ### Creating Migrations
 
 ```bash
-cd Behind/src/Core/Behind.Core.Database.Migrator
+cd Behind
 
-# Create a new migration
+# Create a new migration (core context)
 dotnet ef migrations add "AddUserTable" \
-    -c ApplicationDbContext \
-    -o Migrations
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context CoreContextSqlite \
+    --output-dir Migrations
 
-# Apply migrations
-dotnet ef database update -c ApplicationDbContext
+# Create a new migration (versioning context)
+dotnet ef migrations add "AddSomething" \
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context VersioningContextSqlite \
+    --output-dir Migrations/Versioning
 
 # Remove last migration
-dotnet ef migrations remove -c ApplicationDbContext
+dotnet ef migrations remove \
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context CoreContextSqlite
 ```
+
+The migrations live in `Behind.Core.Database.Sqlite`; apply them by running `Behind.Core.Database.Migrator`.
 
 ### Migration Best Practices
 

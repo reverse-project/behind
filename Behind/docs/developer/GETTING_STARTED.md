@@ -145,26 +145,40 @@ cd Behind
 
 # If needed, manually initialize
 dotnet ef database update \
-    --project src/Core/Behind.Core.Database \
-    --startup-project src/Core/Behind.Core.Database.Migrator
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context CoreContextSqlite
 ```
+
+The migrator also applies the migrations of the versioning context (`VersioningContextSqlite`) and runs the VFS legacy migration, so running `Behind.Core.Database.Migrator` is the preferred way to update the database.
 
 ### Create Migrations
 
 ```bash
 cd Behind
 
-# Create new migration
+# Create new migration (core context)
 dotnet ef migrations add "AddUserTable" \
-    --project src/Core/Behind.Core.Database \
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context CoreContextSqlite \
     --output-dir Migrations
 
-# Apply migrations
-dotnet ef database update
+# Create new migration (versioning context)
+dotnet ef migrations add "AddSomething" \
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context VersioningContextSqlite \
+    --output-dir Migrations/Versioning
 
 # Remove last migration (before applied)
-dotnet ef migrations remove
+dotnet ef migrations remove \
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context CoreContextSqlite
 ```
+
+Install the tool once with `dotnet tool install --global dotnet-ef`.
 
 ### Connection Strings
 
@@ -416,13 +430,14 @@ public class UserControllerTests { }
 ```bash
 cd Behind
 
-# Create migration
 dotnet ef migrations add "AddUserTable" \
-    --project src/Core/Behind.Core.Database
-
-# Update database
-dotnet ef database update
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context CoreContextSqlite \
+    --output-dir Migrations
 ```
+
+Run `Behind.Core.Database.Migrator` to apply it.
 
 ### Add Service Dependency
 
@@ -487,14 +502,19 @@ dotnet test tests/Behind.Tests/Behind.Tests.csproj \
 
 ```bash
 # View current migrations
-dotnet ef migrations list --project src/Core/Behind.Core.Database
+dotnet ef migrations list \
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context CoreContextSqlite
 
 # Revert to previous migration
-dotnet ef database update "LastGoodMigration"
+dotnet ef database update "LastGoodMigration" \
+    --project src/Core/Behind.Core.Database.Sqlite \
+    --startup-project src/Core/Behind.Core.Database.Migrator \
+    --context CoreContextSqlite
 
-# Start from scratch
-rm Behind/app.db  # Delete SQLite file
-dotnet ef database update
+# Start from scratch: delete the SQLite file (see database.json) and run the migrator
+dotnet run --project src/Core/Behind.Core.Database.Migrator
 ```
 
 ### Port Already in Use
@@ -602,8 +622,8 @@ dotnet test tests/Behind.Tests/Behind.Tests.csproj
 dotnet run --project src/Core/Behind.Core.WebApi/Behind.Core.WebApi.csproj
 
 # Database
-dotnet ef migrations add "MigrationName" --project src/Core/Behind.Core.Database
-dotnet ef database update
+dotnet ef migrations add "MigrationName" --project src/Core/Behind.Core.Database.Sqlite --startup-project src/Core/Behind.Core.Database.Migrator --context CoreContextSqlite --output-dir Migrations
+dotnet run --project src/Core/Behind.Core.Database.Migrator
 
 # Format Code
 dotnet format Behind.slnx

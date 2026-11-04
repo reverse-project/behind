@@ -10,14 +10,11 @@ namespace Behind.Core.Database.Auditing;
 
 public static class EntityEntryAuditExtensions
 {
-    public const string MaskedValue = "***";
+    public const string MaskedValue = SensibleExtensions.MaskedValue;
 
     extension(EntityEntry entry)
     {
-        public string AuditEntityName =>
-            entry.Metadata.HasSharedClrType
-                ? entry.Metadata.Name
-                : entry.Metadata.GetRootType().ClrType.Name;
+        public string AuditEntityName => entry.Metadata.AuditEntityName;
 
         public string AuditEntityKey =>
             string.Join(

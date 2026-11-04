@@ -38,7 +38,7 @@ public static class DbContextAuditExtensions
             }
         }
 
-        private void AddAuditEntry(AuditLogEntry auditLogEntry, AuditActor actor)
+        public void AddAuditEntry(AuditLogEntry auditLogEntry, AuditActor actor)
         {
             var audit = context.Add(auditLogEntry);
             audit.Property<Guid?>("UserId").CurrentValue = actor.UserId.Match(() => (Guid?)null, id => id);

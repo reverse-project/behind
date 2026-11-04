@@ -30,4 +30,4 @@ Source of truth: `/AGENTS.md`. Apply to all new or changed code.
 List the identified bugs and use the `ask_user` tool to ask whether to fix them. Do exactly what the user answers.
 
 ## Always-attached chores
-Changes also trigger: `update-changelog` (every feature/relevant change), `add-entity` (audit labels), `update-licenses` (package/library changes).
+Changes also trigger: `update-changelog` (every feature/relevant change), `add-entity` (audit labels), `add-raw-database-editor` (every entity is editable in the raw database editor), `update-licenses` (package/library changes).

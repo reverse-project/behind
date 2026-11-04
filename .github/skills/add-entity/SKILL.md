@@ -17,7 +17,8 @@ Load `csharp-code-standards` first. Reference implementations: `Site`, `News`, `
 7. **Web API** (`src/Core/Behind.Core.WebApi/Endpoints`): `<Entity>Endpoints`, `<Entity>Response` (+ `ResponseExtensions`), `<Entity>RoutesExtensions` (route mapping), register in `WebApiExtensions.cs`. Generic helpers go to `Behind.Common.WebApi`.
 8. **Uploads**: if the entity holds files, use `add-vfs-upload`.
 9. **Frontend page**: use `add-management-page`.
-10. **Tests**: domain, commands, queries, endpoints, routes, frontend tests, audit labels; reuse/add a `Helpers/<Entity>TestBedExtensions.cs`.
-11. **Changelog**: use `update-changelog`.
-12. **Docs**: update `Behind/docs/developer/DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `PROJECT_OVERVIEW.md`, `WEBAPI_CONVENTIONS.md` and a page in `docs/user-manual/` (plus its README/administration index) when relevant.
-13. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj` from `Behind/`.
+10. **Raw database editor**: every entity must be editable in the raw database editor, use `add-raw-database-editor` (`[Sensible]` columns, read-only tables, column kinds, `RawDatabase*` tests).
+11. **Tests**: domain, commands, queries, endpoints, routes, frontend tests, audit labels; reuse/add a `Helpers/<Entity>TestBedExtensions.cs`.
+12. **Changelog**: use `update-changelog`.
+13. **Docs**: update `Behind/docs/developer/DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `PROJECT_OVERVIEW.md`, `WEBAPI_CONVENTIONS.md` and a page in `docs/user-manual/` (plus its README/administration index) when relevant.
+14. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj` from `Behind/`.

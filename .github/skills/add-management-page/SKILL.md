@@ -16,6 +16,8 @@ Every management page (users, roles, sites and any new one) must:
 
 The backend must expose matching endpoints (see `add-entity`).
 
+The entity behind the page must also be editable in the generic raw database editor (`#/manage/raw-database`), see `add-raw-database-editor`; the management page itself never replaces it.
+
 ## Files
 - `views/<name>.html`, `viewmodels/<name>.js`, `controllers/<name>.js`, optional `models/<name>.js`, `components/<name>.html|js`.
 - Register the route/view in `app.js`; add menu entry on the backend in `BuiltInMenus` and the administration listing in `viewmodels/administration.js` when needed.

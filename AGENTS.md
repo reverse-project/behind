@@ -24,3 +24,4 @@ MUST store the VFS file content as vfs/<Type>/<parent item>/<item> in the data d
 MUST set the parent of a VFS file (a new version of the file is inserted and the content is moved under the parent) as soon as it is known, in every place that uses a file, like sites, news, articles, their categories and galleries, and every new place that uses uploaded files must do the same
 
 MUST update the locale files (Behind/src/Core/Behind.Core.WebApi/Frontend/locales, every language) whenever a change adds, changes or removes user visible text
+MUST make every new entity (and every new table or column) editable in the RAW database entry editors of the management UI (Administration > Raw database, RawDatabase.Manage), by following the [add-raw-database-editor skill](.github/skills/add-raw-database-editor/SKILL.md): mark sensitive properties with [Sensible], register read-only tables, and keep the raw database tests passing

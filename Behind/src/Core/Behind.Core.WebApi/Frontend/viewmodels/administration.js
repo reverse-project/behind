@@ -35,6 +35,10 @@ define(["ko", "models/session", "models/i18n"], function (ko, session, i18n) {
         return session.hasGrant("Menu.Read");
     };
 
+    var canManageRawDatabase = function () {
+        return session.hasGrant("RawDatabase.Manage");
+    };
+
     var canReadConfiguration = function () {
         return session.hasGrant("Configuration.Read");
     };
@@ -51,6 +55,7 @@ define(["ko", "models/session", "models/i18n"], function (ko, session, i18n) {
         { name: "administration.pages.downloads", icon: "fa-download", href: "#/manage/downloads", allowed: canReadDownloads },
         { name: "administration.pages.menus", icon: "fa-bars", href: "#/manage/menus", allowed: canReadMenus },
         { name: "administration.pages.auditLog", icon: "fa-clipboard-list", href: "#/audit-log", allowed: canReadAuditLog },
+        { name: "administration.pages.rawDatabase", icon: "fa-database", href: "#/manage/raw-database", allowed: canManageRawDatabase },
         { name: "administration.pages.settings", icon: "fa-sliders", href: "#/settings", allowed: canReadConfiguration }
     ];
 

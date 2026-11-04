@@ -1,0 +1,92 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'rawDatabase.title'">Raw database</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'rawDatabase.back'">Back to administration</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'rawDatabase.signInToUse'">to use the raw database editor.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'rawDatabase.denied'">The raw database editor needs the RawDatabase.Manage grant.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: canManage">
+        <div class="alert alert-danger" role="alert" data-bind="t: 'rawDatabase.warning'">Rows are written to the database as they are, without the checks of the management pages. Every change is recorded in the audit log.</div>
+        <div class="mb-3">
+            <label class="form-label" for="raw-database-table" data-bind="t: 'rawDatabase.table'">Table</label>
+            <select id="raw-database-table" class="form-select" data-bind="options: tables, optionsText: 'label', optionsValue: 'name', optionsCaption: caption, value: selectedName, enable: !busy()"></select>
+        </div>
+        <div data-bind="if: selected">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h2 class="h5 mb-0" data-bind="text: selected().entityName"></h2>
+                <span class="badge text-bg-secondary" data-bind="visible: !canWrite(), t: 'rawDatabase.readOnly'">Read-only</span>
+                <button type="button" class="btn btn-primary ms-auto" data-bind="visible: canWrite, enable: !busy(), click: newRow, t: 'rawDatabase.newRow'">New row</button>
+            </div>
+            <form class="card card-body mb-4" data-bind="if: editor, submit: save">
+                <!-- ko with: editor -->
+                <h3 class="h5" data-bind="text: $root.editorHeading"></h3>
+                <p class="form-text" data-bind="t: 'rawDatabase.editorHelp'">Empty fields are left out of a new row and key columns of type guid are generated when left empty. A *** value is a hidden sensitive value that stays unchanged until you replace it.</p>
+                <div class="row g-3 mb-3" data-bind="foreach: fields">
+                    <div class="col-md-6">
+                        <label class="form-label w-100">
+                            <span class="fw-semibold" data-bind="text: name"></span>
+                            <span class="badge text-bg-light" data-bind="text: storeType"></span>
+                            <span class="badge text-bg-primary" data-bind="visible: isKey, t: 'rawDatabase.key'">Key</span>
+                            <span class="badge text-bg-warning" data-bind="visible: isSensitive, t: 'rawDatabase.sensitive'">Sensitive</span>
+                            <!-- ko if: isBoolean -->
+                            <select class="form-select" data-bind="value: text, enable: !isNull() && !disabled">
+                                <option value="true">true</option>
+                                <option value="false">false</option>
+                            </select>
+                            <!-- /ko -->
+                            <!-- ko ifnot: isBoolean -->
+                            <textarea class="form-control font-monospace" rows="1" data-bind="textInput: text, enable: !isNull() && !disabled"></textarea>
+                            <!-- /ko -->
+                        </label>
+                        <div class="form-check" data-bind="visible: canBeNull">
+                            <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked: isNull"> <span data-bind="t: 'rawDatabase.null'">NULL</span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" data-bind="enable: !$root.busy(), t: 'common.save'">Save</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bind="click: $root.cancel, t: 'common.cancel'">Cancel</button>
+                </div>
+                <!-- /ko -->
+            </form>
+            <form class="input-group mb-3" data-bind="submit: find">
+                <input class="form-control" type="search" maxlength="100" data-bind="value: search, tAttr: { placeholder: 'rawDatabase.search.placeholder', 'aria-label': 'rawDatabase.search.label' }">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
+            </form>
+            <p class="text-body-secondary" data-bind="visible: !hasRows(), t: 'rawDatabase.empty'">No rows found.</p>
+            <div class="table-responsive mb-3" data-bind="visible: hasRows">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-bind="t: 'rawDatabase.actions'">Actions</th>
+                            <!-- ko foreach: selected().columns -->
+                            <th scope="col">
+                                <button type="button" class="btn btn-link p-0 text-decoration-none fw-semibold" data-bind="click: $root.sortBy">
+                                    <span data-bind="text: name"></span>
+                                    <i class="fa-solid fa-sort" aria-hidden="true"></i>
+                                </button>
+                            </th>
+                            <!-- /ko -->
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: rows">
+                        <tr>
+                            <td class="text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: $root.canWrite(), enable: !$root.busy(), click: edit, t: 'common.edit'">Edit</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: $root.canWrite(), enable: !$root.busy(), click: remove, t: 'common.delete'">Delete</button>
+                            </td>
+                            <!-- ko foreach: cells -->
+                            <td class="behind-raw-cell font-monospace">
+                                <span class="text-body-secondary fst-italic" data-bind="visible: isNull, t: 'rawDatabase.null'">NULL</span>
+                                <span data-bind="visible: !isNull, text: text, attr: { title: title }"></span>
+                            </td>
+                            <!-- /ko -->
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <pager class="d-block" params="pager: pager"></pager>
+        </div>
+    </div>
+</section>

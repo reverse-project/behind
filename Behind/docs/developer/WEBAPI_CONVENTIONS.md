@@ -211,6 +211,20 @@ Menus are under `/menus` (`MenuRoutesExtensions.MapMenuEndpoints`). The page bui
 
 Saving answers `409` with `{ "reason": ... }`: `name-taken`, `built-in` (renaming or deleting the main menu), `unknown-menu`, `invalid-parent`, `kind-not-allowed`, `unknown-role`, `version-conflict`.
 
+### Raw Database Endpoints
+
+The raw database editor is under `/raw-database` (`RawDatabaseRoutesExtensions.MapRawDatabaseEndpoints`). Every route needs `RawDatabase.Manage`. The tables come from the EF Core relational model (`DbContext.RawTables`, `Behind.Common.Database.Raw`), so every entity, join table and versioning table with a primary key is covered without any per entity code.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /raw-database/tables` | every table with `name`, `entityName` (the audit entity name), `isReadOnly`, `rows` and the `columns` (`name`, `storeType`, `kind`: `text`, `integer`, `number`, `boolean`, `binary`, `guid`, `datetime`, `isNullable`, `isKey`, `isSensitive`) |
+| `GET /raw-database/tables/{table}/rows?page&pageSize&search&orderBy&descending` | a page of rows as objects of column name and value (`404` for an unknown table), binary values are Base64, `[Sensible]` columns are `***`, `search` looks at every searchable column |
+| `POST /raw-database/tables/{table}/rows` | body `{ "values": { column: value } }`, inserts a row and answers it; a missing Guid key is generated |
+| `POST /raw-database/tables/{table}/rows/update` | body `{ "key": { column: value }, "values": { column: value } }`, writes only the given non key columns; a `***` value of a sensitive column is ignored |
+| `POST /raw-database/tables/{table}/rows/delete` | body `{ "key": { column: value } }`, deletes the row permanently, `204` |
+
+Answers: `400` with `{ "errors": [...] }` for unknown columns, key columns in `values`, an incomplete key or values that do not fit their column; `404` for an unknown table or row; `409` with `{ "reason": "read-only" }` for a read-only table (`AuditLogEntries`) or `{ "reason": "rejected", "message": ... }` when the database refuses the change. Every write runs in one transaction with its audit entry (`Created`, `Updated` with the differences, `HardDeleted`, audit entity name and key like the EF audit).
+
 ### Startup Example
 
 ```csharp

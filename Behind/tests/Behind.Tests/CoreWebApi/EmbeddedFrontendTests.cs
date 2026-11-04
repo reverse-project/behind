@@ -204,7 +204,7 @@ public class EmbeddedFrontendTests
         var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
-        Assert.Equal(12, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Equal(13, viewModel.Split("icon: \"fa-").Length - 1);
         Assert.Contains("name: \"administration.pages.menus\", icon: \"fa-bars\", href: \"#/manage/menus\", allowed: canReadMenus", viewModel);
         Assert.Contains("hasGrant(\"Menu.Read\")", viewModel);
         Assert.Contains("name: \"administration.pages.users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);

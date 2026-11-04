@@ -37,6 +37,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/manage/downloads": "controllers/downloadmanager",
         "#/manage/menus": "controllers/menus",
         "#/manage/menus/:id": "controllers/menuitems",
+        "#/manage/raw-database": "controllers/rawdatabase",
         "#/changelog": "controllers/changelog",
         "#/licenses": "controllers/licenses",
         "#/sign/in/magiclink": "controllers/magiclink",

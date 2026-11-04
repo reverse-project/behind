@@ -717,6 +717,16 @@ Everything that is uploaded is a file of one virtual file system (VFS) instead o
 
 The `Menu` grant area (`Menu.Read`, `Write`, `Delete`, `Manage`) is administration only: `Users` do not get `Menu.Read`. Resolving a menu for the page is public.
 
+## Raw Database Editors
+
+Developers (`RawDatabase.Manage`) can edit the rows of every table as they are stored (`#/manage/raw-database`, see `WEBAPI_CONVENTIONS.md`). The editor is generic and driven by the EF Core model, so a new entity needs no extra code to appear in it:
+
+- `DbContext.RawTables` (`Behind.Common.Database.Raw.RawTableExtensions`) turns every table of the relational model with a primary key into a `RawTable` of `RawColumn`s (name, store type, `RawValueKind`, nullability, key, `IsSensitive` from `[Sensible]`). `RawTable.EntityName` is the audit entity name (`IReadOnlyEntityType.AuditEntityName`, shared with the EF audit).
+- `RawDatabaseExtensions` reads, counts, inserts, updates and deletes rows with parameterised SQL. Table and column names are only taken from the model, values are parsed by the kind of their column (`RawColumn.Parse`) and read values are normalised (`Normalize`: Guid text, Base64 binary, booleans) and masked (`Present`, `RawTable.Mask`).
+- `RawDatabaseCommands` (Core) writes inside a transaction and records the audit entry itself (`DbContextAuditExtensions.AddAuditEntry`), because raw SQL bypasses the change tracker: `Created`, `Updated` (differences of the row before and after) and `HardDeleted`. `RawDatabasePolicyExtensions` lists the read-only entities (`AuditLogEntry`).
+- Soft delete is not applied: raw reads see every row and a raw delete removes the row for good.
+- `RawDatabaseCatalogTests` fails when an entity type of the model is not covered by the editor, which is how a new entity is checked (see the `add-raw-database-editor` skill).
+
 ## Migrations
 
 ### Creating Migrations

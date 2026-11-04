@@ -21,6 +21,10 @@ Open **Administration > Roles**. You need the `Role.Manage` grant.
 
 Built-in roles can be edited but not deleted. Changes you make to them are kept when the application restarts, so a database created before `AuditLog.Read` was removed from the Users role keeps it until an administrator removes it there.
 
+### Developer grants and developer roles
+
+`Configuration.*` and `RawDatabase.Manage` are **developer grants**. They can only belong to the built-in Developers role or to a custom role flagged as a **developer role**. Administrators can never obtain developer grants or developer roles, and they cannot pass them on, assign them to a user, or edit a developer role. Only developers can create a developer role, or turn the flag on or off for a custom role (choose **Make developer role** / **Remove developer flag**). A role cannot lose the flag while it still grants developer access, and developer grants cannot be added to a role that is not flagged. Developers can still give developer grants straight to a user.
+
 ### How calculated grants work
 
 For a user:
@@ -66,7 +70,9 @@ Developers see a **Show deleted roles** switch. Deleted roles show a **Deleted**
 ## Limits
 
 - You can only edit a role whose grants you hold yourself, and only add grants you hold. Lifting a restriction counts as adding the grant.
-- Developers can change any role and add any grant.
+- Developers can change any role and add any grant, but developer grants only fit developer roles.
+- Nobody can add grants to a role they hold themselves (including by lifting a restriction); removing grants is allowed. You also cannot change your own access on the Users page.
+- Administrators cannot touch developer grants or developer roles.
 - Buttons that you may not use are hidden. If a save is refused you see a message and nothing is changed.
 
 To give a role to a person, or to change one person's access, use the [Access panel on the Users page](./managing-users.md#editing-a-users-access).

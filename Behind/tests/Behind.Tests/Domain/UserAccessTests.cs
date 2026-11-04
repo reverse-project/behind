@@ -131,4 +131,34 @@ public class UserAccessTests
         Assert.True(BuiltInAccess.IsBuiltIn(BuiltInAccess.Users.Id));
         Assert.False(BuiltInAccess.IsBuiltIn(Guid.NewGuid()));
     }
+
+    [Fact]
+    public void IsDeveloperRole_OnlyForFlaggedUserRoles()
+    {
+        Assert.True((new UserRole("Ops") { IsDeveloper = true }).IsDeveloperRole);
+        Assert.False(new UserRole("Ops").IsDeveloperRole);
+        Assert.False(new SystemRole(None).IsDeveloperRole);
+    }
+
+    [Fact]
+    public void GrantsDeveloperAccess_DetectsDeveloperGrantsOfRolesAndSelections()
+    {
+        Assert.True(RoleOf("r", ["Configuration.Read"], []).GrantsDeveloperAccess);
+        Assert.True(RoleOf("r", ["RawDatabase.Manage"], []).GrantsDeveloperAccess);
+        Assert.False(RoleOf("r", ["User.Read"], ["Configuration.Read"]).GrantsDeveloperAccess);
+        Assert.True(new AccessSelection(["Configuration.Manage"], []).GrantsDeveloperAccess);
+        Assert.False(new AccessSelection(["User.Read"], ["Configuration.Manage"]).GrantsDeveloperAccess);
+    }
+
+    [Fact]
+    public void DeveloperRolesAddedBy_ListsOnlyNewlyAssignedDeveloperRoles()
+    {
+        var ops = new UserRole("Ops") { IsDeveloper = true };
+        var support = RoleOf("Support", [], []);
+        var current = new UserAccess([support], [], []);
+
+        Assert.Equal([ops], current.DeveloperRolesAddedBy(new UserAccess([support, ops], [], [])));
+        Assert.Empty(new UserAccess([ops], [], []).DeveloperRolesAddedBy(new UserAccess([ops, support], [], [])));
+        Assert.Empty(current.DeveloperRolesAddedBy(current));
+    }
 }

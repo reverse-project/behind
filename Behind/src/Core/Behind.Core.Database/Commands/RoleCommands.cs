@@ -17,7 +17,10 @@ public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<Option<Guid>> Create(string name, CancellationToken cancellationToken = default)
+    public async Task<Option<Guid>> Create(
+        string name,
+        bool isDeveloper = false,
+        CancellationToken cancellationToken = default)
     {
         var exists = await context.Roles.AnyAsync(
             role => role.Name.ToLower() == name.ToLower(),
@@ -28,12 +31,29 @@ public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
             return None;
         }
 
-        var role = new UserRole(name);
+        var role = new UserRole(name) { IsDeveloper = isDeveloper };
 
         await context.Roles.AddAsync(role, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
         return Some(context.GetKey(role));
+    }
+
+    public async Task<bool> SetDeveloper(Guid roleId, bool isDeveloper, CancellationToken cancellationToken = default)
+    {
+        var role = await context.Roles.FirstOrDefaultAsync(
+            candidate => EF.Property<Guid>(candidate, "Id") == roleId,
+            cancellationToken);
+
+        if (role is null)
+        {
+            return false;
+        }
+
+        context.Entry(role).Property(candidate => candidate.IsDeveloper).CurrentValue = isDeveloper;
+        await context.SaveChangesAsync(cancellationToken);
+
+        return true;
     }
 
     public async Task Delete(Guid roleId, CancellationToken cancellationToken = default)

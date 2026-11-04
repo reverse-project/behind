@@ -136,16 +136,18 @@ public static class BuiltInRolesExtensions
 
         private async Task<bool> EnsureBuiltInRoleAsync(BuiltInRole builtIn, CancellationToken cancellationToken)
         {
-            var exists = await context.Roles
+            var existing = await context.Roles
                 .IgnoreQueryFilters()
-                .AnyAsync(role => EF.Property<Guid>(role, "Id") == builtIn.Id, cancellationToken);
+                .FirstOrDefaultAsync(role => EF.Property<Guid>(role, "Id") == builtIn.Id, cancellationToken);
 
-            if (exists)
+            if (existing is not null)
             {
+                await context.AlignDeveloperFlagAsync(existing, builtIn, cancellationToken);
+
                 return false;
             }
 
-            var role = new UserRole(builtIn.Role.Name);
+            var role = new UserRole(builtIn.Role.Name) { IsDeveloper = builtIn.Role.IsDeveloperRole };
 
             await context.Roles.AddAsync(role, cancellationToken);
             context.Entry(role).Property<Guid>("Id").CurrentValue = builtIn.Id;
@@ -153,6 +155,21 @@ public static class BuiltInRolesExtensions
             await context.SaveChangesAsync(cancellationToken);
 
             return true;
+        }
+
+        private async Task AlignDeveloperFlagAsync(
+            UserRole existing,
+            BuiltInRole builtIn,
+            CancellationToken cancellationToken)
+        {
+            if (existing.IsDeveloper == builtIn.Role.IsDeveloperRole)
+            {
+                return;
+            }
+
+            context.Entry(existing).Property(role => role.IsDeveloper).CurrentValue = builtIn.Role.IsDeveloperRole;
+
+            await context.SaveChangesAsync(cancellationToken);
         }
 
         private async Task EnsureRoleGrantAsync(Guid roleId, Guid grantId, CancellationToken cancellationToken)

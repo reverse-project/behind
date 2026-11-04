@@ -9,6 +9,8 @@ public static class AccessSelectionExtensions
                 selection.Grants.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList(),
                 selection.Restrictions.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList());
 
+        public bool GrantsDeveloperAccess => selection.Grants.Any(BuiltInAccess.IsDeveloperGrant);
+
         public bool IsValid =>
             selection.Grants.Concat(selection.Restrictions).All(BuiltInAccess.IsKnownGrant)
             && !selection.Grants.Intersect(selection.Restrictions, StringComparer.Ordinal).Any();

@@ -10,6 +10,10 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
             return session.isSignedIn() && session.grants() !== null && !self.canManage();
         });
         self.newName = ko.observable("");
+        self.newIsDeveloper = ko.observable(false);
+        self.canCreateDeveloperRole = ko.pureComputed(function () {
+            return session.hasGrant("RawDatabase.Manage");
+        });
 
         self.canCreate = ko.pureComputed(function () {
             return self.newName().trim() !== "" && !self.busy();
@@ -21,6 +25,8 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
                 name: item.name,
                 isBuiltIn: item.isBuiltIn,
                 isDeleted: item.isDeleted,
+                isDeveloper: item.isDeveloper,
+                canSetDeveloper: item.canSetDeveloper,
                 grants: item.grants,
                 restrictions: item.restrictions,
                 canEdit: item.canEdit,
@@ -39,6 +45,11 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
             row.save = function () {
                 return self.list.perform(function () {
                     return auth.saveRoleAccess(row.id, row.editor.request());
+                });
+            };
+            row.toggleDeveloper = function () {
+                return self.list.perform(function () {
+                    return auth.setRoleDeveloper(row.id, !row.isDeveloper);
                 });
             };
             row.remove = function () {
@@ -90,9 +101,10 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
             }
 
             return self.list.perform(function () {
-                return auth.createRole(self.newName().trim()).then(function (result) {
+                return auth.createRole(self.newName().trim(), self.newIsDeveloper()).then(function (result) {
                     if (result.ok) {
                         self.newName("");
+                        self.newIsDeveloper(false);
                     }
 
                     return result;

@@ -216,4 +216,41 @@ public sealed class BuiltInRolesTests : IDisposable
             .ToListAsync();
         Assert.Equal(new[] { first, second }.Order(), assigned.Order());
     }
+
+    [Fact]
+    public async Task EnsureBuiltInRoles_FlagsOnlyTheDevelopersRoleAsDeveloperRole()
+    {
+        await using (var seed = _factory.CreateContext())
+        {
+            await seed.EnsureBuiltInRolesAsync();
+        }
+
+        await using var ctx = _factory.CreateContext();
+        var queries = new RoleQueries(ctx);
+
+        Assert.True(Found(await queries.GetRoleByName(DomainConstants.DevelopersRole)).Role.IsDeveloperRole);
+        Assert.False(Found(await queries.GetRoleByName(DomainConstants.AdministratorsRole)).Role.IsDeveloperRole);
+        Assert.False(Found(await queries.GetRoleByName(DomainConstants.UsersRole)).Role.IsDeveloperRole);
+    }
+
+    [Fact]
+    public async Task EnsureBuiltInRoles_CorrectsAWronglyFlaggedBuiltInRole()
+    {
+        await using (var seed = _factory.CreateContext())
+        {
+            await seed.EnsureBuiltInRolesAsync();
+            await new RoleCommands(seed).SetDeveloper(BuiltInAccess.Administrators.Id, true);
+            await new RoleCommands(seed).SetDeveloper(BuiltInAccess.Developers.Id, false);
+        }
+
+        await using (var repair = _factory.CreateContext())
+        {
+            await repair.EnsureBuiltInRolesAsync();
+        }
+
+        await using var ctx = _factory.CreateContext();
+        var queries = new RoleQueries(ctx);
+        Assert.False(Found(await queries.GetRoleByName(DomainConstants.AdministratorsRole)).Role.IsDeveloperRole);
+        Assert.True(Found(await queries.GetRoleByName(DomainConstants.DevelopersRole)).Role.IsDeveloperRole);
+    }
 }

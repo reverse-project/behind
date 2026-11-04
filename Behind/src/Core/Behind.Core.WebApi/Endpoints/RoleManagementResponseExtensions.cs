@@ -17,7 +17,9 @@ public static class RoleManagementResponseExtensions
                 result.Role.RestrictionNames,
                 actor.CanEditRole(result.Role) && state == DeletionState.Active,
                 actor.CanDeleteRole(result.Id, result.Role) && state == DeletionState.Active,
-                state == DeletionState.Deleted);
+                state == DeletionState.Deleted,
+                result.Role.IsDeveloperRole,
+                actor.CanSetDeveloperFlag(result.Id) && state == DeletionState.Active);
 
         public AccessRoleItem ToAccessItem() =>
             new(

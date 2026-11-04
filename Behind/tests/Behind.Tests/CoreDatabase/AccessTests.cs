@@ -253,4 +253,45 @@ public sealed class AccessTests : IDisposable
         Assert.Equal("custom", found.Match(() => "", restriction => restriction.Name));
         Assert.Equal(1, await read.Restrictions.CountAsync());
     }
+
+    [Fact]
+    public async Task CreateRole_AsDeveloperRole_PersistsTheFlag()
+    {
+        await using var ctx = _factory.CreateContext();
+
+        var id = (await new RoleCommands(ctx).Create("Ops", true)).Match(() => Guid.Empty, value => value);
+
+        await using var read = _factory.CreateContext();
+        var found = await new RoleQueries(read).GetRoleById(id);
+        Assert.True(found.Match(() => false, result => result.Role.IsDeveloperRole));
+    }
+
+    [Fact]
+    public async Task SetDeveloper_TogglesTheFlagAndReportsUnknownRoles()
+    {
+        Guid id;
+        await using (var ctx = _factory.CreateContext())
+        {
+            id = (await new RoleCommands(ctx).Create("Ops")).Match(() => Guid.Empty, value => value);
+        }
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            Assert.True(await new RoleCommands(ctx).SetDeveloper(id, true));
+            Assert.False(await new RoleCommands(ctx).SetDeveloper(Guid.NewGuid(), true));
+        }
+
+        await using (var read = _factory.CreateContext())
+        {
+            Assert.True((await new RoleQueries(read).GetRoleById(id)).Match(() => false, result => result.Role.IsDeveloperRole));
+        }
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            Assert.True(await new RoleCommands(ctx).SetDeveloper(id, false));
+        }
+
+        await using var final = _factory.CreateContext();
+        Assert.False((await new RoleQueries(final).GetRoleById(id)).Match(() => true, result => result.Role.IsDeveloperRole));
+    }
 }

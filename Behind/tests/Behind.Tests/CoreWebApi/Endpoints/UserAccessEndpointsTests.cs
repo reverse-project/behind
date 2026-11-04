@@ -191,6 +191,53 @@ public class UserAccessEndpointsTests
     }
 
     [Fact]
+    public async Task Set_AssigningAFlaggedDeveloperRoleWithoutGrants_IsForbiddenForAdministrators()
+    {
+        var flaggedId = Guid.NewGuid();
+        _roles.ListRoles(Arg.Any<CancellationToken>()).Returns(
+        [
+            new IRoleQueries.RoleResult(BuiltInAccess.Users.Id, Granted(BuiltInAccess.Users)),
+            new IRoleQueries.RoleResult(flaggedId, new UserRole("Ops", Some<IEnumerable<Grant>>([])) { IsDeveloper = true })
+        ]);
+
+        var result = await Set([BuiltInAccess.Users.Id, flaggedId], [], []);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetUserAccess(default, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Set_AssigningAFlaggedDeveloperRole_IsAllowedForDevelopers()
+    {
+        var flaggedId = Guid.NewGuid();
+        _access.GetUserAccess(ActorId, Arg.Any<CancellationToken>())
+            .Returns(new UserAccess([Granted(BuiltInAccess.Developers)], [], []));
+        _roles.ListRoles(Arg.Any<CancellationToken>()).Returns(
+        [
+            new IRoleQueries.RoleResult(BuiltInAccess.Users.Id, Granted(BuiltInAccess.Users)),
+            new IRoleQueries.RoleResult(flaggedId, new UserRole("Ops", Some<IEnumerable<Grant>>([])) { IsDeveloper = true })
+        ]);
+
+        var result = await Set([BuiltInAccess.Users.Id, flaggedId], [], []);
+
+        Assert.IsType<NoContent>(result);
+    }
+
+    [Theory]
+    [InlineData("Configuration.Read")]
+    [InlineData("Configuration.Manage")]
+    public async Task Set_AdministratorHoldingADeveloperGrant_CannotGiveItToOthers(string grant)
+    {
+        _access.GetUserAccess(ActorId, Arg.Any<CancellationToken>())
+            .Returns(new UserAccess([Granted(BuiltInAccess.Administrators)], [grant], []));
+
+        var result = await Set([BuiltInAccess.Users.Id], [grant], []);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetUserAccess(default, default!, default!, default);
+    }
+
+    [Fact]
     public async Task Set_LiftingARestrictionTheActorLacks_IsForbidden()
     {
         _access.GetUserAccess(TargetId, Arg.Any<CancellationToken>())

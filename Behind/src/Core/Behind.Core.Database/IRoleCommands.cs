@@ -8,7 +8,9 @@ public interface IRoleCommands
 {
     Task CreateWithId(Guid id, Role role, CancellationToken cancellationToken = default);
 
-    Task<Option<Guid>> Create(string name, CancellationToken cancellationToken = default);
+    Task<Option<Guid>> Create(string name, bool isDeveloper = false, CancellationToken cancellationToken = default);
+
+    Task<bool> SetDeveloper(Guid roleId, bool isDeveloper, CancellationToken cancellationToken = default);
 
     Task Delete(Guid roleId, CancellationToken cancellationToken = default);
 

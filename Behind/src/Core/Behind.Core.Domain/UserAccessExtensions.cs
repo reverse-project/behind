@@ -20,6 +20,12 @@ public static class UserAccessExtensions
         public IReadOnlyList<Grant> GrantsAddedBy(UserAccess proposed) =>
             proposed.CalculatedGrants.Except(access.CalculatedGrants).ToList();
 
+        public IReadOnlyList<Role> DeveloperRolesAddedBy(UserAccess proposed) =>
+            proposed.Roles
+                .Where(role => role.IsDeveloperRole)
+                .ExceptBy(access.Roles.Select(held => held.Name), role => role.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
         public UserAccess With(IReadOnlyList<Role> roles, AccessSelection selection) =>
             access with
             {

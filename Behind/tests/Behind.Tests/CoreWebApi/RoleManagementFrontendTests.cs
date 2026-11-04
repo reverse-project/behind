@@ -51,7 +51,8 @@ public class RoleManagementFrontendTests
         Assert.Contains("var url = \"/roles?page=\"", auth);
         Assert.Contains("http.post(\"/roles/\" + roleId + \"/restore\")", auth);
         Assert.Contains("http.post(\"/roles/\" + roleId + \"/hard/delete\")", auth);
-        Assert.Contains("http.post(\"/roles\", { name: name })", auth);
+        Assert.Contains("http.post(\"/roles\", { name: name, isDeveloper: isDeveloper === true })", auth);
+        Assert.Contains("http.put(\"/roles/\" + roleId + \"/developer\", { isDeveloper: isDeveloper })", auth);
         Assert.Contains("http.put(\"/roles/\" + roleId + \"/access\", access)", auth);
         Assert.Contains("http.post(\"/roles/\" + roleId + \"/delete\")", auth);
         Assert.Contains("http.get(\"/users/\" + userId + \"/access\")", auth);

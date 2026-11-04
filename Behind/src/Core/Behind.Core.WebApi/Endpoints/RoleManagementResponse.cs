@@ -10,7 +10,9 @@ public sealed record RoleItem(
     IReadOnlyList<string> Restrictions,
     bool CanEdit,
     bool CanDelete,
-    bool IsDeleted = false);
+    bool IsDeleted = false,
+    bool IsDeveloper = false,
+    bool CanSetDeveloper = false);
 
 public sealed record RoleListResponse(
     PageResponse<RoleItem> Roles,

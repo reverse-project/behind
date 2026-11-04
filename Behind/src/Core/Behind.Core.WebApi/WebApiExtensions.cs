@@ -546,6 +546,15 @@ public static class WebApiExtensions
                 .Produces(404)
                 .Produces(500);
 
+            application.MapPut("/roles/{id:guid}/developer", RoleManagementEndpoints.SetDeveloper)
+                .RequireAuthorization(roleManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(409)
+                .Produces(500);
+
             application.MapPost("/roles/{id:guid}/restore", RoleManagementEndpoints.Restore)
                 .RequireAuthorization(RoleManagementEndpoints.DeletedRecordsGrant)
                 .Produces(204)

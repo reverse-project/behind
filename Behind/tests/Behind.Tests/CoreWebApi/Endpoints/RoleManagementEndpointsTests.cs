@@ -188,7 +188,7 @@ public class RoleManagementEndpointsTests
     [Fact]
     public async Task Create_NewName_CreatesTheTrimmedRole()
     {
-        _roleCommands.Create("Support", Arg.Any<CancellationToken>()).Returns(Some(Guid.NewGuid()));
+        _roleCommands.Create("Support", false, Arg.Any<CancellationToken>()).Returns(Some(Guid.NewGuid()));
 
         var result = await RoleManagementEndpoints.Create(
             new RoleManagementEndpoints.CreateRoleRequest("  Support "),
@@ -202,7 +202,7 @@ public class RoleManagementEndpointsTests
     [Fact]
     public async Task Create_ExistingName_ReturnsConflict()
     {
-        _roleCommands.Create("Support", Arg.Any<CancellationToken>()).Returns(None);
+        _roleCommands.Create("Support", false, Arg.Any<CancellationToken>()).Returns(None);
 
         var result = await RoleManagementEndpoints.Create(
             new RoleManagementEndpoints.CreateRoleRequest("Support"),
@@ -317,7 +317,7 @@ public class RoleManagementEndpointsTests
 
         var result = await RoleManagementEndpoints.SetAccess(
             CustomRoleId,
-            new RoleManagementEndpoints.AccessRequest(["RawDatabase.Manage"], []),
+            new RoleManagementEndpoints.AccessRequest(["User.Manage", "Role.Manage"], []),
             SignedIn(),
             _gate,
             _roles,
@@ -404,5 +404,261 @@ public class RoleManagementEndpointsTests
         var result = await RoleManagementEndpoints.Delete(CustomRoleId, SignedIn(), _gate, _roles, _roleCommands);
 
         Assert.IsType<NotFound>(result);
+    }
+
+    private static Role CustomDeveloper(params string[] grants) =>
+        ((UserRole)Custom(grants)) with { IsDeveloper = true };
+
+    private static StatusCodeHttpResult Status(IResult result) => Assert.IsType<StatusCodeHttpResult>(result);
+
+    [Fact]
+    public async Task SetAccess_DeveloperGrantingDeveloperGrantsToPlainRole_ReturnsBadRequest()
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        RoleExists(CustomRoleId, Custom([]));
+
+        var result = await RoleManagementEndpoints.SetAccess(
+            CustomRoleId,
+            new RoleManagementEndpoints.AccessRequest(["Configuration.Read"], []),
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.IsType<BadRequest>(result);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetRoleAccess(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SetAccess_DeveloperGrantingDeveloperGrantsToDeveloperRole_Saves()
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        RoleExists(CustomRoleId, CustomDeveloper());
+
+        var result = await RoleManagementEndpoints.SetAccess(
+            CustomRoleId,
+            new RoleManagementEndpoints.AccessRequest(["Configuration.Read", "RawDatabase.Manage"], []),
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.IsType<NoContent>(result);
+    }
+
+    [Theory]
+    [InlineData("Configuration.Read")]
+    [InlineData("Configuration.Manage")]
+    public async Task SetAccess_AdministratorHoldingDeveloperGrant_CannotPassItOn(string grant)
+    {
+        SignedInAs(Custom(["Role.Manage", grant]));
+        RoleExists(CustomRoleId, CustomDeveloper());
+
+        var result = await RoleManagementEndpoints.SetAccess(
+            CustomRoleId,
+            new RoleManagementEndpoints.AccessRequest([grant], []),
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetRoleAccess(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SetAccess_AdministratorEditingDeveloperRoleWithoutGrants_IsForbidden()
+    {
+        RoleExists(CustomRoleId, CustomDeveloper());
+
+        var result = await RoleManagementEndpoints.SetAccess(
+            CustomRoleId,
+            new RoleManagementEndpoints.AccessRequest(["User.Read"], []),
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_AdministratorCreatingDeveloperRole_IsForbidden()
+    {
+        var result = await RoleManagementEndpoints.Create(
+            new RoleManagementEndpoints.CreateRoleRequest("Ops", true),
+            SignedIn(),
+            _gate,
+            _roleCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+        await _roleCommands.DidNotReceiveWithAnyArgs().Create(default!, default, default);
+    }
+
+    [Fact]
+    public async Task Create_DeveloperCreatingDeveloperRole_CreatesItFlagged()
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        _roleCommands.Create("Ops", true, Arg.Any<CancellationToken>()).Returns(Some(Guid.NewGuid()));
+
+        var result = await RoleManagementEndpoints.Create(
+            new RoleManagementEndpoints.CreateRoleRequest("Ops", true),
+            SignedIn(),
+            _gate,
+            _roleCommands);
+
+        Assert.IsType<NoContent>(result);
+    }
+
+    [Fact]
+    public async Task SetDeveloper_Administrator_IsForbidden()
+    {
+        RoleExists(CustomRoleId, Custom([]));
+
+        var result = await RoleManagementEndpoints.SetDeveloper(
+            CustomRoleId,
+            new RoleManagementEndpoints.DeveloperRoleRequest(true),
+            SignedIn(),
+            _gate,
+            _roles,
+            _roleCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+        await _roleCommands.DidNotReceiveWithAnyArgs().SetDeveloper(default, default, default);
+    }
+
+    [Fact]
+    public async Task SetDeveloper_DeveloperOnBuiltInRole_IsForbidden()
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        RoleExists(BuiltInAccess.Users.Id, ActorRoles(BuiltInAccess.Users));
+
+        var result = await RoleManagementEndpoints.SetDeveloper(
+            BuiltInAccess.Users.Id,
+            new RoleManagementEndpoints.DeveloperRoleRequest(true),
+            SignedIn(),
+            _gate,
+            _roles,
+            _roleCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task SetDeveloper_DeveloperFlaggingCustomRole_Saves()
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        RoleExists(CustomRoleId, Custom([]));
+
+        var result = await RoleManagementEndpoints.SetDeveloper(
+            CustomRoleId,
+            new RoleManagementEndpoints.DeveloperRoleRequest(true),
+            SignedIn(),
+            _gate,
+            _roles,
+            _roleCommands);
+
+        Assert.IsType<NoContent>(result);
+        await _roleCommands.Received(1).SetDeveloper(CustomRoleId, true, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SetDeveloper_UnflaggingRoleThatStillGrantsDeveloperAccess_ReturnsConflict()
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        RoleExists(CustomRoleId, CustomDeveloper("Configuration.Read"));
+
+        var result = await RoleManagementEndpoints.SetDeveloper(
+            CustomRoleId,
+            new RoleManagementEndpoints.DeveloperRoleRequest(false),
+            SignedIn(),
+            _gate,
+            _roles,
+            _roleCommands);
+
+        Assert.IsType<Conflict>(result);
+        await _roleCommands.DidNotReceiveWithAnyArgs().SetDeveloper(default, default, default);
+    }
+
+    [Fact]
+    public async Task SetDeveloper_UnknownRole_ReturnsNotFound()
+    {
+        _roles.GetRoleById(CustomRoleId, Arg.Any<CancellationToken>()).Returns(None);
+
+        var result = await RoleManagementEndpoints.SetDeveloper(
+            CustomRoleId,
+            new RoleManagementEndpoints.DeveloperRoleRequest(true),
+            SignedIn(),
+            _gate,
+            _roles,
+            _roleCommands);
+
+        Assert.IsType<NotFound>(result);
+    }
+
+    [Fact]
+    public async Task Get_ReportsDeveloperRolesAndWhoMayFlagThem()
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        RolesPage(
+            DeletionState.Active,
+            new IRoleQueries.RoleResult(BuiltInAccess.Developers.Id, ActorRoles(BuiltInAccess.Developers)),
+            new IRoleQueries.RoleResult(CustomRoleId, Custom([])));
+
+        var result = await RoleManagementEndpoints.Get(SignedIn(), _gate, _roles, new FakeAuthorizationService());
+
+        var roles = Assert.IsType<JsonHttpResult<RoleListResponse>>(result).Value!.Roles.Items;
+        Assert.True(roles[0].IsDeveloper);
+        Assert.False(roles[0].CanSetDeveloper);
+        Assert.False(roles[1].IsDeveloper);
+        Assert.True(roles[1].CanSetDeveloper);
+    }
+
+    private Task<IResult> SetOwnRoleAccess(string[] grants)
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        RoleExists(BuiltInAccess.Developers.Id, ActorRoles(BuiltInAccess.Developers));
+
+        return RoleManagementEndpoints.SetAccess(
+            BuiltInAccess.Developers.Id,
+            new RoleManagementEndpoints.AccessRequest(grants, []),
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+    }
+
+    [Fact]
+    public async Task SetAccess_AddingGrantsToARoleTheActorHolds_IsForbiddenEvenForDevelopers()
+    {
+        var result = await SetOwnRoleAccess([..BuiltInAccess.Developers.Grants.Select(grant => grant.Grant.Name), "User.Manage"]);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetRoleAccess(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SetAccess_RemovingGrantsFromARoleTheActorHolds_IsAllowed()
+    {
+        var result = await SetOwnRoleAccess(["Configuration.Read"]);
+
+        Assert.IsType<NoContent>(result);
+    }
+
+    [Fact]
+    public async Task SetAccess_LiftingARestrictionOnARoleTheActorHolds_IsForbidden()
+    {
+        SignedInAs(Custom(["Role.Manage", "User.Read"], ["User.Read"]));
+        RoleExists(CustomRoleId, Custom(["Role.Manage", "User.Read"], ["User.Read"]));
+
+        var result = await RoleManagementEndpoints.SetAccess(
+            CustomRoleId,
+            new RoleManagementEndpoints.AccessRequest(["Role.Manage", "User.Read"], []),
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
     }
 }

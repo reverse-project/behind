@@ -37,21 +37,31 @@ public static class BuiltInAccess
     public static readonly BuiltInRole Administrators = NewRole(
         3,
         DomainConstants.AdministratorsRole,
-        AreaGrants.Where(grant => !grant.IsDeveloperOnly).ToList());
+        AreaGrants.Where(grant => !grant.IsDeveloperOnly).ToList(),
+        false);
 
     public static readonly BuiltInRole Users = NewRole(
         4,
         DomainConstants.UsersRole,
-        AreaGrants.Where(grant => grant.Action == GrantAction.Read && !grant.IsDeveloperOnly && !grant.IsAdministrationOnly).ToList());
+        AreaGrants.Where(grant => grant.Action == GrantAction.Read && !grant.IsDeveloperOnly && !grant.IsAdministrationOnly).ToList(),
+        false);
 
     public static readonly BuiltInRole Developers = NewRole(
         5,
         DomainConstants.DevelopersRole,
-        [..AreaGrants.Where(grant => grant.Action == GrantAction.Read || grant.IsConfigurationManage), RawDatabaseManage]);
+        [..AreaGrants.Where(grant => grant.Action == GrantAction.Read || grant.IsConfigurationManage), RawDatabaseManage],
+        true);
 
     public static readonly IReadOnlyList<BuiltInRole> Roles = [Administrators, Users, Developers];
 
+    public static readonly IReadOnlyList<string> DeveloperGrantNames =
+    [
+        ..Grants.Where(grant => grant.IsDeveloperOnly || grant == RawDatabaseManage).Select(grant => grant.Grant.Name)
+    ];
+
     public static bool IsBuiltIn(Guid roleId) => Roles.Any(role => role.Id == roleId);
+
+    public static bool IsDeveloperGrant(string name) => DeveloperGrantNames.Contains(name);
 
     public static IReadOnlyList<string> GrantNames { get; } = [..Grants.Select(grant => grant.Grant.Name)];
 
@@ -73,10 +83,13 @@ public static class BuiltInAccess
             area,
             action);
 
-    private static BuiltInRole NewRole(int number, string name, IReadOnlyList<BuiltInGrant> grants) =>
+    private static BuiltInRole NewRole(int number, string name, IReadOnlyList<BuiltInGrant> grants, bool isDeveloper) =>
         new(
             Guid.Parse($"{number}0000000-0000-0000-0000-000000000000"),
-            new UserRole(name, Some<IEnumerable<Grant>>(grants.Select(grant => grant.Grant).ToList())))
+            new UserRole(name, Some<IEnumerable<Grant>>(grants.Select(grant => grant.Grant).ToList()))
+            {
+                IsDeveloper = isDeveloper
+            })
         {
             Grants = grants
         };

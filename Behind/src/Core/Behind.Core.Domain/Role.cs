@@ -10,6 +10,8 @@ public abstract record Role(string Name, Option<IEnumerable<Grant>> Grants)
 
 public sealed record UserRole(string Name, Option<IEnumerable<Grant>> Grants) : Role(Name, Grants)
 {
+    public bool IsDeveloper { get; init; }
+
     public UserRole(string name) : this(name, None)
     {
         

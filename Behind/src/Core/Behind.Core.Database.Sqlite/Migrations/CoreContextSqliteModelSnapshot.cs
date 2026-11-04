@@ -931,6 +931,9 @@ namespace Behind.Core.Database.Sqlite.Migrations
                 {
                     b.HasBaseType("Behind.Core.Domain.Role");
 
+                    b.Property<bool>("IsDeveloper")
+                        .HasColumnType("INTEGER");
+
                     b.HasIndex("Name");
 
                     b.ToTable("Roles", (string)null);

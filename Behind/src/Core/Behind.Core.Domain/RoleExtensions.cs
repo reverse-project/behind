@@ -24,6 +24,10 @@ public static class RoleExtensions
         public IReadOnlyList<Grant> EffectiveGrants =>
             role.Granted.Except(role.Restricted.Select(restriction => new Grant(restriction))).ToList();
 
+        public bool IsDeveloperRole => role is UserRole { IsDeveloper: true };
+
+        public bool GrantsDeveloperAccess => role.GrantNames.Any(BuiltInAccess.IsDeveloperGrant);
+
         public bool Holds(string grantName) => role.EffectiveGrants.Contains(new Grant(grantName));
 
         public Role With(AccessSelection selection) =>

@@ -257,4 +257,25 @@ public class BuiltInAccessTests
 
         Assert.Equal(ids.Length, ids.Distinct().Count());
     }
+
+    [Fact]
+    public void DeveloperGrants_AreConfigurationAndRawDatabase_AndOnlyTheDevelopersRoleHoldsThem()
+    {
+        Assert.Equal(
+            GrantArea.All.Where(area => area == GrantArea.Configuration)
+                .SelectMany(area => GrantAction.All.Select(action => GrantName.Of(area, action)))
+                .Append(RawDatabaseManage)
+                .Order(),
+            BuiltInAccess.DeveloperGrantNames.Order());
+        Assert.DoesNotContain(BuiltInAccess.Administrators.Grants, grant => BuiltInAccess.IsDeveloperGrant(grant.Grant.Name));
+        Assert.DoesNotContain(BuiltInAccess.Users.Grants, grant => BuiltInAccess.IsDeveloperGrant(grant.Grant.Name));
+        Assert.Contains(BuiltInAccess.Developers.Grants, grant => BuiltInAccess.IsDeveloperGrant(grant.Grant.Name));
+        Assert.False(BuiltInAccess.IsDeveloperGrant("User.Manage"));
+    }
+
+    [Fact]
+    public void OnlyTheDevelopersRole_IsFlaggedAsDeveloperRole()
+    {
+        Assert.Equal([BuiltInAccess.Developers.Id], BuiltInAccess.Roles.Where(role => role.Role.IsDeveloperRole).Select(role => role.Id));
+    }
 }

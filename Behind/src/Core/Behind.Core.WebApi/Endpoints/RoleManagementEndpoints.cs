@@ -21,7 +21,11 @@ public sealed class RoleManagementEndpoints
     public const int MaxSearchLength = 200;
     public const string DeletedRecordsGrant = "RawDatabase.Manage";
 
-    public sealed record CreateRoleRequest([property: Required, MaxLength(MaxNameLength)] string Name);
+    public sealed record CreateRoleRequest(
+        [property: Required, MaxLength(MaxNameLength)] string Name,
+        bool IsDeveloper = false);
+
+    public sealed record DeveloperRoleRequest(bool IsDeveloper);
 
     public sealed record AccessRequest(
         [property: Required] IReadOnlyList<string> Grants,
@@ -86,7 +90,7 @@ public sealed class RoleManagementEndpoints
         IRoleCommands roleCommands) =>
         gate.RunAs(
             httpContext,
-            async _ =>
+            async actor =>
             {
                 var name = request.Name.Trim();
 
@@ -95,7 +99,12 @@ public sealed class RoleManagementEndpoints
                     return Results.BadRequest();
                 }
 
-                var created = await roleCommands.Create(name, httpContext.RequestAborted);
+                if (request.IsDeveloper && !actor.IsDeveloper)
+                {
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                }
+
+                var created = await roleCommands.Create(name, request.IsDeveloper, httpContext.RequestAborted);
 
                 return created.Match(() => Results.Conflict(), _ => Results.NoContent());
             });
@@ -128,7 +137,43 @@ public sealed class RoleManagementEndpoints
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
                 }
 
+                if (!found.Role.IsDeveloperRole && selection.GrantsDeveloperAccess)
+                {
+                    return Results.BadRequest();
+                }
+
                 await accessCommands.SetRoleAccess(id, selection, httpContext.RequestAborted);
+
+                return Results.NoContent();
+            });
+
+    [Authorize]
+    [IgnoreETag]
+    public static Task<IResult> SetDeveloper(
+        Guid id,
+        DeveloperRoleRequest request,
+        HttpContext httpContext,
+        UserManagementGate gate,
+        IRoleQueries roleQueries,
+        IRoleCommands roleCommands) =>
+        WithRole(
+            id,
+            httpContext,
+            gate,
+            roleQueries,
+            async (actor, found) =>
+            {
+                if (!actor.CanSetDeveloperFlag(id))
+                {
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                }
+
+                if (!request.IsDeveloper && found.Role.GrantsDeveloperAccess)
+                {
+                    return Results.Conflict();
+                }
+
+                await roleCommands.SetDeveloper(id, request.IsDeveloper, httpContext.RequestAborted);
 
                 return Results.NoContent();
             });

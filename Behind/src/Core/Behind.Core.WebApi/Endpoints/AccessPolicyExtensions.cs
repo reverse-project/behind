@@ -10,18 +10,33 @@ public static class AccessPolicyExtensions
         {
             var held = actor.Access.CalculatedGrants;
 
-            return actor.IsDeveloper || grants.All(held.Contains);
+            return actor.IsDeveloper
+                   || grants.All(grant => held.Contains(grant) && !BuiltInAccess.IsDeveloperGrant(grant.Name));
         }
 
-        public bool CanEditRole(Role role) => actor.CanGrant(role.EffectiveGrants);
+        public bool CanEditRole(Role role) =>
+            (actor.IsDeveloper || !role.IsDeveloperRole) && actor.CanGrant(role.EffectiveGrants);
 
-        public bool CanChangeRole(Role role, AccessSelection selection) =>
-            actor.CanEditRole(role) && actor.CanGrant(role.GrantsAddedBy(role.With(selection)));
+        public bool HoldsRole(Role role) =>
+            actor.Access.Roles.Any(held => string.Equals(held.Name, role.Name, StringComparison.OrdinalIgnoreCase));
+
+        public bool CanChangeRole(Role role, AccessSelection selection)
+        {
+            var added = role.GrantsAddedBy(role.With(selection));
+
+            return actor.CanEditRole(role)
+                   && actor.CanGrant(added)
+                   && (added.Count == 0 || !actor.HoldsRole(role));
+        }
 
         public bool CanDeleteRole(Guid roleId, Role role) =>
             !BuiltInAccess.IsBuiltIn(roleId) && actor.CanEditRole(role);
 
         public bool CanChangeAccess(UserAccess current, UserAccess proposed) =>
-            actor.CanGrant(current.GrantsAddedBy(proposed));
+            actor.CanGrant(current.GrantsAddedBy(proposed))
+            && (actor.IsDeveloper || current.DeveloperRolesAddedBy(proposed).Count == 0);
+
+        public bool CanSetDeveloperFlag(Guid roleId) =>
+            actor.IsDeveloper && !BuiltInAccess.IsBuiltIn(roleId);
     }
 }

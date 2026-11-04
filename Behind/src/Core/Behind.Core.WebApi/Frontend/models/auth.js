@@ -58,6 +58,13 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
         409: "auth.roleAction.nameTaken"
     };
 
+    var roleDeveloperFailures = {
+        401: sessionExpired,
+        403: "auth.roleAction.forbidden",
+        404: "auth.roleAction.notFound",
+        409: "auth.roleAction.stillDeveloper"
+    };
+
     var roleDeletedFailures = {
         401: sessionExpired,
         403: "auth.roleDeleted.forbidden",
@@ -253,9 +260,15 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
             });
         },
 
-        createRole: function (name) {
-            return http.post("/roles", { name: name }).then(function (response) {
+        createRole: function (name, isDeveloper) {
+            return http.post("/roles", { name: name, isDeveloper: isDeveloper === true }).then(function (response) {
                 return saved(response, "auth.role.created", roleActionFailures);
+            });
+        },
+
+        setRoleDeveloper: function (roleId, isDeveloper) {
+            return http.put("/roles/" + roleId + "/developer", { isDeveloper: isDeveloper }).then(function (response) {
+                return saved(response, "auth.role.saved", roleDeveloperFailures);
             });
         },
 

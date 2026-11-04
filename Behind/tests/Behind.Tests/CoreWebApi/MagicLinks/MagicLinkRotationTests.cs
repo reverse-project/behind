@@ -1,10 +1,13 @@
 using System.Text.Json.Nodes;
+using Behind.Common.Configuration;
 using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.MagicLinks;
 using Behind.Tests.Helpers;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Behind.Tests.CoreWebApi.MagicLinks;
 
@@ -29,9 +32,6 @@ public sealed class MagicLinkRotationTests : IDisposable
 
     private static MagicLinkSettings CurrentOf(IMagicLinkSettingsStore store) =>
         store.Current.Match(() => throw new InvalidOperationException(), settings => settings);
-
-    private static object PersisterOf(ServiceCollection services) =>
-        services.Single(d => d.ServiceType == typeof(IMagicLinkSettingsPersister)).ImplementationInstance!;
 
     private async Task<JsonObject> MagicLinkSectionOf(string path) =>
         JsonNode.Parse(await File.ReadAllTextAsync(path))!["Security"]!["MagicLink"]!.AsObject();
@@ -220,46 +220,74 @@ public sealed class MagicLinkRotationTests : IDisposable
         Assert.Equal(Some(Start + Interval), CurrentOf(store).ActualSecret.CreatedAt);
     }
 
+    private ServiceProvider ProviderWith(SecurityConfiguration security, string fileName = "missing.json")
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var option = new ReloadableOption<SecurityConfiguration>(new ConfigurationBuilder().Build(), _ => security);
+        services.AddSingleton<IOptions<SecurityConfiguration>>(option);
+        services.AddSingleton<IOptionsMonitor<SecurityConfiguration>>(option);
+        services.AddMagicLink(new FileInfo(Path.Combine(_directory, fileName)));
+
+        return services.BuildServiceProvider();
+    }
+
     [Fact]
     public void AddMagicLink_RegistersRotationInfrastructure()
     {
         var services = new ServiceCollection();
-        var security = new SecurityConfiguration(false, None, None, Some(SettingsCreatedAt(Start)));
 
-        services.AddMagicLink(security, new FileInfo(Path.Combine(_directory, "missing.json")));
+        services.AddMagicLink(new FileInfo(Path.Combine(_directory, "missing.json")));
 
         Assert.Contains(services, d => d.ServiceType == typeof(IMagicLinkSettingsStore));
         Assert.Contains(services, d => d.ServiceType == typeof(MagicLinkSecretRotator));
         Assert.Contains(services, d => d.ServiceType == typeof(IHostedService)
                                        && d.ImplementationType == typeof(MagicLinkSecretRotationService));
-        Assert.IsType<NoOpMagicLinkSettingsPersister>(PersisterOf(services));
     }
 
     [Fact]
-    public void AddMagicLink_ExistingWritableFile_PersistsToFile()
+    public void AddMagicLink_StoreStartsWithTheConfiguredSettings()
     {
-        var path = Path.Combine(_directory, "security.json");
-        File.WriteAllText(path, "{}");
-        var services = new ServiceCollection();
+        var settings = SettingsCreatedAt(Start);
+        using var provider = ProviderWith(new SecurityConfiguration(false, None, None, Some(settings)));
 
-        services.AddMagicLink(
-            new SecurityConfiguration(false, None, None, Some(SettingsCreatedAt(Start))),
-            new FileInfo(path));
-
-        Assert.IsType<JsonFileMagicLinkSettingsPersister>(PersisterOf(services));
+        Assert.Equal(Some(settings), provider.GetRequiredService<IMagicLinkSettingsStore>().Current);
     }
 
     [Fact]
-    public void AddMagicLink_ReadOnlyConfiguration_DoesNotPersist()
+    public async Task AddMagicLink_ExistingWritableFile_PersistsToFile()
     {
         var path = Path.Combine(_directory, "security.json");
-        File.WriteAllText(path, "{}");
-        var services = new ServiceCollection();
+        await File.WriteAllTextAsync(path, "{}");
+        var settings = SettingsCreatedAt(Start);
+        using var provider = ProviderWith(new SecurityConfiguration(false, None, None, Some(settings)), "security.json");
 
-        services.AddMagicLink(
-            new SecurityConfiguration(true, None, None, Some(SettingsCreatedAt(Start))),
-            new FileInfo(path));
+        await provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings);
 
-        Assert.IsType<NoOpMagicLinkSettingsPersister>(PersisterOf(services));
+        Assert.Equal(settings.ActualSecret.ToConfigurationValue(), (await MagicLinkSectionOf(path))["ActualSecret"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task AddMagicLink_MissingFile_DoesNotPersist()
+    {
+        var settings = SettingsCreatedAt(Start);
+        using var provider = ProviderWith(new SecurityConfiguration(false, None, None, Some(settings)));
+
+        await provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings);
+
+        Assert.False(File.Exists(Path.Combine(_directory, "missing.json")));
+    }
+
+    [Fact]
+    public async Task AddMagicLink_ReadOnlyConfiguration_DoesNotPersist()
+    {
+        var path = Path.Combine(_directory, "security.json");
+        await File.WriteAllTextAsync(path, "{}");
+        var settings = SettingsCreatedAt(Start);
+        using var provider = ProviderWith(new SecurityConfiguration(true, None, None, Some(settings)), "security.json");
+
+        await provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings);
+
+        Assert.Equal("{}", await File.ReadAllTextAsync(path));
     }
 }

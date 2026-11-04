@@ -3,20 +3,32 @@ using Behind.Common.Storage;
 using Behind.Core.Common.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Behind.Core.Database;
 
 public static class VfsServiceExtensions
 {
+    private static BackendConfiguration Bind(IConfiguration configuration)
+    {
+        var backend = configuration
+            .GetSection(BackendConfiguration.SectionName)
+            .GetOptionAware<BackendConfiguration>() ?? new BackendConfiguration();
+
+        _ = backend.VfsRoot;
+
+        return backend;
+    }
+
     extension(IServiceCollection services)
     {
         public IServiceCollection AddVfsContentStore(IConfiguration configuration)
         {
-            var backend = configuration
-                .GetSection(BackendConfiguration.SectionName)
-                .GetOptionAware<BackendConfiguration>() ?? new BackendConfiguration();
+            _ = Bind(configuration);
 
-            services.AddSingleton<IContentStore>(new DirectoryContentStore(backend.VfsRoot));
+            services.AddReloadableOptions(configuration, Bind);
+            services.AddTransient<IContentStore>(provider =>
+                new DirectoryContentStore(provider.GetRequiredService<IOptions<BackendConfiguration>>().Value.VfsRoot));
 
             return services;
         }

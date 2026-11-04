@@ -77,24 +77,10 @@ public class DownloadRoutesTests
     }
 
     [Fact]
-    public void Upload_AcceptsRequestsOfTheConfiguredFileSizeForEveryFileOfABatch()
+    public void Upload_IsMarkedForTheConfiguredUploadLimits()
     {
         var route = Find(Routes(5_000_000), "POST", "/downloads/folders/{id:guid}/files");
 
-        var request = route.Metadata.GetMetadata<IRequestSizeLimitMetadata>();
-        var form = route.Metadata.GetMetadata<RequestFormLimitsAttribute>();
-
-        Assert.Equal(5_000_000L * DownloadEndpoints.MaxUploadFiles + 1024 * 1024, request!.MaxRequestBodySize);
-        Assert.Equal(5_000_000L + 1024 * 1024, form!.MultipartBodyLengthLimit);
-    }
-
-    [Fact]
-    public void Upload_WithoutAConfiguredLimit_UsesTheDefaultFileSize()
-    {
-        var route = Find(Routes(), "POST", "/downloads/folders/{id:guid}/files");
-
-        Assert.Equal(
-            DownloadsConfiguration.DefaultMaxFileBytes + 1024 * 1024,
-            route.Metadata.GetMetadata<RequestFormLimitsAttribute>()!.MultipartBodyLengthLimit);
+        Assert.NotNull(route.Metadata.GetMetadata<DownloadUploadLimitMetadata>());
     }
 }

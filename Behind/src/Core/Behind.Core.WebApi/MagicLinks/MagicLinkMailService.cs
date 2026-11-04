@@ -1,5 +1,6 @@
 using Behind.Common.Logging;
 using Behind.Core.WebApi.EmailSender;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -7,7 +8,7 @@ namespace Behind.Core.WebApi.MagicLinks;
 
 public sealed class MagicLinkMailService(
     IMagicLinkMailQueue queue,
-    IMagicLinkEmailSender emailSender,
+    IServiceScopeFactory scopes,
     ILogger<MagicLinkMailService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -24,7 +25,9 @@ public sealed class MagicLinkMailService(
 
         try
         {
-            await emailSender.Send(mail);
+            await using var scope = scopes.CreateAsyncScope();
+
+            await scope.ServiceProvider.GetRequiredService<IMagicLinkEmailSender>().Send(mail);
 
             logger.LogInformation("Magic link email sent to user {UserId}", () => [mail.User.Id]);
         }

@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Configuration;
 using Behind.Common.Database;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database.Auditing;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using SqliteProvider = Behind.Core.Common.Configuration.Sqlite;
 
 namespace Behind.Core.Database.Sqlite;
@@ -21,10 +23,23 @@ public static class CoreSqliteExtensions
                 sqlite => sqlite.MigrationsHistoryTable(VersioningContextSqlite.MigrationsHistoryTable));
     }
 
+    extension(IServiceProvider services)
+    {
+        private Option<string?> ConnectionString(IConfiguration configuration) =>
+            services.GetRequiredService<IOptions<DatabaseConfiguration>>().Value.Key
+                .Map(key => configuration.GetConnectionString(key));
+    }
+
     extension(DatabaseConfiguration database)
     {
         public WebApplicationBuilder RegisterSqlite(WebApplicationBuilder builder)
         {
+            builder.Services.AddReloadableOptions(
+                builder.Configuration,
+                configuration => configuration.GetSection(DatabaseConfiguration.SectionName) is { } section && section.Exists()
+                    ? section.GetOptionAware<DatabaseConfiguration>() ?? database
+                    : database);
+
             return database.Provider.Match(
                 none: () => builder,
                 some: provider =>
@@ -39,20 +54,16 @@ public static class CoreSqliteExtensions
                         builder.Services.AddDbContext<CoreContextSqlite>((services, options) =>
                         {
                             options.AddInterceptors(services.GetRequiredService<AuditSaveChangesInterceptor>());
-                            database.Key.Match(
+                            services.ConnectionString(builder.Configuration).Match(
                                 none: () => { },
-                                some: key =>
-                                {
-                                    var connectionString = builder.Configuration.GetConnectionString(key);
-                                    options.UseSqlite(connectionString);
-                                });
+                                some: connectionString => options.UseSqlite(connectionString));
                         });
                         builder.Services.AddDbContext<VersioningContextSqlite>((services, options) =>
                         {
                             options.AddInterceptors(services.GetRequiredService<AuditSaveChangesInterceptor>());
-                            database.Key.Match(
+                            services.ConnectionString(builder.Configuration).Match(
                                 none: () => { },
-                                some: key => options.UseVersioningSqlite(builder.Configuration.GetConnectionString(key)));
+                                some: connectionString => options.UseVersioningSqlite(connectionString));
                         });
                         builder.Services.AddScoped<AbstractVersioningContext>(services =>
                             services.GetRequiredService<VersioningContextSqlite>());

@@ -23,7 +23,7 @@ public class MagicLinkLoggingTests
     {
         var queue = new MagicLinkMailQueue();
         var logger = new CapturingLogger<MagicLinkMailService>();
-        using var service = new MagicLinkMailService(queue, Substitute.For<IMagicLinkEmailSender>(), logger);
+        using var service = new MagicLinkMailService(queue, Substitute.For<IMagicLinkEmailSender>().InScopeFactory(), logger);
         var mail = NewMail();
 
         await service.StartAsync(CancellationToken.None);
@@ -43,7 +43,7 @@ public class MagicLinkLoggingTests
         sender.SendMagicLinkAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.FromException(new InvalidOperationException("smtp")));
         var logger = new CapturingLogger<MagicLinkMailService>();
-        using var service = new MagicLinkMailService(queue, sender, logger);
+        using var service = new MagicLinkMailService(queue, sender.InScopeFactory(), logger);
         var mail = NewMail();
 
         await service.StartAsync(CancellationToken.None);

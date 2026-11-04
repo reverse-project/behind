@@ -13,15 +13,12 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public static class DownloadRoutesExtensions
 {
-    private const long RequestOverheadBytes = 1024 * 1024;
-
     extension(IEndpointRouteBuilder application)
     {
         public void MapDownloadEndpoints()
         {
             var write = GrantName.Of(GrantArea.Download, GrantAction.Write);
             var delete = GrantName.Of(GrantArea.Download, GrantAction.Delete);
-            var limit = application.ServiceProvider.GetRequiredService<IOptions<DownloadsConfiguration>>().Value.FileLimit;
 
             application.MapGet("/downloads/folders", DownloadEndpoints.ListFolders)
                 .Produces<DownloadFoldersResponse>()
@@ -105,11 +102,7 @@ public static class DownloadRoutesExtensions
             application.MapPost("/downloads/folders/{id:guid}/files", DownloadEndpoints.Upload)
                 .RequireAuthorization(write)
                 .DisableAntiforgery()
-                .WithMetadata(new RequestSizeLimitAttribute(limit * DownloadEndpoints.MaxUploadFiles + RequestOverheadBytes))
-                .WithMetadata(new RequestFormLimitsAttribute
-                {
-                    MultipartBodyLengthLimit = limit + RequestOverheadBytes
-                })
+                .WithMetadata(new DownloadUploadLimitMetadata())
                 .Produces<DownloadUploadResponse>()
                 .Produces(400)
                 .Produces(401)

@@ -1,6 +1,7 @@
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.MagicLinks;
+using Behind.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace Behind.Tests.CoreWebApi.MagicLinks;
@@ -61,7 +62,7 @@ public class MagicLinkMailTests
                 sent.SetResult();
                 return Task.CompletedTask;
             });
-        using var service = new MagicLinkMailService(queue, sender, Substitute.For<ILogger<MagicLinkMailService>>());
+        using var service = new MagicLinkMailService(queue, sender.InScopeFactory(), Substitute.For<ILogger<MagicLinkMailService>>());
         var mail = NewMail();
 
         await service.StartAsync(CancellationToken.None);
@@ -87,7 +88,7 @@ public class MagicLinkMailTests
                 return Task.CompletedTask;
             });
         var logger = EnabledLogger.For<MagicLinkMailService>();
-        using var service = new MagicLinkMailService(queue, sender, logger);
+        using var service = new MagicLinkMailService(queue, sender.InScopeFactory(), logger);
 
         await service.StartAsync(CancellationToken.None);
         queue.TryEnqueue(NewMail("fail@test.com"));

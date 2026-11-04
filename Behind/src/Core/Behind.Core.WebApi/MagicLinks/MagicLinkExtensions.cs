@@ -1,3 +1,4 @@
+using Behind.Common;
 using Behind.Common.WebApi;
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Builder;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace Behind.Core.WebApi.MagicLinks;
 
@@ -22,40 +24,52 @@ public static class MagicLinkExtensions
             baseUri.ToFrontendLink(SignInRoute, [new(TokenParameter, credential.Token)]);
     }
 
+    extension(HttpContext context)
+    {
+        private Option<MagicLinkSettings> CurrentMagicLinkSettings =>
+            context.RequestServices.GetRequiredService<IMagicLinkSettingsStore>().Current;
+    }
+
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddMagicLink(SecurityConfiguration security, FileInfo securityFile)
+        public IServiceCollection AddMagicLink(FileInfo securityFile)
         {
             services.TryAddSingleton(TimeProvider.System);
-            services.AddSingleton<IMagicLinkSettingsStore>(new MagicLinkSettingsStore(security.MagicLink));
-            services.AddSingleton<IMagicLinkSettingsPersister>(
-                security.ReadOnlyConfiguration || !securityFile.Exists
-                    ? new NoOpMagicLinkSettingsPersister()
-                    : new JsonFileMagicLinkSettingsPersister(securityFile));
+            services.AddSingleton<IMagicLinkSettingsStore>(provider =>
+            {
+                var security = provider.GetRequiredService<IOptionsMonitor<SecurityConfiguration>>();
+                var store = new MagicLinkSettingsStore(security.CurrentValue.MagicLink);
+                security.OnChange(configuration => store.Set(configuration.MagicLink));
+
+                return store;
+            });
+            services.AddSingleton<IMagicLinkSettingsPersister>(provider =>
+                new ConfigurationAwareMagicLinkSettingsPersister(
+                    provider.GetRequiredService<IOptions<SecurityConfiguration>>(),
+                    securityFile));
             services.AddSingleton<MagicLinkSecretRotator>();
             services.AddHostedService<MagicLinkSecretRotationService>();
             services.AddSingleton<IMagicLinkMailQueue, MagicLinkMailQueue>();
             services.AddHostedService<MagicLinkMailService>();
+            services.AddHostedService<MagicLinkCleanupService>();
 
-            return security.MagicLink.Match(
-                none: () => services,
-                some: settings => services
-                    .AddHostedService<MagicLinkCleanupService>()
-                    .AddMagicLinkRateLimiting(settings));
+            return services.AddMagicLinkRateLimiting();
         }
 
-        public IServiceCollection AddMagicLinkRateLimiting(MagicLinkSettings settings) =>
+        public IServiceCollection AddMagicLinkRateLimiting() =>
             services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
                 options.AddClientPolicy(
                     RequestRateLimitPolicy,
-                    settings.EffectiveRequestLimit,
-                    settings.EffectiveRequestWindow);
+                    context => context.CurrentMagicLinkSettings.Map(settings =>
+                            (settings.EffectiveRequestLimit, settings.EffectiveRequestWindow))
+                        .GetOrElse((MagicLinkSettings.DefaultRequestLimit, MagicLinkSettings.DefaultRequestWindow)));
                 options.AddClientPolicy(
                     RedeemRateLimitPolicy,
-                    settings.EffectiveRedeemLimit,
-                    settings.EffectiveRedeemWindow);
+                    context => context.CurrentMagicLinkSettings.Map(settings =>
+                            (settings.EffectiveRedeemLimit, settings.EffectiveRedeemWindow))
+                        .GetOrElse((MagicLinkSettings.DefaultRedeemLimit, MagicLinkSettings.DefaultRedeemWindow)));
             });
     }
 }

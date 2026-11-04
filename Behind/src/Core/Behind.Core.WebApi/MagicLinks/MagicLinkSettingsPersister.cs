@@ -1,5 +1,6 @@
 using Behind.Common.Configuration;
 using Behind.Core.Common.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Behind.Core.WebApi.MagicLinks;
 
@@ -27,4 +28,20 @@ public sealed class JsonFileMagicLinkSettingsPersister(FileInfo file) : IMagicLi
                     settings.OldSecret.Match(() => (string?)null, secret => secret.ToConfigurationValue())
             },
             cancellationToken);
+}
+
+public sealed class ConfigurationAwareMagicLinkSettingsPersister(
+    IOptions<SecurityConfiguration> security,
+    FileInfo file) : IMagicLinkSettingsPersister
+{
+    private readonly JsonFileMagicLinkSettingsPersister _file = new(file);
+
+    public Task PersistAsync(MagicLinkSettings settings, CancellationToken cancellationToken = default)
+    {
+        file.Refresh();
+
+        return security.Value.ReadOnlyConfiguration || !file.Exists
+            ? Task.CompletedTask
+            : _file.PersistAsync(settings, cancellationToken);
+    }
 }

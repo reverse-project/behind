@@ -25,7 +25,7 @@ The `email.json` tab is a form instead of a list of values:
 2. For **Smtp** fill in the **Server**, the **Port** (1-65535), whether to **Use SSL** and, optionally, the **Sender address**. Without a sender address the user name of the basic authentication is used.
 3. Choose the **Authentication**: **No** or **Basic** with a user name and a password. The password is masked; leave it empty to keep the stored one.
 4. Optionally write your own **email templates** (`ConfirmationEmail`, `PasswordResetCodeEmail`, `PasswordResetLinkEmail`, `MagicLinkEmail`). An empty template uses the built-in one, which is shown as a hint.
-5. Choose **Save**. The values are checked and refused when they are not valid. The new provider applies after the application restarts.
+5. Choose **Save**. The values are checked and refused when they are not valid. The new provider applies immediately.
 
 ## Log levels
 
@@ -33,7 +33,7 @@ The `appsettings.json` tab is a form for the log levels instead of a list of val
 
 1. Choose the **Default level**: the lowest level that is written to the log (Verbose, Debug, Information, Warning, Error or Fatal). **Not set** leaves the built-in default (Information).
 2. Under **Levels per source** add a source, a namespace such as `Microsoft.AspNetCore` or `Behind`, and choose its level. A source with its own level ignores the default level. Every source needs a different name; **Remove** deletes one.
-3. Choose **Save**. Only the levels are written to the file; everything else in it stays as it was. The new levels apply after the application restarts.
+3. Choose **Save**. Only the levels are written to the file; everything else in it stays as it was. The new levels apply immediately.
 
 ## Secrets are masked
 
@@ -45,7 +45,9 @@ Passwords, secret keys, signing keys, tokens and connection strings are never sh
 2. Choose **Save**. Only the changed values are written to the file; everything else in the file stays as it was.
 3. **Discard** puts the original values back in the boxes.
 
-Some settings, for example the ones of the Accounts and Comments sections, apply immediately. Most settings are read when the application starts and apply after it is restarted.
+Every change applies immediately, the application does not need to be restarted. The same is true when you edit a configuration file by hand: the application watches `database.json`, `backend.json`, `email.json`, `security.json`, `frontend.json` and `appsettings.json` and reloads them when they change. A file that is not valid JSON, or values that cannot be used, are refused and the previous values stay active (the problem is written to the log). In a container with a mounted volume the file watcher needs `DOTNET_USE_POLLING_FILE_WATCHER=true`; a change is then picked up within a few seconds.
+
+The only values that are still read once at startup are the data protection certificate and keys (`Security:DataProtection`), the OpenTelemetry settings and the database provider.
 
 ## Generate and Rotate
 
@@ -55,10 +57,10 @@ Some secrets cannot be typed; they have a button instead:
 |---------|--------|--------------|
 | `Security:SecretKey` (administrator elevation) | **Generate** | Creates a new authenticator secret. |
 | `Security:Elevation:DeveloperSecretKey` (developer elevation) | **Generate** | Creates a new authenticator secret, also when none is set yet. |
-| `Security:Jwt:SigningKey` | **Generate** | Creates a new random signing key. After the restart everybody has to sign in again. |
+| `Security:Jwt:SigningKey` | **Generate** | Creates a new random signing key. Everybody has to sign in again. |
 | `Security:MagicLink:ActualSecret` | **Rotate** | The current magic link secret becomes the old secret, which is still accepted for the configured overlap, and a new secret is used from now on. It applies immediately. |
 
-Generating an authenticator secret shows its authenticator address and a QR code **once**. Add it to your authenticator at once; the page never shows it again. The new secret applies after the application restarts, until then the previous one still works. Every button asks for confirmation.
+Generating an authenticator secret shows its authenticator address and a QR code **once**. Add it to your authenticator at once; the page never shows it again. The new secret applies immediately. Every button asks for confirmation.
 
 ## When nothing can be changed
 

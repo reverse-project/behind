@@ -11,6 +11,13 @@ namespace Behind.Core.WebApi.Identity;
 
 public static class JwtSettingsExtensions
 {
+    public static TokenValidationParameters RejectingValidationParameters =>
+        new()
+        {
+            ValidateIssuerSigningKey = true,
+            RequireSignedTokens = true
+        };
+
     extension(JwtSettings settings)
     {
         public TokenValidationParameters ValidationParameters => new()

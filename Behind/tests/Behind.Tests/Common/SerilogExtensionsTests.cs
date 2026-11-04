@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Behind.Common.Logging;
+using Behind.Tests.Helpers;
 using Behind.Common.WebApi.Middleware;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -83,5 +84,42 @@ public class SerilogExtensionsTests
 
         Assert.DoesNotContain("hidden", output);
         Assert.Contains("shown", output);
+    }
+
+    [Fact]
+    public async Task AddSerilog_ChangedMinimumLevelInTheFile_AppliesWithoutARestart()
+    {
+        var directory = Directory.CreateTempSubdirectory().FullName;
+        var path = Path.Combine(directory, "appsettings.json");
+        await File.WriteAllTextAsync(path, """{ "Serilog": { "MinimumLevel": { "Default": "Warning" } } }""");
+        var original = Console.Out;
+        var writer = new StringWriter();
+        Console.SetOut(writer);
+
+        try
+        {
+            var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
+            builder.Configuration.AddJsonFile(path, optional: false, reloadOnChange: true);
+            builder.AddSerilog();
+            using var host = builder.Build();
+            var logger = host.Services.GetRequiredService<ILogger<SerilogExtensionsTests>>();
+
+            logger.LogInformation("before");
+            await File.WriteAllTextAsync(path, """{ "Serilog": { "MinimumLevel": { "Default": "Debug" } } }""");
+            await Wait.UntilAsync(
+                () =>
+                {
+                    logger.LogDebug("after");
+                    return writer.ToString();
+                },
+                output => output.Contains("after"));
+
+            Assert.DoesNotContain("before", writer.ToString());
+        }
+        finally
+        {
+            Console.SetOut(original);
+            Directory.Delete(directory, true);
+        }
     }
 }

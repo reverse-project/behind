@@ -8,6 +8,9 @@ namespace Behind.Core.WebApi.EmailSender;
 
 public static class EmailSenderExtensions
 {
+    public static EmailSender CurrentInstance(IServiceProvider serviceProvider) =>
+        serviceProvider.GetRequiredService<IOptions<EmailConfiguration>>().Value.GetInstance(serviceProvider);
+
     extension(EmailConfiguration configuration)
     {
         public EmailSender GetInstance(IServiceProvider serviceProvider) => configuration switch
@@ -16,9 +19,9 @@ public static class EmailSenderExtensions
                 serviceProvider.GetRequiredService<ILogger<LoggerEmailSender>>(),
                 serviceProvider.GetRequiredService<IHostEnvironment>()
             ),
-            SmtpEmailConfiguration _ => new SmtpEmailSender(
+            SmtpEmailConfiguration smtp => new SmtpEmailSender(
                 serviceProvider.GetRequiredService<ILogger<SmtpEmailSender>>(),
-                serviceProvider.GetRequiredService<IOptions<SmtpEmailConfiguration>>()
+                Options.Create(smtp)
             ),
             _ => throw new NotSupportedException("Unsupported email configuration")
         };

@@ -9,6 +9,8 @@ public interface IMagicLinkSettingsStore
     Option<MagicLinkSettings> Current { get; }
 
     void Replace(MagicLinkSettings settings);
+
+    void Set(Option<MagicLinkSettings> settings);
 }
 
 public sealed class MagicLinkSettingsStore(Option<MagicLinkSettings> initial) : IMagicLinkSettingsStore
@@ -19,4 +21,7 @@ public sealed class MagicLinkSettingsStore(Option<MagicLinkSettings> initial) : 
         Volatile.Read(ref _current) is { } settings ? Some(settings) : None;
 
     public void Replace(MagicLinkSettings settings) => Volatile.Write(ref _current, settings);
+
+    public void Set(Option<MagicLinkSettings> settings) =>
+        Volatile.Write(ref _current, settings.Match<MagicLinkSettings?>(() => null, value => value));
 }

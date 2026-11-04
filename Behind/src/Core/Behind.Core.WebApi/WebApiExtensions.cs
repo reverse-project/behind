@@ -61,24 +61,19 @@ public static class WebApiExtensions
 
         WebApplicationBuilder AddDatabase()
         {
-            builder.Configuration.AddJsonFile("database.json", false, true);
-            
-            DatabaseConfiguration databaseConfiguration = builder.Configuration
-                .GetSection(DatabaseConfiguration.SectionName)
-                .GetOptionAware<DatabaseConfiguration>() ?? new DatabaseConfiguration();
+            builder.AddReloadableJsonFile("database.json", false);
 
-            builder.Services.AddSingleton(
-                Options.Create(databaseConfiguration)
-            );
-            
-            databaseConfiguration.RegisterSqlite(builder);
+            (builder.Configuration
+                .GetSection(DatabaseConfiguration.SectionName)
+                .GetOptionAware<DatabaseConfiguration>() ?? new DatabaseConfiguration())
+                .RegisterSqlite(builder);
 
             return builder;
         }
 
         WebApplicationBuilder AddBackend()
         {
-            builder.Configuration.AddJsonFile("backend.json", false, true);
+            builder.AddReloadableJsonFile("backend.json", false);
             builder.Services.AddVfsContentStore(builder.Configuration);
             builder.Services.Configure<AccountsConfiguration>(
                 builder.Configuration.GetSection(AccountsConfiguration.SectionName)
@@ -95,50 +90,37 @@ public static class WebApiExtensions
 
         WebApplicationBuilder AddEmail()
         {
-            builder.Configuration.AddJsonFile("email.json", false, true);
+            builder.AddReloadableJsonFile("email.json", false);
+            builder.Services.AddReloadableOptions<EmailConfiguration>(
+                EmailConfiguration.SectionName,
+                () => new LoggerEmailConfiguration());
 
-            EmailConfiguration emailConfiguration = builder.Configuration
-                .GetSection(EmailConfiguration.SectionName)
-                .GetOptionAware<EmailConfiguration>() ?? new LoggerEmailConfiguration();
-
-            builder.Services.AddSingleton(
-                Options.Create(emailConfiguration)
-            );
-
-            if (emailConfiguration is SmtpEmailConfiguration smtpConfiguration)
-            {
-                builder.Services.AddSingleton(Options.Create(smtpConfiguration));
-            }
-
-            builder.Services.AddTransient<IEmailSender>(emailConfiguration.GetInstance);
-            builder.Services.AddTransient<IEmailSender<ApplicationUser>>(emailConfiguration.GetInstance);
-            builder.Services.AddTransient<IMagicLinkEmailSender>(emailConfiguration.GetInstance);
+            builder.Services.AddTransient<IEmailSender>(EmailSenderExtensions.CurrentInstance);
+            builder.Services.AddTransient<IEmailSender<ApplicationUser>>(EmailSenderExtensions.CurrentInstance);
+            builder.Services.AddTransient<IMagicLinkEmailSender>(EmailSenderExtensions.CurrentInstance);
 
             return builder;
         }
 
         WebApplicationBuilder AddSecurity()
         {
-            builder.Configuration.AddJsonFile("security.json", true, true);
+            builder.AddReloadableJsonFile("security.json", true);
 
             SecurityConfiguration securityConfiguration = builder.Configuration
                 .GetSection(SecurityConfiguration.SectionName)
                 .GetOptionAware<SecurityConfiguration>() ?? new SecurityConfiguration();
 
-            builder.Services.AddSingleton(
-                Options.Create(securityConfiguration)
-            );
+            builder.Services.AddReloadableOptions(SecurityConfiguration.SectionName, () => new SecurityConfiguration());
 
             builder.Services.AddElevationRateLimiting();
             builder.Services.AddConfirmationEmailRateLimiting();
 
             builder.Services.AddSingleton(ConfigurationFileCatalog.For(builder.Environment.ContentRootPath));
             builder.Services.AddMagicLink(
-                securityConfiguration,
                 new FileInfo(Path.Combine(builder.Environment.ContentRootPath, "security.json"))
             );
 
-            builder.Configuration.AddJsonFile("frontend.json", true, true);
+            builder.AddReloadableJsonFile("frontend.json", true);
             builder.Services.Configure<FrontendConfiguration>(
                 builder.Configuration.GetSection(FrontendConfiguration.SectionName)
             );
@@ -181,22 +163,22 @@ public static class WebApiExtensions
 
             builder.Services.AddGrantAuthorization();
 
-            return securityConfiguration.Jwt.Match(
-                none: () => builder,
-                jwtSettings =>
+            builder.Services.AddAuthentication(options =>
                 {
-                    builder.Services.AddAuthentication(options =>
-                        {
-                            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                        })
-                        .AddJwtBearer(options =>
-                        {
-                            options.TokenValidationParameters = jwtSettings.ValidationParameters;
-                        });
-
-                    return builder;
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
+                .AddJwtBearer();
+            builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+                .Configure<IOptions<SecurityConfiguration>>((options, security) =>
+                {
+                    options.TokenValidationParameters = security.Value.Jwt.Match(
+                        none: () => JwtSettingsExtensions.RejectingValidationParameters,
+                        jwtSettings => jwtSettings.ValidationParameters);
                 });
+            builder.Services.AddOptionsCacheInvalidation<SecurityConfiguration, JwtBearerOptions>();
+
+            return builder;
         }
 
         WebApplicationBuilder AddServices()
@@ -256,10 +238,10 @@ public static class WebApiExtensions
 
         WebApplicationBuilder AddFrontend()
         {
-            builder.Services.AddStaticFrontend(
-                builder.Configuration
-                    .GetSection(FrontendOptions.SectionName)
-                    .Get<FrontendOptions>() ?? FrontendOptions.Default);
+            builder.Services.AddStaticFrontend();
+            builder.Services.AddReloadableOptions(
+                configuration => configuration.GetSection(FrontendOptions.SectionName).Get<FrontendOptions>()
+                                 ?? FrontendOptions.Default);
             builder.Services.AddSingleton(
                 new LocaleCatalog(EmbeddedFrontend.CreateFileProvider(builder.Environment.WebRootPath)));
 
@@ -381,6 +363,7 @@ public static class WebApiExtensions
                 .Produces(403)
                 .Produces(500);
 
+            application.UseDownloadUploadLimit();
             application.UseRateLimiter();
             application.UseAuthentication();
             application.UseSessionValidation();

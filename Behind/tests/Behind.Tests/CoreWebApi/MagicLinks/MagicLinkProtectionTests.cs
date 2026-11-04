@@ -25,7 +25,7 @@ public sealed class MagicLinkProtectionTests
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseSetting(WebHostDefaults.ServerUrlsKey, "http://127.0.0.1:0");
         builder.Logging.ClearProviders();
-        builder.Services.AddMagicLinkRateLimiting(Settings(2));
+        builder.Services.AddSingleton<IMagicLinkSettingsStore>(new MagicLinkSettingsStore(Some(Settings(2)))).AddMagicLinkRateLimiting();
         await using var app = builder.Build();
         app.UseRateLimiter();
         app.MapPost("/limited", () => Results.NoContent()).RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy);
@@ -50,7 +50,7 @@ public sealed class MagicLinkProtectionTests
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseSetting(WebHostDefaults.ServerUrlsKey, "http://127.0.0.1:0");
         builder.Logging.ClearProviders();
-        builder.Services.AddMagicLinkRateLimiting(Settings(1) with { RedeemLimit = Some(2) });
+        builder.Services.AddSingleton<IMagicLinkSettingsStore>(new MagicLinkSettingsStore(Some(Settings(1) with { RedeemLimit = Some(2) }))).AddMagicLinkRateLimiting();
         await using var app = builder.Build();
         app.UseRateLimiter();
         app.MapPost("/redeem", () => Results.NoContent()).RequireRateLimiting(MagicLinkExtensions.RedeemRateLimitPolicy);
@@ -114,13 +114,11 @@ public sealed class MagicLinkProtectionTests
     }
 
     [Fact]
-    public void AddMagicLink_Configured_RegistersCleanupAndMailServices()
+    public void AddMagicLink_RegistersCleanupAndMailServices()
     {
         var services = new ServiceCollection();
 
-        services.AddMagicLink(
-            new SecurityConfiguration(true, None, None, Some(Settings(5))),
-            new FileInfo("missing.json"));
+        services.AddMagicLink(new FileInfo("missing.json"));
 
         Assert.Contains(services, d => d.ServiceType == typeof(IHostedService)
                                        && d.ImplementationType == typeof(MagicLinkCleanupService));
@@ -130,14 +128,49 @@ public sealed class MagicLinkProtectionTests
     }
 
     [Fact]
-    public void AddMagicLink_NotConfigured_SkipsCleanup()
+    public async Task RateLimit_WithoutMagicLinkSettings_UsesTheDefaultLimits()
     {
-        var services = new ServiceCollection();
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseSetting(WebHostDefaults.ServerUrlsKey, "http://127.0.0.1:0");
+        builder.Logging.ClearProviders();
+        builder.Services.AddSingleton<IMagicLinkSettingsStore>(new MagicLinkSettingsStore(None)).AddMagicLinkRateLimiting();
+        await using var app = builder.Build();
+        app.UseRateLimiter();
+        app.MapPost("/limited", () => Results.NoContent()).RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy);
+        await app.StartAsync();
+        using var client = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
 
-        services.AddMagicLink(
-            new SecurityConfiguration(true, None, None, None),
-            new FileInfo("missing.json"));
+        var statuses = new List<HttpStatusCode>();
+        foreach (var _ in Enumerable.Range(0, MagicLinkSettings.DefaultRequestLimit + 1))
+        {
+            statuses.Add((await client.PostAsync("/limited", null)).StatusCode);
+        }
 
-        Assert.DoesNotContain(services, d => d.ImplementationType == typeof(MagicLinkCleanupService));
+        Assert.Equal(HttpStatusCode.TooManyRequests, statuses.Last());
+        Assert.All(statuses.Take(MagicLinkSettings.DefaultRequestLimit), status => Assert.Equal(HttpStatusCode.NoContent, status));
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task RateLimit_AfterTheSettingsChange_AppliesTheNewLimitWithoutARestart()
+    {
+        var store = new MagicLinkSettingsStore(Some(Settings(1)));
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseSetting(WebHostDefaults.ServerUrlsKey, "http://127.0.0.1:0");
+        builder.Logging.ClearProviders();
+        builder.Services.AddSingleton<IMagicLinkSettingsStore>(store).AddMagicLinkRateLimiting();
+        await using var app = builder.Build();
+        app.UseRateLimiter();
+        app.MapPost("/limited", () => Results.NoContent()).RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy);
+        await app.StartAsync();
+        using var client = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+
+        var before = (await client.PostAsync("/limited", null)).StatusCode;
+        var blocked = (await client.PostAsync("/limited", null)).StatusCode;
+        store.Set(Some(Settings(3)));
+        var after = (await client.PostAsync("/limited", null)).StatusCode;
+
+        Assert.Equal([HttpStatusCode.NoContent, HttpStatusCode.TooManyRequests, HttpStatusCode.NoContent], [before, blocked, after]);
+        await app.StopAsync();
     }
 }

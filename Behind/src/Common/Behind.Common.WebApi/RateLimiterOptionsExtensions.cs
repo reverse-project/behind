@@ -11,15 +11,23 @@ public static class RateLimiterOptionsExtensions
     extension(RateLimiterOptions options)
     {
         public RateLimiterOptions AddClientPolicy(string name, int limit, TimeSpan window) =>
+            options.AddClientPolicy(name, _ => (limit, window));
+
+        public RateLimiterOptions AddClientPolicy(string name, Func<HttpContext, (int Limit, TimeSpan Window)> current) =>
             options.AddPolicy(
                 name,
-                context => RateLimitPartition.GetFixedWindowLimiter(
-                    context.Connection.RemoteIpAddress?.ToString() ?? UnknownClient,
-                    _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = limit,
-                        Window = window,
-                        QueueLimit = 0
-                    }));
+                context =>
+                {
+                    var (limit, window) = current(context);
+
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        $"{context.Connection.RemoteIpAddress?.ToString() ?? UnknownClient}|{limit}|{window}",
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = limit,
+                            Window = window,
+                            QueueLimit = 0
+                        });
+                });
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
@@ -13,48 +14,53 @@ public static class StaticFrontendExtensions
 
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddStaticFrontend(FrontendOptions? options = null)
-        {
-            var effective = options ?? FrontendOptions.Default;
-
-            services.AddSingleton(Options.Create(effective));
-
-            return effective.Compress
-                ? services.AddResponseCompression(compression =>
-                {
-                    compression.EnableForHttps = true;
-                    compression.MimeTypes = effective.CompressedMimeTypes;
-                })
-                : services;
-        }
+        public IServiceCollection AddStaticFrontend(FrontendOptions? options = null) =>
+            services.AddSingleton(Options.Create(options ?? FrontendOptions.Default));
     }
 
     extension(IApplicationBuilder app)
     {
-        public IApplicationBuilder UseStaticFrontend(IFileProvider fileProvider)
-        {
-            var options = app.ApplicationServices.GetRequiredService<IOptions<FrontendOptions>>().Value;
-            var provider = options.Minify
-                ? new MinifyingFileProvider(fileProvider, ContentMinifiers.Default)
-                : fileProvider;
+        public IApplicationBuilder UseStaticFrontend(IFileProvider fileProvider) =>
+            app.UseReloadable<FrontendOptions>((branch, options) =>
+            {
+                var provider = options.Minify
+                    ? new MinifyingFileProvider(fileProvider, ContentMinifiers.Default)
+                    : fileProvider;
 
-            return (options.Compress ? app.UseResponseCompression() : app)
-                .UseDefaultFiles(new DefaultFilesOptions
+                if (options.Compress)
                 {
-                    FileProvider = provider,
-                    DefaultFileNames = [options.DefaultFile]
-                })
-                .UseStaticFiles(new StaticFileOptions
-                {
-                    FileProvider = provider,
-                    OnPrepareResponse = context =>
+                    branch.UseMiddleware<ResponseCompressionMiddleware>(options.ToCompressionProvider(branch.ApplicationServices));
+                }
+
+                branch
+                    .UseDefaultFiles(new DefaultFilesOptions
                     {
-                        context.Context.Response.Headers.CacheControl = options.CacheControl;
-                        context.Context.Response.Headers.XContentTypeOptions = NoSniff;
-                        context.Context.Response.Headers.Append(ReferrerPolicyHeader, options.ReferrerPolicy);
-                        context.Context.Response.Headers.ContentSecurityPolicy = options.ContentSecurityPolicy;
-                    }
-                });
-        }
+                        FileProvider = provider,
+                        DefaultFileNames = [options.DefaultFile]
+                    })
+                    .UseStaticFiles(new StaticFileOptions
+                    {
+                        FileProvider = provider,
+                        OnPrepareResponse = context =>
+                        {
+                            context.Context.Response.Headers.CacheControl = options.CacheControl;
+                            context.Context.Response.Headers.XContentTypeOptions = NoSniff;
+                            context.Context.Response.Headers.Append(ReferrerPolicyHeader, options.ReferrerPolicy);
+                            context.Context.Response.Headers.ContentSecurityPolicy = options.ContentSecurityPolicy;
+                        }
+                    });
+            });
+    }
+
+    extension(FrontendOptions options)
+    {
+        private IResponseCompressionProvider ToCompressionProvider(IServiceProvider services) =>
+            new ResponseCompressionProvider(
+                services,
+                Options.Create(new ResponseCompressionOptions
+                {
+                    EnableForHttps = true,
+                    MimeTypes = options.CompressedMimeTypes
+                }));
     }
 }

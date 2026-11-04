@@ -39,11 +39,9 @@ public class EmailSenderExtensionsTests
             None
         );
         var logger = Substitute.For<ILogger<SmtpEmailSender>>();
-        var options = Options.Create(smtpConfig);
-        
+
         var serviceProvider = Substitute.For<IServiceProvider>();
         serviceProvider.GetService(typeof(ILogger<SmtpEmailSender>)).Returns(logger);
-        serviceProvider.GetService(typeof(IOptions<SmtpEmailConfiguration>)).Returns(options);
 
         // Act
         var sender = smtpConfig.GetInstance(serviceProvider);
@@ -51,7 +49,6 @@ public class EmailSenderExtensionsTests
         // Assert
         Assert.IsType<SmtpEmailSender>(sender);
         serviceProvider.Received(1).GetService(typeof(ILogger<SmtpEmailSender>));
-        serviceProvider.Received(1).GetService(typeof(IOptions<SmtpEmailConfiguration>));
     }
 
     [Fact]

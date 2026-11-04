@@ -4,7 +4,7 @@
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div class="alert alert-secondary" role="alert" data-bind="visible: readOnly, t: 'settings.readOnly'">The configuration is read-only. Values are shown masked and cannot be changed here.</div>
     <div data-bind="visible: canView">
-        <p class="text-body-secondary" data-bind="t: 'settings.description'">The configuration files of the application. Secrets are masked. Some settings apply immediately, the others after the application restarts.</p>
+        <p class="text-body-secondary" data-bind="t: 'settings.description'">The configuration files of the application. Secrets are masked. Changes apply immediately, the application does not need to be restarted.</p>
         <ul class="nav nav-tabs mb-3" role="tablist" data-bind="foreach: files">
             <li class="nav-item" role="presentation">
                 <button type="button" class="nav-link" role="tab" data-bind="text: name, css: { active: $parent.isSelected($data) }, attr: { 'aria-selected': $parent.isSelected($data) }, click: $parent.choose"></button>

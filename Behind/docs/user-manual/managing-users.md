@@ -8,7 +8,7 @@ Open **Administration > Users**. You need the `User.Manage` grant.
 - Use the **letter bar** to filter by the first letter of the name (or email when there is no name). Letters with no users are disabled; **#** covers everything that is not a letter.
 - Use the pager at the bottom to move between pages.
 
-Each user shows their name, emails, role badges, and any ban message. Badges mark **You**, **Banned**, and **Deleted** users.
+Each user shows their name, emails, role badges, and any ban message. Badges mark **You**, **Email not confirmed**, **Banned**, and **Deleted** users.
 
 Buttons only appear or work when you are allowed to use them. You can never moderate yourself, and only developers can moderate other developers.
 
@@ -23,6 +23,10 @@ For any other role, use the [Access panel](#editing-a-users-access).
 **Sign out everywhere** ends all sessions of that user.
 
 **Impersonate** lets an administrator act as the user, see [Impersonation](./impersonation.md).
+
+## Confirming an email
+
+**Confirm email** appears for users whose email is not confirmed yet. It confirms the email without the user having to use the link in the confirmation mail, so the user can sign in when email confirmation is required.
 
 ## Banning and unbanning
 

@@ -18,6 +18,7 @@
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <strong class="text-break" data-bind="text: name"></strong>
                     <span class="badge text-bg-secondary" data-bind="visible: isCurrent, t: 'users.you'">You</span>
+                    <span class="badge text-bg-warning" data-bind="visible: isEmailUnconfirmed, t: 'users.emailUnconfirmed'">Email not confirmed</span>
                     <span class="badge text-bg-danger" data-bind="visible: isBanned, t: 'users.banned'">Banned</span>
                     <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
                 </div>
@@ -33,6 +34,7 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="enable: !$root.busy(), click: access.toggle, t: access.isOpen() ? 'users.hideAccess' : 'users.access'">Access</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="visible: canModerate, enable: !$root.busy(), click: signOut, t: 'users.signOutEverywhere'">Sign out everywhere</button>
                     <button type="button" class="btn btn-sm btn-outline-warning" data-bind="visible: canImpersonate, enable: !$root.busy(), click: impersonate, t: 'users.impersonate'">Impersonate</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: canConfirmEmail, enable: !$root.busy(), click: confirmEmail, t: 'users.confirmEmail'">Confirm email</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canModerate && !isBanned && !banning(), enable: !$root.busy(), click: startBan, t: 'users.ban'">Ban</button>
                     <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: canModerate && isBanned, enable: !$root.busy(), click: unban, t: 'users.unban'">Unban</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, enable: !$root.busy(), click: remove, t: 'common.delete'">Delete</button>

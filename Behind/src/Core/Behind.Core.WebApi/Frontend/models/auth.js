@@ -31,6 +31,10 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
     };
 
     var bannedMessage = function (response) {
+        if (response.data && response.data.code === "emailNotConfirmed") {
+            return i18n.t("auth.emailNotConfirmed");
+        }
+
         var reason = response.data && response.data.reason ? response.data.reason : "";
 
         return reason ? i18n.t("auth.bannedReason", [reason]) : i18n.t("auth.banned");
@@ -320,6 +324,10 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
 
         signOutUser: function (userId) {
             return userAction(userId + "/sign/out", undefined, "auth.user.signedOut");
+        },
+
+        confirmUserEmail: function (userId) {
+            return userAction(userId + "/confirm/email", undefined, "auth.user.emailConfirmed");
         },
 
         banUser: function (userId, reason) {

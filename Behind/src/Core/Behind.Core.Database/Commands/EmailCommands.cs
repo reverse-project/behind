@@ -44,6 +44,12 @@ public class EmailCommands(AbstractCoreContext context, TimeProvider timeProvide
         context.Entry(created).Property<Guid>("UserId").CurrentValue = userId;
     }
 
+    public async Task ConfirmPrimary(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await SetConfirmed(userId, true, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task SetConfirmed(Guid userId, bool confirmed, CancellationToken cancellationToken = default)
     {
         var emails = await EmailsOf(userId, cancellationToken);

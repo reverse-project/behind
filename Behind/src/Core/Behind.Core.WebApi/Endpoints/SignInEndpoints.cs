@@ -29,6 +29,10 @@ public sealed class SignInEndpoints
 
     public sealed record BannedResponse(string Reason);
 
+    public sealed record EmailNotConfirmedResponse(string Code = EmailNotConfirmedCode);
+
+    public const string EmailNotConfirmedCode = "emailNotConfirmed";
+
     public sealed record SignInResponse(string AccessToken, DateTimeOffset Expires, string RefreshToken);
 
     public sealed record MagicLinkRequest(
@@ -58,8 +62,8 @@ public sealed class SignInEndpoints
                 }
 
                 return await StartSession(
-                    user, jwtSettings, sessionCommands, wallOfShameQueries, timeProvider.GetUtcNow(), httpContext,
-                    logger);
+                    user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
+                    wallOfShameQueries, timeProvider.GetUtcNow(), httpContext, logger);
             });
     }
 
@@ -180,7 +184,8 @@ public sealed class SignInEndpoints
                     return user is null
                         ? Results.Unauthorized()
                         : await StartSession(
-                            user, jwtSettings, sessionCommands, wallOfShameQueries, now, httpContext, logger);
+                            user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
+                            wallOfShameQueries, now, httpContext, logger);
                 }));
     }
 
@@ -192,9 +197,16 @@ public sealed class SignInEndpoints
     }
 
     private static async Task<IResult> StartSession(ApplicationUser user, JwtSettings jwtSettings,
-        ISessionCommands sessionCommands, IWallOfShameQueries wallOfShameQueries, DateTimeOffset now,
-        HttpContext httpContext, ILogger logger)
+        bool emailConfirmationRequired, ISessionCommands sessionCommands, IWallOfShameQueries wallOfShameQueries,
+        DateTimeOffset now, HttpContext httpContext, ILogger logger)
     {
+        if (emailConfirmationRequired && !user.HasConfirmedEmail)
+        {
+            logger.LogWarning("Sign-in refused for user {UserId}: the email is not confirmed", () => [user.Id]);
+
+            return Results.Json(new EmailNotConfirmedResponse(), statusCode: StatusCodes.Status403Forbidden);
+        }
+
         var ban = await wallOfShameQueries.FindActiveBan(user.Id, now, httpContext.RequestAborted);
 
         return await ban.Match(

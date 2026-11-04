@@ -124,10 +124,15 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
         var emails = (await context.Emails
                 .Where(email => ids.Contains(EF.Property<Guid>(email, "UserId")))
                 .OrderBy(email => EF.Property<Guid>(email, "Id"))
-                .Select(email => new { UserId = EF.Property<Guid>(email, "UserId"), email.Value })
+                .Select(email => new
+                {
+                    UserId = EF.Property<Guid>(email, "UserId"),
+                    email.Value,
+                    Confirmed = email.ConfirmedAt != null
+                })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken))
-            .ToLookup(email => email.UserId, email => email.Value);
+            .ToLookup(email => email.UserId);
 
         var roles = (await (
                     from userRole in context.Set<Dictionary<string, object>>("UserRoles")
@@ -161,10 +166,11 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
             .Select(row => new IUserManagementQueries.ManagedUser(
                 row.Id,
                 row.DisplayName,
-                emails[row.Id].ToList(),
+                emails[row.Id].Select(email => email.Value).ToList(),
                 roles[row.Id].ToList(),
                 bans.TryGetValue(row.Id, out var ban) ? Some(ban) : None,
-                state))
+                state,
+                emails[row.Id].Select(email => email.Confirmed).DefaultIfEmpty(true).First()))
             .ToList();
     }
 

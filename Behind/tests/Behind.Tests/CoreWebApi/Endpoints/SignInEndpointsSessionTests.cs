@@ -29,8 +29,10 @@ public class SignInEndpointsSessionTests
         return queries;
     }
 
-    private static IOptions<SecurityConfiguration> Security(Option<JwtSettings> jwt) =>
-        Options.Create(new SecurityConfiguration(false, None, jwt, None));
+    private static IOptions<SecurityConfiguration> Security(
+        Option<JwtSettings> jwt,
+        bool emailConfirmation = true) =>
+        Options.Create(new SecurityConfiguration(false, None, jwt, None, EmailConfirmation: emailConfirmation));
 
     private static UserManager<ApplicationUser> UserManagerFor(ApplicationUser? user)
     {
@@ -40,11 +42,11 @@ public class SignInEndpointsSessionTests
         return manager;
     }
 
-    private static ApplicationUser NewUser(string password) =>
+    private static ApplicationUser NewUser(string password, bool emailConfirmed = true) =>
         new()
         {
             DisplayName = "User",
-            Emails = [new Email("user@test.com")],
+            Emails = [new Email("user@test.com", emailConfirmed ? Now : null)],
             Password = PasswordHash.Create(password)
         };
 
@@ -145,6 +147,47 @@ public class SignInEndpointsSessionTests
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
         Assert.IsType<InternalServerError>(result);
+    }
+
+    [Fact]
+    public async Task SignInPassword_UnconfirmedEmailWhenConfirmationRequired_ReturnsForbiddenAndStartsNoSession()
+    {
+        var commands = Substitute.For<ISessionCommands>();
+
+        var result = await SignInEndpoints.SignInPassword(
+            UserManagerFor(NewUser("secret", emailConfirmed: false)),
+            Security(Some(Jwt)),
+            commands,
+            NoBans(),
+            new FixedTimeProvider(Now),
+            NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
+            new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
+
+        var json = Assert.IsType<JsonHttpResult<SignInEndpoints.EmailNotConfirmedResponse>>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, json.StatusCode);
+        Assert.Equal(SignInEndpoints.EmailNotConfirmedCode, json.Value!.Code);
+        await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SignInPassword_UnconfirmedEmailWhenConfirmationNotRequired_StartsSession()
+    {
+        var commands = Substitute.For<ISessionCommands>();
+        commands.CreateForUserId(Arg.Any<Guid>(), Arg.Any<ValidSession>(), Arg.Any<CancellationToken>())
+            .Returns(Guid.NewGuid());
+
+        var result = await SignInEndpoints.SignInPassword(
+            UserManagerFor(NewUser("secret", emailConfirmed: false)),
+            Security(Some(Jwt), emailConfirmation: false),
+            commands,
+            NoBans(),
+            new FixedTimeProvider(Now),
+            NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
+            new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
+
+        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
     }
 
     [Fact]

@@ -9,6 +9,8 @@ public static class SignInResponseExtensions
 {
     extension(ApplicationUser user)
     {
+        public bool HasConfirmedEmail => user.Emails.FirstOrDefault()?.ConfirmedAt is not null;
+
         public HumanUser ToHumanUser() => new(user.DisplayName, user.Emails, None);
 
         public SignInEndpoints.SignInResponse ToSignInResponse(

@@ -73,6 +73,22 @@ public sealed class UserManagementQueriesTests : IDisposable
     }
 
     [Fact]
+    public async Task ListUsers_ReportsWhetherThePrimaryEmailIsConfirmed()
+    {
+        var ada = await SeedUserAsync("ada@test.com", "Ada");
+        await SeedUserAsync("zed@test.com", "Zed");
+
+        await using (var ctx = _factory.CreateAuditedContext(AuditActor.ForUser(ada)))
+        {
+            await new EmailCommands(ctx, new FixedTimeProvider(Now)).ConfirmPrimary(ada);
+        }
+
+        var users = Items(await ListAsync());
+
+        Assert.Equal([true, false], users.Select(user => user.EmailConfirmed));
+    }
+
+    [Fact]
     public async Task ListUsers_PagesAndCountsEveryUser()
     {
         foreach (var name in new[] { "A", "B", "C" })

@@ -70,6 +70,7 @@ public class UserManagementFrontendTests
         Assert.Contains("\"/sign/out\"", auth);
         Assert.Contains("\"/ban\", { reason: reason }", auth);
         Assert.Contains("\"/unban\"", auth);
+        Assert.Contains("\"/confirm/email\"", auth);
         Assert.Contains("\"/delete\"", auth);
         Assert.Contains("\"/restore\"", auth);
         Assert.Contains("\"/hard/delete\"", auth);
@@ -95,7 +96,7 @@ public class UserManagementFrontendTests
             new[]
             {
                 "foreach: users", "foreach: roleActions", "click: run", "click: signOut", "click: startBan",
-                "click: unban", "submit: confirmBan", "click: cancelBan", "value: banMessage", "submit: find",
+                "click: unban", "click: confirmEmail", "visible: canConfirmEmail", "submit: confirmBan", "click: cancelBan", "value: banMessage", "submit: find",
                 "visible: canManage", "visible: isDenied", "params=\"pager: pager\""
             },
             binding => Assert.Contains(binding, view));
@@ -114,6 +115,8 @@ public class UserManagementFrontendTests
         Assert.Contains("auth.signOutUser(", viewModel);
         Assert.Contains("auth.banUser(item.id, row.banMessage().trim())", viewModel);
         Assert.Contains("auth.unbanUser(", viewModel);
+        Assert.Contains("item.permissions.canConfirmEmail", viewModel);
+        Assert.Contains("auth.confirmUserEmail(", viewModel);
         Assert.Contains("window.confirm(", viewModel);
         Assert.Contains("models/pager", viewModel);
     }

@@ -43,6 +43,9 @@ public static class UserManagementPolicyExtensions
             && target.Ban == None
             && actor.CanModerate(target);
 
+        public bool CanConfirmEmail(IUserManagementQueries.ManagedUser target) =>
+            !target.EmailConfirmed && target.Emails.Count > 0 && actor.CanModerate(target);
+
         public bool CanManageDeleted(IUserManagementQueries.ManagedUser target) =>
             actor.IsDeveloper && !target.IsActive;
     }

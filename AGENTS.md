@@ -22,3 +22,5 @@ MUST use VersionedKey<Guid> as the Id of every new entity (a Key and a Version s
 MUST give all the file upload related things their own VFS (virtual file system) in the database, where every file has an id and all the known metadata, and store the file content in the preconfigured data directory read from the config file called backend.json
 MUST store the VFS file content as vfs/<Type>/<parent item>/<item> in the data directory, where <Type> is the kind of item the file belongs to (Sites, News, Articles, NewsCategories, ArticleCategories, Galleries, ...) and <item> is the file uuid, for example vfs/Articles/<article uuid>/<file uuid>, and as vfs/<Type>/<item> while the file has no parent yet
 MUST set the parent of a VFS file (a new version of the file is inserted and the content is moved under the parent) as soon as it is known, in every place that uses a file, like sites, news, articles, their categories and galleries, and every new place that uses uploaded files must do the same
+
+MUST update the locale files (Behind/src/Core/Behind.Core.WebApi/Frontend/locales, every language) whenever a change adds, changes or removes user visible text

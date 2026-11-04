@@ -459,6 +459,14 @@ public static class WebApiExtensions
                 .Produces(404)
                 .Produces(500);
 
+            application.MapPost("/users/{id:guid}/confirm/email", UserManagementEndpoints.ConfirmEmail)
+                .RequireAuthorization(userManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(500);
+
             application.MapPost("/users/{id:guid}/delete", UserManagementEndpoints.Delete)
                 .RequireAuthorization(GrantName.Of(GrantArea.User, GrantAction.Delete))
                 .Produces(204)

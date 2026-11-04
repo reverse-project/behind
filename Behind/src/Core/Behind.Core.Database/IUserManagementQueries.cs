@@ -11,7 +11,8 @@ public interface IUserManagementQueries
         IReadOnlyList<string> Emails,
         IReadOnlyList<string> Roles,
         Option<IWallOfShameQueries.ActiveBan> Ban,
-        DeletionState State = DeletionState.Active);
+        DeletionState State = DeletionState.Active,
+        bool EmailConfirmed = true);
 
     Task<PagedResult<ManagedUser>> ListUsers(
         Flipper flipper,

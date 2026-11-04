@@ -83,6 +83,8 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 id: item.id,
                 name: user.label(item),
                 emails: item.emails.join(", "),
+                isEmailUnconfirmed: !item.emailConfirmed,
+                canConfirmEmail: item.permissions.canConfirmEmail,
                 roles: item.roles,
                 isCurrent: item.isCurrent,
                 isBanned: item.ban !== null,
@@ -118,6 +120,11 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
             row.confirmBan = function () {
                 return perform(function () {
                     return auth.banUser(item.id, row.banMessage().trim());
+                });
+            };
+            row.confirmEmail = function () {
+                return perform(function () {
+                    return auth.confirmUserEmail(item.id);
                 });
             };
             row.unban = function () {

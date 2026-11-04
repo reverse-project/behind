@@ -41,6 +41,9 @@ public class SignInMagicLinkEndpointsTests
         Options.Create(new SecurityConfiguration(false, None, jwt, None));
 
     private static ApplicationUser NewUser() =>
+        new() { DisplayName = "User", Emails = [new Email("user@test.com", Now)] };
+
+    private static ApplicationUser NewUnconfirmedUser() =>
         new() { DisplayName = "User", Emails = [new Email("user@test.com")] };
 
     private static UserManager<ApplicationUser> UserManagerFor(ApplicationUser? user)
@@ -434,6 +437,21 @@ public class SignInMagicLinkEndpointsTests
         var json = Assert.IsType<JsonHttpResult<SignInEndpoints.BannedResponse>>(result);
         Assert.Equal(StatusCodes.Status403Forbidden, json.StatusCode);
         Assert.Equal("abuse", json.Value!.Reason);
+        await _sessions.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_UnconfirmedEmail_ReturnsForbiddenAndStartsNoSession()
+    {
+        var user = NewUnconfirmedUser();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(user.Id)));
+
+        var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        var json = Assert.IsType<JsonHttpResult<SignInEndpoints.EmailNotConfirmedResponse>>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, json.StatusCode);
+        Assert.Equal(SignInEndpoints.EmailNotConfirmedCode, json.Value!.Code);
         await _sessions.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
     }
 

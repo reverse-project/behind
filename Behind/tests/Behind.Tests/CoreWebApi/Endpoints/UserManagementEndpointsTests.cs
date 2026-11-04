@@ -23,6 +23,7 @@ public class UserManagementEndpointsTests
     private readonly ISessionCommands _sessionCommands = Substitute.For<ISessionCommands>();
     private readonly IWallOfShameCommands _wallOfShame = Substitute.For<IWallOfShameCommands>();
     private readonly IUserCommands _userCommands = Substitute.For<IUserCommands>();
+    private readonly IEmailCommands _emailCommands = Substitute.For<IEmailCommands>();
     private readonly UserManagementGate _gate;
     private readonly CapturingLogger<UserManagementGate> _gateLogger = new();
 
@@ -106,9 +107,9 @@ public class UserManagementEndpointsTests
         Assert.True(items[0].IsAdministrator);
         Assert.False(items[0].Permissions.CanModerate);
         Assert.Equal(new BanInfo("rude", null), items[1].Ban);
-        Assert.Equal(new ManagedUserPermissions(true, false, true, true, false, false), items[1].Permissions);
+        Assert.Equal(new ManagedUserPermissions(true, false, true, true, false, false, false), items[1].Permissions);
         Assert.True(items[2].IsDeveloper);
-        Assert.Equal(new ManagedUserPermissions(false, false, false, false, false, false), items[2].Permissions);
+        Assert.Equal(new ManagedUserPermissions(false, false, false, false, false, false, false), items[2].Permissions);
     }
 
     [Fact]
@@ -452,6 +453,60 @@ public class UserManagementEndpointsTests
     }
 
     [Fact]
+    public async Task Get_UnconfirmedEmail_OffersConfirmEmailToModerators()
+    {
+        var unconfirmed = Managed(TargetId, "Unconfirmed") with { EmailConfirmed = false };
+        _users.ListUsers(new Flipper(1, UserManagementEndpoints.DefaultPageSize), None, None, DeletionState.Active, Now, Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<IUserManagementQueries.ManagedUser>(
+                1,
+                1,
+                1,
+                UserManagementEndpoints.DefaultPageSize,
+                Some<IEnumerable<IUserManagementQueries.ManagedUser>>([unconfirmed])));
+        _users.GetLetters(None, DeletionState.Active, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<string>>(["U"]));
+
+        var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now));
+
+        var item = Assert.Single(Assert.IsType<JsonHttpResult<UserListResponse>>(result).Value!.Users.Items);
+        Assert.False(item.EmailConfirmed);
+        Assert.True(item.Permissions.CanConfirmEmail);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_ConfirmsThePrimaryEmailOfTheTarget()
+    {
+        TargetIs(Managed(TargetId) with { EmailConfirmed = false });
+
+        var result = await UserManagementEndpoints.ConfirmEmail(TargetId, SignedIn(), _gate, _emailCommands);
+
+        Assert.IsType<NoContent>(result);
+        await _emailCommands.Received(1).ConfirmPrimary(TargetId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_AlreadyConfirmed_IsForbidden()
+    {
+        TargetIs(Managed(TargetId));
+
+        var result = await UserManagementEndpoints.ConfirmEmail(TargetId, SignedIn(), _gate, _emailCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _emailCommands.DidNotReceiveWithAnyArgs().ConfirmPrimary(default, default);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_UnknownUser_ReturnsNotFound()
+    {
+        TargetIs(null);
+
+        var result = await UserManagementEndpoints.ConfirmEmail(TargetId, SignedIn(), _gate, _emailCommands);
+
+        Assert.IsType<NotFound>(result);
+        await _emailCommands.DidNotReceiveWithAnyArgs().ConfirmPrimary(default, default);
+    }
+
+    [Fact]
     public async Task Get_Deleted_AsAdministrator_IsForbidden()
     {
         var result = await UserManagementEndpoints.Get(SignedIn(), _gate, _users, new FixedTimeProvider(Now), deleted: true);
@@ -479,7 +534,7 @@ public class UserManagementEndpointsTests
 
         var item = Assert.Single(Assert.IsType<JsonHttpResult<UserListResponse>>(result).Value!.Users.Items);
         Assert.True(item.IsDeleted);
-        Assert.Equal(new ManagedUserPermissions(false, false, false, false, true, false), item.Permissions);
+        Assert.Equal(new ManagedUserPermissions(false, false, false, false, true, false, false), item.Permissions);
     }
 
     [Fact]

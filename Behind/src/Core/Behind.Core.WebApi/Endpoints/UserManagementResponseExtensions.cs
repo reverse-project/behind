@@ -24,6 +24,7 @@ public static class UserManagementResponseExtensions
                 user.Id,
                 user.DisplayName,
                 user.Emails,
+                user.EmailConfirmed,
                 user.Roles,
                 user.IsAdministrator,
                 user.IsDeveloper,
@@ -36,6 +37,7 @@ public static class UserManagementResponseExtensions
                     actor.CanModerate(user),
                     actor.CanDelete(user),
                     actor.CanManageDeleted(user),
-                    actor.CanImpersonate(user)));
+                    actor.CanImpersonate(user),
+                    actor.CanConfirmEmail(user)));
     }
 }

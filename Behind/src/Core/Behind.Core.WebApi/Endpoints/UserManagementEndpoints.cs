@@ -159,6 +159,19 @@ public sealed class UserManagementEndpoints
 
     [Authorize]
     [IgnoreETag]
+    public static Task<IResult> ConfirmEmail(
+        Guid id,
+        HttpContext httpContext,
+        UserManagementGate gate,
+        IEmailCommands emailCommands) =>
+        gate.Run(
+            httpContext,
+            id,
+            (actor, target) => actor.CanConfirmEmail(target),
+            (_, target, _) => emailCommands.ConfirmPrimary(target.Id, httpContext.RequestAborted));
+
+    [Authorize]
+    [IgnoreETag]
     public static Task<IResult> Delete(
         Guid id,
         HttpContext httpContext,

@@ -10,12 +10,14 @@ public sealed record ManagedUserPermissions(
     bool CanModerate,
     bool CanDelete,
     bool CanManageDeleted,
-    bool CanImpersonate);
+    bool CanImpersonate,
+    bool CanConfirmEmail);
 
 public sealed record ManagedUserItem(
     Guid Id,
     string DisplayName,
     IReadOnlyList<string> Emails,
+    bool EmailConfirmed,
     IReadOnlyList<string> Roles,
     bool IsAdministrator,
     bool IsDeveloper,

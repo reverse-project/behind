@@ -20,15 +20,18 @@ public sealed class MagicLinkCommandsTests : IDisposable
         return await DatabaseSeedHelper.SeedHumanUserAsync(seed, email);
     }
 
-    private async Task<MagicLink> IssueAsync(Guid userId, TimeSpan lifetime)
+    private async Task<MagicLink> IssueAsync(
+        Guid userId,
+        TimeSpan lifetime,
+        MagicLinkFunction function = MagicLinkFunction.SignIn)
     {
-        var link = MagicLink.Create(Now, lifetime);
+        var link = MagicLink.Create(Now, lifetime, function);
         await using var ctx = _factory.CreateContext();
         await new MagicLinkCommands(ctx).Issue(userId, link);
         return link;
     }
 
-    private async Task<Option<Guid>> ConsumeAsync(TokenNonce nonce, DateTimeOffset at)
+    private async Task<Option<MagicLinkRedemption>> ConsumeAsync(TokenNonce nonce, DateTimeOffset at)
     {
         await using var ctx = _factory.CreateContext();
         return await new MagicLinkCommands(ctx).Consume(nonce, at);
@@ -54,13 +57,28 @@ public sealed class MagicLinkCommandsTests : IDisposable
 
         var result = await ConsumeAsync(link.Nonce, Now.AddMinutes(1));
 
-        Assert.Equal(Some(userId), result);
+        Assert.Equal(Some(new MagicLinkRedemption(userId, MagicLinkFunction.SignIn)), result);
         await using var reader = _factory.CreateContext();
         Assert.Equal(
             Now.AddMinutes(1),
             await reader.MagicLinks
                 .Select(l => EF.Property<DateTimeOffset?>(l, MagicLinkConfiguration.ConsumedAtProperty))
                 .SingleAsync());
+    }
+
+    [Theory]
+    [InlineData(MagicLinkFunction.SignIn)]
+    [InlineData(MagicLinkFunction.LostPassword)]
+    public async Task Issue_ThenConsume_RoundTripsTheFunction(MagicLinkFunction function)
+    {
+        var userId = await SeedUserAsync($"{function}@test.com");
+        var link = await IssueAsync(userId, TimeSpan.FromMinutes(15), function);
+
+        await using var reader = _factory.CreateContext();
+        Assert.Equal(function, await reader.MagicLinks.AsNoTracking().Select(l => l.Function).SingleAsync());
+        Assert.Equal(
+            Some(new MagicLinkRedemption(userId, function)),
+            await ConsumeAsync(link.Nonce, Now.AddMinutes(1)));
     }
 
     [Fact]

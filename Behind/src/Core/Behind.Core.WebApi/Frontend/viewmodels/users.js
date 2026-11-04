@@ -107,9 +107,6 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 });
             });
 
-            row.canConfirmBan = ko.pureComputed(function () {
-                return row.banMessage().trim() !== "";
-            });
             row.startBan = function () {
                 row.banning(true);
             };

@@ -101,6 +101,7 @@ public class UserManagementFrontendTests
             },
             binding => Assert.Contains(binding, view));
         Assert.DoesNotContain("<!--", view);
+        Assert.DoesNotContain("canConfirmBan", view);
     }
 
     [Fact]

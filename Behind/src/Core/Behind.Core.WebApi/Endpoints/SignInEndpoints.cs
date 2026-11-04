@@ -33,11 +33,16 @@ public sealed class SignInEndpoints
 
     public const string EmailNotConfirmedCode = "emailNotConfirmed";
 
-    public sealed record SignInResponse(string AccessToken, DateTimeOffset Expires, string RefreshToken);
+    public sealed record SignInResponse(
+        string AccessToken,
+        DateTimeOffset Expires,
+        string RefreshToken,
+        MagicLinkFunction? Function = null);
 
     public sealed record MagicLinkRequest(
         [property: Required, DataType(DataType.EmailAddress)]
-        string Email);
+        string Email,
+        MagicLinkFunction Function = MagicLinkFunction.SignIn);
 
     public sealed record MagicLinkSignInRequest([property: Required] string Token);
 
@@ -103,18 +108,18 @@ public sealed class SignInEndpoints
                     }
                     else
                     {
-                        var magicLink = MagicLink.Create(now, settings.EffectiveLinkLifetime);
+                        var magicLink = MagicLink.Create(now, settings.EffectiveLinkLifetime, request.Function);
                         await magicLinkCommands.Issue(user.Id, magicLink, httpContext.RequestAborted);
 
                         var link = MagicLinkCredential.Create(magicLink.Nonce, settings.ActualSecret, jwtSettings.SigningKey)
                             .ToLink(configuration.FrontendUri().GetOrElse(() => httpContext.BaseUri()));
 
-                        var queued = mailQueue.TryEnqueue(new MagicLinkMail(user, request.Email, link));
+                        var queued = mailQueue.TryEnqueue(new MagicLinkMail(user, request.Email, link, request.Function));
 
                         logger.Log(
                             queued ? LogLevel.Information : LogLevel.Warning,
-                            "Magic link for user {UserId} issued, expires at {ExpiresAt}, email queued: {Queued}",
-                            () => [user.Id, magicLink.ExpiresAt, queued]);
+                            "Magic link ({Function}) for user {UserId} issued, expires at {ExpiresAt}, email queued: {Queued}",
+                            () => [request.Function, user.Id, magicLink.ExpiresAt, queued]);
                     }
 
                     return Results.NoContent();
@@ -145,12 +150,12 @@ public sealed class SignInEndpoints
                     var credential = MagicLinkCredential.TryParse(request.Token)
                         .Where(c => c.IsSignedBy(settings.ValidSecrets(now), jwtSettings.SigningKey));
 
-                    var userId = await credential.Match(
+                    var redemption = await credential.Match(
                         none: () =>
                         {
                             logger.LogWarning("Magic link redemption rejected: credential is malformed or not signed");
 
-                            return Task.FromResult<Option<Guid>>(None);
+                            return Task.FromResult<Option<MagicLinkRedemption>>(None);
                         },
                         some: async c =>
                         {
@@ -165,17 +170,17 @@ public sealed class SignInEndpoints
                             return consumed;
                         });
 
-                    var user = await userId.Match(
+                    var user = await redemption.Match(
                         none: () => Task.FromResult<ApplicationUser?>(null),
-                        some: async id =>
+                        some: async r =>
                         {
-                            var found = await userManager.FindByIdAsync(id.ToString());
+                            var found = await userManager.FindByIdAsync(r.UserId.ToString());
 
                             if (found is null)
                             {
                                 logger.LogWarning(
                                     "Magic link redemption rejected: user {UserId} no longer exists",
-                                    () => [id]);
+                                    () => [r.UserId]);
                             }
 
                             return found;
@@ -185,7 +190,8 @@ public sealed class SignInEndpoints
                         ? Results.Unauthorized()
                         : await StartSession(
                             user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
-                            wallOfShameQueries, now, httpContext, logger);
+                            wallOfShameQueries, now, httpContext, logger,
+                            redemption.Match(() => (MagicLinkFunction?)null, r => r.Function));
                 }));
     }
 
@@ -198,7 +204,7 @@ public sealed class SignInEndpoints
 
     private static async Task<IResult> StartSession(ApplicationUser user, JwtSettings jwtSettings,
         bool emailConfirmationRequired, ISessionCommands sessionCommands, IWallOfShameQueries wallOfShameQueries,
-        DateTimeOffset now, HttpContext httpContext, ILogger logger)
+        DateTimeOffset now, HttpContext httpContext, ILogger logger, MagicLinkFunction? function = null)
     {
         if (emailConfirmationRequired && !user.HasConfirmedEmail)
         {
@@ -210,7 +216,7 @@ public sealed class SignInEndpoints
         var ban = await wallOfShameQueries.FindActiveBan(user.Id, now, httpContext.RequestAborted);
 
         return await ban.Match(
-            none: () => StartPermittedSession(user, jwtSettings, sessionCommands, httpContext, logger),
+            none: () => StartPermittedSession(user, jwtSettings, sessionCommands, httpContext, logger, function),
             some: active =>
             {
                 logger.LogWarning("Sign-in refused for banned user {UserId}", () => [user.Id]);
@@ -222,7 +228,7 @@ public sealed class SignInEndpoints
     }
 
     private static async Task<IResult> StartPermittedSession(ApplicationUser user, JwtSettings jwtSettings,
-        ISessionCommands sessionCommands, HttpContext httpContext, ILogger logger)
+        ISessionCommands sessionCommands, HttpContext httpContext, ILogger logger, MagicLinkFunction? function)
     {
         var humanUser = user.ToHumanUser();
         var accessToken = AccessToken.Create(humanUser);
@@ -241,6 +247,9 @@ public sealed class SignInEndpoints
             "Session {SessionId} started for user {UserId}, access token expires at {AccessTokenExpiresAt}",
             () => [sessionId, user.Id, accessToken.ExpiresAt]);
 
-        return Results.Json(user.ToSignInResponse(accessToken, refreshToken, sessionId, jwtSettings));
+        return Results.Json(user.ToSignInResponse(accessToken, refreshToken, sessionId, jwtSettings) with
+        {
+            Function = function
+        });
     }
 }

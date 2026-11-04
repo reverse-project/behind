@@ -6,6 +6,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/session": "controllers/session",
         "#/sessions": "controllers/sessions",
         "#/profile": "controllers/profile",
+        "#/profile/password": "controllers/profilepassword",
         "#/users": "controllers/users",
         "#/roles": "controllers/roles",
         "#/audit-log": "controllers/auditlog",

@@ -268,4 +268,91 @@ public class SignUpEndpointsTests
         Assert.IsType<BadRequest>(result);
         Assert.Equal(["InvalidToken"], (string[])logger.Single(LogLevel.Warning).State["ErrorCodes"]!);
     }
+
+    private static UserManager<ApplicationUser> ManagerFinding(ApplicationUser? user, bool confirmed = false)
+    {
+        var manager = Substitute.For<UserManager<ApplicationUser>>(
+            Substitute.For<IUserStore<ApplicationUser>>(),
+            null, null, null, null, null, null, null, null);
+        manager.FindByEmailAsync(Arg.Any<string>()).Returns(user);
+        manager.IsEmailConfirmedAsync(Arg.Any<ApplicationUser>()).Returns(confirmed);
+        manager.GenerateEmailConfirmationTokenAsync(Arg.Any<ApplicationUser>()).Returns("the token");
+        return manager;
+    }
+
+    private Task<IResult> Resend(
+        UserManager<ApplicationUser> manager,
+        bool emailConfirmation = true,
+        ILogger<SignUpEndpoints>? logger = null) =>
+        SignUpEndpoints.ResendConfirmation(
+            manager,
+            Security(emailConfirmation),
+            _emailSender,
+            FrontendConfigurationOf("https://app.test/"),
+            NewHttpContext(),
+            logger ?? NullLogger<SignUpEndpoints>.Instance,
+            new SignUpEndpoints.ResendConfirmationRequest("ada@test.com"));
+
+    [Fact]
+    public async Task ResendConfirmation_UnconfirmedUser_SendsNewLinkAndReturnsNoContent()
+    {
+        var user = new ApplicationUser { Emails = [new Email("ada@test.com")] };
+
+        var result = await Resend(ManagerFinding(user));
+
+        Assert.IsType<NoContent>(result);
+        await _emailSender.Received(1).SendConfirmationLinkAsync(
+            user,
+            "ada@test.com",
+            $"https://app.test/#/sign/up/confirm?userId={user.Id}&token=the%20token");
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_UnknownEmail_ReturnsNoContentAndSendsNothing()
+    {
+        var result = await Resend(ManagerFinding(null));
+
+        Assert.IsType<NoContent>(result);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_AlreadyConfirmed_ReturnsNoContentAndSendsNothing()
+    {
+        var user = new ApplicationUser { Emails = [new Email("ada@test.com", Now)] };
+
+        var result = await Resend(ManagerFinding(user, confirmed: true));
+
+        Assert.IsType<NoContent>(result);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_ConfirmationDisabled_ReturnsNotFoundAndSendsNothing()
+    {
+        var manager = ManagerFinding(new ApplicationUser { Emails = [new Email("ada@test.com")] });
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        var result = await Resend(manager, emailConfirmation: false, logger: logger);
+
+        Assert.IsType<NotFound>(result);
+        await manager.DidNotReceiveWithAnyArgs().FindByEmailAsync(default!);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_EmailFails_StillReturnsNoContentAndLogsError()
+    {
+        var logger = new CapturingLogger<SignUpEndpoints>();
+        _emailSender.SendConfirmationLinkAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromException(new InvalidOperationException("smtp down")));
+
+        var result = await Resend(
+            ManagerFinding(new ApplicationUser { Emails = [new Email("ada@test.com")] }),
+            logger: logger);
+
+        Assert.IsType<NoContent>(result);
+        Assert.Equal("smtp down", logger.Single(LogLevel.Error).Exception!.Message);
+    }
 }

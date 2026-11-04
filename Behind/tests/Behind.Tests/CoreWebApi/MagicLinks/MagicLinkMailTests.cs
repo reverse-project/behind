@@ -11,6 +11,19 @@ public class MagicLinkMailTests
         new(new ApplicationUser { DisplayName = "User" }, email, "https://app.test/link");
 
     [Fact]
+    public async Task Send_RoutesByTheFunctionOfTheMail()
+    {
+        var sender = Substitute.For<IMagicLinkEmailSender>();
+        var user = new ApplicationUser { DisplayName = "User" };
+
+        await sender.Send(new MagicLinkMail(user, "user@test.com", "link", MagicLinkFunction.LostPassword));
+        await sender.Send(new MagicLinkMail(user, "user@test.com", "link", MagicLinkFunction.SignIn));
+
+        await sender.Received(1).SendLostPasswordLinkAsync(user, "user@test.com", "link");
+        await sender.Received(1).SendMagicLinkAsync(user, "user@test.com", "link");
+    }
+
+    [Fact]
     public void Queue_ReturnsEnqueuedMailsInOrder()
     {
         var queue = new MagicLinkMailQueue();

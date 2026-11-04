@@ -20,6 +20,7 @@ public class RequestValidationTests
     public void SignInMagicLinkRequests_RequireTheirValues()
     {
         Assert.True(IsValid(new SignInEndpoints.MagicLinkRequest("user@test.com")));
+        Assert.True(IsValid(new SignInEndpoints.MagicLinkRequest("user@test.com", MagicLinkFunction.LostPassword)));
         Assert.False(IsValid(new SignInEndpoints.MagicLinkRequest("")));
         Assert.True(IsValid(new SignInEndpoints.MagicLinkSignInRequest("token")));
         Assert.False(IsValid(new SignInEndpoints.MagicLinkSignInRequest("")));
@@ -32,6 +33,13 @@ public class RequestValidationTests
         Assert.False(IsValid(new SignUpEndpoints.PasswordRequest("", "secret")));
         Assert.False(IsValid(new SignUpEndpoints.PasswordRequest("user@test.com", "")));
         Assert.False(IsValid(new SignUpEndpoints.PasswordRequest("user@test.com", "secret", new string('x', 501))));
+    }
+
+    [Fact]
+    public void ResendConfirmationRequest_RequiresAnEmail()
+    {
+        Assert.True(IsValid(new SignUpEndpoints.ResendConfirmationRequest("user@test.com")));
+        Assert.False(IsValid(new SignUpEndpoints.ResendConfirmationRequest("")));
     }
 
     [Theory]

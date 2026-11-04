@@ -95,8 +95,12 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
         signIn: function (email, password) {
             return http.post("/sign/in/password", { email: email, password: password }).then(function (response) {
                 if (response.ok) {
+                    var signedIn = success("auth.signIn.done");
+
                     session.start(response.data);
-                    return success("auth.signIn.done");
+                    signedIn.lostPassword = response.data.function === "LostPassword";
+
+                    return signedIn;
                 }
 
                 return failure(response, {
@@ -114,17 +118,25 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
 
             return http.post("/sign/in/magiclink/redeem", { token: token }).then(function (response) {
                 if (response.ok) {
+                    var signedIn = success("auth.signIn.done");
+
                     session.start(response.data);
-                    return success("auth.signIn.done");
+                    signedIn.lostPassword = response.data.function === "LostPassword";
+
+                    return signedIn;
                 }
 
-                return failure(response, {
+                var result = failure(response, {
                     400: "auth.magicLink.incomplete",
                     401: "auth.magicLink.invalid",
                     403: bannedMessage,
                     404: "auth.magicLink.unavailable",
                     429: "auth.tooManyAttempts"
                 });
+
+                result.emailNotConfirmed = response.status === 403 && !!response.data && response.data.code === "emailNotConfirmed";
+
+                return result;
             });
         },
 
@@ -150,8 +162,20 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
             });
         },
 
-        requestMagicLink: function (email, done) {
-            return http.post("/sign/in/magiclink", { email: email }).then(function (response) {
+        resendConfirmation: function (email) {
+            return http.post("/sign/up/confirm/resend", { email: email }).then(function (response) {
+                return response.ok
+                    ? success("auth.resendConfirmation.requested")
+                    : failure(response, {
+                        400: "auth.resendConfirmation.invalidEmail",
+                        404: "auth.resendConfirmation.unavailable",
+                        429: "auth.resendConfirmation.tooManyRequests"
+                    });
+            });
+        },
+
+        requestMagicLink: function (email, done, magicLinkFunction) {
+            return http.post("/sign/in/magiclink", { email: email, function: magicLinkFunction || "SignIn" }).then(function (response) {
                 return response.ok
                     ? success(done || "auth.magicLink.requested")
                     : failure(response, {

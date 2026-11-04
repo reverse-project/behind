@@ -74,7 +74,8 @@ public class SignInMagicLinkEndpointsTests
         ApplicationUser? user,
         Option<MagicLinkSettings> settings,
         IConfiguration? configuration = null,
-        Option<JwtSettings>? jwt = null) =>
+        Option<JwtSettings>? jwt = null,
+        MagicLinkFunction function = MagicLinkFunction.SignIn) =>
         SignInEndpoints.RequestMagicLink(
             UserManagerFor(user),
             Security(jwt ?? Some(Jwt)),
@@ -86,7 +87,7 @@ public class SignInMagicLinkEndpointsTests
             _time,
             NewHttpContext(),
             _logger,
-            new SignInEndpoints.MagicLinkRequest("user@test.com"));
+            new SignInEndpoints.MagicLinkRequest("user@test.com", function));
 
     private Task<IResult> Redeem(
         ApplicationUser? user,
@@ -244,7 +245,7 @@ public class SignInMagicLinkEndpointsTests
     public async Task SignInMagicLink_AlreadyConsumedOrExpired_LogsWarning()
     {
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<Option<Guid>>(None));
+            .Returns(Task.FromResult<Option<MagicLinkRedemption>>(None));
 
         await Redeem(NewUser(), Some(Settings()), TokenFor(Actual));
 
@@ -256,7 +257,7 @@ public class SignInMagicLinkEndpointsTests
     {
         var userId = Guid.NewGuid();
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(userId)));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(userId, MagicLinkFunction.SignIn))));
 
         await Redeem(null, Some(Settings()), TokenFor(Actual));
 
@@ -269,7 +270,7 @@ public class SignInMagicLinkEndpointsTests
         var user = NewUser();
         var sessionId = Guid.NewGuid();
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(user.Id)));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn))));
         _sessions.CreateForUserId(Arg.Any<Guid>(), Arg.Any<ValidSession>(), Arg.Any<CancellationToken>())
             .Returns(sessionId);
 
@@ -285,7 +286,7 @@ public class SignInMagicLinkEndpointsTests
     {
         var user = NewUser();
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(user.Id)));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn))));
         _bans.FindActiveBan(user.Id, Now, Arg.Any<CancellationToken>())
             .Returns(Some(new IWallOfShameQueries.ActiveBan("abuse", None)));
 
@@ -381,7 +382,7 @@ public class SignInMagicLinkEndpointsTests
     public async Task SignInMagicLink_AlreadyConsumedOrExpired_ReturnsUnauthorized()
     {
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<Option<Guid>>(None));
+            .Returns(Task.FromResult<Option<MagicLinkRedemption>>(None));
 
         var result = await Redeem(NewUser(), Some(Settings()), TokenFor(Actual));
 
@@ -393,7 +394,7 @@ public class SignInMagicLinkEndpointsTests
     public async Task SignInMagicLink_UserNoLongerExists_ReturnsUnauthorized()
     {
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(Guid.NewGuid())));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(Guid.NewGuid(), MagicLinkFunction.SignIn))));
 
         var result = await Redeem(null, Some(Settings()), TokenFor(Actual));
 
@@ -408,7 +409,7 @@ public class SignInMagicLinkEndpointsTests
         var nonce = new TokenNonce(Guid.NewGuid());
         var sessionId = Guid.NewGuid();
         _magicLinks.Consume(nonce, Now, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(user.Id)));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn))));
         _sessions.CreateForUserId(Arg.Any<Guid>(), Arg.Any<ValidSession>(), Arg.Any<CancellationToken>())
             .Returns(sessionId);
 
@@ -423,12 +424,47 @@ public class SignInMagicLinkEndpointsTests
         Assert.Equal(sessionId.ToString(), access.Claims.Single(c => c.Type == SessionClaimTypes.SessionId).Value);
     }
 
+    [Theory]
+    [InlineData(MagicLinkFunction.SignIn)]
+    [InlineData(MagicLinkFunction.LostPassword)]
+    public async Task SignInMagicLink_ValidToken_ReportsTheFunctionOfTheLink(MagicLinkFunction function)
+    {
+        var user = NewUser();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, function))));
+        _sessions.CreateForUserId(Arg.Any<Guid>(), Arg.Any<ValidSession>(), Arg.Any<CancellationToken>())
+            .Returns(Guid.NewGuid());
+
+        var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        var json = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
+        Assert.Equal(function, json.Value!.Function);
+    }
+
+    [Theory]
+    [InlineData(MagicLinkFunction.SignIn)]
+    [InlineData(MagicLinkFunction.LostPassword)]
+    public async Task RequestMagicLink_IssuesAndQueuesTheLinkWithTheRequestedFunction(MagicLinkFunction function)
+    {
+        var user = NewUser();
+        MagicLink? issued = null;
+        await _magicLinks.Issue(
+            user.Id,
+            Arg.Do<MagicLink>(link => issued = link),
+            Arg.Any<CancellationToken>());
+
+        await RequestLink(user, Some(Settings()), function: function);
+
+        Assert.Equal(function, issued!.Function);
+        Assert.Equal(function, Assert.Single(QueuedMails()).Function);
+    }
+
     [Fact]
     public async Task SignInMagicLink_BannedUser_ReturnsForbiddenWithTheBanReasonAndStartsNoSession()
     {
         var user = NewUser();
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(user.Id)));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn))));
         _bans.FindActiveBan(user.Id, Now, Arg.Any<CancellationToken>())
             .Returns(Some(new IWallOfShameQueries.ActiveBan("abuse", None)));
 
@@ -445,7 +481,7 @@ public class SignInMagicLinkEndpointsTests
     {
         var user = NewUnconfirmedUser();
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(user.Id)));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn))));
 
         var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
 
@@ -460,7 +496,7 @@ public class SignInMagicLinkEndpointsTests
     {
         var user = NewUser();
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(user.Id)));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn))));
         _sessions.CreateForUserId(Arg.Any<Guid>(), Arg.Any<ValidSession>(), Arg.Any<CancellationToken>())
             .Returns(Guid.NewGuid());
 

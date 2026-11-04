@@ -412,14 +412,35 @@ public class UserManagementEndpointsTests
     }
 
     [Theory]
-    [InlineData("spamming", true)]
-    [InlineData("", false)]
-    [InlineData("   ", false)]
-    public void BanRequest_RequiresANonBlankReason(string reason, bool valid)
+    [InlineData("spamming")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void BanRequest_AcceptsAMissingOrBlankReason(string? reason)
     {
         var request = new UserManagementEndpoints.BanRequest(reason);
 
-        Assert.Equal(valid, Validator.TryValidateObject(request, new ValidationContext(request), [], true));
+        Assert.True(Validator.TryValidateObject(request, new ValidationContext(request), [], true));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public async Task Ban_WithoutAReason_StoresAnEmptyReason(string? reason)
+    {
+        TargetIs(Managed(TargetId));
+
+        var result = await UserManagementEndpoints.Ban(
+            TargetId,
+            new UserManagementEndpoints.BanRequest(reason),
+            SignedIn(),
+            _gate,
+            _wallOfShame,
+            _sessionCommands);
+
+        Assert.IsType<NoContent>(result);
+        await _wallOfShame.Received(1).Ban(TargetId, ActorId, new Reason(string.Empty), Arg.Any<CancellationToken>());
+        await _sessionCommands.Received(1).InvalidateAllSessions(TargetId, ActorId, Now, Arg.Any<CancellationToken>());
     }
 
     [Fact]

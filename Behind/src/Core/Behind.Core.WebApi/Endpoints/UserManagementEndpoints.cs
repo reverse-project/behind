@@ -19,7 +19,7 @@ public sealed class UserManagementEndpoints
     public const int MaxSearchLength = 200;
     public const int MaxReasonLength = 500;
 
-    public sealed record BanRequest([property: Required, MaxLength(MaxReasonLength)] string Reason);
+    public sealed record BanRequest([property: MaxLength(MaxReasonLength)] string? Reason = null);
 
     [Authorize]
     [IgnoreETag]
@@ -134,7 +134,7 @@ public sealed class UserManagementEndpoints
                 await wallOfShameCommands.Ban(
                     target.Id,
                     actor.UserId,
-                    new Reason(request.Reason.Trim()),
+                    new Reason((request.Reason ?? string.Empty).Trim()),
                     httpContext.RequestAborted);
 
                 await sessionCommands.InvalidateAllSessions(

@@ -342,6 +342,13 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.Property<long>("ExpiresAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Function")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("SignIn");
+
                     b.Property<long>("IssuedAt")
                         .HasColumnType("INTEGER");
 

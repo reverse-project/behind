@@ -29,6 +29,24 @@ public class MagicLinkEmailSenderTests
     }
 
     [Fact]
+    public async Task LoggerEmailSender_SendLostPasswordLinkAsync_UsesThePasswordResetSubject()
+    {
+        var logger = EnabledLogger.For<LoggerEmailSender>();
+        IMagicLinkEmailSender sender = new LoggerEmailSender(logger, FakeHostEnvironment.Production);
+
+        await sender.SendLostPasswordLinkAsync(new ApplicationUser { DisplayName = "User" }, "user@test.com", Link);
+
+        logger.Received(1).Log(
+            LogLevel.Information,
+            Arg.Any<EventId>(),
+            Arg.Is<object>(o => o.ToString()!.Contains("Password reset link")
+                                && o.ToString()!.Contains("user@test.com")
+                                && !o.ToString()!.Contains(Link)),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception?, string>>());
+    }
+
+    [Fact]
     public async Task SmtpEmailSender_SendMagicLinkAsync_UsesSubjectAndDefaultTemplate()
     {
         var logger = EnabledLogger.For<SmtpEmailSender>();

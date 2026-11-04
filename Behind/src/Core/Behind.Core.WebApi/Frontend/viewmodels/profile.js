@@ -9,6 +9,8 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
         self.emails = ko.observableArray([]);
         self.locales = ko.observableArray([]);
         self.locale = ko.observable("");
+        self.settingNewPassword = ko.observable(false);
+        self.passwordFocus = ko.observable(false);
 
         self.hasMessage = ko.pureComputed(function () {
             return self.message() !== "";
@@ -102,6 +104,7 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
             return load()
                 .then(function (result) {
                     self.message(result.message);
+                    self.passwordFocus(self.settingNewPassword());
 
                     return loadLocales();
                 })

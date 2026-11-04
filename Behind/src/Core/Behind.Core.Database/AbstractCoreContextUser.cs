@@ -47,7 +47,7 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
                         user.DisplayName,
                         Emails = Emails
                             .Where(e => EF.Property<Guid>(e, "UserId") == EF.Property<Guid>(user, "Id"))
-                            .Select(e => e.Value)
+                            .Select(e => new { e.Value, e.ConfirmedAt })
                             .ToList()
                     };
 
@@ -108,7 +108,7 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
 
         return Some(new HumanUser(
             userResult.DisplayName,
-            userResult.Emails.Select(v => new Email(v)),
+            userResult.Emails.Select(e => new Email(e.Value, e.ConfirmedAt)),
             roles
         ));
     }

@@ -22,7 +22,10 @@ public sealed class SignUpEndpoints
 
     public sealed record ConfirmEmailRequest([property: Required] Guid UserId, [property: Required] string Token);
 
+    public sealed record ResendConfirmationRequest([property: Required, DataType(DataType.EmailAddress)] string Email);
+
     public const string ConfirmEmailRoute = "/sign/up/confirm";
+    public const string ResendConfirmationRoute = "/sign/up/confirm/resend";
 
     [IgnoreETag]
     public static async Task<IResult> SignUpPassword(
@@ -106,6 +109,43 @@ public sealed class SignUpEndpoints
             () => [user.Id, result.Errors.Select(e => e.Code).ToArray()]);
 
         return Results.BadRequest();
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> ResendConfirmation(
+        UserManager<ApplicationUser> userManager,
+        IOptions<SecurityConfiguration> securityConfiguration,
+        IEmailSender<ApplicationUser> emailSender,
+        IConfiguration configuration,
+        HttpContext httpContext,
+        ILogger<SignUpEndpoints> logger,
+        ResendConfirmationRequest request)
+    {
+        if (!securityConfiguration.Value.EmailConfirmation)
+        {
+            logger.LogWarning("Confirmation email resend rejected: email confirmation is disabled");
+
+            return Results.NotFound();
+        }
+
+        var user = await userManager.FindByEmailAsync(request.Email);
+
+        if (user is null)
+        {
+            logger.LogDebug("Confirmation email requested for an unknown email, nothing sent");
+        }
+        else if (await userManager.IsEmailConfirmedAsync(user))
+        {
+            logger.LogDebug(
+                "Confirmation email for user {UserId} not sent: the email is already confirmed",
+                () => [user.Id]);
+        }
+        else
+        {
+            await SendConfirmation(userManager, emailSender, configuration, httpContext, logger, user, request.Email);
+        }
+
+        return Results.NoContent();
     }
 
     private static async Task SendConfirmation(

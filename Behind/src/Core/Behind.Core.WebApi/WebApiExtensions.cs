@@ -130,6 +130,7 @@ public static class WebApiExtensions
             );
 
             builder.Services.AddElevationRateLimiting();
+            builder.Services.AddConfirmationEmailRateLimiting();
 
             builder.Services.AddSingleton(ConfigurationFileCatalog.For(builder.Environment.ContentRootPath));
             builder.Services.AddMagicLink(
@@ -983,6 +984,15 @@ public static class WebApiExtensions
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignUpEndpoints.ConfirmEmailRequest>>()
                 .Produces(204)
                 .Produces(400)
+                .Produces(500);
+
+            application.MapPost(SignUpEndpoints.ResendConfirmationRoute, SignUpEndpoints.ResendConfirmation)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SignUpEndpoints.ResendConfirmationRequest>>()
+                .RequireRateLimiting(ConfirmationEmailExtensions.ResendRateLimitPolicy)
+                .Produces(204)
+                .Produces(400)
+                .Produces(404)
+                .Produces(429)
                 .Produces(500);
 
             application.MapPost("/sign/in/password", SignInEndpoints.SignInPassword)

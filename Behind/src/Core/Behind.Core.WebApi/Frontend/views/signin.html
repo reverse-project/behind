@@ -13,6 +13,7 @@
             <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'signin.submit'">Sign in</button>
             <button type="button" class="btn btn-outline-secondary" data-bind="enable: !busy(), click: requestMagicLink, t: 'signin.magicLink'">Email me a sign in link</button>
             <button type="button" class="btn btn-link" data-bind="enable: !busy(), click: requestLostPassword, t: 'signin.lostPassword'">Lost your password?</button>
+            <button type="button" class="btn btn-link" data-bind="enable: !busy(), click: resendConfirmation, t: 'signin.resendConfirmation'">Resend confirmation email</button>
         </div>
     </form>
     <p class="mt-3" role="status" data-bind="visible: hasMessage, text: message"></p>

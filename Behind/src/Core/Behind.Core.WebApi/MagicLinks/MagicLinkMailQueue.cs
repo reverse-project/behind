@@ -1,9 +1,14 @@
 using System.Threading.Channels;
+using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
 
 namespace Behind.Core.WebApi.MagicLinks;
 
-public sealed record MagicLinkMail(ApplicationUser User, string Email, string Link);
+public sealed record MagicLinkMail(
+    ApplicationUser User,
+    string Email,
+    string Link,
+    MagicLinkFunction Function = MagicLinkFunction.SignIn);
 
 public interface IMagicLinkMailQueue
 {

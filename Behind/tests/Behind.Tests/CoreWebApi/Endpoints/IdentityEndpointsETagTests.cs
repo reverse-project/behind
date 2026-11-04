@@ -16,6 +16,15 @@ public class IdentityEndpointsETagTests
     }
 
     [Fact]
+    public void ResendConfirmation_IsMarkedWithIgnoreETag()
+    {
+        var method = typeof(SignUpEndpoints).GetMethod(nameof(SignUpEndpoints.ResendConfirmation));
+
+        Assert.NotNull(method);
+        Assert.NotNull(method!.GetCustomAttribute<IgnoreETagAttribute>());
+    }
+
+    [Fact]
     public void SignInPassword_IsMarkedWithIgnoreETag()
     {
         var method = typeof(SignInEndpoints).GetMethod(nameof(SignInEndpoints.SignInPassword));

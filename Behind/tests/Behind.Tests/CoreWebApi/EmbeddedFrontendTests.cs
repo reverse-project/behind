@@ -54,6 +54,7 @@ public class EmbeddedFrontendTests
     [InlineData("viewmodels/sessions.js")]
     [InlineData("views/sessions.html")]
     [InlineData("controllers/profile.js")]
+    [InlineData("controllers/profilepassword.js")]
     [InlineData("viewmodels/profile.js")]
     [InlineData("views/profile.html")]
     [InlineData("models/user.js")]
@@ -374,10 +375,51 @@ public class EmbeddedFrontendTests
         var auth = Read(Provider.GetFileInfo("models/auth.js"));
 
         Assert.Contains("click: requestLostPassword", signIn);
-        Assert.Contains("auth.requestMagicLink(self.email(), \"auth.lostPassword.requested\")", signInModel);
+        Assert.Contains("auth.requestMagicLink(self.email(), \"auth.lostPassword.requested\", \"LostPassword\")", signInModel);
         Assert.Contains("submit: submitPassword", profile);
         Assert.Contains("value: newPassword", profile);
         Assert.Contains("http.put(\"/profile/password\"", auth);
+    }
+
+    [Fact]
+    public void LostPasswordMagicLink_GoesStraightToTheChangePasswordWindow()
+    {
+        var app = Read(Provider.GetFileInfo("app.js"));
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/magiclink.js"));
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+        var profile = Read(Provider.GetFileInfo("views/profile.html"));
+        var controller = Read(Provider.GetFileInfo("controllers/profilepassword.js"));
+
+        Assert.Contains("function: magicLinkFunction || \"SignIn\"", auth);
+        Assert.Contains("signedIn.lostPassword = response.data.function === \"LostPassword\"", auth);
+        Assert.Contains("context.replace(result.lostPassword ? \"#/profile/password\" : \"#/\")", viewModel);
+        Assert.Contains("\"#/profile/password\": \"controllers/profilepassword\"", app);
+        Assert.Contains("viewModel.settingNewPassword(true)", controller);
+        Assert.Contains("hasFocus: passwordFocus", profile);
+    }
+
+    [Fact]
+    public void MagicLinkPage_OffersResendingTheConfirmationEmailWhenTheEmailIsNotConfirmed()
+    {
+        var view = Read(Provider.GetFileInfo("views/magiclink.html"));
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/magiclink.js"));
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+
+        Assert.Contains("visible: emailNotConfirmed", view);
+        Assert.Contains("self.emailNotConfirmed(!!result.emailNotConfirmed)", viewModel);
+        Assert.Contains("result.emailNotConfirmed = response.status === 403", auth);
+    }
+
+    [Fact]
+    public void SignIn_OffersResendingTheConfirmationEmail()
+    {
+        var signIn = Read(Provider.GetFileInfo("views/signin.html"));
+        var signInModel = Read(Provider.GetFileInfo("viewmodels/signin.js"));
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+
+        Assert.Contains("click: resendConfirmation", signIn);
+        Assert.Contains("auth.resendConfirmation(self.email())", signInModel);
+        Assert.Contains("http.post(\"/sign/up/confirm/resend\"", auth);
     }
 
     [Fact]

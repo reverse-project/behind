@@ -7,6 +7,8 @@ namespace Behind.Core.Database.Aggregates;
 
 public sealed class MagicLinkConfiguration : IEntityTypeConfiguration<MagicLink>
 {
+    private const int EnumColumnLength = 20;
+
     public const string ConsumedAtProperty = "ConsumedAtValue";
 
     public void Configure(EntityTypeBuilder<MagicLink> builder)
@@ -21,6 +23,11 @@ public sealed class MagicLinkConfiguration : IEntityTypeConfiguration<MagicLink>
 
         builder.Property(l => l.IssuedAt).HasConversion<DateTimeOffsetConverter>();
         builder.Property(l => l.ExpiresAt).HasConversion<DateTimeOffsetConverter>();
+        builder.Property(l => l.Function)
+            .HasConversion<string>()
+            .HasMaxLength(EnumColumnLength)
+            .HasDefaultValue(MagicLinkFunction.SignIn)
+            .IsRequired();
         builder.Ignore(l => l.ConsumedAt);
         builder.Property<DateTimeOffset?>(ConsumedAtProperty)
             .HasColumnName(nameof(MagicLink.ConsumedAt))

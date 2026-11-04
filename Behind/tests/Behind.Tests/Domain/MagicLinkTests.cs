@@ -17,6 +17,16 @@ public class MagicLinkTests
     }
 
     [Fact]
+    public void Create_DefaultsToTheSignInFunction() =>
+        Assert.Equal(MagicLinkFunction.SignIn, MagicLink.Create(Now, TimeSpan.FromMinutes(15)).Function);
+
+    [Fact]
+    public void Create_KeepsTheRequestedFunction() =>
+        Assert.Equal(
+            MagicLinkFunction.LostPassword,
+            MagicLink.Create(Now, TimeSpan.FromMinutes(15), MagicLinkFunction.LostPassword).Function);
+
+    [Fact]
     public void IsUsableAt_BeforeExpiry_IsTrue() =>
         Assert.True(MagicLink.Create(Now, TimeSpan.FromMinutes(15)).IsUsableAt(Now.AddMinutes(14)));
 

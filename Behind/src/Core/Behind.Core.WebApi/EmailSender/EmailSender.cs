@@ -54,6 +54,9 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>,
         return SendEmailAsync(email, "Your sign in link", template);
     }
 
+    public virtual Task SendLostPasswordLinkAsync(ApplicationUser user, string email, string magicLink) =>
+        SendPasswordResetLinkAsync(user, email, magicLink);
+
     public abstract Task SendEmailAsync(string email, string subject, string htmlMessage);
 }
 

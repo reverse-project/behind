@@ -20,11 +20,11 @@ public sealed class MagicLinkMailService(
 
     private async Task SendAsync(MagicLinkMail mail)
     {
-        logger.LogDebug("Sending magic link email to user {UserId}", () => [mail.User.Id]);
+        logger.LogDebug("Sending magic link ({Function}) email to user {UserId}", () => [mail.Function, mail.User.Id]);
 
         try
         {
-            await emailSender.SendMagicLinkAsync(mail.User, mail.Email, mail.Link);
+            await emailSender.Send(mail);
 
             logger.LogInformation("Magic link email sent to user {UserId}", () => [mail.User.Id]);
         }

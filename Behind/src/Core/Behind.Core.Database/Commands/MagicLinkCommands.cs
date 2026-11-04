@@ -15,7 +15,7 @@ public sealed class MagicLinkCommands(AbstractCoreContext context) : IMagicLinkC
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<Option<Guid>> Consume(
+    public async Task<Option<MagicLinkRedemption>> Consume(
         TokenNonce nonce,
         DateTimeOffset consumedAt,
         CancellationToken cancellationToken = default)
@@ -37,7 +37,7 @@ public sealed class MagicLinkCommands(AbstractCoreContext context) : IMagicLinkC
 
         return await context.MagicLinks
             .Where(link => link.Nonce == nonce)
-            .Select(link => EF.Property<Guid>(link, "UserId"))
+            .Select(link => new MagicLinkRedemption(EF.Property<Guid>(link, "UserId"), link.Function))
             .FirstAsync(cancellationToken);
     }
 

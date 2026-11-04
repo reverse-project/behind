@@ -31,7 +31,7 @@ For any other role, use the [Access panel](#editing-a-users-access).
 ## Banning and unbanning
 
 1. Choose **Ban**.
-2. Enter the message to show on the [wall of shame](./wall-of-shame.md) (required, up to 500 characters).
+2. Enter the message to show on the [wall of shame](./wall-of-shame.md) (optional, up to 500 characters; leave it empty to ban without a message).
 3. Choose **Ban user**.
 
 The user is banned and signed out of all sessions. **Unban** lifts the ban.

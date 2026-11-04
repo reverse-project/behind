@@ -2,4 +2,5 @@
     <h1 class="mb-3" data-bind="t: 'magiclink.title'">Magic link</h1>
     <p role="status" data-bind="text: message"></p>
     <p data-bind="visible: failed"><a href="#/sign-in" data-bind="t: 'magiclink.requestNew'">Request a new sign in link</a></p>
+    <p data-bind="visible: emailNotConfirmed"><a href="#/sign-in" data-bind="t: 'magiclink.resendConfirmation'">Resend the confirmation email</a></p>
 </section>

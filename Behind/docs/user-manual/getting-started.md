@@ -20,7 +20,7 @@ If you have no display name, your email address is shown in the menu.
 
 If the email is already in use you are told so. The administrator of the server can hide the **Sign up** and **Sign in** buttons of the top menu in `backend.json`; this only hides the buttons, the pages themselves still work when you open their address. After the account is created, sign in.
 
-Unless the installation has turned email confirmation off, you also receive an email with a link to confirm your address. Follow it to mark your email as confirmed. If confirmation is turned off, your email counts as confirmed the moment you sign up.
+Unless the installation has turned email confirmation off, you also receive an email with a link to confirm your address. Follow it to mark your email as confirmed. If confirmation is turned off, your email counts as confirmed the moment you sign up. If the mail did not arrive or the link expired, enter your email on the sign in page and choose **Resend confirmation email**. The answer is the same whether or not the account exists, and you can ask only a few times every ten minutes.
 
 Every new account gets the **Users** role, which lets you read the basic areas of the application.
 
@@ -41,9 +41,9 @@ A link works for a short time only. If it is invalid or expired, the page offers
 
 ### Lost password
 
-1. On the sign in page enter your email and choose **Lost your password?**. You receive a sign in link the same way as with a magic link.
-2. Follow the link to sign in.
-3. Open **Profile**, enter a new password under **New password** and choose **Save**.
+1. On the sign in page enter your email and choose **Lost your password?**. You receive a link the same way as with a magic link.
+2. Follow the link. It signs you in and takes you straight to the **New password** field on the **Profile** page.
+3. Enter a new password and choose **Save**.
 
 ### Banned accounts
 

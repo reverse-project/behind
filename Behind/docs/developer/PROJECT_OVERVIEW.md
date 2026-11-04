@@ -308,7 +308,7 @@ Domain objects use `record` types for:
 - TOTP two-factor authentication
 - Role-based access control (RBAC)
 - Grant-based permissions
-- Email confirmation at sign-up: `Security:EmailConfirmation` (default `true`) sends a confirmation link; when `false`, the new email's `ConfirmedAt` is set to the sign-up time
+- Email confirmation at sign-up: `Security:EmailConfirmation` (default `true`) sends a confirmation link; when `false`, the new email's `ConfirmedAt` is set to the sign-up time; `POST /sign/up/confirm/resend` sends a new link (404 when confirmation is off, 204 whether or not the account exists, rate limited by `ConfirmationEmailExtensions.ResendRateLimitPolicy`)
 
 ### Best Practices
 - Sensitive field masking in logs

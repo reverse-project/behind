@@ -30,6 +30,23 @@ public sealed class UserRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task TryFindAsync_UserWithConfirmedEmail_KeepsTheConfirmationTime()
+    {
+        var confirmedAt = new DateTimeOffset(2026, 11, 1, 10, 0, 0, TimeSpan.Zero);
+        await using var seed = _factory.CreateContext();
+        var user = new HumanUser("Test User", [new Email("confirmed@test.com", confirmedAt)], None);
+        await seed.Users.AddAsync(user);
+        var userId = seed.Entry(user).Property<Guid>("Id").CurrentValue;
+        await seed.SaveChangesAsync();
+
+        await using var ctx = _factory.CreateContext();
+        var result = await ((IRepository<HumanUser, Guid>)ctx).TryFindAsync(userId);
+
+        result.Match(() => Assert.Fail("Expected Some"), found =>
+            Assert.Equal(confirmedAt, Assert.Single(found.Emails).ConfirmedAt));
+    }
+
+    [Fact]
     public async Task TryFindAsync_UserWithNoRoles_RolesIsNone()
     {
         await using var seed = _factory.CreateContext();

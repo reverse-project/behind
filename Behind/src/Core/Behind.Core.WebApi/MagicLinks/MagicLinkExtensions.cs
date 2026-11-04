@@ -1,4 +1,4 @@
-using System.Threading.RateLimiting;
+using Behind.Common.WebApi;
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -15,8 +15,6 @@ public static class MagicLinkExtensions
     public const string TokenParameter = "token";
     public const string RequestRateLimitPolicy = "magic-link-request";
     public const string RedeemRateLimitPolicy = "magic-link-redeem";
-
-    private const string UnknownClient = "unknown";
 
     extension(MagicLinkCredential credential)
     {
@@ -59,20 +57,5 @@ public static class MagicLinkExtensions
                     settings.EffectiveRedeemLimit,
                     settings.EffectiveRedeemWindow);
             });
-    }
-
-    extension(RateLimiterOptions options)
-    {
-        private RateLimiterOptions AddClientPolicy(string name, int limit, TimeSpan window) =>
-            options.AddPolicy(
-                name,
-                context => RateLimitPartition.GetFixedWindowLimiter(
-                    context.Connection.RemoteIpAddress?.ToString() ?? UnknownClient,
-                    _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = limit,
-                        Window = window,
-                        QueueLimit = 0
-                    }));
     }
 }

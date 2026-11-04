@@ -150,10 +150,10 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
             });
         },
 
-        requestMagicLink: function (email) {
+        requestMagicLink: function (email, done) {
             return http.post("/sign/in/magiclink", { email: email }).then(function (response) {
                 return response.ok
-                    ? success("auth.magicLink.requested")
+                    ? success(done || "auth.magicLink.requested")
                     : failure(response, {
                         400: "auth.magicLink.invalidEmail",
                         404: "auth.magicLink.unavailable",
@@ -184,6 +184,18 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
                     : failure(response, {
                         400: "auth.profile.tooLong",
                         401: sessionExpired
+                    });
+            });
+        },
+
+        changePassword: function (password) {
+            return http.put("/profile/password", { password: password }).then(function (response) {
+                return response.ok
+                    ? success("auth.password.saved")
+                    : failure(response, {
+                        400: "auth.password.rejected",
+                        401: sessionExpired,
+                        403: "auth.password.impersonated"
                     });
             });
         },

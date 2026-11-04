@@ -43,6 +43,24 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
                 });
         };
 
+        self.newPassword = ko.observable("");
+
+        self.submitPassword = function () {
+            self.busy(true);
+
+            return auth.changePassword(self.newPassword())
+                .then(function (result) {
+                    if (result.ok) {
+                        self.newPassword("");
+                    }
+
+                    self.message(result.message);
+                })
+                .finally(function () {
+                    self.busy(false);
+                });
+        };
+
         var loadLocales = function () {
             return about.loadLocales().then(function (result) {
                 var siteDefault = { code: "", name: i18n.t("profile.siteDefault") };

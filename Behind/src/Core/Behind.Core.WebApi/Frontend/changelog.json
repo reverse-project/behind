@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [
+      { "type": "added", "text": "Lost password: the sign in page has a Lost your password? button that emails a magic link (same endpoint, cooldown and rate limits as POST /sign/in/magiclink); after signing in with it the user sets a new password on the Profile page (new endpoint PUT /profile/password, available to signed in users, rejected with 403 while impersonating)." },
       { "type": "added", "text": "The Users page shows an Email not confirmed badge and a Confirm email button for users whose email is not confirmed yet (new endpoint POST /users/{id}/confirm/email, available to everyone who can manage users and moderate the target)." },
       { "type": "changed", "text": "When email confirmation is required (Security.EmailConfirmation), only users with a confirmed email can sign in: password and magic link sign-in answer 403 with { \"code\": \"emailNotConfirmed\" } for unconfirmed users and the sign-in pages show a message asking them to confirm their email." },
       { "type": "changed", "text": "A user can no longer add grants to themselves: besides being unable to edit their own access, they cannot add grants (or lift restrictions) on a role they hold themselves, not even developers. Removing grants from such a role is still allowed." },

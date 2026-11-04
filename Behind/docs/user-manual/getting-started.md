@@ -39,6 +39,12 @@ Every new account gets the **Users** role, which lets you read the basic areas o
 
 A link works for a short time only. If it is invalid or expired, the page offers to request a new one. If requests come too quickly you are asked to wait.
 
+### Lost password
+
+1. On the sign in page enter your email and choose **Lost your password?**. You receive a sign in link the same way as with a magic link.
+2. Follow the link to sign in.
+3. Open **Profile**, enter a new password under **New password** and choose **Save**.
+
 ### Banned accounts
 
 If your account is banned, signing in fails and the reason given by the administrator is shown. See [Wall of shame](./wall-of-shame.md).

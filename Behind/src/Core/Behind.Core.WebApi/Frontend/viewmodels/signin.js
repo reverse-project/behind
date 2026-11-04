@@ -18,5 +18,11 @@ define(["viewmodels/form", "models/auth"], function (FormViewModel, auth) {
                 return auth.requestMagicLink(self.email());
             });
         };
+
+        self.requestLostPassword = function () {
+            return self.run(function () {
+                return auth.requestMagicLink(self.email(), "auth.lostPassword.requested");
+            });
+        };
     };
 });

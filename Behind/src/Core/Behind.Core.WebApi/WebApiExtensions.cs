@@ -922,6 +922,14 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(500);
 
+            application.MapPut("/profile/password", ProfileEndpoints.ChangePassword)
+                .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEndpoints.NewPasswordRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
             application.MapGet("/profile/settings", UserSettingEndpoints.Get)
                 .Produces<IReadOnlyDictionary<string, string>>()
                 .Produces(401)

@@ -366,6 +366,21 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
+    public void LostPassword_RequestsAMagicLinkAndTheProfileSavesTheNewPassword()
+    {
+        var signIn = Read(Provider.GetFileInfo("views/signin.html"));
+        var signInModel = Read(Provider.GetFileInfo("viewmodels/signin.js"));
+        var profile = Read(Provider.GetFileInfo("views/profile.html"));
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+
+        Assert.Contains("click: requestLostPassword", signIn);
+        Assert.Contains("auth.requestMagicLink(self.email(), \"auth.lostPassword.requested\")", signInModel);
+        Assert.Contains("submit: submitPassword", profile);
+        Assert.Contains("value: newPassword", profile);
+        Assert.Contains("http.put(\"/profile/password\"", auth);
+    }
+
+    [Fact]
     public void SessionsRoute_IsRegisteredAndLinkedUnderTheDisplayNameMenu()
     {
         var app = Read(Provider.GetFileInfo("app.js"));

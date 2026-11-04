@@ -4,7 +4,9 @@ using Behind.Common.WebApi.Middleware;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 using Microsoft.AspNetCore.Http;
+using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
 
@@ -22,7 +24,7 @@ public class ProfileEndpointsTests
         return context;
     }
 
-    private static ISessionQueries SessionQueries(bool valid)
+    private static ISessionQueries SessionQueries(bool valid, bool impersonated = false)
     {
         var queries = Substitute.For<ISessionQueries>();
         queries.TryFindByIdWithUserId(SessionId, Arg.Any<CancellationToken>())
@@ -32,7 +34,10 @@ public class ProfileEndpointsTests
                         AccessToken.Create(new GuestUser(None)),
                         RefreshToken.Create(new GuestUser(None)),
                         "10.0.0.1",
-                        "test-agent"),
+                        "test-agent")
+                    {
+                        Impersonator = impersonated ? Some<User>(new GuestUser(None)) : None
+                    },
                     UserId))
                 : None);
         return queries;
@@ -100,6 +105,91 @@ public class ProfileEndpointsTests
     public void ChangeDisplayName_IsMarkedWithIgnoreETag()
     {
         var method = typeof(ProfileEndpoints).GetMethod(nameof(ProfileEndpoints.ChangeDisplayName));
+
+        Assert.NotNull(method!.GetCustomAttribute<IgnoreETagAttribute>());
+    }
+
+    private static UserManager<ApplicationUser> UserManagerFor(ApplicationUser? user, IdentityResult? reset = null)
+    {
+        var manager = Substitute.For<UserManager<ApplicationUser>>(
+            Substitute.For<IUserStore<ApplicationUser>>(),
+            null, null, null, null, null, null, null, null);
+        manager.FindByIdAsync(UserId.ToString()).Returns(user);
+        manager.GeneratePasswordResetTokenAsync(Arg.Any<ApplicationUser>()).Returns("the token");
+        manager.ResetPasswordAsync(Arg.Any<ApplicationUser>(), "the token", Arg.Any<string>())
+            .Returns(reset ?? IdentityResult.Success);
+        return manager;
+    }
+
+    private static Task<IResult> ChangePassword(
+        UserManager<ApplicationUser> manager,
+        ISessionQueries? queries = null) =>
+        ProfileEndpoints.ChangePassword(
+            new ProfileEndpoints.NewPasswordRequest("N3w passw0rd"),
+            SignedIn(),
+            queries ?? SessionQueries(true),
+            manager,
+            NullLogger<ProfileEndpoints>.Instance);
+
+    [Fact]
+    public async Task ChangePassword_ValidSession_ResetsThePasswordOfTheSessionUser()
+    {
+        var user = new ApplicationUser();
+        var manager = UserManagerFor(user);
+
+        var result = await ChangePassword(manager);
+
+        Assert.IsType<NoContent>(result);
+        await manager.Received(1).ResetPasswordAsync(user, "the token", "N3w passw0rd");
+    }
+
+    [Fact]
+    public async Task ChangePassword_RejectedPassword_ReturnsBadRequestWithTheErrors()
+    {
+        var manager = UserManagerFor(
+            new ApplicationUser(),
+            IdentityResult.Failed(new IdentityError { Code = "PasswordTooShort", Description = "Too short" }));
+
+        var result = await ChangePassword(manager);
+
+        var badRequest = Assert.IsType<BadRequest<IEnumerable<string>>>(result);
+        Assert.Equal(["Too short"], badRequest.Value);
+    }
+
+    [Fact]
+    public async Task ChangePassword_WithoutValidSession_ReturnsUnauthorized()
+    {
+        var manager = UserManagerFor(new ApplicationUser());
+
+        var result = await ChangePassword(manager, SessionQueries(false));
+
+        Assert.IsType<UnauthorizedHttpResult>(result);
+        await manager.DidNotReceiveWithAnyArgs().ResetPasswordAsync(default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task ChangePassword_UnknownUser_ReturnsUnauthorized()
+    {
+        var manager = UserManagerFor(null);
+
+        Assert.IsType<UnauthorizedHttpResult>(await ChangePassword(manager));
+    }
+
+    [Fact]
+    public async Task ChangePassword_ImpersonationSession_ReturnsForbidden()
+    {
+        var manager = UserManagerFor(new ApplicationUser());
+
+        var result = await ChangePassword(manager, SessionQueries(true, impersonated: true));
+
+        Assert.IsType<ForbidHttpResult>(result);
+        await manager.DidNotReceiveWithAnyArgs().ResetPasswordAsync(default!, default!, default!);
+    }
+
+    [Fact]
+    public void ChangePassword_IsMarkedWithIgnoreETag()
+    {
+        var method = typeof(ProfileEndpoints).GetMethod(nameof(ProfileEndpoints.ChangePassword));
 
         Assert.NotNull(method!.GetCustomAttribute<IgnoreETagAttribute>());
     }

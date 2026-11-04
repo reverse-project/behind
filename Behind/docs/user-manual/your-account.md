@@ -4,7 +4,7 @@ Open these pages from your name in the navigation bar.
 
 ## Profile
 
-Use **Profile** to change your display name.
+Use **Profile** to change your display name and your password. Password changes are not available while you impersonate another user.
 
 1. Type a new name (up to 500 characters). Leave it empty to be shown by your primary email address.
 2. Choose **Save**.

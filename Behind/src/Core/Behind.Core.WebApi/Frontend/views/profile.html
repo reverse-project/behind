@@ -9,6 +9,14 @@
         </div>
         <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.save'">Save</button>
     </form>
+    <form class="mt-4" data-bind="visible: isSignedIn, submit: submitPassword">
+        <div class="mb-3">
+            <label class="form-label" for="profile-new-password" data-bind="t: 'profile.newPassword'">New password</label>
+            <input id="profile-new-password" class="form-control" type="password" autocomplete="new-password" required data-bind="value: newPassword">
+            <div class="form-text" data-bind="t: 'profile.newPasswordHelp'">Lost your password? Sign in with an email link from the sign in page and set a new one here.</div>
+        </div>
+        <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.save'">Save</button>
+    </form>
     <form class="mt-4" data-bind="submit: submitLocale">
         <div class="mb-3">
             <label class="form-label" for="profile-locale" data-bind="t: 'profile.language'">Language</label>

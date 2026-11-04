@@ -300,6 +300,19 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
+    public void SessionModel_SharesTheSessionAcrossBrowserTabs()
+    {
+        var session = Read(Provider.GetFileInfo("models/session.js"));
+
+        Assert.DoesNotContain("sessionStorage", session);
+        Assert.Contains("window.localStorage.getItem(key)", session);
+        Assert.Contains("window.localStorage.setItem(storageKey", session);
+        Assert.Contains("window.addEventListener(\"storage\"", session);
+        Assert.Contains("tokens(restore(storageKey))", session);
+        Assert.Contains("stashed(restore(impersonatorKey))", session);
+    }
+
+    [Fact]
     public void SessionView_BindsUserRolesAndSessionDetails()
     {
         var view = Read(Provider.GetFileInfo("views/session.html"));

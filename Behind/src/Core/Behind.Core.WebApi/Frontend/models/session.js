@@ -4,7 +4,7 @@ define(["jquery", "ko"], function ($, ko) {
 
     var restore = function (key) {
         try {
-            return JSON.parse(window.sessionStorage.getItem(key));
+            return JSON.parse(window.localStorage.getItem(key));
         } catch (error) {
             return null;
         }
@@ -13,16 +13,30 @@ define(["jquery", "ko"], function ($, ko) {
     var tokens = ko.observable(restore(storageKey));
     var stashed = ko.observable(restore(impersonatorKey));
 
+    window.addEventListener("storage", function (event) {
+        if (event.storageArea !== window.localStorage) {
+            return;
+        }
+
+        if (event.key === null || event.key === storageKey) {
+            tokens(restore(storageKey));
+        }
+
+        if (event.key === null || event.key === impersonatorKey) {
+            stashed(restore(impersonatorKey));
+        }
+    });
+
     var persist = function (value) {
-        window.sessionStorage.setItem(storageKey, JSON.stringify(value));
+        window.localStorage.setItem(storageKey, JSON.stringify(value));
         tokens(value);
     };
 
     var stash = function (value) {
         if (value === null) {
-            window.sessionStorage.removeItem(impersonatorKey);
+            window.localStorage.removeItem(impersonatorKey);
         } else {
-            window.sessionStorage.setItem(impersonatorKey, JSON.stringify(value));
+            window.localStorage.setItem(impersonatorKey, JSON.stringify(value));
         }
 
         stashed(value);
@@ -96,12 +110,12 @@ define(["jquery", "ko"], function ($, ko) {
             if (original) {
                 persist(original);
             } else {
-                window.sessionStorage.removeItem(storageKey);
+                window.localStorage.removeItem(storageKey);
                 tokens(null);
             }
         },
         end: function () {
-            window.sessionStorage.removeItem(storageKey);
+            window.localStorage.removeItem(storageKey);
             tokens(null);
             stash(null);
         }

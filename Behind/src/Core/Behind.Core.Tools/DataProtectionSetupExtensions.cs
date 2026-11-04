@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Behind.Common;
 using Behind.Common.Security;
 using Behind.Core.Common.Configuration;
@@ -7,12 +6,10 @@ namespace Behind.Core.Tools;
 
 public static class DataProtectionSetupExtensions
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     extension(DataProtectionSettings settings)
     {
         public string ToSecurityJson() =>
-            JsonSerializer.Serialize(new SecurityFile(new SecuritySection(settings)), JsonOptions);
+            new SecurityFile(new SecuritySection(settings)).ToConfigurationJson();
     }
 
     extension(DataProtectionSetupRequest request)

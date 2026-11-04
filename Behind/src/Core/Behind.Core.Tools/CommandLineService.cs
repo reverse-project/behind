@@ -48,7 +48,7 @@ public sealed class CommandLineService(IHost host) : BackgroundService
         secretCommand.Add(generateSecretCommand);
         secretCommand.Add(uriCommand);
         rootCommand.Add(secretCommand);
-        rootCommand.AddDataProtectionCommands();
+        rootCommand.AddDataProtectionCommands().AddStartupCommands();
 
         var parameters = Environment.GetCommandLineArgs()[1..];
         
@@ -61,7 +61,7 @@ public sealed class CommandLineService(IHost host) : BackgroundService
             }
         }
 
-        await result.InvokeAsync(null, stoppingToken);
+        Environment.ExitCode = await result.InvokeAsync(null, stoppingToken);
 
         await host.StopAsync(stoppingToken);
     }

@@ -11,7 +11,14 @@ public class SecretGenerationTests
         var totp = Totp.Generate();
 
         Assert.NotEqual(Totp.Invalid, totp);
-        Assert.Equal(OtpNet.KeyGeneration.GenerateRandomKey(Totp.HashMode).Length, OtpNet.Base32Encoding.ToBytes(totp.Value).Length);
+        Assert.Equal(Totp.DefaultKeySize, OtpNet.Base32Encoding.ToBytes(totp.Value).Length);
+    }
+
+    [Fact]
+    public void Totp_Generate_CreatesAValueWithoutPadding()
+    {
+        Assert.DoesNotContain('=', Totp.Generate().Value);
+        Assert.DoesNotContain('=', Totp.Generate(32).Value);
     }
 
     [Fact]

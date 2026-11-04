@@ -1,29 +1,54 @@
+x-behind-user: &behind-user
+  user: "${BEHIND_UID:-1000}:${BEHIND_GID:-1000}"
+  userns_mode: keep-id
+
 services:
+  core-tools:
+    image: git.prod.zwebnt.hu/reverse-project/behind/core-tools:latest
+    container_name: core-tools
+    restart: "no"
+    profiles:
+      - init
+    <<: *behind-user
+    command:
+      - startup
+      - create
+      - --data-directory
+      - /app/data
+      - --config-directory
+      - /app/config
+      - --skip-existing
+    volumes:
+      - ./config:/app/config:Z
+      - ./data:/app/data:Z
+
   core-database-migrator:
     image: git.prod.zwebnt.hu/reverse-project/behind/core-database-migrator:latest
     container_name: core-database-migrator
-    restart: on-failure
+    restart: "no"
+    <<: *behind-user
+    profiles:
+      - init
     environment:
       - DOTNET_RUNNING_IN_CONTAINER=true
       - DOTNET_USE_POLLING_FILE_WATCHER=true
     volumes:
-      - ./database.json:/app/database.json:Z
-      - ./backend.json:/app/backend.json:Z
+      - ./config/database.json:/app/database.json:Z
+      - ./config/backend.json:/app/backend.json:Z
       - ./data:/app/data:Z
 
   web:
     image: git.prod.zwebnt.hu/reverse-project/behind/web:latest
     container_name: web
     restart: always
+    <<: *behind-user
     ports:
       - "8080:8080"
-    depends_on:
-      - core-database-migrator
     environment:
       - DOTNET_RUNNING_IN_CONTAINER=true
       - DOTNET_USE_POLLING_FILE_WATCHER=true
     volumes:
-      - ./database.json:/app/database.json:Z
-      - ./backend.json:/app/backend.json:Z
+      - ./config/database.json:/app/database.json:Z
+      - ./config/backend.json:/app/backend.json:Z
       - ./data:/app/data:Z
-      - ./security.json:/app/security.json:Z
+      - ./config/security.json:/app/security.json:Z

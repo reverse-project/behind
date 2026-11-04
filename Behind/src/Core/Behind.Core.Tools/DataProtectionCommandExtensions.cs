@@ -1,6 +1,4 @@
 using System.CommandLine;
-using System.Security.Cryptography;
-using Behind.Common.Security;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Tools;
@@ -44,9 +42,7 @@ public static class DataProtectionCommandExtensions
                 new DataProtectionSetupRequest(
                     arguments.GetRequiredValue(certificate),
                     arguments.GetRequiredValue(keys),
-                    arguments.GetValue(prompt)
-                        ? ConsolePasswordReader.ReadConfirmed()
-                        : RandomNumberGenerator.CreatePassword(),
+                    ConsolePasswordReader.Resolve(arguments.GetValue(prompt)),
                     Some(arguments.GetRequiredValue(output)),
                     arguments.GetValue(force)
                 ).Run(Console.Out);

@@ -138,6 +138,17 @@ Core business logic and domain implementation.
 - **Behind.Core.Tools**
   - CLI tools and utilities
   - `dataprotection create`: creates the data protection certificate (random or prompted password) and a `security.json` with the `Security:DataProtection` section
+  - `startup create`: generates `security.json` (data protection certificate and keys path, TOTP secret key, JWT signing key, developer elevation TOTP key, magic link secret), `database.json` (SQLite) and `backend.json`. Options: `--data-directory` (default `data`), `--config-directory` (default `.`), `--issuer`, `--audience`, `--email-confirmation`, `--prompt`, `--force`, `--skip-existing`. Exits with a non-zero code on failure
+  - Runs as a container too (`tools/publish-core-tools-container.sh` publishes `reverse-project/behind/core-tools`); the paths written to the configuration files are absolute, so mount the data directory where the other containers see it:
+
+    ```bash
+    podman run --rm --user 0:0 \
+        -v ./data:/app/data:Z -v ./config:/app/config:Z \
+        git.prod.zwebnt.hu/reverse-project/behind/core-tools:latest \
+        startup create --data-directory /app/data --config-directory /app/config --skip-existing
+    ```
+
+    The generated authenticator URIs are printed once; the image runs as user `1654` by default, so either make the mounted directories writable by it or pass `--user` as above.
 
 ### /src/Web
 Web application (frontend or web-specific backend features).

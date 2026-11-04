@@ -1,11 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text;
+using Behind.Common.Security;
 
 namespace Behind.Core.Tools;
 
 [ExcludeFromCodeCoverage]
 public static class ConsolePasswordReader
 {
+    public static string Resolve(bool prompt) =>
+        prompt ? ReadConfirmed() : RandomNumberGenerator.CreatePassword();
+
     public static string ReadConfirmed()
     {
         string password = Read("Certificate password: ");

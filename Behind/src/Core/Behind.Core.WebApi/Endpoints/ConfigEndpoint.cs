@@ -12,11 +12,11 @@ namespace Behind.Core.WebApi.Endpoints;
 public static class ConfigEndpoint
 {
     public static IResult ExecuteGet(IConfiguration configuration, IOptions<SecurityConfiguration> securityConfig,
-        [FromQuery] int totp)
+        TimeProvider timeProvider, [FromQuery] string totp)
     {
         try
         {
-            if (!securityConfig.Value.VerifyTotp(totp.ToString(), TimeProvider.System.GetUtcNow()))
+            if (!securityConfig.Value.VerifyTotp(totp, timeProvider.GetUtcNow()))
             {
                 return Results.StatusCode(403);
             }

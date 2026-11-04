@@ -36,6 +36,8 @@ public sealed record Totp : SecretKey
 
     public const string Issuer = "Behind System";
 
+    public const ushort DefaultKeySize = 20;
+
     public static readonly Totp Invalid = new(nameof(Invalid));
     
     public string Value { get; init; }
@@ -44,10 +46,7 @@ public sealed record Totp : SecretKey
 
     public static Totp Generate(ushort? size = null) =>
         TryCreate(
-            Base32Encoding.ToString(
-                size is { } length
-                    ? KeyGeneration.GenerateRandomKey(length)
-                    : KeyGeneration.GenerateRandomKey(HashMode)),
+            Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(size ?? DefaultKeySize)),
             out var generated)
             ? generated
             : Invalid;
@@ -57,7 +56,7 @@ public sealed record Totp : SecretKey
         try
         {
             Base32Encoding.ToBytes(value);
-            result = new Totp(value);
+            result = new Totp(value.TrimEnd('='));
             return true;
         }
         catch

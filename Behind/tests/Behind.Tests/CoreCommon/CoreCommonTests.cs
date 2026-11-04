@@ -207,6 +207,15 @@ public class TotpTests
     }
 
     [Fact]
+    public void TryCreate_PaddedBase32_StoresTheValueWithoutPadding()
+    {
+        var success = Totp.TryCreate("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXPJBSWY3DPEHPK====", out var result);
+
+        Assert.True(success);
+        Assert.Equal("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXPJBSWY3DPEHPK", result.Value);
+    }
+
+    [Fact]
     public void TryCreate_InvalidBase32_ReturnsFalse()
     {
         var success = Totp.TryCreate("!!! NOT BASE32 !!!", out var result);

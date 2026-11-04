@@ -1,4 +1,6 @@
-define(["ko", "quill"], function (ko, Quill) {
+define(["ko", "quill", "bindings/richeditorimages"], function (ko, Quill, images) {
+    images.register();
+
     var toolbar = [
         [{ header: [1, 2, 3, false] }],
         ["bold", "italic", "underline", "strike"],
@@ -74,6 +76,8 @@ define(["ko", "quill"], function (ko, Quill) {
                     }
                 }
             });
+
+            images.attach(quill);
 
             quill.on("text-change", function () {
                 writing = true;

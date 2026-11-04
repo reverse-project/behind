@@ -15,6 +15,60 @@
     font-size: 1rem;
 }
 
+.ql-container .ql-editor img {
+    max-width: 100%;
+    height: auto;
+}
+
+.ql-image-left,
+.ql-image-right,
+.ql-image-center {
+    max-width: 100%;
+}
+
+.ql-image-left {
+    float: left;
+    margin: 0 1rem 0.5rem 0;
+}
+
+.ql-image-right {
+    float: right;
+    margin: 0 0 0.5rem 1rem;
+}
+
+.ql-image-center {
+    display: block;
+    margin: 0.5rem auto;
+}
+
+.ql-container .ql-image-selected {
+    outline: 2px solid var(--bs-primary);
+}
+
+.ql-image-panel {
+    position: absolute;
+    z-index: 10;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.ql-image-handle {
+    position: absolute;
+    z-index: 10;
+    width: 0.9rem;
+    height: 0.9rem;
+    border: 2px solid var(--bs-white);
+    border-radius: 50%;
+    background-color: var(--bs-primary);
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+.ql-image-panel[hidden],
+.ql-image-handle[hidden] {
+    display: none;
+}
+
 .site-content {
     overflow-wrap: anywhere;
 }
@@ -46,6 +100,21 @@
 
 .site-content .ql-align-justify {
     text-align: justify;
+}
+
+.site-content .ql-image-left {
+    float: left;
+    margin: 0 1rem 0.5rem 0;
+}
+
+.site-content .ql-image-right {
+    float: right;
+    margin: 0 0 0.5rem 1rem;
+}
+
+.site-content .ql-image-center {
+    display: block;
+    margin: 0.5rem auto;
 }
 
 .site-content .ql-direction-rtl {

@@ -10,13 +10,14 @@ public static class HtmlSanitizationExtensions
         "ul", "ol", "li", "blockquote", "pre", "code", "a", "img", "span", "div"
     ];
 
-    private static readonly string[] Attributes = ["href", "src", "alt", "title", "target", "rel", "class"];
+    private static readonly string[] Attributes = ["href", "src", "alt", "title", "target", "rel", "class", "width"];
 
     private static readonly string[] Schemes = ["http", "https", "mailto"];
 
     private static readonly string[] Classes =
     [
         "ql-align-center", "ql-align-right", "ql-align-justify", "ql-direction-rtl", "ql-syntax",
+        "ql-image-left", "ql-image-center", "ql-image-right",
         ..Enumerable.Range(1, 8).Select(level => $"ql-indent-{level}")
     ];
 

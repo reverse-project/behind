@@ -32,6 +32,7 @@ public class SiteFrontendTests
     [InlineData("models/slug.js")]
     [InlineData("models/managedlist.js")]
     [InlineData("bindings/richeditor.js")]
+    [InlineData("bindings/richeditorimages.js")]
     [InlineData("libraries/quill.min.js")]
     [InlineData("libraries/quill-LICENSE.txt")]
     [InlineData("css/quill.snow.min.css")]
@@ -129,6 +130,24 @@ public class SiteFrontendTests
         Assert.Contains("uploader:", binding);
         Assert.Contains("insertEmbed(position, \"image\", url, \"user\")", binding);
         Assert.Contains("image/webp", binding);
+    }
+
+    [Fact]
+    public void Editor_LetsImagesBeResizedAndPlaced()
+    {
+        var binding = Read("bindings/richeditor.js");
+        var images = Read("bindings/richeditorimages.js");
+        var css = Read("css/app.css");
+
+        Assert.Contains("bindings/richeditorimages", binding);
+        Assert.Contains("images.attach(quill)", binding);
+        Assert.Contains("Quill.register(\"formats/image\"", images);
+        Assert.Contains("imageAlign", images);
+        Assert.Contains("ql-image-handle", images);
+        Assert.Contains("pointermove", images);
+        Assert.All(
+            new[] { ".site-content .ql-image-left", ".site-content .ql-image-center", ".site-content .ql-image-right", ".ql-image-handle" },
+            selector => Assert.Contains(selector, css));
     }
 
     [Fact]

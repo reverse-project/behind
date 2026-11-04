@@ -13,6 +13,9 @@ public class HtmlSanitizationExtensionsTests
     [InlineData("<p class=\"ql-align-center ql-indent-1\">centered</p>")]
     [InlineData("<p><a href=\"https://example.com/\">link</a> <a href=\"mailto:a@b.c\">mail</a></p>")]
     [InlineData("<p><img src=\"/sites/images/abc\" alt=\"logo\"></p>")]
+    [InlineData("<p><img src=\"/sites/images/abc\" width=\"240\" class=\"ql-image-left\"></p>")]
+    [InlineData("<p><img src=\"/sites/images/abc\" class=\"ql-image-center\"></p>")]
+    [InlineData("<p><img src=\"/sites/images/abc\" class=\"ql-image-right\"></p>")]
     public void SanitizeRichText_KeepsTheEditorMarkup(string html)
     {
         Assert.Equal(html, html.SanitizeRichText());
@@ -27,6 +30,7 @@ public class HtmlSanitizationExtensionsTests
     [InlineData("<iframe src=\"https://example.com\"></iframe><p>a</p>", "<p>a</p>")]
     [InlineData("<p class=\"evil\">a</p>", "<p>a</p>")]
     [InlineData("<img src=\"x\" onerror=\"alert(1)\">", "<img src=\"x\">")]
+    [InlineData("<img src=\"x\" class=\"ql-image-left evil\" style=\"width:9999px\">", "<img src=\"x\" class=\"ql-image-left\">")]
     public void SanitizeRichText_RemovesAnythingUnsafe(string html, string expected)
     {
         Assert.Equal(expected, html.SanitizeRichText());

@@ -19,6 +19,7 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
             name: table.name,
             entityName: table.entityName,
             isReadOnly: table.isReadOnly,
+            rows: table.rows,
             columns: table.columns,
             label: i18n.t("rawDatabase.tableLabel", [table.name, table.rows])
         };
@@ -42,6 +43,21 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
             var text = textOf(value);
 
             return { isNull: value === null || value === undefined, text: shorten(text), title: text };
+        });
+    };
+
+    var presentDetails = function (table, values) {
+        return table.columns.map(function (column) {
+            var value = values[column.name];
+
+            return {
+                name: column.name,
+                storeType: column.storeType,
+                isKey: column.isKey,
+                isSensitive: column.isSensitive,
+                isNull: value === null || value === undefined,
+                text: textOf(value)
+            };
         });
     };
 
@@ -116,6 +132,7 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
         self.descending = ko.observable(false);
         self.rows = ko.observableArray([]);
         self.editor = ko.observable(null);
+        self.viewer = ko.observable(null);
         self.pager = createPager(function () {
             return self.refreshRows();
         });
@@ -126,16 +143,40 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
         self.hasMessage = ko.pureComputed(function () {
             return self.message() !== "";
         });
-        self.selected = ko.pureComputed(function () {
+        self.findTable = function (name) {
             return self.tables().filter(function (table) {
-                return table.name === self.selectedName();
+                return table.name === name;
             })[0] || null;
+        };
+        self.selected = ko.pureComputed(function () {
+            return self.findTable(self.selectedName());
         });
         self.canWrite = ko.pureComputed(function () {
             return self.selected() !== null && !self.selected().isReadOnly;
         });
+        self.hasTables = ko.pureComputed(function () {
+            return self.tables().length > 0;
+        });
         self.hasRows = ko.pureComputed(function () {
             return self.rows().length > 0;
+        });
+        self.viewerIndex = ko.pureComputed(function () {
+            return self.rows().indexOf(self.viewer());
+        });
+        self.hasPrevious = ko.pureComputed(function () {
+            return self.viewerIndex() > 0;
+        });
+        self.hasNext = ko.pureComputed(function () {
+            return self.viewerIndex() >= 0 && self.viewerIndex() < self.rows().length - 1;
+        });
+        self.viewerHeading = ko.pureComputed(function () {
+            var table = self.selected();
+
+            if (!self.viewer() || !table) {
+                return "";
+            }
+
+            return i18n.t("rawDatabase.viewer.heading", [table.name, self.viewerIndex() + 1, self.rows().length]);
         });
         self.editorHeading = ko.pureComputed(function () {
             var editor = self.editor();
@@ -166,7 +207,7 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
         };
 
         self.refreshRows = function () {
-            var table = self.selected();
+            var table = self.findTable(self.selectedName());
 
             if (!self.canManage() || table === null) {
                 self.rows([]);
@@ -195,6 +236,7 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
                         return self.refreshRows();
                     }
 
+                    self.viewer(null);
                     self.pager.update(result.data);
                     self.rows(result.data.items.map(function (values) {
                         return self.presentRow(table, values);
@@ -208,9 +250,15 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
         };
 
         self.presentRow = function (table, values) {
-            return {
+            var row = {
                 cells: presentCells(table, values),
+                details: presentDetails(table, values),
+                view: function () {
+                    self.editor(null);
+                    self.viewer(row);
+                },
                 edit: function () {
+                    self.viewer(null);
                     self.editor({ isNew: false, key: keyOf(table, values), fields: table.columns.map(function (column) {
                         return createField(column, values);
                     }) });
@@ -225,6 +273,24 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
                     });
                 }
             };
+
+            return row;
+        };
+
+        self.previous = function () {
+            if (self.hasPrevious()) {
+                self.viewer(self.rows()[self.viewerIndex() - 1]);
+            }
+        };
+
+        self.next = function () {
+            if (self.hasNext()) {
+                self.viewer(self.rows()[self.viewerIndex() + 1]);
+            }
+        };
+
+        self.closeViewer = function () {
+            self.viewer(null);
         };
 
         self.perform = function (action) {
@@ -258,6 +324,14 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
             return self.find();
         };
 
+        self.open = function (table) {
+            self.selectedName(table.name);
+        };
+
+        self.close = function () {
+            self.selectedName("");
+        };
+
         self.newRow = function () {
             var table = self.selected();
 
@@ -265,6 +339,7 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
                 return;
             }
 
+            self.viewer(null);
             self.editor({ isNew: true, key: {}, fields: table.columns.map(function (column) {
                 return createField(column, null);
             }) });
@@ -302,6 +377,7 @@ define(["ko", "models/session", "models/rawdatabase", "models/pager", "models/i1
 
         self.selectedName.subscribe(function () {
             self.editor(null);
+            self.viewer(null);
             self.search("");
             self.orderBy("");
             self.descending(false);

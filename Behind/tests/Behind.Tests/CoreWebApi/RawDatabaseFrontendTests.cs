@@ -90,4 +90,55 @@ public class RawDatabaseFrontendTests
         Assert.Contains("click: remove", view);
         Assert.Contains("<pager", view);
     }
+
+    [Fact]
+    public void View_OffersATableOverviewThatOpensAndClosesTables()
+    {
+        var view = Read("views/rawdatabase.html");
+        var viewModel = Read("viewmodels/rawdatabase.js");
+
+        Assert.Contains("ifnot: selected", view);
+        Assert.Contains("click: $root.open", view);
+        Assert.Contains("click: close", view);
+        Assert.Contains("self.open = function (table)", viewModel);
+        Assert.Contains("self.close = function ()", viewModel);
+        Assert.Contains("rows: table.rows", viewModel);
+    }
+
+    [Fact]
+    public void View_OffersARowViewerWithBrowsing()
+    {
+        var view = Read("views/rawdatabase.html");
+        var viewModel = Read("viewmodels/rawdatabase.js");
+
+        Assert.Contains("click: view", view);
+        Assert.Contains("if: viewer", view);
+        Assert.Contains("click: $root.previous", view);
+        Assert.Contains("click: $root.next", view);
+        Assert.Contains("click: $root.closeViewer", view);
+        Assert.Contains("self.viewer = ko.observable(null)", viewModel);
+        Assert.Contains("presentDetails(table, values)", viewModel);
+    }
+
+    [Fact]
+    public void ViewModel_RefreshRowsDoesNotDependOnTheSelectedComputedBeingUpToDate()
+    {
+        var viewModel = Read("viewmodels/rawdatabase.js");
+        var refresh = viewModel[viewModel.IndexOf("self.refreshRows = function", StringComparison.Ordinal)..];
+        refresh = refresh[..refresh.IndexOf("self.presentRow", StringComparison.Ordinal)];
+
+        Assert.Contains("self.findTable(self.selectedName())", refresh);
+        Assert.DoesNotContain("self.selected()", refresh);
+    }
+
+    [Fact]
+    public void View_DoesNotRenderEmptyEditorOrViewerCards()
+    {
+        var view = Read("views/rawdatabase.html");
+
+        Assert.Contains("<!-- ko if: editor -->", view);
+        Assert.Contains("<!-- ko if: viewer -->", view);
+        Assert.DoesNotContain("data-bind=\"if: editor", view);
+        Assert.DoesNotContain("data-bind=\"if: viewer", view);
+    }
 }

@@ -342,3 +342,8 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.behind-raw-value {
+    white-space: pre-wrap;
+    word-break: break-word;
+}

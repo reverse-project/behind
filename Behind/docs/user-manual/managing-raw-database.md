@@ -6,13 +6,14 @@ You find it under **Administration > Raw database** (`#/manage/raw-database`). I
 
 ## Tables
 
-Choose a table in the **Table** list. The list shows every table of the database with its number of rows: the tables of all entities (users, roles, sites, news, articles, galleries, downloads, menus, files, sessions, ...), their join tables (for example the roles of a user) and the version tables. A new entity shows up here automatically.
+The page opens with an overview of every table: its name, entity, number of rows and number of columns. Click a table (or **Open**) to see its rows and use **All tables** to go back. You can also choose a table in the **Table** list. The list shows every table of the database with its number of rows: the tables of all entities (users, roles, sites, news, articles, galleries, downloads, menus, files, sessions, ...), their join tables (for example the roles of a user) and the version tables. A new entity shows up here automatically.
 
 The **AuditLogEntries** table is read-only: you can look at it but not change it.
 
 ## Looking at rows
 
-- Rows are shown with every column and are paged.
+- Rows are shown with every column and are paged. Long values are shortened in the list.
+- **View** opens a row and shows every value in full. **Previous** and **Next** browse the rows of the current page, **Edit** changes the row and **Close** hides it. It works for read-only tables too.
 - **Search** looks for the text in every column that holds text, numbers, ids or dates (binary and sensitive columns are not searched).
 - Click a column name to sort by it, click it again to reverse the order.
 - A value shown as *NULL* is empty in the database; an empty text is a different thing.

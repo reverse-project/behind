@@ -51,6 +51,16 @@ public class ContentMinifierTests
         Assert.Contains("enable: !busy(), click: save", minified);
     }
 
+    [Fact]
+    public void HtmlMinifier_TableWithKnockoutComments_KeepsTheOptionalEndTags()
+    {
+        var minified = new HtmlMinifier()
+            .Minify("<table><tbody><tr><td>a</td><!-- ko foreach: cells --><td>b</td><!-- /ko --></tr></tbody></table>")
+            .GetOrElse(string.Empty);
+
+        Assert.Contains("</td><!-- /ko --></tr></tbody></table>", minified);
+    }
+
     [Theory]
     [InlineData(".js")]
     [InlineData(".MJS")]

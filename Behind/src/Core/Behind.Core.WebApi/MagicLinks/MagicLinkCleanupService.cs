@@ -9,6 +9,7 @@ namespace Behind.Core.WebApi.MagicLinks;
 public sealed class MagicLinkCleanupService(
     IServiceScopeFactory scopes,
     TimeProvider timeProvider,
+    IMagicLinkSettingsStore settings,
     ILogger<MagicLinkCleanupService> logger) : BackgroundService
 {
     public static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
@@ -34,6 +35,13 @@ public sealed class MagicLinkCleanupService(
 
     private async Task TryCleanAsync(CancellationToken cancellationToken)
     {
+        if (settings.Current.Match(() => true, _ => false))
+        {
+            logger.LogDebug("Magic link cleanup skipped: magic links are not configured");
+
+            return;
+        }
+
         try
         {
             var deleted = await CleanAsync(cancellationToken);

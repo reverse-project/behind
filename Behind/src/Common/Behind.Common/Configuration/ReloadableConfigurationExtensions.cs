@@ -6,8 +6,6 @@ namespace Behind.Common.Configuration;
 
 public static class ReloadableConfigurationExtensions
 {
-    private const string FailuresKey = "Behind.ConfigurationReloadFailures";
-
     extension(IHostApplicationBuilder builder)
     {
         public IHostApplicationBuilder AddReloadableJsonFile(string path, bool optional)
@@ -29,13 +27,14 @@ public static class ReloadableConfigurationExtensions
         {
             get
             {
-                if (builder.Configuration.Properties.TryGetValue(FailuresKey, out var existing))
+                if (builder.Services
+                        .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(ConfigurationReloadFailures))
+                        ?.ImplementationInstance is ConfigurationReloadFailures existing)
                 {
-                    return (ConfigurationReloadFailures)existing;
+                    return existing;
                 }
 
                 var failures = new ConfigurationReloadFailures();
-                builder.Configuration.Properties[FailuresKey] = failures;
                 builder.Services.AddSingleton(failures);
                 builder.Services.AddHostedService<ConfigurationReloadFailureLogger>();
 

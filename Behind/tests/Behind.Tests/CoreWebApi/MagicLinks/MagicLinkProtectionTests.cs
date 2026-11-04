@@ -78,6 +78,7 @@ public sealed class MagicLinkProtectionTests
         using var service = new MagicLinkCleanupService(
             services.GetRequiredService<IServiceScopeFactory>(),
             new Helpers.FixedTimeProvider(Now),
+            new MagicLinkSettingsStore(Some(Settings(5))),
             Substitute.For<ILogger<MagicLinkCleanupService>>());
 
         Assert.Equal(3, await service.CleanAsync());
@@ -99,6 +100,7 @@ public sealed class MagicLinkProtectionTests
         using var service = new MagicLinkCleanupService(
             services.GetRequiredService<IServiceScopeFactory>(),
             TimeProvider.System,
+            new MagicLinkSettingsStore(Some(Settings(5))),
             logger);
 
         await service.StartAsync(CancellationToken.None);
@@ -111,6 +113,25 @@ public sealed class MagicLinkProtectionTests
             Arg.Any<object>(),
             Arg.Any<InvalidOperationException>(),
             Arg.Any<Func<object, Exception?, string>>());
+    }
+
+    [Fact]
+    public async Task Cleanup_WithoutMagicLinkSettings_DoesNotTouchTheDatabase()
+    {
+        var commands = Substitute.For<IMagicLinkCommands>();
+        var services = new ServiceCollection().AddScoped(_ => commands).BuildServiceProvider();
+        var logger = Substitute.For<ILogger<MagicLinkCleanupService>>();
+        using var service = new MagicLinkCleanupService(
+            services.GetRequiredService<IServiceScopeFactory>(),
+            TimeProvider.System,
+            new MagicLinkSettingsStore(None),
+            logger);
+
+        await service.StartAsync(CancellationToken.None);
+        await Task.Delay(200);
+        await service.StopAsync(CancellationToken.None);
+
+        await commands.DidNotReceive().DeleteExpired(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

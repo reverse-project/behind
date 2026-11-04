@@ -1,4 +1,5 @@
 using Behind.Common.Configuration;
+using Behind.Common.Logging;
 using Behind.Tests.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -56,8 +57,9 @@ public sealed class ResilientJsonConfigurationTests : IDisposable
         var path = Write("app.json", """{ "Section": { "Value": "good" } }""");
         var builder = BuilderFor(path);
         var failures = new List<string>();
-        ((IConfigurationBuilder)builder.Configuration).Properties.TryGetValue("Behind.ConfigurationReloadFailures", out var shared);
-        ((ConfigurationReloadFailures)shared!).Failed += (source, _) => failures.Add(source);
+        var shared = (ConfigurationReloadFailures)builder.Services
+            .Single(d => d.ServiceType == typeof(ConfigurationReloadFailures)).ImplementationInstance!;
+        shared.Failed += (source, _) => failures.Add(source);
 
         File.WriteAllText(path, "{ not json");
         await Wait.UntilAsync(() => failures.Count, count => count > 0);
@@ -85,6 +87,18 @@ public sealed class ResilientJsonConfigurationTests : IDisposable
         var path = Write("app.json", "{ not json");
 
         Assert.ThrowsAny<Exception>(() => BuilderFor(path));
+    }
+
+    [Fact]
+    public void AddReloadableJsonFile_AfterAddSerilog_KeepsTheStreamBasedDefaultsWorking()
+    {
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = _directory });
+        builder.AddSerilog();
+
+        builder.AddReloadableJsonFile(Write("app.json", """{ "Section": { "Value": "one" } }"""), false);
+
+        Assert.Equal("one", builder.Configuration["Section:Value"]);
+        Assert.Equal("Information", builder.Configuration["Serilog:MinimumLevel:Default"]);
     }
 
     [Fact]

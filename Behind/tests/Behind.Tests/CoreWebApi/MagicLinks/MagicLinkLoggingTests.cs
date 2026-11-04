@@ -66,6 +66,7 @@ public class MagicLinkLoggingTests
         return new MagicLinkCleanupService(
             services.GetRequiredService<IServiceScopeFactory>(),
             TimeProvider.System,
+            new MagicLinkSettingsStore(Some(new MagicLinkSettings(Uuid.Empty, None))),
             logger);
     }
 

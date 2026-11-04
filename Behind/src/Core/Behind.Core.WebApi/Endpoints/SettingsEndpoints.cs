@@ -1,6 +1,7 @@
 using Behind.Common;
 using Behind.Common.Configuration;
 using Behind.Common.Logging;
+using Behind.Common.WebApi.Infrastructure.Localization;
 using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.MagicLinks;
 using Behind.Core.WebApi.Settings;
@@ -15,12 +16,14 @@ public sealed class SettingsEndpoints
 {
     public static async Task<IResult> Get(
         ConfigurationFileCatalog catalog,
+        LocaleCatalog locales,
         IOptions<SecurityConfiguration> security,
         CancellationToken cancellationToken)
     {
+        var available = await locales.ListAsync(cancellationToken);
         var files = await Task.WhenAll(
             catalog.Files.Select(file => catalog.EditorOf(file).Match(
-                () => file.ToSettingsFile(cancellationToken),
+                () => file.ToSettingsFile(available, cancellationToken),
                 editor => Task.FromResult(new SettingsFileResponse(file.Name, [], editor)))));
 
         return Results.Json(new SettingsResponse(security.Value.ReadOnlyConfiguration, files));
@@ -30,6 +33,7 @@ public sealed class SettingsEndpoints
         string file,
         SettingsUpdateRequest request,
         ConfigurationFileCatalog catalog,
+        LocaleCatalog locales,
         IOptions<SecurityConfiguration> security,
         ILogger<SettingsEndpoints> logger,
         CancellationToken cancellationToken) =>
@@ -44,6 +48,11 @@ public sealed class SettingsEndpoints
                     () => Task.FromResult<IResult>(Results.BadRequest()),
                     async planned =>
                     {
+                        if (!await planned.HasKnownLocale(target.Name, locales, cancellationToken))
+                        {
+                            return Results.BadRequest();
+                        }
+
                         await target.SetJsonNodesAsync(planned, cancellationToken);
 
                         logger.LogInformation(

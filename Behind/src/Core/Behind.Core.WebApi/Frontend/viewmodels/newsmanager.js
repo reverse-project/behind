@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/news", "models/newsmeta", "models/managedlist", "models/comments"], function (ko, session, news, meta, createManagedList, comments) {
+define(["ko", "models/session", "models/news", "models/newsmeta", "models/managedlist", "models/comments", "models/i18n"], function (ko, session, news, meta, createManagedList, comments, i18n) {
     return function NewsManagerViewModel() {
         var self = this;
 
@@ -33,13 +33,13 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/manage
                 isScheduled: item.status === "scheduled",
                 isExpired: item.status === "expired",
                 hasNewerDraft: item.hasNewerDraft,
-                version: "Version " + item.latestVersion + ", live: " + (item.activeVersion === null ? "none" : item.activeVersion),
-                schedule: item.startAt ? "Starts " + meta.formatDate(item.startAt) + (item.endAt ? ", ends " + meta.formatDate(item.endAt) : "") : "",
+                version: meta.version(item),
+                schedule: meta.schedule(item),
                 href: "#/manage/news/" + item.id
             };
 
             row.remove = function () {
-                if (!window.confirm("Delete " + row.title + "? It stops being shown and can be restored by a developer.")) {
+                if (!window.confirm(i18n.t("content.confirmDelete", [row.title]))) {
                     return Promise.resolve();
                 }
 
@@ -53,7 +53,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/manage
                 });
             };
             row.hardDelete = function () {
-                if (!window.confirm("Permanently delete " + row.title + " with all its comments? This cannot be undone.")) {
+                if (!window.confirm(i18n.t("news.confirmHardDelete", [row.title]))) {
                     return Promise.resolve();
                 }
 

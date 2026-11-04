@@ -1,11 +1,11 @@
 <section class="behind-wide">
-    <h1 class="mb-3">Galleries</h1>
+    <h1 class="mb-3" data-bind="t: 'galleries.title'">Galleries</h1>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <form class="input-group mb-3" data-bind="submit: find">
-        <input class="form-control" type="search" maxlength="200" placeholder="Search by title or description" aria-label="Search galleries" data-bind="value: search">
-        <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Search</button>
+        <input class="form-control" type="search" maxlength="200" placeholder="Search by title or description" aria-label="Search galleries" data-bind="value: search, tAttr: { placeholder: 'galleries.searchPlaceholder', 'aria-label': 'galleries.searchLabel' }">
+        <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
     </form>
-    <p class="text-body-secondary" data-bind="visible: isEmpty">There are no galleries to show.</p>
+    <p class="text-body-secondary" data-bind="visible: isEmpty, t: 'galleries.empty'">There are no galleries to show.</p>
     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-3" data-bind="foreach: items">
         <div class="col">
             <article class="card h-100 gallery-card">

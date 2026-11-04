@@ -1,9 +1,9 @@
-define(["ko", "models/session", "models/galleries", "models/newsmeta"], function (ko, session, galleries, meta) {
+define(["ko", "models/session", "models/galleries", "models/i18n"], function (ko, session, galleries, i18n) {
     var automatic = "auto";
     var uploaded = "upload";
 
     var statusOf = function (item) {
-        return item.isActive ? { label: "Live", css: "text-bg-success" } : { label: "Version", css: "text-bg-secondary" };
+        return item.isActive ? { label: "galleryeditor.statusLive", css: "text-bg-success" } : { label: "galleryeditor.statusVersion", css: "text-bg-secondary" };
     };
 
     var batchesOf = function (files) {
@@ -15,10 +15,6 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta"], function
         }
 
         return batches;
-    };
-
-    var plural = function (count, noun) {
-        return count + " " + noun + (count === 1 ? "" : "s");
     };
 
     return function GalleryEditorViewModel(context) {
@@ -50,10 +46,12 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta"], function
         self.items = ko.observableArray([]);
         self.versions = ko.observableArray([]);
 
-        self.thumbnailSources = [
-            { value: automatic, label: "Generate it from the images of the gallery" },
-            { value: uploaded, label: "Use an uploaded image" }
-        ];
+        self.thumbnailSources = ko.pureComputed(function () {
+            return [
+                { value: automatic, label: i18n.t("galleryeditor.thumbnailAutomatic") },
+                { value: uploaded, label: i18n.t("galleryeditor.thumbnailUploaded") }
+            ];
+        });
 
         self.hasMessage = ko.pureComputed(function () {
             return self.message() !== "";
@@ -68,11 +66,11 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta"], function
         });
 
         self.heading = ko.pureComputed(function () {
-            return self.isNew ? "New gallery" : "Edit gallery";
+            return self.isNew ? i18n.t("galleryeditor.newTitle") : i18n.t("galleryeditor.editTitle");
         });
 
         self.basedOnLabel = ko.pureComputed(function () {
-            return self.basedOn() === null ? "" : "Based on version " + self.basedOn() + ". Saving creates a new version.";
+            return self.basedOn() === null ? "" : i18n.t("galleryeditor.basedOn", [self.basedOn()]);
         });
 
         self.hasVersions = ko.pureComputed(function () {
@@ -84,7 +82,7 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta"], function
         });
 
         self.count = ko.pureComputed(function () {
-            return plural(self.items().length, "image");
+            return galleries.imageCount(self.items().length);
         });
 
         self.automaticThumbnailUrl = ko.pureComputed(function () {
@@ -162,11 +160,15 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta"], function
             var row = {
                 version: item.version,
                 title: item.title,
-                count: plural(item.itemCount, "image"),
+                count: galleries.imageCountLabel(item.itemCount),
                 isActive: item.isActive,
-                status: status.label,
+                status: ko.pureComputed(function () {
+                    return i18n.t(status.label);
+                }),
                 statusCss: status.css,
-                createdAt: meta.formatDate(item.createdAt)
+                createdAt: ko.pureComputed(function () {
+                    return i18n.dateTime(item.createdAt);
+                })
             };
 
             row.canActivate = ko.pureComputed(function () {
@@ -176,7 +178,7 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta"], function
                 return self.loadVersion(row.version);
             };
             row.activate = function () {
-                var question = "Make version " + row.version + " the live version of this gallery?";
+                var question = i18n.t("galleryeditor.confirmMakeLive", [row.version]);
 
                 return window.confirm(question) ? self.activateVersion(row.version) : Promise.resolve();
             };
@@ -263,7 +265,7 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta"], function
             return batches
                 .reduce(function (chain, batch) {
                     return chain.then(function () {
-                        self.progress("Uploading images (" + done + " of " + files.length + ")...");
+                        self.progress(i18n.t("galleryeditor.uploadProgress", [done, files.length]));
 
                         return uploadBatch(batch, summary).then(function () {
                             done += batch.length;
@@ -277,7 +279,7 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta"], function
                     self.uploadErrors(summary.errors);
                     self.message(summary.added.length === 0
                         ? ""
-                        : plural(summary.added.length, "image") + " uploaded. Add a description to the images if you like, then save the draft or publish the gallery.");
+                        : i18n.t("galleryeditor.uploaded", [galleries.imageCount(summary.added.length)]));
                 })
                 .finally(function () {
                     self.progress("");

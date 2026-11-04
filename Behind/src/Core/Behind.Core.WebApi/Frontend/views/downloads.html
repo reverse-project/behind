@@ -1,23 +1,23 @@
 <section class="behind-wide">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <h1 class="mb-0 text-break" data-bind="text: heading"></h1>
-        <a class="btn btn-outline-secondary ms-auto" data-bind="visible: canManage() && found(), attr: { href: manageHref }">Manage downloads</a>
+        <a class="btn btn-outline-secondary ms-auto" data-bind="visible: canManage() && found(), attr: { href: manageHref }, t: 'downloads.manage'">Manage downloads</a>
     </div>
-    <p class="text-body-secondary" data-bind="visible: loading">Loading...</p>
+    <p class="text-body-secondary" data-bind="visible: loading, t: 'common.loading'">Loading...</p>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
-    <div class="alert alert-warning" role="alert" data-bind="visible: missing">This folder does not exist. <a href="#/downloads">Go to the downloads</a>.</div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: missing"><span data-bind="t: 'downloads.folderMissing'">This folder does not exist.</span> <a href="#/downloads" data-bind="t: 'downloads.goToDownloads'">Go to the downloads</a>.</div>
     <div class="row g-4" data-bind="visible: found">
         <div class="col-md-4 col-lg-3">
-            <nav aria-label="Download folders" class="card card-body">
-                <a class="text-decoration-none mb-2" data-bind="attr: { href: rootHref }, css: { 'download-tree-selected': rootSelected }"><i class="fa-solid fa-house me-1" aria-hidden="true"></i>All downloads</a>
-                <p class="text-body-secondary mb-0" data-bind="visible: !hasFolders()">There are no folders yet.</p>
+            <nav aria-label="Download folders" class="card card-body" data-bind="tAttr: { 'aria-label': 'downloads.folders' }">
+                <a class="text-decoration-none mb-2" data-bind="attr: { href: rootHref }, css: { 'download-tree-selected': rootSelected }"><i class="fa-solid fa-house me-1" aria-hidden="true"></i><span data-bind="t: 'downloads.all'">All downloads</span></a>
+                <p class="text-body-secondary mb-0" data-bind="visible: !hasFolders(), t: 'downloads.noFolders'">There are no folders yet.</p>
                 <download-tree params="nodes: roots"></download-tree>
             </nav>
         </div>
         <div class="col-md-8 col-lg-9">
-            <nav aria-label="breadcrumb" data-bind="visible: inFolder">
+            <nav aria-label="breadcrumb" data-bind="visible: inFolder, tAttr: { 'aria-label': 'downloads.breadcrumb' }">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a data-bind="attr: { href: rootHref }">Downloads</a></li>
+                    <li class="breadcrumb-item"><a data-bind="attr: { href: rootHref }, t: 'downloads.title'">Downloads</a></li>
                     <!-- ko foreach: breadcrumbs -->
                     <li class="breadcrumb-item"><a data-bind="attr: { href: href }, text: displayName"></a></li>
                     <!-- /ko -->
@@ -27,10 +27,10 @@
                 <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th scope="col">Name</th>
-                            <th scope="col" class="text-end">Size</th>
-                            <th scope="col">Uploaded at</th>
-                            <th scope="col">Uploaded by</th>
+                            <th scope="col" data-bind="t: 'downloads.column.name'">Name</th>
+                            <th scope="col" class="text-end" data-bind="t: 'downloads.column.size'">Size</th>
+                            <th scope="col" data-bind="t: 'downloads.column.uploadedAt'">Uploaded at</th>
+                            <th scope="col" data-bind="t: 'downloads.column.uploadedBy'">Uploaded by</th>
                         </tr>
                     </thead>
                     <tbody data-bind="foreach: files">
@@ -47,8 +47,8 @@
                     </tbody>
                 </table>
             </div>
-            <p class="text-body-secondary" data-bind="visible: inFolder() && !hasFiles()">There are no files in this folder.</p>
-            <p class="text-body-secondary" data-bind="visible: !inFolder()">Choose a folder to see its files.</p>
+            <p class="text-body-secondary" data-bind="visible: inFolder() && !hasFiles(), t: 'downloads.noFiles'">There are no files in this folder.</p>
+            <p class="text-body-secondary" data-bind="visible: !inFolder(), t: 'downloads.chooseFolder'">Choose a folder to see its files.</p>
         </div>
     </div>
 </section>

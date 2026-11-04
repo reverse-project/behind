@@ -1,28 +1,47 @@
-define(["models/http", "models/session", "models/user"], function (http, session, user) {
-    var genericFailure = "Something went wrong. Please try again.";
+define(["models/http", "models/session", "models/user", "models/i18n"], function (http, session, user, i18n) {
+    var genericFailure = "common.error.generic";
+    var sessionExpired = "common.error.sessionExpired";
 
     var success = function (message) {
-        return { ok: true, message: message };
+        return { ok: true, message: i18n.t(message) };
+    };
+
+    var failureMessage = function (response, messages) {
+        var found = messages[response.status];
+
+        if (typeof found === "function") {
+            return found(response);
+        }
+
+        if (found) {
+            return i18n.t(found);
+        }
+
+        var details = Array.isArray(response.data) ? response.data.join(" ") : "";
+
+        return details || i18n.t(genericFailure);
     };
 
     var failure = function (response, messages) {
-        var details = Array.isArray(response.data) ? response.data.join(" ") : "";
+        return { ok: false, message: failureMessage(response, messages) };
+    };
 
-        return { ok: false, message: messages[response.status] || details || genericFailure };
+    var incomplete = function (message) {
+        return Promise.resolve({ ok: false, message: i18n.t(message) });
     };
 
     var bannedMessage = function (response) {
         var reason = response.data && response.data.reason ? response.data.reason : "";
 
-        return reason ? "This account is banned: " + reason : "This account is banned.";
+        return reason ? i18n.t("auth.bannedReason", [reason]) : i18n.t("auth.banned");
     };
 
     var userActionFailures = {
-        400: "Enter a message of up to 500 characters.",
-        401: "Your session has expired. Please sign in again.",
-        403: "You are not allowed to do that to this user.",
-        404: "This user no longer exists.",
-        409: "This user is referenced by the audit log and cannot be permanently deleted."
+        400: "auth.userAction.invalidMessage",
+        401: sessionExpired,
+        403: "auth.userAction.forbidden",
+        404: "auth.user.notFound",
+        409: "auth.userAction.referenced"
     };
 
     var userAction = function (path, body, done) {
@@ -32,25 +51,25 @@ define(["models/http", "models/session", "models/user"], function (http, session
     };
 
     var roleActionFailures = {
-        400: "The role name or access selection is not valid.",
-        401: "Your session has expired. Please sign in again.",
-        403: "You are not allowed to change this role.",
-        404: "This role no longer exists.",
-        409: "A role with this name already exists."
+        400: "auth.roleAction.invalid",
+        401: sessionExpired,
+        403: "auth.roleAction.forbidden",
+        404: "auth.roleAction.notFound",
+        409: "auth.roleAction.nameTaken"
     };
 
     var roleDeletedFailures = {
-        401: "Your session has expired. Please sign in again.",
-        403: "You need developer access to restore or permanently delete roles.",
-        404: "This role is not deleted.",
-        409: "This role is still referenced and cannot be permanently deleted."
+        401: sessionExpired,
+        403: "auth.roleDeleted.forbidden",
+        404: "auth.roleDeleted.notDeleted",
+        409: "auth.roleDeleted.referenced"
     };
 
     var userAccessFailures = {
-        400: "The access selection is not valid. Every user keeps the Users role.",
-        401: "Your session has expired. Please sign in again.",
-        403: "You are not allowed to change this user's access.",
-        404: "This user no longer exists."
+        400: "auth.userAccess.invalid",
+        401: sessionExpired,
+        403: "auth.userAccess.forbidden",
+        404: "auth.user.notFound"
     };
 
     var loaded = function (response, failures) {
@@ -66,34 +85,34 @@ define(["models/http", "models/session", "models/user"], function (http, session
             return http.post("/sign/in/password", { email: email, password: password }).then(function (response) {
                 if (response.ok) {
                     session.start(response.data);
-                    return success("Signed in.");
+                    return success("auth.signIn.done");
                 }
 
                 return failure(response, {
-                    400: "Enter a valid email and password.",
-                    401: "Invalid email or password.",
-                    403: bannedMessage(response)
+                    400: "auth.signIn.invalid",
+                    401: "auth.signIn.badCredentials",
+                    403: bannedMessage
                 });
             });
         },
 
         signInWithMagicLink: function (token) {
             if (!token) {
-                return Promise.resolve({ ok: false, message: "This sign in link is incomplete." });
+                return incomplete("auth.magicLink.incomplete");
             }
 
             return http.post("/sign/in/magiclink/redeem", { token: token }).then(function (response) {
                 if (response.ok) {
                     session.start(response.data);
-                    return success("Signed in.");
+                    return success("auth.signIn.done");
                 }
 
                 return failure(response, {
-                    400: "This sign in link is incomplete.",
-                    401: "This sign in link is invalid or has expired.",
-                    403: bannedMessage(response),
-                    404: "Magic link sign in is not available.",
-                    429: "Too many attempts. Please wait before trying again."
+                    400: "auth.magicLink.incomplete",
+                    401: "auth.magicLink.invalid",
+                    403: bannedMessage,
+                    404: "auth.magicLink.unavailable",
+                    429: "auth.tooManyAttempts"
                 });
             });
         },
@@ -101,21 +120,21 @@ define(["models/http", "models/session", "models/user"], function (http, session
         signUp: function (email, password, displayName) {
             return http.post("/sign/up/password", { email: email, password: password, displayName: displayName }).then(function (response) {
                 return response.ok
-                    ? success("Account created. You can sign in now.")
-                    : failure(response, { 409: "This email is already in use." });
+                    ? success("auth.signUp.done")
+                    : failure(response, { 409: "auth.signUp.emailInUse" });
             });
         },
 
         confirmEmail: function (userId, token) {
             if (!userId || !token) {
-                return Promise.resolve({ ok: false, message: "This confirmation link is incomplete." });
+                return incomplete("auth.confirmEmail.incomplete");
             }
 
             return http.post("/sign/up/confirm", { userId: userId, token: token }).then(function (response) {
                 return response.ok
-                    ? success("Your email is confirmed. You can sign in now.")
+                    ? success("auth.confirmEmail.done")
                     : failure(response, {
-                        400: "This confirmation link is invalid or has expired."
+                        400: "auth.confirmEmail.invalid"
                     });
             });
         },
@@ -123,11 +142,11 @@ define(["models/http", "models/session", "models/user"], function (http, session
         requestMagicLink: function (email) {
             return http.post("/sign/in/magiclink", { email: email }).then(function (response) {
                 return response.ok
-                    ? success("If the account exists, a sign in link is on its way.")
+                    ? success("auth.magicLink.requested")
                     : failure(response, {
-                        400: "Enter a valid email.",
-                        404: "Magic link sign in is not available.",
-                        429: "Too many requests. Please wait before trying again."
+                        400: "auth.magicLink.invalidEmail",
+                        404: "auth.magicLink.unavailable",
+                        429: "auth.magicLink.tooManyRequests"
                     });
             });
         },
@@ -141,8 +160,8 @@ define(["models/http", "models/session", "models/user"], function (http, session
                 }
 
                 return failure(response, {
-                    401: "Your session has expired. Please sign in again.",
-                    409: "Your session was changed elsewhere. Please try again."
+                    401: sessionExpired,
+                    409: "auth.session.changed"
                 });
             });
         },
@@ -150,10 +169,10 @@ define(["models/http", "models/session", "models/user"], function (http, session
         changeDisplayName: function (displayName) {
             return http.put("/profile/displayName", { displayName: displayName }).then(function (response) {
                 return response.ok
-                    ? success("Your display name was saved.")
+                    ? success("auth.profile.saved")
                     : failure(response, {
-                        400: "The display name is too long.",
-                        401: "Your session has expired. Please sign in again."
+                        400: "auth.profile.tooLong",
+                        401: sessionExpired
                     });
             });
         },
@@ -161,13 +180,13 @@ define(["models/http", "models/session", "models/user"], function (http, session
         elevate: function (target, code) {
             return http.post("/session/elevate/" + target, { code: code }).then(function (response) {
                 return response.ok
-                    ? success("Your role was elevated.")
+                    ? success("auth.elevate.done")
                     : failure(response, {
-                        400: "Enter the 6 to 8 digit authenticator code.",
-                        401: "Your session has expired. Please sign in again.",
-                        403: "The code is not valid.",
-                        404: "Administrator elevation is not available.",
-                        429: "Too many attempts. Please wait before trying again."
+                        400: "auth.elevate.invalidCode",
+                        401: sessionExpired,
+                        403: "auth.elevate.wrongCode",
+                        404: "auth.elevate.unavailable",
+                        429: "auth.tooManyAttempts"
                     });
             });
         },
@@ -178,7 +197,7 @@ define(["models/http", "models/session", "models/user"], function (http, session
             return http.get("/sessions" + query).then(function (response) {
                 return response.ok
                     ? { ok: true, message: "", data: response.data }
-                    : failure(response, { 401: "Your session has expired. Please sign in again." });
+                    : failure(response, { 401: sessionExpired });
             });
         },
 
@@ -191,20 +210,20 @@ define(["models/http", "models/session", "models/user"], function (http, session
                 return response.ok
                     ? { ok: true, message: "", data: response.data }
                     : failure(response, {
-                        401: "Your session has expired. Please sign in again.",
+                        401: sessionExpired,
                         403: query.deleted
-                            ? "You need developer access to see deleted users."
-                            : "You need administrator access to manage users."
+                            ? "auth.users.needDeveloperDeleted"
+                            : "auth.users.needAdministrator"
                     });
             });
         },
 
         elevateUser: function (userId, role) {
-            return userAction(userId + "/elevate/" + role, undefined, "The role was granted.");
+            return userAction(userId + "/elevate/" + role, undefined, "auth.user.roleGranted");
         },
 
         deelevateUser: function (userId, role) {
-            return userAction(userId + "/deelevate/" + role, undefined, "The role was removed.");
+            return userAction(userId + "/deelevate/" + role, undefined, "auth.user.roleRemoved");
         },
 
         loadUserAccess: function (userId) {
@@ -215,7 +234,7 @@ define(["models/http", "models/session", "models/user"], function (http, session
 
         saveUserAccess: function (userId, access) {
             return http.put("/users/" + userId + "/access", access).then(function (response) {
-                return saved(response, "The access was saved.", userAccessFailures);
+                return saved(response, "auth.userAccess.saved", userAccessFailures);
             });
         },
 
@@ -226,41 +245,41 @@ define(["models/http", "models/session", "models/user"], function (http, session
 
             return http.get(url).then(function (response) {
                 return loaded(response, {
-                    401: "Your session has expired. Please sign in again.",
+                    401: sessionExpired,
                     403: query.deleted
-                        ? "You need developer access to see deleted roles."
-                        : "You need role management access to see roles."
+                        ? "auth.roles.needDeveloperDeleted"
+                        : "auth.roles.needManagement"
                 });
             });
         },
 
         createRole: function (name) {
             return http.post("/roles", { name: name }).then(function (response) {
-                return saved(response, "The role was created.", roleActionFailures);
+                return saved(response, "auth.role.created", roleActionFailures);
             });
         },
 
         saveRoleAccess: function (roleId, access) {
             return http.put("/roles/" + roleId + "/access", access).then(function (response) {
-                return saved(response, "The role was saved.", roleActionFailures);
+                return saved(response, "auth.role.saved", roleActionFailures);
             });
         },
 
         deleteRole: function (roleId) {
             return http.post("/roles/" + roleId + "/delete").then(function (response) {
-                return saved(response, "The role was deleted.", roleActionFailures);
+                return saved(response, "auth.role.deleted", roleActionFailures);
             });
         },
 
         restoreRole: function (roleId) {
             return http.post("/roles/" + roleId + "/restore").then(function (response) {
-                return saved(response, "The role was restored.", roleDeletedFailures);
+                return saved(response, "auth.role.restored", roleDeletedFailures);
             });
         },
 
         hardDeleteRole: function (roleId) {
             return http.post("/roles/" + roleId + "/hard/delete").then(function (response) {
-                return saved(response, "The role was permanently deleted.", roleDeletedFailures);
+                return saved(response, "auth.role.permanentlyDeleted", roleDeletedFailures);
             });
         },
 
@@ -268,13 +287,13 @@ define(["models/http", "models/session", "models/user"], function (http, session
             return http.post("/users/" + userId + "/impersonate").then(function (response) {
                 if (response.ok) {
                     session.impersonate(response.data);
-                    return success("You are now impersonating this user.");
+                    return success("auth.impersonate.done");
                 }
 
                 return failure(response, {
-                    401: "Your session has expired. Please sign in again.",
-                    403: "You are not allowed to impersonate this user.",
-                    404: "This user no longer exists."
+                    401: sessionExpired,
+                    403: "auth.impersonate.forbidden",
+                    404: "auth.user.notFound"
                 });
             });
         },
@@ -282,32 +301,32 @@ define(["models/http", "models/session", "models/user"], function (http, session
         stopImpersonating: function () {
             return http.post("/impersonation/stop").then(function () {
                 session.stopImpersonating();
-                return success("You stopped impersonating.");
+                return success("auth.impersonate.stopped");
             });
         },
 
         signOutUser: function (userId) {
-            return userAction(userId + "/sign/out", undefined, "The user was signed out of all sessions.");
+            return userAction(userId + "/sign/out", undefined, "auth.user.signedOut");
         },
 
         banUser: function (userId, reason) {
-            return userAction(userId + "/ban", { reason: reason }, "The user was banned and signed out of all sessions.");
+            return userAction(userId + "/ban", { reason: reason }, "auth.user.banned");
         },
 
         unbanUser: function (userId) {
-            return userAction(userId + "/unban", undefined, "The user was unbanned.");
+            return userAction(userId + "/unban", undefined, "auth.user.unbanned");
         },
 
         deleteUser: function (userId) {
-            return userAction(userId + "/delete", undefined, "The user was deleted.");
+            return userAction(userId + "/delete", undefined, "auth.user.deleted");
         },
 
         restoreUser: function (userId) {
-            return userAction(userId + "/restore", undefined, "The user was restored.");
+            return userAction(userId + "/restore", undefined, "auth.user.restored");
         },
 
         hardDeleteUser: function (userId) {
-            return userAction(userId + "/hard/delete", undefined, "The user was permanently deleted.");
+            return userAction(userId + "/hard/delete", undefined, "auth.user.permanentlyDeleted");
         },
 
         loadWallOfShame: function (paging) {
@@ -325,9 +344,9 @@ define(["models/http", "models/session", "models/user"], function (http, session
 
             return http.get(url).then(function (response) {
                 return loaded(response, {
-                    400: "Choose a start date that is not after the end date.",
-                    401: "Your session has expired. Please sign in again.",
-                    403: "You need audit log access to see the audit log."
+                    400: "auth.auditLog.invalidRange",
+                    401: sessionExpired,
+                    403: "auth.auditLog.forbidden"
                 });
             });
         },
@@ -336,7 +355,7 @@ define(["models/http", "models/session", "models/user"], function (http, session
             return http.post("/sign/out/all").then(function (response) {
                 if (response.ok || response.status === 401) {
                     session.end();
-                    return success("Signed out of all sessions.");
+                    return success("auth.signOutAll.done");
                 }
 
                 return failure(response, {});
@@ -346,7 +365,7 @@ define(["models/http", "models/session", "models/user"], function (http, session
         signOut: function () {
             return http.post("/sign/out").then(function () {
                 session.end();
-                return success("Signed out.");
+                return success("auth.signOut.done");
             });
         }
     };

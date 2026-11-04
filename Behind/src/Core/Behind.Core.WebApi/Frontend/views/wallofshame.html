@@ -1,12 +1,12 @@
 <section>
-    <h1 class="mb-3">Wall of shame</h1>
+    <h1 class="mb-3" data-bind="t: 'wallofshame.title'">Wall of shame</h1>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
-    <p class="text-body-secondary" data-bind="visible: isEmpty">Nobody is on the wall of shame. Keep it up.</p>
+    <p class="text-body-secondary" data-bind="visible: isEmpty, t: 'wallofshame.empty'">Nobody is on the wall of shame. Keep it up.</p>
     <ul class="list-group mb-3" data-bind="foreach: entries">
         <li class="list-group-item">
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <strong class="text-break" data-bind="text: name"></strong>
-                <span class="badge text-bg-secondary" data-bind="visible: isTemporary">Until <span data-bind="text: expiresAt"></span></span>
+                <span class="badge text-bg-secondary" data-bind="visible: isTemporary"><span data-bind="t: 'wallofshame.until'">Until</span> <span data-bind="text: expiresAt"></span></span>
             </div>
             <div class="text-break" data-bind="text: reason"></div>
         </li>

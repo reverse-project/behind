@@ -1,6 +1,6 @@
-define(["ko", "models/session", "models/news", "models/newsmeta", "bindings/richeditor"], function (ko, session, news, meta) {
+define(["ko", "models/session", "models/news", "models/newsmeta", "models/i18n", "bindings/richeditor"], function (ko, session, news, meta, i18n) {
     var statusOf = function (item) {
-        return item.isActive ? { label: "Live", css: "text-bg-success" } : { label: "Version", css: "text-bg-secondary" };
+        return item.isActive ? { label: "content.status.live", css: "text-bg-success" } : { label: "content.status.version", css: "text-bg-secondary" };
     };
 
     return function NewsEditorViewModel(context) {
@@ -37,11 +37,15 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "bindings/rich
         });
 
         self.heading = ko.pureComputed(function () {
-            return self.isNew ? "New news" : "Edit news";
+            return self.isNew ? i18n.t("news.new") : i18n.t("news.edit");
+        });
+
+        self.noCategory = ko.pureComputed(function () {
+            return i18n.t("content.noCategory");
         });
 
         self.basedOnLabel = ko.pureComputed(function () {
-            return self.basedOn() === null ? "" : "Based on version " + self.basedOn() + ". Saving creates a new version.";
+            return self.basedOn() === null ? "" : i18n.t("content.basedOn", [self.basedOn()]);
         });
 
         self.hasVersions = ko.pureComputed(function () {
@@ -85,11 +89,9 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "bindings/rich
                 title: item.title,
                 isActive: item.isActive,
                 isHighlighted: item.isHighlighted,
-                status: status.label,
+                status: i18n.t(status.label),
                 statusCss: status.css,
-                schedule: item.startAt
-                    ? "Starts " + meta.formatDate(item.startAt) + (item.endAt ? ", ends " + meta.formatDate(item.endAt) : "")
-                    : "No schedule",
+                schedule: meta.schedule(item) || i18n.t("news.noSchedule"),
                 createdAt: meta.formatDate(item.createdAt)
             };
 
@@ -100,7 +102,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "bindings/rich
                 return self.loadVersion(row.version);
             };
             row.activate = function () {
-                var question = "Make version " + row.version + " the live version of this news?";
+                var question = i18n.t("news.confirmActivate", [row.version]);
 
                 return window.confirm(question) ? self.activateVersion(row.version) : Promise.resolve();
             };

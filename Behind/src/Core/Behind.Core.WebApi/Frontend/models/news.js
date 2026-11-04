@@ -2,11 +2,11 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
     var sessionExpired = results.sessionExpired;
 
     var outcome = results.create({
-        "unknown-category": "The selected category no longer exists. Choose another one.",
-        "invalid-schedule": "The end of the news must be after its start.",
-        "version-conflict": "The news was changed at the same time by someone else. Reload it and try again.",
-        "name-taken": "Another category already uses this name. Choose a different one.",
-        "unknown-image": "The header image could not be found. Upload it again."
+        "unknown-category": "content.error.unknownCategory",
+        "invalid-schedule": "news.error.invalidSchedule",
+        "version-conflict": "news.error.versionConflict",
+        "name-taken": "content.error.nameTaken",
+        "unknown-image": "content.error.unknownImage"
     });
 
     var failure = outcome.failure;
@@ -14,92 +14,92 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
     var saved = outcome.saved;
 
     var publicFailures = {
-        404: "This news does not exist."
+        404: "news.error.doesNotExist"
     };
 
     var readFailures = {
         401: sessionExpired,
-        403: "You need news access to see news.",
-        404: "This news no longer exists."
+        403: "news.error.readForbidden",
+        404: "news.error.gone"
     };
 
     var writeFailures = {
-        400: "Enter a title for the news.",
+        400: "news.error.titleRequired",
         401: sessionExpired,
-        403: "You are not allowed to change news.",
-        404: "This news no longer exists.",
-        409: "The news could not be saved."
+        403: "news.error.writeForbidden",
+        404: "news.error.gone",
+        409: "news.error.saveFailed"
     };
 
     var removeFailures = {
         401: sessionExpired,
-        403: "You are not allowed to delete news.",
-        404: "This news no longer exists."
+        403: "news.error.deleteForbidden",
+        404: "news.error.gone"
     };
 
     var deletedReadFailures = {
         401: sessionExpired,
-        403: "You need developer access to see deleted news."
+        403: "news.error.developerRead"
     };
 
     var deletedActionFailures = {
         401: sessionExpired,
-        403: "You need developer access to restore or permanently delete news.",
-        404: "This news is not deleted.",
-        409: "The news could not be changed."
+        403: "news.error.developerAction",
+        404: "news.error.notDeleted",
+        409: "news.error.changeFailed"
     };
 
     var categoryWriteFailures = {
-        400: "Enter a name for the category.",
+        400: "content.error.categoryNameRequired",
         401: sessionExpired,
-        403: "You are not allowed to change categories.",
-        404: "This category no longer exists.",
-        409: "The category could not be saved."
+        403: "content.error.categoryWriteForbidden",
+        404: "content.error.categoryGone",
+        409: "content.error.categorySaveFailed"
     };
 
     var categoryRemoveFailures = {
         401: sessionExpired,
-        403: "You are not allowed to delete categories.",
-        404: "This category no longer exists."
+        403: "content.error.categoryDeleteForbidden",
+        404: "content.error.categoryGone"
     };
 
     var categoryDeletedActionFailures = {
         401: sessionExpired,
-        403: "You need developer access to restore or permanently delete categories.",
-        404: "This category is not deleted.",
-        409: "The category could not be changed. A deleted category cannot come back while another uses its name."
+        403: "content.error.categoryDeveloperAction",
+        404: "content.error.categoryNotDeleted",
+        409: "content.error.categoryChangeFailed"
     };
 
     var categoryDeletedReadFailures = {
         401: sessionExpired,
-        403: "You need developer access to see deleted categories."
+        403: "content.error.categoryDeveloperRead"
     };
 
     var imageFailures = {
-        400: "Choose an image to upload.",
+        400: "content.error.imageRequired",
         401: sessionExpired,
-        403: "You are not allowed to upload images.",
-        413: "The image is too large. Choose a smaller one.",
-        415: "Only PNG, JPEG, GIF and WebP images can be uploaded."
+        403: "content.error.imageForbidden",
+        413: "content.error.imageTooLarge",
+        415: "content.error.imageType"
     };
 
     var commentFailures = {
-        400: "Write a comment of up to 2000 characters.",
-        401: "Sign in to comment.",
-        404: "This news no longer exists."
+        400: "news.error.commentInvalid",
+        401: "news.error.commentSignIn",
+        404: "news.error.gone"
     };
 
     var commentEditFailures = {
-        400: "Write a comment of up to 2000 characters.",
-        401: "Sign in to edit comments.",
-        403: "You are not allowed to edit this comment.",
-        404: "This comment no longer exists."
+        400: "news.error.commentInvalid",
+        401: "news.error.commentEditSignIn",
+        403: "news.error.commentEditForbidden",
+        404: "news.error.commentGone"
     };
 
     var commentRemoveFailures = {
-        401: "Sign in to delete comments.",
-        403: "You are not allowed to delete this comment.",
-        404: "This comment no longer exists."
+        401: "news.error.commentDeleteSignIn",
+        403: "news.error.commentDeleteForbidden",
+        404: "news.error.commentGone"
     };
 
     var draft = function (fields) {
@@ -163,37 +163,37 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
 
         create: function (fields) {
             return http.post("/news", draft(fields)).then(function (response) {
-                return saved(response, "The news was saved.", writeFailures);
+                return saved(response, "news.saved", writeFailures);
             });
         },
 
         saveVersion: function (id, fields) {
             return http.post("/news/" + id + "/versions", draft(fields)).then(function (response) {
-                return saved(response, "A new version was saved.", writeFailures);
+                return saved(response, "content.versionSaved", writeFailures);
             });
         },
 
         activate: function (id, version) {
             return http.post("/news/" + id + "/versions/" + version + "/activate").then(function (response) {
-                return saved(response, "The version is now live.", writeFailures);
+                return saved(response, "content.versionLive", writeFailures);
             });
         },
 
         remove: function (id) {
             return http.post("/news/" + id + "/delete").then(function (response) {
-                return saved(response, "The news was deleted.", removeFailures);
+                return saved(response, "news.deleted", removeFailures);
             });
         },
 
         restore: function (id) {
             return http.post("/news/" + id + "/restore").then(function (response) {
-                return saved(response, "The news was restored.", deletedActionFailures);
+                return saved(response, "news.restored", deletedActionFailures);
             });
         },
 
         hardDelete: function (id) {
             return http.post("/news/" + id + "/hard/delete").then(function (response) {
-                return saved(response, "The news was permanently deleted.", deletedActionFailures);
+                return saved(response, "news.permanentlyDeleted", deletedActionFailures);
             });
         },
 
@@ -211,31 +211,31 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
 
         createCategory: function (fields) {
             return http.post("/news/categories", categoryDraft(fields)).then(function (response) {
-                return saved(response, "The category was saved.", categoryWriteFailures);
+                return saved(response, "content.categorySaved", categoryWriteFailures);
             });
         },
 
         saveCategory: function (id, fields) {
             return http.post("/news/categories/" + id, categoryDraft(fields)).then(function (response) {
-                return saved(response, "The category was saved.", categoryWriteFailures);
+                return saved(response, "content.categorySaved", categoryWriteFailures);
             });
         },
 
         removeCategory: function (id) {
             return http.post("/news/categories/" + id + "/delete").then(function (response) {
-                return saved(response, "The category was deleted.", categoryRemoveFailures);
+                return saved(response, "content.categoryDeleted", categoryRemoveFailures);
             });
         },
 
         restoreCategory: function (id) {
             return http.post("/news/categories/" + id + "/restore").then(function (response) {
-                return saved(response, "The category was restored.", categoryDeletedActionFailures);
+                return saved(response, "content.categoryRestored", categoryDeletedActionFailures);
             });
         },
 
         hardDeleteCategory: function (id) {
             return http.post("/news/categories/" + id + "/hard/delete").then(function (response) {
-                return saved(response, "The category was permanently deleted.", categoryDeletedActionFailures);
+                return saved(response, "content.categoryPermanentlyDeleted", categoryDeletedActionFailures);
             });
         },
 
@@ -257,19 +257,19 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
 
         addComment: function (id, content) {
             return http.post("/news/" + id + "/comments", { content: content }).then(function (response) {
-                return saved(response, "Your comment was added.", commentFailures);
+                return saved(response, "news.commentAdded", commentFailures);
             });
         },
 
         editComment: function (commentId, content) {
             return http.post("/news/comments/" + commentId, { content: content }).then(function (response) {
-                return saved(response, "The comment was changed.", commentEditFailures);
+                return saved(response, "news.commentChanged", commentEditFailures);
             });
         },
 
         removeComment: function (commentId) {
             return http.post("/news/comments/" + commentId + "/delete").then(function (response) {
-                return saved(response, "The comment was deleted.", commentRemoveFailures);
+                return saved(response, "news.commentDeleted", commentRemoveFailures);
             });
         }
     };

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Behind.Common;
 using Behind.Common.Configuration;
+using Behind.Common.WebApi.Infrastructure.Localization;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.WebApi.Settings;
@@ -10,14 +11,16 @@ public static class SettingsResponseExtensions
 {
     extension(FileInfo file)
     {
-        public async Task<SettingsFileResponse> ToSettingsFile(CancellationToken cancellationToken = default)
+        public async Task<SettingsFileResponse> ToSettingsFile(
+            IReadOnlyList<LocaleInfo> locales,
+            CancellationToken cancellationToken = default)
         {
             var root = await file.ReadJsonAsync(cancellationToken);
 
             return new SettingsFileResponse(
                 file.Name,
                 [
-                    ..root.Fields().Select(field => field.ToResponse(file.Name)),
+                    ..root.Fields().Select(field => field.ToResponse(file.Name, locales)),
                     ..file.Name.MissingActions(root).Select(action => action.ToMissingField())
                 ]);
         }
@@ -34,7 +37,7 @@ public static class SettingsResponseExtensions
 
     extension(JsonConfigurationField field)
     {
-        private SettingsFieldResponse ToResponse(string file)
+        private SettingsFieldResponse ToResponse(string file, IReadOnlyList<LocaleInfo> locales)
         {
             var action = file.FindAction(field.Path);
             var sensitive = field.Path.IsSensitiveConfigurationPath;
@@ -45,7 +48,8 @@ public static class SettingsResponseExtensions
                 sensitive ? field.Value.Text.MaskSensitiveValue() : field.Value.Text,
                 sensitive,
                 action == None,
-                action.Match<string?>(() => null, found => found.Name));
+                action.Match<string?>(() => null, found => found.Name),
+                locales.OptionsFor(file, field.Path));
         }
     }
 

@@ -33,7 +33,7 @@ public class AuditLogFrontendTests
         var administration = Read("viewmodels/administration.js");
 
         Assert.Contains("\"#/audit-log\": \"controllers/auditlog\"", app);
-        Assert.Contains("name: \"Audit log\", icon: \"fa-clipboard-list\", href: \"#/audit-log\", allowed: canReadAuditLog", administration);
+        Assert.Contains("name: \"administration.pages.auditLog\", icon: \"fa-clipboard-list\", href: \"#/audit-log\", allowed: canReadAuditLog", administration);
         Assert.Contains("session.hasGrant(\"AuditLog.Read\")", administration);
     }
 

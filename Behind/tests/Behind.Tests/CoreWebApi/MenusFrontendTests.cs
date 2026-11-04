@@ -120,9 +120,9 @@ public class MenusFrontendTests
     {
         var model = Read("models/menus.js");
 
-        Assert.Contains("{ value: \"CurrentPage\", label: \"Current page\" }", model);
-        Assert.Contains("{ value: \"NewTab\", label: \"New tab\" }", model);
-        Assert.Contains("{ value: \"NewWindow\", label: \"New window\" }", model);
+        Assert.Contains("{ value: \"CurrentPage\", label: \"menuitems.target.currentPage\" }", model);
+        Assert.Contains("{ value: \"NewTab\", label: \"menuitems.target.newTab\" }", model);
+        Assert.Contains("{ value: \"NewWindow\", label: \"menuitems.target.newWindow\" }", model);
         Assert.Contains("target: opensInNewTab ? \"_blank\" : null", model);
         Assert.Contains("rel: opensInNewTab ? \"noopener noreferrer\" : null", model);
         Assert.Contains("noopener,noreferrer", model);
@@ -189,7 +189,7 @@ public class MenusFrontendTests
         Assert.Contains("menus.restoreItem(row.id)", viewModel);
         Assert.Contains("menus.hardDeleteItem(row.id)", viewModel);
         Assert.Contains("parentId: self.isUserItem() ? null : self.parentId()", viewModel);
-        Assert.Contains("ids.length === 0 ? \"All roles\"", viewModel);
+        Assert.Contains("ids.length === 0 ? i18n.t(\"menuitems.allRoles\")", viewModel);
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public class MenusFrontendTests
         Assert.Contains("options: targets", view);
         Assert.Contains("visible: allowsUserItems", view);
         Assert.Contains("options: parentChoices", view);
-        Assert.Contains("optionsCaption: 'No parent (top level)'", view);
+        Assert.Contains("optionsCaption: noParentLabel", view);
         Assert.Contains("checked: $root.roleIds, checkedValue: id", view);
         Assert.Contains("everyone, including visitors who are not signed in", view);
         Assert.Contains("Show deleted menu items", view);

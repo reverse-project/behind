@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/user"], function (ko, auth, session, user) {
+define(["ko", "models/auth", "models/session", "models/user", "models/about", "models/usersettings", "models/i18n"], function (ko, auth, session, user, about, usersettings, i18n) {
     return function ProfileViewModel() {
         var self = this;
 
@@ -7,6 +7,8 @@ define(["ko", "models/auth", "models/session", "models/user"], function (ko, aut
         self.message = ko.observable("");
         self.displayName = ko.observable("");
         self.emails = ko.observableArray([]);
+        self.locales = ko.observableArray([]);
+        self.locale = ko.observable("");
 
         self.hasMessage = ko.pureComputed(function () {
             return self.message() !== "";
@@ -41,9 +43,40 @@ define(["ko", "models/auth", "models/session", "models/user"], function (ko, aut
                 });
         };
 
+        var loadLocales = function () {
+            return about.loadLocales().then(function (result) {
+                var siteDefault = { code: "", name: i18n.t("profile.siteDefault") };
+
+                self.locales([siteDefault].concat(result.items));
+                self.locale(session.isSignedIn() ? usersettings.locale() : i18n.remembered());
+            });
+        };
+
+        self.submitLocale = function () {
+            var code = self.locale();
+
+            self.busy(true);
+
+            return (session.isSignedIn() ? usersettings.saveLocale(code) : Promise.resolve({ ok: true }))
+                .then(function (result) {
+                    if (!result.ok) {
+                        self.message(result.message);
+
+                        return;
+                    }
+
+                    return i18n.choose(code).then(function () {
+                        self.message(i18n.t("profile.localeSaved"));
+                    });
+                })
+                .finally(function () {
+                    self.busy(false);
+                });
+        };
+
         self.activate = function () {
             if (!session.isSignedIn()) {
-                return Promise.resolve();
+                return loadLocales();
             }
 
             self.busy(true);
@@ -51,6 +84,8 @@ define(["ko", "models/auth", "models/session", "models/user"], function (ko, aut
             return load()
                 .then(function (result) {
                     self.message(result.message);
+
+                    return loadLocales();
                 })
                 .finally(function () {
                     self.busy(false);

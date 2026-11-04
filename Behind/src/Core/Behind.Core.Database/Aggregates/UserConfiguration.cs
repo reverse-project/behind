@@ -62,6 +62,21 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         });
     }
 
+    public static void ApplyUserSettings(ModelBuilder modelBuilder) =>
+        modelBuilder.Entity(UserSettingStore.Table, us =>
+        {
+            us.Property<Guid>(UserSettingStore.UserId);
+            us.Property<string>(UserSettingStore.Key).HasMaxLength(UserSettingKeys.MaxKeyLength);
+            us.Property<string>(UserSettingStore.Value).HasMaxLength(UserSettingKeys.MaxValueLength).IsRequired();
+
+            us.HasKey(UserSettingStore.UserId, UserSettingStore.Key);
+
+            us.HasOne(typeof(HumanUser))
+                .WithMany()
+                .HasForeignKey(UserSettingStore.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
     public static void ApplyUserRoles(ModelBuilder modelBuilder) =>
         modelBuilder.Entity("UserRoles", ur =>
         {

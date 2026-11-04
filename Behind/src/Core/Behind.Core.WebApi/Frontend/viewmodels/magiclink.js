@@ -1,8 +1,8 @@
-define(["ko", "models/auth"], function (ko, auth) {
+define(["ko", "models/auth", "models/i18n"], function (ko, auth, i18n) {
     return function MagicLinkViewModel(context) {
         var self = this;
 
-        self.message = ko.observable("Signing you in...");
+        self.message = ko.observable(i18n.t("magiclink.signingIn"));
         self.failed = ko.observable(false);
 
         self.activate = function () {

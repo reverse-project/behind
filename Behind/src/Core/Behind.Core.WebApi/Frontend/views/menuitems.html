@@ -1,47 +1,48 @@
 <section class="behind-wide">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <h1 class="mb-0"><span data-bind="text: menuTitle"></span> items</h1>
-        <a class="btn btn-outline-secondary ms-auto" href="#/manage/menus">Back to menus</a>
+        <h1 class="mb-0" data-bind="t: { key: 'menuitems.heading', args: [menuTitle] }"><span data-bind="text: menuTitle"></span> items</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/manage/menus" data-bind="t: 'menuitems.back'">Back to menus</a>
     </div>
-    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage menu items.</p>
-    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need menu access to manage menu items.</div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'menuitems.signInToManage'">to manage menu items.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'menuitems.denied'">You need menu access to manage menu items.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
     <div data-bind="visible: canRead && hasMenu()">
         <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
             <h2 class="h5" data-bind="text: heading"></h2>
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
-                    <label class="form-label" for="menu-item-title">Title</label>
+                    <label class="form-label" for="menu-item-title" data-bind="t: 'common.title'">Title</label>
                     <input id="menu-item-title" class="form-control" type="text" maxlength="200" data-bind="value: title, valueUpdate: 'input'">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label" for="menu-item-url">URL</label>
-                    <input id="menu-item-url" class="form-control" type="text" maxlength="2000" placeholder="#/news or https://example.com" data-bind="value: url, valueUpdate: 'input'">
+                    <label class="form-label" for="menu-item-url" data-bind="t: 'menuitems.url'">URL</label>
+                    <input id="menu-item-url" class="form-control" type="text" maxlength="2000" placeholder="#/news or https://example.com" data-bind="value: url, valueUpdate: 'input', tAttr: { placeholder: 'menuitems.urlPlaceholder' }">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="menu-item-target">Open in</label>
+                    <label class="form-label" for="menu-item-target" data-bind="t: 'menuitems.openIn'">Open in</label>
                     <select id="menu-item-target" class="form-select" data-bind="value: target, options: targets, optionsText: 'label', optionsValue: 'value'"></select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="menu-item-position">Position</label>
+                    <label class="form-label" for="menu-item-position" data-bind="t: 'menuitems.position'">Position</label>
                     <input id="menu-item-position" class="form-control" type="number" step="1" data-bind="value: position">
-                    <div class="form-text">Items with the same position are ordered by title.</div>                </div>
+                    <div class="form-text" data-bind="t: 'menuitems.positionHelp'">Items with the same position are ordered by title.</div>
+                </div>
                 <div class="col-md-4" data-bind="visible: allowsUserItems">
-                    <label class="form-label" for="menu-item-kind">Kind</label>
+                    <label class="form-label" for="menu-item-kind" data-bind="t: 'menuitems.kind'">Kind</label>
                     <select id="menu-item-kind" class="form-select" data-bind="value: kind">
-                        <option value="Link">Menu link</option>
-                        <option value="User">User menu item</option>
+                        <option value="Link" data-bind="t: 'menuitems.kind.link'">Menu link</option>
+                        <option value="User" data-bind="t: 'menuitems.kind.user'">User menu item</option>
                     </select>
                 </div>
                 <div class="col-md-4" data-bind="visible: !isUserItem()">
-                    <label class="form-label" for="menu-item-parent">Parent</label>
-                    <select id="menu-item-parent" class="form-select" data-bind="value: parentId, options: parentChoices, optionsText: 'title', optionsValue: 'id', optionsCaption: 'No parent (top level)'"></select>
+                    <label class="form-label" for="menu-item-parent" data-bind="t: 'menuitems.parent'">Parent</label>
+                    <select id="menu-item-parent" class="form-select" data-bind="value: parentId, options: parentChoices, optionsText: 'title', optionsValue: 'id', optionsCaption: noParentLabel"></select>
                 </div>
             </div>
             <fieldset class="mb-3">
-                <legend class="form-label fs-6">Visible for</legend>
-                <p class="form-text mt-0">Leave every role unchecked to show the item to everyone, including visitors who are not signed in.</p>
-                <p class="text-body-secondary" data-bind="visible: !hasRoles()">No roles are available.</p>
+                <legend class="form-label fs-6" data-bind="t: 'menuitems.visibleFor'">Visible for</legend>
+                <p class="form-text mt-0" data-bind="t: 'menuitems.visibleForHelp'">Leave every role unchecked to show the item to everyone, including visitors who are not signed in.</p>
+                <p class="text-body-secondary" data-bind="visible: !hasRoles(), t: 'menuitems.noRoles'">No roles are available.</p>
                 <div class="d-flex flex-wrap gap-3" data-bind="foreach: roles">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" data-bind="checked: $root.roleIds, checkedValue: id, attr: { id: 'menu-item-role-' + id }">
@@ -50,34 +51,34 @@
                 </div>
             </fieldset>
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary" data-bind="enable: canSave">Save</button>
-                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isEditing, click: reset">Cancel</button>
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isEditing, click: reset, t: 'common.cancel'">Cancel</button>
             </div>
         </form>
         <div data-bind="with: list">
             <form class="input-group mb-3" data-bind="submit: find">
-                <input class="form-control" type="search" maxlength="200" placeholder="Search by title or URL" aria-label="Search menu items" data-bind="value: search">
-                <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Search</button>
+                <input class="form-control" type="search" maxlength="200" placeholder="Search by title or URL" aria-label="Search menu items" data-bind="value: search, tAttr: { placeholder: 'menuitems.search.placeholder', 'aria-label': 'menuitems.search.label' }">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
             </form>
             <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
-                <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> Show deleted menu items</label>
+                <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'menuitems.showDeleted'">Show deleted menu items</span></label>
             </div>
             <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
-            <p class="text-body-secondary" data-bind="visible: !hasItems()">No menu items found.</p>
+            <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'menuitems.empty'">No menu items found.</p>
             <ul class="list-group mb-3" data-bind="foreach: items">
                 <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                     <div class="me-auto">
-                        <strong class="text-break" data-bind="text: title"></strong>
+                        <strong class="text-break" data-bind="text: label"></strong>
                         <span class="text-body-secondary small ms-2 text-break" data-bind="text: url"></span>
                         <div class="text-body-secondary small"><span data-bind="text: targetLabel"></span> &middot; <span data-bind="text: rolesLabel"></span></div>
                     </div>
-                    <span class="badge text-bg-secondary" data-bind="visible: isUser">User menu</span>
-                    <span class="badge text-bg-secondary" data-bind="visible: isSub">Sub item of <span data-bind="text: parentTitle"></span></span>
-                    <span class="badge text-bg-dark" data-bind="visible: isDeleted">Deleted</span>
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit">Edit</button>
-                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove">Delete</button>
-                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore">Restore</button>
-                    <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete">Delete permanently</button>
+                    <span class="badge text-bg-secondary" data-bind="visible: isUser, t: 'menuitems.userMenu'">User menu</span>
+                    <span class="badge text-bg-secondary" data-bind="visible: isSub, t: { key: 'menuitems.subItemOf', args: [parentTitle] }">Sub item of <span data-bind="text: parentTitle"></span></span>
+                    <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete, t: 'common.deletePermanently'">Delete permanently</button>
                 </li>
             </ul>
             <pager class="d-block" params="pager: pager"></pager>

@@ -50,6 +50,24 @@ public class AboutEndpointsTests
     }
 
     [Fact]
+    public void Get_ReturnsTheDefaultLocaleOfTheFrontendSite()
+    {
+        var result = AboutEndpoints.Get(Configuration(("Frontend:Site:DefaultLocale", "hu-HU")));
+
+        Assert.Equal("hu-HU", Assert.IsType<JsonHttpResult<AboutResponse>>(result).Value!.DefaultLocale);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void Get_FallsBackToTheInternationalEnglishLocale(string? locale)
+    {
+        var result = AboutEndpoints.Get(Configuration(("Frontend:Site:DefaultLocale", locale ?? string.Empty)));
+
+        Assert.Equal("en-US", Assert.IsType<JsonHttpResult<AboutResponse>>(result).Value!.DefaultLocale);
+    }
+
+    [Fact]
     public void ProductVersion_OmitsBuildMetadata()
     {
         var version = typeof(ICoreWebApi).Assembly.ProductVersion;

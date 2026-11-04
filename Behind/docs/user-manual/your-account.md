@@ -11,6 +11,12 @@ Use **Profile** to change your display name.
 
 The line "Shown as ..." tells you how others will see you.
 
+### Language
+
+Choose your **Language** from the list of available languages by their names (for example **English (International)** or **Magyar**) and choose **Save**. **Site default** follows the language the site is set to.
+
+When you are signed in the choice is saved to your account and follows you to every device. Without signing in it is remembered in this browser only.
+
 ## Session
 
 **Session** shows who the app thinks you are right now and how long you stay signed in.

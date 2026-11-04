@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/menus", "models/accounts", "models/branding"], function (ko, auth, session, menus, accounts, branding) {
+define(["ko", "models/auth", "models/session", "models/menus", "models/accounts", "models/branding", "models/i18n"], function (ko, auth, session, menus, accounts, branding, i18n) {
     return function HeaderViewModel(context) {
         var self = this;
         var main = menus.follow("main");
@@ -22,7 +22,7 @@ define(["ko", "models/auth", "models/session", "models/menus", "models/accounts"
         self.userItems = itemsOfKind("User");
 
         self.label = ko.pureComputed(function () {
-            return session.displayName() || "Account";
+            return session.displayName() || i18n.t("app.account");
         });
 
         self.isImpersonating = session.isImpersonating;

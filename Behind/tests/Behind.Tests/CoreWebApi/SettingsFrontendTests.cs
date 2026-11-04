@@ -36,7 +36,7 @@ public class SettingsFrontendTests
         var administration = Read("viewmodels/administration.js");
 
         Assert.Contains("\"#/settings\": \"controllers/settings\"", app);
-        Assert.Contains("name: \"Settings\", icon: \"fa-sliders\", href: \"#/settings\", allowed: canReadConfiguration", administration);
+        Assert.Contains("name: \"administration.pages.settings\", icon: \"fa-sliders\", href: \"#/settings\", allowed: canReadConfiguration", administration);
         Assert.Contains("session.hasGrant(\"Configuration.Read\")", administration);
     }
 
@@ -186,7 +186,7 @@ public class SettingsFrontendTests
             new[]
             {
                 "with: logging, submit: saveLogging, visible: isLoggingSelected",
-                "options: levels, optionsCaption: 'Not set', value: defaultLevel",
+                "options: levels, optionsCaption: $root.text('settings.logging.notSet'), value: defaultLevel",
                 "foreach: overrides", "value: source", "options: $parent.levels, value: level",
                 "click: $parent.remove", "click: add", "foreach: sources"
             },

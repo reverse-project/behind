@@ -616,6 +616,10 @@ Every management page (users, roles, sites) follows the same shape: a paged list
 - A hard delete answers `409` when the database rejects it, for example because audit entries are attributed to the user (see the audit log notes above).
 - `IUserManagementQueries` takes a `DeletionState` (`Active` / `Deleted`) and opens the `IncludeDeleted` scope itself for `Deleted`; `Active` always excludes deleted users, even inside a `DeletedRecordsVisibilityMiddleware` scope.
 
+## User settings
+
+The `UserSettings` table (migration `AddUserSettings`) holds simple per-user key/value pairs: `UserId` (foreign key to `Users`, cascade delete), `Key` (max 64) and `Value` (max 256), with the primary key `UserId` + `Key`. It is a shared-type join table like `UserGrants`, not an audited entity, so it is read and written through `IUserSettingQueries` / `IUserSettingCommands` and has no audit label. The only key so far is `locale` (`UserSettingKeys.Locale`).
+
 ## Versioned Sites
 
 `Site` is the first versioned entity. Its identity is a `VersionedKey<Guid>` (`Behind.Common`, next to `ActiveVersion` in `Behind.Common.Database`) (the site id and a version number starting at 1) and the version that visitors see is decided by an `ActiveVersion` row, never by the site row itself.

@@ -51,6 +51,25 @@ Files named `*.min.*` are served as-is. Third-party libraries live in `Frontend/
 
 Images (png, jpg, gif, webp, avif, ico, svg) are served unchanged with the correct content type and the same cache/security headers; only SVG is compressed. If a `wwwroot` directory exists in the content root, its files are served in addition to the embedded frontend and take precedence over embedded files with the same path.
 
+### Localization
+
+The frontend texts come from JSON files in `Frontend/locales/<code>.json` (`en-US` and `hu-HU`): `{ "name": "Magyar", "messages": { "key": "text {0}" } }`. `name` is the official name of the locale shown by the Settings page, `{0}` style placeholders are filled by position. Files in `wwwroot/locales` override the embedded ones and add new locales (the `wwwroot` provider takes precedence, see Static Frontend); a code must look like `hu-HU` and the file must be valid JSON, other files are ignored.
+
+- `LocaleCatalog` (`Behind.Common.WebApi.Infrastructure.Localization`, registered by `AddFrontend` over the embedded provider plus `wwwroot`) lists the available `LocaleInfo(Code, Name)` sorted by name and checks `ContainsAsync`.
+- The default locale is `Frontend:Site:DefaultLocale` of `frontend.json`; `GET /about` returns it as `defaultLocale` (`en-US`, `LocaleCatalog.Fallback`, when empty).
+- `GET /settings` gives the field `Frontend:Site:DefaultLocale` of `frontend.json` an `options` list (`SettingsOption(Value, Label)`, built by `SettingsLocaleExtensions.OptionsFor`); the Settings page shows a field with options as a drop-down, and `PUT /settings/frontend.json` answers `400` for a locale without a file (`HasKnownLocale`).
+- `models/i18n.js` loads `en-US` as the fallback and then the requested locale before `app.js` binds the shell, and exposes `i18n.t(key, args)` plus the Knockout bindings `t: 'key'` (or `t: { key: 'key', args: [...] }`) for the text and `tAttr: { attribute: 'key' }` for attributes. A key missing from the locales keeps the English text written in the HTML. Every key of `en-US` must exist in the other locales (tested).
+- Rules for frontend code: no hardcoded user-visible text. Views use `t` / `tAttr` (no HTML in messages, mixed markup is split or passed as `{0}` arguments, the English text stays in the HTML as fallback), scripts call `i18n.t("key", [args])` at use time (never at module load) and write each key as a plain string literal. Message tables hold keys; `models/results.js` translates them (`results.sessionExpired` is a key). Dates and numbers use `i18n.dateTime`, `i18n.date` and `i18n.locale()`. Built-in menu item names are mapped to `menu.item.*` keys in `models/menus.js`.
+- `LocalizationCompletenessTests` enforces it: every key used in a `.js` or `.html` file exists in `en-US`, every `en-US` key is used, `hu-HU` has the same keys and placeholders, and views contain no text outside a `t`/`text`/`html`/`value` binding (`<code>`, `<option>`, `<textarea>` and `<script>` are exempt). A new text therefore needs its key in both `locales/en-US.json` and `locales/hu-HU.json`.
+- A user's own locale is the per-user setting `locale` (see below); `GET /locales` (anonymous) lists the available `LocaleInfo(Code, Name)`. The language is the account's locale, else the one remembered in the browser (`localStorage` key `behind.locale`), else the site default; a blank value means "use the default".
+
+### User Settings
+
+Per-user key/value pairs live in the `UserSettings` table (`UserId`, `Key`, `Value`; composite key `UserId` + `Key`, cascade delete with the user), mapped as a shared-type join table like `UserGrants` (`UserConfiguration.ApplyUserSettings`, `UserSettingStore`) and read and written through `IUserSettingQueries` and `IUserSettingCommands` (an empty value removes the pair). It is not an audited entity, so it has no audit label.
+
+- `GET /profile/settings` returns the settings of the signed in user as `{ key: value }`; `PUT /profile/settings/{key}` takes `{ value }` (`204`; `401` without a valid session; `404` for a key that is not in `UserSettingKeys.Known`; `400` when `UserSettingExtensions.AcceptsAsync` refuses the value, for `locale` a locale without a file). Both use `IgnoreETag`.
+- A new setting is one constant plus its entry in `UserSettingKeys.Known` and, when its value needs checking, a case in `AcceptsAsync`. The frontend reads them through `models/usersettings.js` (`load`, `clear`, `save`, `locale`), which `app.js` reloads when the session signs in, signs out or impersonates.
+
 ### Sites Settings
 
 The Settings page (`#/settings`, `SettingsEndpoints`) manages the configuration files in the content root. `ConfigurationFileCatalog` (registered as a singleton by `AddSecurity`) lists the only files it may touch: `appsettings.json`, `backend.json`, `database.json`, `email.json`, `frontend.json` and `security.json`; any other name answers `404`.

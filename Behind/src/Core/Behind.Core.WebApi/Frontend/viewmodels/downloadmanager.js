@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "models/filetypes", "models/slug"], function (ko, session, downloads, createBrowser, filetypes, slug) {
+define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "models/filetypes", "models/slug", "models/i18n"], function (ko, session, downloads, createBrowser, filetypes, slug, i18n) {
     return function DownloadManagerViewModel(context) {
         var self = this;
         var browser = null;
@@ -110,7 +110,7 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
             };
             row.remove = confirmed(
                 function () {
-                    return "Delete " + row.name + "?";
+                    return i18n.t("downloadmanager.confirmDeleteFile", [row.name]);
                 },
                 function () {
                     return downloads.remove(row.id).then(refreshAfter);
@@ -122,7 +122,7 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
             };
             row.hardDelete = confirmed(
                 function () {
-                    return "Permanently delete " + row.name + "? This cannot be undone.";
+                    return i18n.t("downloadmanager.confirmHardDeleteFile", [row.name]);
                 },
                 function () {
                     return downloads.hardDelete(row.id).then(refreshAfter);
@@ -141,7 +141,7 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
             };
             row.hardDelete = confirmed(
                 function () {
-                    return "Permanently delete the " + row.name + " folder with everything in it? This cannot be undone.";
+                    return i18n.t("downloadmanager.confirmHardDeleteFolder", [row.name]);
                 },
                 function () {
                     return downloads.hardDeleteFolder(row.id).then(refreshAfter);
@@ -166,10 +166,12 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
         });
         self.folderFormHeading = ko.pureComputed(function () {
             if (self.isEditingFolder()) {
-                return "Edit folder";
+                return i18n.t("downloadmanager.editFolder");
             }
 
-            return browser.selected() ? "New folder in " + browser.selected().displayName : "New folder";
+            return browser.selected()
+                ? i18n.t("downloadmanager.newFolderIn", [browser.selected().displayName])
+                : i18n.t("downloadmanager.newFolder");
         });
         self.folderSlugInput = ko.pureComputed({
             read: self.folderSlug,
@@ -252,7 +254,7 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
         self.deleteFolder = function () {
             var current = browser.selected();
 
-            if (!current || !window.confirm("Delete the " + current.displayName + " folder? Its subfolders and files are hidden together with it.")) {
+            if (!current || !window.confirm(i18n.t("downloadmanager.confirmDeleteFolder", [current.displayName]))) {
                 return Promise.resolve();
             }
 
@@ -290,9 +292,9 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
                 size: filetypes.sizeOf(file.size),
                 name: ko.observable(file.name),
                 error: ko.observable(file.size === 0
-                    ? "The file is empty."
+                    ? i18n.t("downloads.error.fileEmpty")
                     : browser.maxFileBytes() > 0 && file.size > browser.maxFileBytes()
-                        ? "The file is larger than " + browser.maxFileSize() + "."
+                        ? i18n.t("downloadmanager.fileTooLarge", [browser.maxFileSize()])
                         : "")
             };
 
@@ -330,7 +332,7 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
                 return queue
                     .reduce(function (chain, item) {
                         return chain.then(function () {
-                            self.uploadProgress("Uploading " + (done + 1) + " of " + queue.length + "...");
+                            self.uploadProgress(i18n.t("downloadmanager.uploadProgress", [done + 1, queue.length]));
 
                             return downloads.upload(current.id, item.file, item.name().trim()).then(function (result) {
                                 if (result.ok) {
@@ -348,7 +350,9 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
                             return self.pending.indexOf(item) >= 0;
                         }).length;
 
-                        return refreshAfter({ ok: true, message: failed === 0 ? "The files were uploaded." : "Some files could not be uploaded." });
+                        var outcome = failed === 0 ? i18n.t("downloadmanager.uploaded") : i18n.t("downloadmanager.uploadIncomplete");
+
+                        return refreshAfter({ ok: true, message: outcome });
                     })
                     .finally(function () {
                         self.uploadProgress("");

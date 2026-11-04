@@ -171,8 +171,8 @@ public class EmbeddedFrontendTests
         Assert.Contains("params=\"items: userItems, variant: 'dropdown'\"", menu);
         Assert.Contains("click: signOut", menu);
         Assert.Contains("params=\"items: links, variant: 'navbar'\"", index);
-        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn() && canSignIn()\"><a class=\"nav-link\" href=\"#/sign-in\">", index);
-        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn() && canSignUp()\"><a class=\"nav-link\" href=\"#/sign-up\">", index);
+        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn() && canSignIn()\"><a class=\"nav-link\" href=\"#/sign-in\" data-bind=\"t: 'app.signIn'\">", index);
+        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn() && canSignUp()\"><a class=\"nav-link\" href=\"#/sign-up\" data-bind=\"t: 'app.signUp'\">", index);
         Assert.Equal(1, index.Split("click: signOut").Length - 1);
         Assert.Contains("menus.follow(\"main\")", header);
         Assert.Contains("session.displayName()", header);
@@ -204,11 +204,11 @@ public class EmbeddedFrontendTests
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
         Assert.Equal(12, viewModel.Split("icon: \"fa-").Length - 1);
-        Assert.Contains("name: \"Menus\", icon: \"fa-bars\", href: \"#/manage/menus\", allowed: canReadMenus", viewModel);
+        Assert.Contains("name: \"administration.pages.menus\", icon: \"fa-bars\", href: \"#/manage/menus\", allowed: canReadMenus", viewModel);
         Assert.Contains("hasGrant(\"Menu.Read\")", viewModel);
-        Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);
-        Assert.Contains("name: \"Sites\", icon: \"fa-file-lines\", href: \"#/sites\", allowed: canReadSites", viewModel);
-        Assert.Contains("name: \"News\", icon: \"fa-newspaper\", href: \"#/manage/news\", allowed: canReadNews", viewModel);
+        Assert.Contains("name: \"administration.pages.users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);
+        Assert.Contains("name: \"administration.pages.sites\", icon: \"fa-file-lines\", href: \"#/sites\", allowed: canReadSites", viewModel);
+        Assert.Contains("name: \"administration.pages.news\", icon: \"fa-newspaper\", href: \"#/manage/news\", allowed: canReadNews", viewModel);
         Assert.Contains("hasGrant(\"User.Manage\")", viewModel);
         Assert.Contains("hasGrant(\"Site.Read\")", viewModel);
         Assert.Contains("hasGrant(\"News.Read\")", viewModel);

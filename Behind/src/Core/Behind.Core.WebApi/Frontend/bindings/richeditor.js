@@ -1,4 +1,4 @@
-define(["ko", "quill", "bindings/richeditorimages"], function (ko, Quill, images) {
+define(["ko", "quill", "models/i18n", "bindings/richeditorimages"], function (ko, Quill, i18n, images) {
     images.register();
 
     var toolbar = [
@@ -12,7 +12,36 @@ define(["ko", "quill", "bindings/richeditorimages"], function (ko, Quill, images
         ["clean"]
     ];
 
+    var toolbarLabels = [
+        [".ql-header", "richeditor.heading"],
+        ["button.ql-bold", "richeditor.bold"],
+        ["button.ql-italic", "richeditor.italic"],
+        ["button.ql-underline", "richeditor.underline"],
+        ["button.ql-strike", "richeditor.strike"],
+        ["button.ql-list[value=\"ordered\"]", "richeditor.orderedList"],
+        ["button.ql-list[value=\"bullet\"]", "richeditor.bulletList"],
+        ["button.ql-indent[value=\"-1\"]", "richeditor.outdent"],
+        ["button.ql-indent[value=\"+1\"]", "richeditor.indent"],
+        [".ql-align", "richeditor.align"],
+        ["button.ql-blockquote", "richeditor.blockquote"],
+        ["button.ql-code-block", "richeditor.codeBlock"],
+        ["button.ql-link", "richeditor.link"],
+        ["button.ql-image", "richeditor.image"],
+        ["button.ql-clean", "richeditor.clean"]
+    ];
+
     var imageTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+
+    var labelToolbar = function (container) {
+        toolbarLabels.forEach(function (entry) {
+            var label = i18n.t(entry[1]);
+
+            Array.prototype.forEach.call(container.querySelectorAll(entry[0]), function (control) {
+                control.setAttribute("title", label);
+                control.setAttribute("aria-label", label);
+            });
+        });
+    };
 
     var isEmpty = function (quill) {
         return quill.getText().trim() === "" && !quill.root.querySelector("img");
@@ -78,6 +107,14 @@ define(["ko", "quill", "bindings/richeditorimages"], function (ko, Quill, images
             });
 
             images.attach(quill);
+
+            var labels = ko.computed(function () {
+                labelToolbar(quill.getModule("toolbar").container);
+            });
+
+            ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
+                labels.dispose();
+            });
 
             quill.on("text-change", function () {
                 writing = true;

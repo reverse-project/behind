@@ -9,6 +9,7 @@ public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<
     public const string EmailFile = "email.json";
     public const string LoggingEditor = "logging";
     public const string AppSettingsFile = "appsettings.json";
+    public const string FrontendFile = "frontend.json";
 
     public static readonly IReadOnlyList<string> DefaultNames =
     [
@@ -16,7 +17,7 @@ public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<
         "backend.json",
         "database.json",
         EmailFile,
-        "frontend.json",
+        FrontendFile,
         "security.json"
     ];
 

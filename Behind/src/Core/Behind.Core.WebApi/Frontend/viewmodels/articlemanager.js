@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/articles", "models/newsmeta", "models/managedlist"], function (ko, session, articles, meta, createManagedList) {
+define(["ko", "models/session", "models/articles", "models/newsmeta", "models/managedlist", "models/i18n"], function (ko, session, articles, meta, createManagedList, i18n) {
     return function ArticleManagerViewModel() {
         var self = this;
 
@@ -29,12 +29,12 @@ define(["ko", "models/session", "models/articles", "models/newsmeta", "models/ma
                 isDraft: item.status === "draft",
                 isPublished: item.status === "published",
                 hasNewerDraft: item.hasNewerDraft,
-                version: "Version " + item.latestVersion + ", live: " + (item.activeVersion === null ? "none" : item.activeVersion),
+                version: meta.version(item),
                 href: "#/manage/articles/" + item.id
             };
 
             row.remove = function () {
-                if (!window.confirm("Delete " + row.title + "? It stops being shown and can be restored by a developer.")) {
+                if (!window.confirm(i18n.t("content.confirmDelete", [row.title]))) {
                     return Promise.resolve();
                 }
 
@@ -48,7 +48,7 @@ define(["ko", "models/session", "models/articles", "models/newsmeta", "models/ma
                 });
             };
             row.hardDelete = function () {
-                if (!window.confirm("Permanently delete " + row.title + " with all its versions? This cannot be undone.")) {
+                if (!window.confirm(i18n.t("articles.confirmHardDelete", [row.title]))) {
                     return Promise.resolve();
                 }
 

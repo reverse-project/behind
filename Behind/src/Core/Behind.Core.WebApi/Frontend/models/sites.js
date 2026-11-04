@@ -2,8 +2,8 @@ define(["models/http", "models/results"], function (http, results) {
     var sessionExpired = results.sessionExpired;
 
     var conflictMessages = {
-        "slug-taken": "Another site already uses this slug. Choose a different one.",
-        "version-conflict": "The site was changed at the same time by someone else. Reload it and try again."
+        "slug-taken": "sites.conflict.slugTaken",
+        "version-conflict": "sites.conflict.versionConflict"
     };
 
     var outcome = results.create(conflictMessages);
@@ -13,46 +13,46 @@ define(["models/http", "models/results"], function (http, results) {
 
     var readFailures = {
         401: sessionExpired,
-        403: "You need site access to see sites.",
-        404: "This site no longer exists."
+        403: "sites.error.readDenied",
+        404: "sites.error.notFound"
     };
 
     var writeFailures = {
-        400: "Enter a title and a slug made of letters, numbers and dashes.",
+        400: "sites.error.invalid",
         401: sessionExpired,
-        403: "You are not allowed to change sites.",
-        404: "This site no longer exists.",
-        409: "The site could not be saved."
+        403: "sites.error.writeDenied",
+        404: "sites.error.notFound",
+        409: "sites.error.saveFailed"
     };
 
     var deletedReadFailures = {
         401: sessionExpired,
-        403: "You need developer access to see deleted sites."
+        403: "sites.error.deletedReadDenied"
     };
 
     var removeFailures = {
         401: sessionExpired,
-        403: "You are not allowed to delete sites.",
-        404: "This site no longer exists."
+        403: "sites.error.deleteDenied",
+        404: "sites.error.notFound"
     };
 
     var deletedActionFailures = {
         401: sessionExpired,
-        403: "You need developer access to restore or permanently delete sites.",
-        404: "This site is not deleted.",
-        409: "The site could not be changed."
+        403: "sites.error.deletedActionDenied",
+        404: "sites.error.notDeleted",
+        409: "sites.error.changeFailed"
     };
 
     var imageFailures = {
-        400: "Choose an image to upload.",
+        400: "sites.error.imageRequired",
         401: sessionExpired,
-        403: "You are not allowed to upload images.",
-        413: "The image is too large. Choose a smaller one.",
-        415: "Only PNG, JPEG, GIF and WebP images can be uploaded."
+        403: "sites.error.imageDenied",
+        413: "sites.error.imageTooLarge",
+        415: "sites.error.imageType"
     };
 
     var publicFailures = {
-        404: "This page does not exist."
+        404: "sites.error.pageMissing"
     };
 
     var draft = function (fields) {
@@ -77,19 +77,19 @@ define(["models/http", "models/results"], function (http, results) {
 
         remove: function (id) {
             return http.post("/sites/" + id + "/delete").then(function (response) {
-                return saved(response, "The site was deleted.", removeFailures);
+                return saved(response, "sites.done.deleted", removeFailures);
             });
         },
 
         restore: function (id) {
             return http.post("/sites/" + id + "/restore").then(function (response) {
-                return saved(response, "The site was restored.", deletedActionFailures);
+                return saved(response, "sites.done.restored", deletedActionFailures);
             });
         },
 
         hardDelete: function (id) {
             return http.post("/sites/" + id + "/hard/delete").then(function (response) {
-                return saved(response, "The site was permanently deleted.", deletedActionFailures);
+                return saved(response, "sites.done.permanentlyDeleted", deletedActionFailures);
             });
         },
 
@@ -113,19 +113,19 @@ define(["models/http", "models/results"], function (http, results) {
 
         create: function (fields) {
             return http.post("/sites", draft(fields)).then(function (response) {
-                return saved(response, "The site was saved.", writeFailures);
+                return saved(response, "sites.done.saved", writeFailures);
             });
         },
 
         saveVersion: function (id, fields) {
             return http.post("/sites/" + id + "/versions", draft(fields)).then(function (response) {
-                return saved(response, "A new version was saved.", writeFailures);
+                return saved(response, "sites.done.versionSaved", writeFailures);
             });
         },
 
         activate: function (id, version) {
             return http.post("/sites/" + id + "/versions/" + version + "/activate").then(function (response) {
-                return saved(response, "The version is now live.", writeFailures);
+                return saved(response, "sites.done.live", writeFailures);
             });
         },
 

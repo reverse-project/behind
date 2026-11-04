@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/i18n"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding, session, usersettings, i18n) {
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
@@ -122,6 +122,10 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         query.addEventListener("change", apply);
     };
 
+    var syncUserSettings = function () {
+        return session.isSignedIn() ? usersettings.load() : usersettings.clear();
+    };
+
     return {
         start: function () {
             applyColorScheme();
@@ -129,14 +133,30 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
             branding.title.subscribe(function (title) {
                 document.title = title;
             });
-            branding.load();
-            ko.applyBindings(new HeaderViewModel(context), $("#header-container")[0]);
 
-            var footer = new FooterViewModel();
+            return branding.load()
+                .then(function () {
+                    i18n.useDefault(branding.locale());
 
-            ko.applyBindings(footer, $("#footer-container")[0]);
-            footer.activate();
-            router.run("#/");
+                    return syncUserSettings();
+                })
+                .then(function () {
+                    i18n.useAccount(usersettings.locale());
+                    usersettings.locale.subscribe(i18n.useAccount);
+                    session.isSignedIn.subscribe(syncUserSettings);
+                    session.isImpersonating.subscribe(syncUserSettings);
+
+                    return i18n.apply();
+                })
+                .then(function () {
+                    ko.applyBindings(new HeaderViewModel(context), $("#header-container")[0]);
+
+                    var footer = new FooterViewModel();
+
+                    ko.applyBindings(footer, $("#footer-container")[0]);
+                    footer.activate();
+                    router.run("#/");
+                });
         }
     };
 });

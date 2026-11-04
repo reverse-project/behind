@@ -216,10 +216,10 @@ public class NewsFrontendTests
     {
         var meta = Read("models/newsmeta.js");
 
-        Assert.Contains("\"Updated \"", meta);
-        Assert.Contains("\"Created \"", meta);
+        Assert.Contains("content.updated", meta);
+        Assert.Contains("content.created", meta);
         Assert.Contains("item.createdAt ?", meta);
-        Assert.Contains("Anonymous", meta);
+        Assert.Contains("content.anonymous", meta);
     }
 
     [Fact]

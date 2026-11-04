@@ -1,16 +1,15 @@
-define(["ko", "models/auth", "models/pager"], function (ko, auth, createPager) {
+define(["ko", "models/auth", "models/pager", "models/i18n"], function (ko, auth, createPager, i18n) {
     var pageSize = 10;
-    var anonymous = "Anonymous";
-
-    var formatDate = function (value) {
-        return value ? new Date(value).toLocaleString() : "";
-    };
 
     var present = function (item) {
         return {
-            name: (item.displayName || "").trim() || anonymous,
+            name: ko.pureComputed(function () {
+                return (item.displayName || "").trim() || i18n.t("wallofshame.anonymous");
+            }),
             reason: item.reason,
-            expiresAt: formatDate(item.expiresAt),
+            expiresAt: ko.pureComputed(function () {
+                return i18n.dateTime(item.expiresAt);
+            }),
             isTemporary: !!item.expiresAt
         };
     };

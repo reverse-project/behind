@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager", "models/comments"], function (ko, session, news, meta, createPager, comments) {
+define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager", "models/comments", "models/i18n"], function (ko, session, news, meta, createPager, comments, i18n) {
     var commentPageSize = 10;
 
     return function NewsArticleViewModel(context) {
@@ -60,7 +60,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
                 author: meta.author(item.author),
                 content: item.content,
                 createdAt: meta.formatDate(item.createdAt),
-                editedAt: item.updatedAt ? "edited " + meta.formatDate(item.updatedAt) : "",
+                editedAt: item.updatedAt ? i18n.t("news.edited", [meta.formatDate(item.updatedAt)]) : "",
                 isEdited: !!item.updatedAt,
                 canDelete: item.canDelete,
                 canEdit: item.canEdit,
@@ -89,7 +89,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
             };
 
             row.remove = function () {
-                if (!window.confirm("Delete this comment?")) {
+                if (!window.confirm(i18n.t("news.confirmDeleteComment"))) {
                     return Promise.resolve();
                 }
 

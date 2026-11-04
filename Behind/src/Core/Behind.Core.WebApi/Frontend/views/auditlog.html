@@ -1,41 +1,41 @@
 <section class="behind-wide">
-    <h1 class="mb-3">Audit log</h1>
-    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to see the audit log.</p>
-    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need audit log access to see the audit log.</div>
+    <h1 class="mb-3" data-bind="t: 'audit.title'">Audit log</h1>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'profile.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'audit.signInToSee'">to see the audit log.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'audit.denied'">You need audit log access to see the audit log.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div data-bind="visible: canView">
         <form class="row g-2 align-items-end mb-3" data-bind="submit: find">
             <div class="col-12 col-md-3">
-                <label class="form-label" for="audit-from">From</label>
+                <label class="form-label" for="audit-from" data-bind="t: 'audit.from'">From</label>
                 <input id="audit-from" class="form-control" type="date" data-bind="value: fromDate">
             </div>
             <div class="col-12 col-md-3">
-                <label class="form-label" for="audit-to">To</label>
+                <label class="form-label" for="audit-to" data-bind="t: 'audit.to'">To</label>
                 <input id="audit-to" class="form-control" type="date" data-bind="value: toDate">
             </div>
             <div class="col-12 col-md-4">
-                <label class="form-label" for="audit-search">Search</label>
-                <input id="audit-search" class="form-control" type="search" maxlength="200" placeholder="Entity or key" data-bind="value: search">
+                <label class="form-label" for="audit-search" data-bind="t: 'common.search'">Search</label>
+                <input id="audit-search" class="form-control" type="search" maxlength="200" placeholder="Entity or key" data-bind="value: search, tAttr: { placeholder: 'audit.searchPlaceholder' }">
             </div>
             <div class="col-12 col-md-2">
-                <label class="form-label" for="audit-order">Order</label>
+                <label class="form-label" for="audit-order" data-bind="t: 'audit.order'">Order</label>
                 <select id="audit-order" class="form-select" data-bind="options: orders, optionsText: 'label', optionsValue: 'oldestFirst', value: oldestFirst"></select>
             </div>
             <div class="col-12 d-flex flex-wrap gap-2">
-                <button type="submit" class="btn btn-primary" data-bind="enable: canSearch">Search</button>
-                <button type="button" class="btn btn-outline-secondary" data-bind="enable: !busy(), click: reset">Reset</button>
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSearch, t: 'common.search'">Search</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="enable: !busy(), click: reset, t: 'audit.reset'">Reset</button>
             </div>
         </form>
-        <p class="text-body-secondary" data-bind="visible: !hasEntries()">No audit log entries found.</p>
+        <p class="text-body-secondary" data-bind="visible: !hasEntries(), t: 'audit.empty'">No audit log entries found.</p>
         <div class="table-responsive" data-bind="visible: hasEntries">
             <table class="table align-middle">
                 <thead>
                 <tr>
-                    <th scope="col">When</th>
-                    <th scope="col">Who</th>
-                    <th scope="col">Action</th>
-                    <th scope="col">Entity</th>
-                    <th scope="col">Changes</th>
+                    <th scope="col" data-bind="t: 'audit.when'">When</th>
+                    <th scope="col" data-bind="t: 'audit.who'">Who</th>
+                    <th scope="col" data-bind="t: 'audit.action'">Action</th>
+                    <th scope="col" data-bind="t: 'audit.entity'">Entity</th>
+                    <th scope="col" data-bind="t: 'audit.changes'">Changes</th>
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: entries">
@@ -44,7 +44,7 @@
                     <td>
                         <div class="text-break" data-bind="text: actor"></div>
                         <div class="text-body-secondary small text-break" data-bind="visible: actorEmails !== '', text: actorEmails"></div>
-                        <div class="text-body-secondary small text-break" data-bind="visible: hasBehalfOf">On behalf of <span data-bind="text: behalfOf"></span></div>
+                        <div class="text-body-secondary small text-break" data-bind="visible: hasBehalfOf"><span data-bind="t: 'audit.onBehalfOf'">On behalf of</span> <span data-bind="text: behalfOf"></span></div>
                     </td>
                     <td><span class="badge" data-bind="text: action, css: actionClass"></span></td>
                     <td>

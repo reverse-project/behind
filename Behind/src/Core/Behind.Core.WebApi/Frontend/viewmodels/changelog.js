@@ -1,26 +1,26 @@
-define(["ko", "models/about"], function (ko, about) {
+define(["ko", "models/about", "models/i18n"], function (ko, about, i18n) {
     var typeLabels = {
-        added: "Added",
-        changed: "Changed",
-        fixed: "Fixed",
-        security: "Security"
+        added: "changelog.types.added",
+        changed: "changelog.types.changed",
+        fixed: "changelog.types.fixed",
+        security: "changelog.types.security"
     };
 
     var present = function (change) {
         return {
-            type: typeLabels[change.type] || change.type,
+            type: ko.pureComputed(function () {
+                return i18n.tOr(typeLabels[change.type], change.type);
+            }),
             text: change.text
         };
-    };
-
-    var formatDate = function (value) {
-        return value ? new Date(value).toLocaleDateString() : "";
     };
 
     var presentRelease = function (release) {
         return {
             version: release.version,
-            date: formatDate(release.date),
+            date: ko.pureComputed(function () {
+                return i18n.date(release.date);
+            }),
             changes: (release.changes || []).map(present)
         };
     };

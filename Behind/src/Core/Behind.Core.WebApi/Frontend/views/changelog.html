@@ -1,7 +1,7 @@
 <section>
-    <h1 class="mb-3">Changelog</h1>
-    <div class="alert alert-danger" role="alert" data-bind="visible: failed">The changelog could not be loaded.</div>
-    <p class="text-body-secondary" data-bind="visible: isEmpty">There are no releases yet.</p>
+    <h1 class="mb-3" data-bind="t: 'changelog.title'">Changelog</h1>
+    <div class="alert alert-danger" role="alert" data-bind="visible: failed, t: 'changelog.failed'">The changelog could not be loaded.</div>
+    <p class="text-body-secondary" data-bind="visible: isEmpty, t: 'changelog.empty'">There are no releases yet.</p>
     <div data-bind="foreach: releases">
         <article class="mb-4">
             <h2 class="h4 d-flex flex-wrap align-items-baseline gap-2">

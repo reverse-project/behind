@@ -1,54 +1,54 @@
-define(["ko", "models/http", "models/results", "models/paging", "models/session"], function (ko, http, results, pagination, session) {
+define(["ko", "models/http", "models/results", "models/paging", "models/session", "models/i18n"], function (ko, http, results, pagination, session, i18n) {
     var sessionExpired = results.sessionExpired;
 
     var outcome = results.create({
-        "name-taken": "Another menu already uses this name. Choose a different one.",
-        "built-in": "The built-in menu cannot be renamed, deleted or permanently deleted.",
-        "unknown-menu": "This menu no longer exists.",
-        "invalid-parent": "Choose a top level link of the same menu as the parent. An item with sub items cannot get a parent.",
-        "kind-not-allowed": "User menu items can only be top level items of the main menu.",
-        "unknown-role": "One of the selected roles no longer exists.",
-        "version-conflict": "The menu was changed at the same time by someone else. Reload it and try again."
+        "name-taken": "menus.conflict.nameTaken",
+        "built-in": "menus.conflict.builtIn",
+        "unknown-menu": "menus.conflict.unknownMenu",
+        "invalid-parent": "menus.conflict.invalidParent",
+        "kind-not-allowed": "menus.conflict.kindNotAllowed",
+        "unknown-role": "menus.conflict.unknownRole",
+        "version-conflict": "menus.conflict.versionConflict"
     });
 
     var loaded = outcome.loaded;
     var saved = outcome.saved;
 
     var publicFailures = {
-        400: "Choose at least one menu."
+        400: "menus.error.chooseOne"
     };
 
     var readFailures = {
         401: sessionExpired,
-        403: "You need menu access to see menus.",
-        404: "This menu no longer exists."
+        403: "menus.error.readDenied",
+        404: "menus.error.notFound"
     };
 
     var writeFailures = {
-        400: "Enter a name and a title. Menu item URLs must be relative or start with http, https, mailto or tel.",
+        400: "menus.error.invalid",
         401: sessionExpired,
-        403: "You are not allowed to change menus.",
-        404: "This menu or menu item no longer exists.",
-        409: "The menu could not be saved."
+        403: "menus.error.writeDenied",
+        404: "menus.error.itemNotFound",
+        409: "menus.error.saveFailed"
     };
 
     var removeFailures = {
         401: sessionExpired,
-        403: "You are not allowed to delete menus.",
-        404: "This menu or menu item no longer exists.",
-        409: "The menu could not be deleted."
+        403: "menus.error.deleteDenied",
+        404: "menus.error.itemNotFound",
+        409: "menus.error.deleteFailed"
     };
 
     var deletedReadFailures = {
         401: sessionExpired,
-        403: "You need developer access to see deleted menus."
+        403: "menus.error.deletedReadDenied"
     };
 
     var deletedActionFailures = {
         401: sessionExpired,
-        403: "You need developer access to restore or permanently delete menus.",
-        404: "This menu or menu item is not deleted.",
-        409: "The menu could not be changed. A deleted menu cannot come back while another uses its name."
+        403: "menus.error.deletedActionDenied",
+        404: "menus.error.itemNotDeleted",
+        409: "menus.error.changeFailed"
     };
 
     var menuDraft = function (fields) {
@@ -76,6 +76,24 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
         }).join("&");
     };
 
+    var builtInNames = {
+        "Main menu": "menu.item.mainMenu",
+        "Index": "menu.item.index",
+        "News": "menu.item.news",
+        "Articles": "menu.item.articles",
+        "Galleries": "menu.item.galleries",
+        "Downloads": "menu.item.downloads",
+        "Wall of shame": "menu.item.wallOfShame",
+        "Profile": "menu.item.profile",
+        "Session": "menu.item.session",
+        "Sessions": "menu.item.sessions",
+        "Administration": "menu.item.administration"
+    };
+
+    var labelOf = function (name) {
+        return Object.prototype.hasOwnProperty.call(builtInNames, name) ? i18n.tOr(builtInNames[name], name) : name;
+    };
+
     var windowFeatures = "popup,width=1024,height=768,noopener,noreferrer";
 
     var present = function (item) {
@@ -85,7 +103,9 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
 
         return {
             id: item.id,
-            title: item.title,
+            title: ko.pureComputed(function () {
+                return labelOf(item.title);
+            }),
             url: item.url,
             kind: item.kind,
             children: children,
@@ -139,10 +159,12 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
 
     return {
         targets: [
-            { value: "CurrentPage", label: "Current page" },
-            { value: "NewTab", label: "New tab" },
-            { value: "NewWindow", label: "New window" }
+            { value: "CurrentPage", label: "menuitems.target.currentPage" },
+            { value: "NewTab", label: "menuitems.target.newTab" },
+            { value: "NewWindow", label: "menuitems.target.newWindow" }
         ],
+
+        label: labelOf,
 
         present: present,
 
@@ -164,61 +186,61 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
 
         create: function (fields) {
             return http.post("/menus", menuDraft(fields)).then(function (response) {
-                return saved(response, "The menu was saved.", writeFailures);
+                return saved(response, "menus.done.saved", writeFailures);
             });
         },
 
         save: function (id, fields) {
             return http.post("/menus/" + id, menuDraft(fields)).then(function (response) {
-                return saved(response, "The menu was saved.", writeFailures);
+                return saved(response, "menus.done.saved", writeFailures);
             });
         },
 
         remove: function (id) {
             return http.post("/menus/" + id + "/delete").then(function (response) {
-                return saved(response, "The menu was deleted.", removeFailures);
+                return saved(response, "menus.done.deleted", removeFailures);
             });
         },
 
         restore: function (id) {
             return http.post("/menus/" + id + "/restore").then(function (response) {
-                return saved(response, "The menu was restored.", deletedActionFailures);
+                return saved(response, "menus.done.restored", deletedActionFailures);
             });
         },
 
         hardDelete: function (id) {
             return http.post("/menus/" + id + "/hard/delete").then(function (response) {
-                return saved(response, "The menu was permanently deleted.", deletedActionFailures);
+                return saved(response, "menus.done.permanentlyDeleted", deletedActionFailures);
             });
         },
 
         createItem: function (menuId, fields) {
             return http.post("/menus/" + menuId + "/items", itemDraft(fields)).then(function (response) {
-                return saved(response, "The menu item was saved.", writeFailures);
+                return saved(response, "menus.done.itemSaved", writeFailures);
             });
         },
 
         saveItem: function (id, fields) {
             return http.post("/menus/items/" + id, itemDraft(fields)).then(function (response) {
-                return saved(response, "The menu item was saved.", writeFailures);
+                return saved(response, "menus.done.itemSaved", writeFailures);
             });
         },
 
         removeItem: function (id) {
             return http.post("/menus/items/" + id + "/delete").then(function (response) {
-                return saved(response, "The menu item was deleted.", removeFailures);
+                return saved(response, "menus.done.itemDeleted", removeFailures);
             });
         },
 
         restoreItem: function (id) {
             return http.post("/menus/items/" + id + "/restore").then(function (response) {
-                return saved(response, "The menu item was restored.", deletedActionFailures);
+                return saved(response, "menus.done.itemRestored", deletedActionFailures);
             });
         },
 
         hardDeleteItem: function (id) {
             return http.post("/menus/items/" + id + "/hard/delete").then(function (response) {
-                return saved(response, "The menu item was permanently deleted.", deletedActionFailures);
+                return saved(response, "menus.done.itemPermanentlyDeleted", deletedActionFailures);
             });
         }
     };

@@ -1,22 +1,22 @@
 <section class="behind-wide">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <h1 class="mb-0">News</h1>
-        <a class="btn btn-outline-secondary ms-auto" href="#/manage/news-categories" data-bind="visible: canRead">Categories</a>
-        <a class="btn btn-primary" href="#/manage/news/new" data-bind="visible: canWrite">New news</a>
+        <h1 class="mb-0" data-bind="t: 'news.title'">News</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/manage/news-categories" data-bind="visible: canRead, t: 'content.categories'">Categories</a>
+        <a class="btn btn-primary" href="#/manage/news/new" data-bind="visible: canWrite, t: 'news.new'">New news</a>
     </div>
-    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage news.</p>
-    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need news access to manage news.</div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'content.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'news.signInToManage'">to manage news.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'news.denied'">You need news access to manage news.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
     <div data-bind="visible: canRead, with: list">
         <form class="input-group mb-3" data-bind="submit: find">
-            <input class="form-control" type="search" maxlength="200" placeholder="Search by title" aria-label="Search news" data-bind="value: search">
-            <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Search</button>
+            <input class="form-control" type="search" maxlength="200" placeholder="Search by title" aria-label="Search news" data-bind="value: search, tAttr: { placeholder: 'news.searchByTitle', 'aria-label': 'news.search' }">
+            <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
         </form>
         <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
-            <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> Show deleted news</label>
+            <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'news.showDeleted'">Show deleted news</span></label>
         </div>
         <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
-        <p class="text-body-secondary" data-bind="visible: !hasItems()">No news found.</p>
+        <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'news.none'">No news found.</p>
         <ul class="list-group mb-3" data-bind="foreach: items">
             <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                 <div class="me-auto">
@@ -24,21 +24,21 @@
                     <strong class="text-break" data-bind="text: title, visible: isDeleted"></strong>
                     <div class="small text-body-secondary" data-bind="text: author"></div>
                 </div>
-                <span class="badge text-bg-dark" data-bind="visible: isDeleted">Deleted</span>
-                <span class="badge text-bg-warning" data-bind="visible: isHighlighted">Highlighted</span>
-                <span class="badge text-bg-secondary" data-bind="visible: isDraft && !isDeleted">Draft</span>
-                <span class="badge text-bg-warning" data-bind="visible: hasNewerDraft && !isDeleted">Newer draft</span>
-                <span class="badge text-bg-info" data-bind="visible: isScheduled && !isDeleted">Scheduled</span>
-                <span class="badge text-bg-secondary" data-bind="visible: isExpired && !isDeleted">Expired</span>
+                <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'content.deleted'">Deleted</span>
+                <span class="badge text-bg-warning" data-bind="visible: isHighlighted, t: 'news.highlighted'">Highlighted</span>
+                <span class="badge text-bg-secondary" data-bind="visible: isDraft && !isDeleted, t: 'content.status.draft'">Draft</span>
+                <span class="badge text-bg-warning" data-bind="visible: hasNewerDraft && !isDeleted, t: 'content.newerDraft'">Newer draft</span>
+                <span class="badge text-bg-info" data-bind="visible: isScheduled && !isDeleted, t: 'news.scheduled'">Scheduled</span>
+                <span class="badge text-bg-secondary" data-bind="visible: isExpired && !isDeleted, t: 'news.expired'">Expired</span>
                 <span class="badge text-bg-secondary" data-bind="visible: hasCategory, text: categoryName"></span>
-                <span class="small text-body-secondary" data-bind="visible: $root.commentsEnabled"><span data-bind="text: commentCount"></span> comments</span>
+                <span class="small text-body-secondary" data-bind="visible: $root.commentsEnabled, t: { key: 'news.commentCountOther', args: [commentCount] }"></span>
                 <span class="small text-body-secondary" data-bind="text: version"></span>
                 <span class="small text-body-secondary" data-bind="text: schedule"></span>
                 <span class="small text-body-secondary" data-bind="text: stamp"></span>
-                <a class="btn btn-sm btn-outline-secondary" data-bind="visible: !isDeleted, attr: { href: '#/news/' + id }">View</a>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove">Delete</button>
-                <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore">Restore</button>
-                <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete">Delete permanently</button>
+                <a class="btn btn-sm btn-outline-secondary" data-bind="visible: !isDeleted, attr: { href: '#/news/' + id }, t: 'content.view'">View</a>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
+                <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>
+                <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete, t: 'content.deletePermanently'">Delete permanently</button>
             </li>
         </ul>
         <pager class="d-block" params="pager: pager"></pager>

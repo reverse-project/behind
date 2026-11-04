@@ -37,7 +37,7 @@ public class UserManagementFrontendTests
 
         Assert.Contains("\"#/users\": \"controllers/users\"", app);
         Assert.Contains("\"#/wall-of-shame\": \"controllers/wallofshame\"", app);
-        Assert.Contains("name: \"Users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", administration);
+        Assert.Contains("name: \"administration.pages.users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", administration);
         Assert.True(BuiltInMenus.Main.HasItem("Wall of shame", "#/wall-of-shame", MenuItemKind.Link));
         Assert.True(BuiltInMenus.Main.HasItem("Administration", "#/administration", MenuItemKind.User));
     }
@@ -82,8 +82,8 @@ public class UserManagementFrontendTests
     {
         var auth = Read("models/auth.js");
 
-        Assert.Contains("403: bannedMessage(response)", auth);
-        Assert.Contains("\"This account is banned: \" + reason", auth);
+        Assert.Contains("403: bannedMessage", auth);
+        Assert.Contains("i18n.t(\"auth.bannedReason\", [reason])", auth);
     }
 
     [Fact]

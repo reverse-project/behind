@@ -1,49 +1,49 @@
 <section class="behind-wide">
-    <h1 class="mb-3">Settings</h1>
-    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need configuration access to manage the settings.</div>
+    <h1 class="mb-3" data-bind="t: 'settings.title'">Settings</h1>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'settings.denied'">You need configuration access to manage the settings.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
-    <div class="alert alert-secondary" role="alert" data-bind="visible: readOnly">The configuration is read-only. Values are shown masked and cannot be changed here.</div>
+    <div class="alert alert-secondary" role="alert" data-bind="visible: readOnly, t: 'settings.readOnly'">The configuration is read-only. Values are shown masked and cannot be changed here.</div>
     <div data-bind="visible: canView">
-        <p class="text-body-secondary">The configuration files of the application. Secrets are masked. Some settings apply immediately, the others after the application restarts.</p>
+        <p class="text-body-secondary" data-bind="t: 'settings.description'">The configuration files of the application. Secrets are masked. Some settings apply immediately, the others after the application restarts.</p>
         <ul class="nav nav-tabs mb-3" role="tablist" data-bind="foreach: files">
             <li class="nav-item" role="presentation">
                 <button type="button" class="nav-link" role="tab" data-bind="text: name, css: { active: $parent.isSelected($data) }, attr: { 'aria-selected': $parent.isSelected($data) }, click: $parent.choose"></button>
             </li>
         </ul>
         <div class="alert alert-success" role="status" data-bind="with: generated">
-            <h2 class="h6">New authenticator secret for <span data-bind="text: path"></span></h2>
-            <p class="mb-2">Add it to your authenticator now. It is shown only once.</p>
-            <input type="text" class="form-control font-monospace mb-2" readonly aria-label="Authenticator URI" data-bind="value: uri">
+            <h2 class="h6" data-bind="t: { key: 'settings.newSecret', args: [path] }">New authenticator secret for <span data-bind="text: path"></span></h2>
+            <p class="mb-2" data-bind="t: 'settings.secretOnce'">Add it to your authenticator now. It is shown only once.</p>
+            <input type="text" class="form-control font-monospace mb-2" readonly aria-label="Authenticator URI" data-bind="value: uri, tAttr: { 'aria-label': 'settings.authenticatorUri' }">
             <div class="settings-qrcode" data-bind="html: qrCode"></div>
         </div>
         <form data-bind="with: email, submit: saveEmail, visible: isEmailSelected">
             <fieldset class="mb-4">
-                <legend class="h6 text-body-secondary">Provider</legend>
+                <legend class="h6 text-body-secondary" data-bind="t: 'settings.email.provider'">Provider</legend>
                 <div class="row mb-2 align-items-center">
-                    <label class="col-md-4 col-form-label" for="email-provider">Email provider</label>
+                    <label class="col-md-4 col-form-label" for="email-provider" data-bind="t: 'settings.email.providerLabel'">Email provider</label>
                     <div class="col-md-8">
                         <select id="email-provider" class="form-select" data-bind="options: providers, value: provider, enable: $root.canEdit"></select>
-                        <div class="form-text">Logger only writes the emails to the application log. Smtp sends them through a mail server.</div>
+                        <div class="form-text" data-bind="t: 'settings.email.providerHelp'">Logger only writes the emails to the application log. Smtp sends them through a mail server.</div>
                     </div>
                 </div>
             </fieldset>
             <div data-bind="visible: isSmtp">
                 <fieldset class="mb-4">
-                    <legend class="h6 text-body-secondary">Mail server</legend>
+                    <legend class="h6 text-body-secondary" data-bind="t: 'settings.email.mailServer'">Mail server</legend>
                     <div class="row mb-2 align-items-center">
-                        <label class="col-md-4 col-form-label" for="email-server">Server</label>
+                        <label class="col-md-4 col-form-label" for="email-server" data-bind="t: 'settings.email.server'">Server</label>
                         <div class="col-md-8">
                             <input id="email-server" type="text" class="form-control" placeholder="smtp.example.com" data-bind="value: server, enable: $root.canEdit">
                         </div>
                     </div>
                     <div class="row mb-2 align-items-center">
-                        <label class="col-md-4 col-form-label" for="email-port">Port</label>
+                        <label class="col-md-4 col-form-label" for="email-port" data-bind="t: 'settings.email.port'">Port</label>
                         <div class="col-md-8">
                             <input id="email-port" type="number" min="1" max="65535" class="form-control" data-bind="value: port, enable: $root.canEdit, css: { 'is-invalid': !hasValidPort() }">
                         </div>
                     </div>
                     <div class="row mb-2 align-items-center">
-                        <label class="col-md-4 col-form-label" for="email-ssl">Use SSL</label>
+                        <label class="col-md-4 col-form-label" for="email-ssl" data-bind="t: 'settings.email.useSsl'">Use SSL</label>
                         <div class="col-md-8">
                             <div class="form-check form-switch">
                                 <input id="email-ssl" type="checkbox" class="form-check-input" role="switch" data-bind="checked: ssl, enable: $root.canEdit">
@@ -51,40 +51,40 @@
                         </div>
                     </div>
                     <div class="row mb-2 align-items-center">
-                        <label class="col-md-4 col-form-label" for="email-from">Sender address</label>
+                        <label class="col-md-4 col-form-label" for="email-from" data-bind="t: 'settings.email.sender'">Sender address</label>
                         <div class="col-md-8">
                             <input id="email-from" type="email" class="form-control" placeholder="noreply@example.com" data-bind="value: from, enable: $root.canEdit">
-                            <div class="form-text">Optional. Without it the user name of the basic authentication is used.</div>
+                            <div class="form-text" data-bind="t: 'settings.email.senderHelp'">Optional. Without it the user name of the basic authentication is used.</div>
                         </div>
                     </div>
                 </fieldset>
                 <fieldset class="mb-4">
-                    <legend class="h6 text-body-secondary">Authentication</legend>
+                    <legend class="h6 text-body-secondary" data-bind="t: 'settings.email.authentication'">Authentication</legend>
                     <div class="row mb-2 align-items-center">
-                        <label class="col-md-4 col-form-label" for="email-authentication">Type</label>
+                        <label class="col-md-4 col-form-label" for="email-authentication" data-bind="t: 'settings.email.type'">Type</label>
                         <div class="col-md-8">
                             <select id="email-authentication" class="form-select" data-bind="options: authenticationTypes, value: authentication, enable: $root.canEdit"></select>
                         </div>
                     </div>
                     <div data-bind="visible: isBasic">
                         <div class="row mb-2 align-items-center">
-                            <label class="col-md-4 col-form-label" for="email-username">User name</label>
+                            <label class="col-md-4 col-form-label" for="email-username" data-bind="t: 'settings.email.userName'">User name</label>
                             <div class="col-md-8">
                                 <input id="email-username" type="text" class="form-control" autocomplete="off" data-bind="value: username, enable: $root.canEdit">
                             </div>
                         </div>
                         <div class="row mb-2 align-items-center">
-                            <label class="col-md-4 col-form-label" for="email-password">Password</label>
+                            <label class="col-md-4 col-form-label" for="email-password" data-bind="t: 'settings.email.password'">Password</label>
                             <div class="col-md-8">
-                                <input id="email-password" type="password" class="form-control" autocomplete="new-password" placeholder="Leave empty to keep the current password" data-bind="value: password, enable: $root.canEdit">
-                                <div class="form-text" data-bind="visible: hasStoredPassword">Current: <span class="font-monospace" data-bind="text: passwordMask"></span></div>
+                                <input id="email-password" type="password" class="form-control" autocomplete="new-password" placeholder="Leave empty to keep the current password" data-bind="value: password, enable: $root.canEdit, tAttr: { placeholder: 'settings.email.passwordPlaceholder' }">
+                                <div class="form-text" data-bind="visible: hasStoredPassword"><span data-bind="t: 'settings.current'">Current:</span> <span class="font-monospace" data-bind="text: passwordMask"></span></div>
                             </div>
                         </div>
                     </div>
                 </fieldset>
                 <fieldset class="mb-4">
-                    <legend class="h6 text-body-secondary">Email templates</legend>
-                    <p class="text-body-secondary small">Leave a template empty to use the built-in one.</p>
+                    <legend class="h6 text-body-secondary" data-bind="t: 'settings.email.templates'">Email templates</legend>
+                    <p class="text-body-secondary small" data-bind="t: 'settings.email.templatesHelp'">Leave a template empty to use the built-in one.</p>
                     <div data-bind="foreach: templates">
                         <div class="mb-3">
                             <label class="form-label" data-bind="text: name, attr: { for: 'email-template-' + name }"></label>
@@ -94,44 +94,44 @@
                 </fieldset>
             </div>
             <div class="d-flex gap-2" data-bind="visible: $root.canManage">
-                <button type="submit" class="btn btn-primary" data-bind="enable: canSave">Save</button>
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
             </div>
         </form>
         <form data-bind="with: logging, submit: saveLogging, visible: isLoggingSelected">
             <fieldset class="mb-4">
-                <legend class="h6 text-body-secondary">Minimum log level</legend>
+                <legend class="h6 text-body-secondary" data-bind="t: 'settings.logging.minimum'">Minimum log level</legend>
                 <div class="row mb-2 align-items-center">
-                    <label class="col-md-4 col-form-label" for="logging-default">Default level</label>
+                    <label class="col-md-4 col-form-label" for="logging-default" data-bind="t: 'settings.logging.defaultLevel'">Default level</label>
                     <div class="col-md-8">
-                        <select id="logging-default" class="form-select" data-bind="options: levels, optionsCaption: 'Not set', value: defaultLevel, enable: $root.canEdit"></select>
-                        <div class="form-text">Everything below this level is not logged, unless a source below says otherwise.</div>
+                        <select id="logging-default" class="form-select" data-bind="options: levels, optionsCaption: $root.text('settings.logging.notSet'), value: defaultLevel, enable: $root.canEdit"></select>
+                        <div class="form-text" data-bind="t: 'settings.logging.levelHelp'">Everything below this level is not logged, unless a source below says otherwise.</div>
                     </div>
                 </div>
             </fieldset>
             <fieldset class="mb-4">
-                <legend class="h6 text-body-secondary">Levels per source</legend>
-                <p class="text-body-secondary small" data-bind="visible: !hasOverrides()">No source has its own level.</p>
+                <legend class="h6 text-body-secondary" data-bind="t: 'settings.logging.sources'">Levels per source</legend>
+                <p class="text-body-secondary small" data-bind="visible: !hasOverrides(), t: 'settings.logging.noSources'">No source has its own level.</p>
                 <datalist id="logging-sources" data-bind="foreach: sources">
                     <option data-bind="value: $data"></option>
                 </datalist>
                 <div data-bind="foreach: overrides">
                     <div class="row mb-2 align-items-center">
                         <div class="col-md-6">
-                            <input type="text" class="form-control" list="logging-sources" placeholder="Namespace, for example Microsoft.AspNetCore" aria-label="Source" data-bind="value: source, enable: $root.canEdit">
+                            <input type="text" class="form-control" list="logging-sources" placeholder="Namespace, for example Microsoft.AspNetCore" aria-label="Source" data-bind="value: source, enable: $root.canEdit, tAttr: { placeholder: 'settings.logging.sourcePlaceholder', 'aria-label': 'settings.logging.source' }">
                         </div>
                         <div class="col-md-4">
-                            <select class="form-select" aria-label="Level" data-bind="options: $parent.levels, value: level, enable: $root.canEdit"></select>
+                            <select class="form-select" aria-label="Level" data-bind="options: $parent.levels, value: level, enable: $root.canEdit, tAttr: { 'aria-label': 'settings.logging.level' }"></select>
                         </div>
                         <div class="col-md-2">
-                            <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.remove, enable: $root.canEdit">Remove</button>
+                            <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.remove, enable: $root.canEdit, t: 'common.remove'">Remove</button>
                         </div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-outline-secondary" data-bind="click: add, enable: $root.canEdit">Add source</button>
-                <div class="form-text text-danger" data-bind="visible: !isValid()">Every source needs a different name.</div>
+                <button type="button" class="btn btn-outline-secondary" data-bind="click: add, enable: $root.canEdit, t: 'settings.logging.add'">Add source</button>
+                <div class="form-text text-danger" data-bind="visible: !isValid(), t: 'settings.logging.duplicate'">Every source needs a different name.</div>
             </fieldset>
             <div class="d-flex gap-2" data-bind="visible: $root.canManage">
-                <button type="submit" class="btn btn-primary" data-bind="enable: canSave">Save</button>
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
             </div>
         </form>
         <form data-bind="with: selected, submit: save, visible: isFieldTabSelected">
@@ -152,12 +152,15 @@
                                 <div data-bind="if: editable && isNumber">
                                     <input type="number" class="form-control" data-bind="value: value, enable: $root.canEdit, attr: { id: 'setting-' + path }">
                                 </div>
-                                <div data-bind="if: editable && isText && !sensitive">
+                                <div data-bind="if: editable && hasOptions">
+                                    <select class="form-select" data-bind="options: options, optionsValue: 'value', optionsText: 'label', value: value, enable: $root.canEdit, attr: { id: 'setting-' + path }"></select>
+                                </div>
+                                <div data-bind="if: editable && isText && !sensitive && !hasOptions">
                                     <input type="text" class="form-control" data-bind="value: value, enable: $root.canEdit, attr: { id: 'setting-' + path }">
                                 </div>
                                 <div data-bind="if: editable && isText && sensitive">
                                     <input type="password" class="form-control" autocomplete="new-password" data-bind="value: value, enable: $root.canEdit, attr: { id: 'setting-' + path, placeholder: placeholder }">
-                                    <div class="form-text">Current: <span class="font-monospace" data-bind="text: shown"></span></div>
+                                    <div class="form-text"><span data-bind="t: 'settings.current'">Current:</span> <span class="font-monospace" data-bind="text: shown"></span></div>
                                 </div>
                             </div>
                         </div>
@@ -165,8 +168,8 @@
                 </fieldset>
             </div>
             <div class="d-flex gap-2" data-bind="visible: $root.canManage">
-                <button type="submit" class="btn btn-primary" data-bind="enable: isChanged() && $root.canEdit()">Save</button>
-                <button type="button" class="btn btn-outline-secondary" data-bind="click: $root.discard, enable: isChanged() && $root.canEdit()">Discard</button>
+                <button type="submit" class="btn btn-primary" data-bind="enable: isChanged() && $root.canEdit(), t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="click: $root.discard, enable: isChanged() && $root.canEdit(), t: 'common.discard'">Discard</button>
             </div>
         </form>
     </div>

@@ -1,4 +1,4 @@
-define(["ko", "models/settings", "models/session", "viewmodels/emailsettings", "viewmodels/loggingsettings"], function (ko, settings, session, EmailSettingsEditor, LoggingSettingsEditor) {
+define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor) {
     var emailEditor = "email";
     var loggingEditor = "logging";
 
@@ -11,7 +11,7 @@ define(["ko", "models/settings", "models/session", "viewmodels/emailsettings", "
     var sectionOf = function (path) {
         var index = path.lastIndexOf(separator);
 
-        return index < 0 ? "General" : path.substring(0, index).split(separator).join(" \u203A ");
+        return index < 0 ? i18n.t("settings.general") : path.substring(0, index).split(separator).join(" \u203A ");
     };
 
     var initialValue = function (field) {
@@ -22,6 +22,15 @@ define(["ko", "models/settings", "models/session", "viewmodels/emailsettings", "
         return field.sensitive ? "" : field.value;
     };
 
+    var optionsOf = function (field) {
+        var options = field.options || [];
+        var known = options.some(function (option) {
+            return option.value === field.value;
+        });
+
+        return known || field.value === "" ? options : options.concat([{ value: field.value, label: field.value }]);
+    };
+
     var requestValue = function (field, value) {
         return field.type === "number" ? Number(value) : value;
     };
@@ -29,6 +38,7 @@ define(["ko", "models/settings", "models/session", "viewmodels/emailsettings", "
     return function SettingsViewModel() {
         var self = this;
 
+        self.text = i18n.t;
         self.isSignedIn = session.isSignedIn;
         self.canView = ko.pureComputed(function () {
             return session.hasGrant("Configuration.Read");
@@ -65,15 +75,17 @@ define(["ko", "models/settings", "models/session", "viewmodels/emailsettings", "
                 isBoolean: field.type === "boolean",
                 isNumber: field.type === "number",
                 isText: field.type === "string",
+                options: optionsOf(field),
+                hasOptions: !!field.options,
                 shown: field.value,
                 hasShown: field.value !== "",
                 original: initialValue(field),
-                actionLabel: field.action === "rotate" ? "Rotate" : "Generate",
+                actionLabel: i18n.t(field.action === "rotate" ? "settings.rotate" : "settings.generate"),
                 hasAction: field.action !== null
             };
 
             row.value = ko.observable(row.original);
-            row.placeholder = field.sensitive && field.editable ? "Leave empty to keep the current value" : "";
+            row.placeholder = field.sensitive && field.editable ? i18n.t("settings.keepCurrent") : "";
             row.changed = ko.pureComputed(function () {
                 var value = String(row.value()).trim();
 
@@ -253,8 +265,8 @@ define(["ko", "models/settings", "models/session", "viewmodels/emailsettings", "
         };
 
         var confirmations = {
-            generate: "Generate a new value for {0}? The current value is replaced and cannot be restored.",
-            rotate: "Rotate {0}? The current secret becomes the old secret and a new one is used."
+            generate: "settings.confirmGenerate",
+            rotate: "settings.confirmRotate"
         };
 
         var showGenerated = function (field, data) {
@@ -269,7 +281,7 @@ define(["ko", "models/settings", "models/session", "viewmodels/emailsettings", "
         };
 
         self.runAction = function (kind, field) {
-            if (!window.confirm(confirmations[kind].replace("{0}", field.path))) {
+            if (!window.confirm(i18n.t(confirmations[kind], [field.path]))) {
                 return Promise.resolve();
             }
 

@@ -1,9 +1,9 @@
-define(["ko", "models/auth", "models/session", "models/pager", "models/letterpager", "models/user", "viewmodels/useraccess"], function (ko, auth, session, createPager, createLetterPager, user, UserAccessViewModel) {
+define(["ko", "models/auth", "models/session", "models/pager", "models/letterpager", "models/user", "models/i18n", "viewmodels/useraccess"], function (ko, auth, session, createPager, createLetterPager, user, i18n, UserAccessViewModel) {
     var pageSize = 10;
 
     var roleDefinitions = [
-        { key: "administrator", label: "administrator", granted: "isAdministrator", allowed: "canChangeAdministrator" },
-        { key: "developer", label: "developer", granted: "isDeveloper", allowed: "canChangeDeveloper" }
+        { key: "administrator", grantedLabel: "users.removeAdministrator", grantLabel: "users.makeAdministrator", granted: "isAdministrator", allowed: "canChangeAdministrator" },
+        { key: "developer", grantedLabel: "users.removeDeveloper", grantLabel: "users.makeDeveloper", granted: "isDeveloper", allowed: "canChangeDeveloper" }
     ];
 
     return function UsersViewModel() {
@@ -63,7 +63,9 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
             var granted = item[definition.granted];
 
             return {
-                label: (granted ? "Remove " : "Make ") + definition.label,
+                label: ko.pureComputed(function () {
+                    return i18n.t(granted ? definition.grantedLabel : definition.grantLabel);
+                }),
                 granted: granted,
                 allowed: item.permissions[definition.allowed],
                 run: function () {
@@ -124,7 +126,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 });
             };
             row.signOut = function () {
-                if (!window.confirm("Sign " + row.name + " out of all sessions?")) {
+                if (!window.confirm(i18n.t("users.confirmSignOut", [row.name]))) {
                     return Promise.resolve();
                 }
 
@@ -134,7 +136,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
             };
 
             row.impersonate = function () {
-                if (!window.confirm("Impersonate " + row.name + "? Everything you do is recorded in the audit log on their behalf.")) {
+                if (!window.confirm(i18n.t("users.confirmImpersonate", [row.name]))) {
                     return Promise.resolve();
                 }
 
@@ -155,7 +157,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
             };
 
             row.remove = function () {
-                if (!window.confirm("Delete " + row.name + "? The user can be restored by a developer.")) {
+                if (!window.confirm(i18n.t("users.confirmDelete", [row.name]))) {
                     return Promise.resolve();
                 }
 
@@ -169,7 +171,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 });
             };
             row.hardDelete = function () {
-                if (!window.confirm("Permanently delete " + row.name + "? This cannot be undone.")) {
+                if (!window.confirm(i18n.t("users.confirmHardDelete", [row.name]))) {
                     return Promise.resolve();
                 }
 

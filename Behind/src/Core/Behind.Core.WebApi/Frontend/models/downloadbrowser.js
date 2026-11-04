@@ -1,5 +1,5 @@
-define(["ko", "models/downloads", "models/downloadtree", "models/filetypes", "models/newsmeta"], function (ko, downloads, tree, filetypes, meta) {
-    var unavailableFolder = "(unavailable folder)";
+define(["ko", "models/downloads", "models/downloadtree", "models/filetypes", "models/newsmeta", "models/i18n"], function (ko, downloads, tree, filetypes, meta, i18n) {
+    var unavailableFolder = "downloads.unavailableFolder";
     var expanded = {};
 
     var pathOf = function (params) {
@@ -52,7 +52,7 @@ define(["ko", "models/downloads", "models/downloadtree", "models/filetypes", "mo
             return browser.selected() === null;
         });
         browser.heading = ko.pureComputed(function () {
-            return browser.selected() ? browser.selected().displayName : "Downloads";
+            return browser.selected() ? browser.selected().displayName : i18n.t("downloads.title");
         });
         browser.maxFileSize = ko.pureComputed(function () {
             return filetypes.sizeOf(browser.maxFileBytes());
@@ -107,7 +107,7 @@ define(["ko", "models/downloads", "models/downloadtree", "models/filetypes", "mo
                 showFileName: file.displayName !== file.fileName,
                 icon: "fa-solid " + filetypes.iconOf(file.fileName, file.contentType),
                 size: filetypes.sizeOf(file.length),
-                uploadedAt: meta.formatDate(file.uploadedAt),
+                uploadedAt: i18n.dateTime(file.uploadedAt),
                 uploadedBy: meta.author(file.uploadedBy),
                 url: file.url
             };
@@ -115,7 +115,7 @@ define(["ko", "models/downloads", "models/downloadtree", "models/filetypes", "mo
             row.folderName = function () {
                 var folder = folderIndex.byId[row.folderId];
 
-                return folder ? folder.displayName : unavailableFolder;
+                return folder ? folder.displayName : i18n.t(unavailableFolder);
             };
 
             return config.decorate ? config.decorate(row) : row;

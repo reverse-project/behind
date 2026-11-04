@@ -42,7 +42,7 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
     public async Task Get_ListsTheAppSettingsFileWithTheLoggingEditorAndNoRawFields()
     {
         var response = Assert.IsType<JsonHttpResult<SettingsResponse>>(
-            await SettingsEndpoints.Get(Catalog, Security(), CancellationToken.None)).Value!;
+            await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(), CancellationToken.None)).Value!;
 
         var entry = response.Files.Single();
         Assert.Equal("appsettings.json", entry.Name);
@@ -123,7 +123,7 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
                 ["AllowedHosts"] = System.Text.Json.JsonDocument.Parse("\"x\"").RootElement.Clone()
             });
 
-        var result = await SettingsEndpoints.Update("appsettings.json", request, Catalog, Security(), _logger, CancellationToken.None);
+        var result = await SettingsEndpoints.Update("appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None);
 
         Assert.IsType<NotFound>(result);
     }

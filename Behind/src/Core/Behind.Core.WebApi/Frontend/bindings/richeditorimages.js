@@ -1,4 +1,4 @@
-define(["quill"], function (Quill) {
+define(["quill", "models/i18n"], function (Quill, i18n) {
     var alignments = ["left", "center", "right"];
     var minimumWidth = 32;
     var sizes = [25, 50, 75, 100];
@@ -123,20 +123,20 @@ define(["quill"], function (Quill) {
         };
 
         sizes.forEach(function (percent) {
-            panel.appendChild(button(percent + "%", "Resize to " + percent + "% of the editor width", function () {
+            panel.appendChild(button(percent + "%", i18n.t("richeditor.resize", [percent]), function () {
                 apply({ width: String(widthOf(percent)), height: null });
             }));
         });
 
-        panel.appendChild(button("Original", "Original size", function () {
+        panel.appendChild(button(i18n.t("richeditor.original"), i18n.t("richeditor.originalTitle"), function () {
             apply({ width: null, height: null });
         }));
 
-        [["Left", "left", "Place on the left, text wraps around"],
-        ["Center", "center", "Place in the center"],
-        ["Right", "right", "Place on the right, text wraps around"],
-        ["Inline", null, "Place inline with the text"]].forEach(function (entry) {
-            panel.appendChild(button(entry[0], entry[2], function () {
+        [["richeditor.left", "left", "richeditor.leftTitle"],
+        ["richeditor.center", "center", "richeditor.centerTitle"],
+        ["richeditor.right", "right", "richeditor.rightTitle"],
+        ["richeditor.inline", null, "richeditor.inlineTitle"]].forEach(function (entry) {
+            panel.appendChild(button(i18n.t(entry[0]), i18n.t(entry[2]), function () {
                 apply({ imageAlign: entry[1] });
             }));
         });

@@ -3,8 +3,8 @@
     "Url": "http://localhost:5000/",
     "Site": {
       "Title": "Behind Development Build",
-      "Copyright": "© 2026 Reverse Project",
-      "DefaultLocale": "en-US",
+      "Copyright": "\u00A9 2026 Reverse Project",
+      "DefaultLocale": "hu-HU",
       "ContactEmail": "system@zwebnt.hu"
     },
     "Sites": {

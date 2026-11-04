@@ -6,6 +6,7 @@ using Behind.Common.Logging;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Handlers;
+using Behind.Common.WebApi.Infrastructure.Localization;
 using Behind.Common.WebApi.Infrastructure.StaticFiles;
 using Behind.Common.WebApi.Middleware;
 using Behind.Common.WebApi.Security;
@@ -207,6 +208,8 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IEmailCommands, EmailCommands>();
             builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
             builder.Services.AddScoped<IUserCommands, UserCommands>();
+            builder.Services.AddScoped<IUserSettingQueries, UserSettingQueries>();
+            builder.Services.AddScoped<IUserSettingCommands, UserSettingCommands>();
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
             builder.Services.AddScoped<IAccessQueries, AccessQueries>();
             builder.Services.AddScoped<IAccessCommands, AccessCommands>();
@@ -254,6 +257,8 @@ public static class WebApiExtensions
                 builder.Configuration
                     .GetSection(FrontendOptions.SectionName)
                     .Get<FrontendOptions>() ?? FrontendOptions.Default);
+            builder.Services.AddSingleton(
+                new LocaleCatalog(EmbeddedFrontend.CreateFileProvider(builder.Environment.WebRootPath)));
 
             return builder;
         }
@@ -282,8 +287,7 @@ public static class WebApiExtensions
             application.UseCorrelationId();
             application.UseRequestLogging();
             application.UseExceptionHandler(_ => { });
-            application.UseStaticFrontend(
-                EmbeddedFrontend.CreateFileProvider().WithWebRoot(application.Environment.WebRootPath));
+            application.UseStaticFrontend(EmbeddedFrontend.CreateFileProvider(application.Environment.WebRootPath));
             application.UseETag();
             application.MapOpenApi();
 
@@ -900,6 +904,22 @@ public static class WebApiExtensions
                 .Produces(400)
                 .Produces(401)
                 .Produces(500);
+
+            application.MapGet("/profile/settings", UserSettingEndpoints.Get)
+                .Produces<IReadOnlyDictionary<string, string>>()
+                .Produces(401)
+                .Produces(500);
+
+            application.MapPut("/profile/settings/{key}", UserSettingEndpoints.Set)
+                .AddEndpointFilter<DataAnnotationValidationFilter<UserSettingEndpoints.UserSettingRequest>>()
+                .Produces(204)
+                .Produces(400)
+                .Produces(401)
+                .Produces(404)
+                .Produces(500);
+
+            application.MapGet("/locales", LocaleEndpoints.Get)
+                .Produces<IReadOnlyList<LocaleInfo>>();
 
             application.MapPost("/session/elevate/administrator", ElevationEndpoints.ElevateAdministrator)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ElevationEndpoints.ElevationRequest>>()

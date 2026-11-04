@@ -1,28 +1,28 @@
 <section>
-    <h1 class="mb-3">Sessions</h1>
-    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to see your sessions.</p>
+    <h1 class="mb-3" data-bind="t: 'sessions.title'">Sessions</h1>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'profile.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'sessions.signInToSee'">to see your sessions.</span></p>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div data-bind="visible: isSignedIn">
         <div class="d-flex flex-wrap gap-2 mb-3">
-            <button type="button" class="btn btn-primary" data-bind="enable: !busy(), click: refresh">Refresh</button>
-            <button type="button" class="btn btn-danger" data-bind="enable: !busy(), click: signOutAll">Sign out all sessions</button>
+            <button type="button" class="btn btn-primary" data-bind="enable: !busy(), click: refresh, t: 'sessions.refresh'">Refresh</button>
+            <button type="button" class="btn btn-danger" data-bind="enable: !busy(), click: signOutAll, t: 'sessions.signOutAll'">Sign out all sessions</button>
         </div>
-        <h2 class="h4 mt-4">Current sessions</h2>
-        <p class="text-body-secondary" data-bind="visible: active().length === 0">There are no current sessions.</p>
+        <h2 class="h4 mt-4" data-bind="t: 'sessions.current'">Current sessions</h2>
+        <p class="text-body-secondary" data-bind="visible: active().length === 0, t: 'sessions.noCurrent'">There are no current sessions.</p>
         <div class="table-responsive" data-bind="visible: active().length > 0">
             <table class="table align-middle">
                 <thead>
                 <tr>
-                    <th scope="col">IP address</th>
-                    <th scope="col">User agent</th>
-                    <th scope="col">Started</th>
-                    <th scope="col">Last active</th>
-                    <th scope="col">Expires</th>
+                    <th scope="col" data-bind="t: 'sessions.ipAddress'">IP address</th>
+                    <th scope="col" data-bind="t: 'sessions.userAgent'">User agent</th>
+                    <th scope="col" data-bind="t: 'sessions.started'">Started</th>
+                    <th scope="col" data-bind="t: 'sessions.lastActive'">Last active</th>
+                    <th scope="col" data-bind="t: 'sessions.expires'">Expires</th>
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: active">
                 <tr>
-                    <td><span data-bind="text: remoteAddress"></span> <span class="badge text-bg-success" data-bind="visible: isCurrent">This session</span></td>
+                    <td><span data-bind="text: remoteAddress"></span> <span class="badge text-bg-success" data-bind="visible: isCurrent, t: 'sessions.thisSession'">This session</span></td>
                     <td class="text-break" data-bind="text: userAgent"></td>
                     <td data-bind="text: startedAt"></td>
                     <td data-bind="text: lastActiveAt"></td>
@@ -38,11 +38,11 @@
                 <table class="table align-middle">
                     <thead>
                     <tr>
-                        <th scope="col">IP address</th>
-                        <th scope="col">User agent</th>
-                        <th scope="col">Started</th>
-                        <th scope="col">Ended</th>
-                        <th scope="col">Reason</th>
+                        <th scope="col" data-bind="t: 'sessions.ipAddress'">IP address</th>
+                        <th scope="col" data-bind="t: 'sessions.userAgent'">User agent</th>
+                        <th scope="col" data-bind="t: 'sessions.started'">Started</th>
+                        <th scope="col" data-bind="t: 'sessions.ended'">Ended</th>
+                        <th scope="col" data-bind="t: 'sessions.reason'">Reason</th>
                     </tr>
                     </thead>
                     <tbody data-bind="foreach: ended">

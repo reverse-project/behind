@@ -1,8 +1,8 @@
 define(["ko"], function (ko) {
     var choices = [
-        { value: "none", label: "Not set" },
-        { value: "grant", label: "Grant" },
-        { value: "restrict", label: "Restrict" }
+        { value: "none", label: "access.choice.none" },
+        { value: "grant", label: "access.choice.grant" },
+        { value: "restrict", label: "access.choice.restrict" }
     ];
 
     var unique = function (values) {

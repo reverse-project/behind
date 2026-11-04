@@ -1,8 +1,8 @@
-define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpager", "models/comments"], function (ko, news, meta, createPager, createLetterPager, comments) {
+define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpager", "models/comments", "models/i18n"], function (ko, news, meta, createPager, createLetterPager, comments, i18n) {
     var pageSize = 10;
 
     var plural = function (count) {
-        return count === 1 ? "1 comment" : count + " comments";
+        return count === 1 ? i18n.t("news.commentCountOne") : i18n.t("news.commentCountOther", [count]);
     };
 
     var present = function (item) {
@@ -50,7 +50,7 @@ define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpa
         });
 
         self.filters = ko.pureComputed(function () {
-            return [{ id: "", name: "All" }].concat(self.categories()).map(function (category) {
+            return [{ id: "", name: i18n.t("content.all") }].concat(self.categories()).map(function (category) {
                 return {
                     name: category.name,
                     isSelected: self.selected() === category.id,

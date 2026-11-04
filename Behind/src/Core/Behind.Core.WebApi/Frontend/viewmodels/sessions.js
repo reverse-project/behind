@@ -1,17 +1,13 @@
-define(["ko", "models/auth", "models/session", "models/pager"], function (ko, auth, session, createPager) {
-    var formatDate = function (value) {
-        return value ? new Date(value).toLocaleString() : "";
-    };
-
+define(["ko", "models/auth", "models/session", "models/pager", "models/i18n"], function (ko, auth, session, createPager, i18n) {
     var presentActive = function (item) {
         return {
             id: item.id,
             isCurrent: item.isCurrent,
             remoteAddress: item.remoteAddress,
             userAgent: item.userAgent,
-            startedAt: formatDate(item.startedAt),
-            lastActiveAt: formatDate(item.lastActiveAt),
-            expiresAt: formatDate(item.expiresAt)
+            startedAt: i18n.dateTime(item.startedAt),
+            lastActiveAt: i18n.dateTime(item.lastActiveAt),
+            expiresAt: i18n.dateTime(item.expiresAt)
         };
     };
 
@@ -20,9 +16,9 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
             id: item.id,
             remoteAddress: item.remoteAddress,
             userAgent: item.userAgent,
-            startedAt: formatDate(item.startedAt),
-            endedAt: formatDate(item.endedAt),
-            reason: item.signedOut ? "Signed out" : "Expired"
+            startedAt: i18n.dateTime(item.startedAt),
+            endedAt: i18n.dateTime(item.endedAt),
+            reason: item.signedOut ? i18n.t("sessions.endReason.signedOut") : i18n.t("sessions.endReason.expired")
         };
     };
 
@@ -53,7 +49,9 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
         });
 
         self.endedToggleLabel = ko.pureComputed(function () {
-            return (self.showEnded() ? "Hide" : "Show") + " old sessions (" + self.endedPager.total() + ")";
+            var key = self.showEnded() ? "sessions.hideOld" : "sessions.showOld";
+
+            return i18n.t(key, [self.endedPager.total()]);
         });
 
         self.toggleEnded = function () {
@@ -101,7 +99,7 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
         };
 
         self.signOutAll = function () {
-            if (!window.confirm("Sign out of all sessions, including this one?")) {
+            if (!window.confirm(i18n.t("sessions.confirmSignOutAll"))) {
                 return Promise.resolve();
             }
 

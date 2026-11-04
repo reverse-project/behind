@@ -1,6 +1,6 @@
 <section>
-    <h1 class="mb-3">Confirm email</h1>
+    <h1 class="mb-3" data-bind="t: 'confirmemail.title'">Confirm email</h1>
     <p role="status" data-bind="text: message"></p>
-    <p data-bind="visible: confirmed"><a href="#/sign-in">Sign in</a></p>
-    <p data-bind="visible: failed"><a href="#/sign-up">Sign up again</a></p>
+    <p data-bind="visible: confirmed"><a href="#/sign-in" data-bind="t: 'confirmemail.signIn'">Sign in</a></p>
+    <p data-bind="visible: failed"><a href="#/sign-up" data-bind="t: 'confirmemail.signUpAgain'">Sign up again</a></p>
 </section>

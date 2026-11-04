@@ -1,12 +1,10 @@
-define(["ko", "models/auth", "models/session", "models/user"], function (ko, auth, session, user) {
+define(["ko", "models/auth", "models/session", "models/user", "models/i18n"], function (ko, auth, session, user, i18n) {
     var elevationTargets = [
-        { value: "administrator", label: "Administrator", role: "Administrators" },
-        { value: "developer", label: "Developer", role: "Developers" }
+        { value: "administrator", label: "session.target.administrator", role: "Administrators" },
+        { value: "developer", label: "session.target.developer", role: "Developers" }
     ];
 
-    var formatDate = function (value) {
-        return value ? new Date(value).toLocaleString() : "";
-    };
+    var spanUnits = ["session.span.days", "session.span.hours", "session.span.minutes", "session.span.seconds"];
 
     var formatSpan = function (value) {
         var match = /^(?:(\d+)\.)?(\d+):(\d+):(\d+)/.exec(value || "");
@@ -16,21 +14,19 @@ define(["ko", "models/auth", "models/session", "models/user"], function (ko, aut
         }
 
         var days = Number(match[1] || 0);
-        var parts = [
-            [days, "d"],
-            [Number(match[2]), "h"],
-            [Number(match[3]), "m"],
-            [Number(match[4]), "s"]
-        ];
+        var amounts = [days, Number(match[2]), Number(match[3]), Number(match[4])];
 
-        return parts
+        return amounts
+            .map(function (amount, index) {
+                return [amount, spanUnits[index]];
+            })
             .filter(function (part) {
                 return part[0] > 0;
             })
             .map(function (part) {
-                return part[0] + part[1];
+                return i18n.t(part[1], [part[0]]);
             })
-            .join(" ") || "0s";
+            .join(" ") || i18n.t("session.span.zero");
     };
 
     var present = function (data) {
@@ -45,12 +41,12 @@ define(["ko", "models/auth", "models/session", "models/user"], function (ko, aut
             roleNames: data.user.roles.map(function (role) {
                 return role.name;
             }),
-            startedAt: formatDate(data.session.startedAt),
+            startedAt: i18n.dateTime(data.session.startedAt),
             length: formatSpan(data.session.length),
-            accessTokenIssuedAt: formatDate(data.session.accessTokenIssuedAt),
-            accessTokenExpiresAt: formatDate(data.session.accessTokenExpiresAt),
+            accessTokenIssuedAt: i18n.dateTime(data.session.accessTokenIssuedAt),
+            accessTokenExpiresAt: i18n.dateTime(data.session.accessTokenExpiresAt),
             accessTokenRemaining: formatSpan(data.session.accessTokenRemaining),
-            expiresAt: formatDate(data.session.expiresAt),
+            expiresAt: i18n.dateTime(data.session.expiresAt),
             remaining: formatSpan(data.session.remaining),
             remoteAddress: data.session.remoteAddress,
             userAgent: data.session.userAgent
@@ -92,9 +88,13 @@ define(["ko", "models/auth", "models/session", "models/user"], function (ko, aut
 
             return details === null
                 ? []
-                : elevationTargets.filter(function (target) {
-                    return details.roleNames.indexOf(target.role) < 0;
-                });
+                : elevationTargets
+                    .filter(function (target) {
+                        return details.roleNames.indexOf(target.role) < 0;
+                    })
+                    .map(function (target) {
+                        return { value: target.value, label: i18n.t(target.label) };
+                    });
         });
 
         self.canElevate = ko.pureComputed(function () {

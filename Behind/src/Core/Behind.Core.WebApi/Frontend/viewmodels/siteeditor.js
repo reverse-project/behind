@@ -1,15 +1,17 @@
-define(["ko", "models/session", "models/sites", "models/slug", "bindings/richeditor"], function (ko, session, sites, slug) {
-    var formatDate = function (value) {
-        return value ? new Date(value).toLocaleString() : "";
-    };
-
+define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "bindings/richeditor"], function (ko, session, sites, slug, i18n) {
     var statusOf = function (item) {
         if (item.isActive) {
-            return { label: "Live", css: "text-bg-success" };
+            return { key: "sites.status.live", css: "text-bg-success" };
         }
 
-        return item.isDraft ? { label: "Draft", css: "text-bg-secondary" } : { label: "Published", css: "text-bg-info" };
+        return item.isDraft ? { key: "sites.status.draft", css: "text-bg-secondary" } : { key: "sites.status.published", css: "text-bg-info" };
     };
+
+    var sizeUnits = [
+        { size: 1024 * 1024, key: "sites.unit.mb" },
+        { size: 1024, key: "sites.unit.kb" },
+        { size: 1, key: "sites.unit.bytes" }
+    ];
 
     return function SiteEditorViewModel(context) {
         var self = this;
@@ -56,11 +58,11 @@ define(["ko", "models/session", "models/sites", "models/slug", "bindings/richedi
         });
 
         self.heading = ko.pureComputed(function () {
-            return self.isNew ? "New site" : "Edit site";
+            return self.isNew ? i18n.t("sites.editor.new") : i18n.t("sites.editor.edit");
         });
 
         self.basedOnLabel = ko.pureComputed(function () {
-            return self.basedOn() === null ? "" : "Based on version " + self.basedOn() + ". Saving creates a new version.";
+            return self.basedOn() === null ? "" : i18n.t("sites.editor.basedOn", [self.basedOn()]);
         });
 
         self.hasVersions = ko.pureComputed(function () {
@@ -83,12 +85,12 @@ define(["ko", "models/session", "models/sites", "models/slug", "bindings/richedi
 
         self.imageLimitLabel = ko.pureComputed(function () {
             var bytes = self.maxImageBytes();
-            var units = [[1024 * 1024, "MB"], [1024, "KB"], [1, "bytes"]];
-            var unit = units.filter(function (candidate) {
-                return bytes >= candidate[0];
-            })[0] || units[2];
+            var unit = sizeUnits.filter(function (candidate) {
+                return bytes >= candidate.size;
+            })[0] || sizeUnits[2];
+            var amount = new Intl.NumberFormat(i18n.locale(), { maximumFractionDigits: 2 }).format(bytes / unit.size);
 
-            return bytes > 0 ? "Images can be up to " + parseFloat((bytes / unit[0]).toFixed(2)) + " " + unit[1] + "." : "";
+            return bytes > 0 ? i18n.t("sites.editor.imageLimit", [amount, i18n.t(unit.key)]) : "";
         });
 
         self.hasLive = ko.pureComputed(function () {
@@ -125,10 +127,16 @@ define(["ko", "models/session", "models/sites", "models/slug", "bindings/richedi
                 isIndex: ko.pureComputed(function () {
                     return item.isActive && self.indexSlug() !== "" && item.slug === self.indexSlug();
                 }),
-                status: status.label,
+                status: ko.pureComputed(function () {
+                    return i18n.t(status.key);
+                }),
                 statusCss: status.css,
-                publishedAt: item.publishedAt ? "Published " + formatDate(item.publishedAt) : "Not published",
-                createdAt: formatDate(item.createdAt)
+                publishedAt: ko.pureComputed(function () {
+                    return item.publishedAt ? i18n.t("sites.editor.published", [i18n.dateTime(item.publishedAt)]) : i18n.t("sites.editor.notPublished");
+                }),
+                createdAt: ko.pureComputed(function () {
+                    return i18n.dateTime(item.createdAt);
+                })
             };
 
             row.canActivate = ko.pureComputed(function () {
@@ -138,7 +146,7 @@ define(["ko", "models/session", "models/sites", "models/slug", "bindings/richedi
                 return self.loadVersion(row.version);
             };
             row.activate = function () {
-                var question = "Make version " + row.version + " the live version of this site?";
+                var question = i18n.t("sites.editor.confirmActivate", [row.version]);
 
                 return window.confirm(question) ? self.activateVersion(row.version) : Promise.resolve();
             };

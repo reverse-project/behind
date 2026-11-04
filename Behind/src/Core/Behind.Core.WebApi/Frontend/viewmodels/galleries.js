@@ -11,7 +11,7 @@ define(["ko", "models/galleries", "models/newsmeta", "models/pager"], function (
             created: meta.created(item),
             thumbnailUrl: item.thumbnailUrl,
             hasThumbnail: !!item.thumbnailUrl,
-            count: item.itemCount === 1 ? "1 image" : item.itemCount + " images",
+            count: galleries.imageCountLabel(item.itemCount),
             href: "#/galleries/" + item.id
         };
     };

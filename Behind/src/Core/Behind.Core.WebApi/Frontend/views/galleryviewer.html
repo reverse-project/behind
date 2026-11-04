@@ -1,8 +1,8 @@
 <article class="behind-wide">
-    <p class="text-body-secondary" data-bind="visible: loading">Loading...</p>
+    <p class="text-body-secondary" data-bind="visible: loading, t: 'common.loading'">Loading...</p>
     <div class="alert alert-warning" role="alert" data-bind="visible: missing, text: message"></div>
     <div data-bind="visible: found">
-        <a class="d-inline-block mb-3" href="#/galleries">Back to galleries</a>
+        <a class="d-inline-block mb-3" href="#/galleries" data-bind="t: 'galleryviewer.back'">Back to galleries</a>
         <h1 class="mb-2 text-break" data-bind="text: title"></h1>
         <div class="d-flex flex-wrap align-items-center gap-2 small text-body-secondary mb-3">
             <span data-bind="text: count"></span>
@@ -10,11 +10,11 @@
             <span data-bind="text: stamp, attr: { title: created }"></span>
         </div>
         <p class="gallery-description mb-4" data-bind="visible: hasDescription, text: description"></p>
-        <p class="text-body-secondary" data-bind="visible: isEmpty">This gallery has no images yet.</p>
+        <p class="text-body-secondary" data-bind="visible: isEmpty, t: 'galleryviewer.empty'">This gallery has no images yet.</p>
         <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3 mb-4" data-bind="foreach: images">
             <div class="col">
                 <figure class="gallery-figure mb-0">
-                    <button type="button" class="gallery-thumbnail-button" data-bind="click: open, attr: { 'aria-label': hasDescription ? 'Open image: ' + description : 'Open image' }">
+                    <button type="button" class="gallery-thumbnail-button" aria-label="Open image" data-bind="click: open, tAttr: { 'aria-label': { key: hasDescription ? 'galleryviewer.openImageNamed' : 'galleryviewer.openImage', args: [description] } }">
                         <img class="gallery-thumbnail" loading="lazy" data-bind="attr: { src: thumbnailUrl, alt: description }">
                     </button>
                     <figcaption class="small text-body-secondary mt-1 text-break" data-bind="text: description, visible: hasDescription"></figcaption>
@@ -22,16 +22,16 @@
             </div>
         </div>
     </div>
-    <div class="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Image viewer" tabindex="-1" data-bind="visible: isOpen, hasFocus: lightboxFocus, event: { keydown: press }">
+    <div class="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Image viewer" tabindex="-1" data-bind="visible: isOpen, hasFocus: lightboxFocus, event: { keydown: press }, tAttr: { 'aria-label': 'galleryviewer.viewer' }">
         <div class="gallery-lightbox-bar">
             <span class="gallery-lightbox-position" data-bind="text: position"></span>
-            <button type="button" class="btn btn-sm btn-outline-light" aria-label="Close" data-bind="click: close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-light" aria-label="Close" data-bind="click: close, tAttr: { 'aria-label': 'common.close' }"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
         <div class="gallery-lightbox-stage" data-bind="with: selected">
             <img class="gallery-lightbox-image" data-bind="attr: { src: imageUrl, alt: description }">
         </div>
-        <button type="button" class="btn btn-outline-light gallery-lightbox-previous" aria-label="Previous image" data-bind="click: previous, visible: hasPrevious"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
-        <button type="button" class="btn btn-outline-light gallery-lightbox-next" aria-label="Next image" data-bind="click: next, visible: hasNext"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+        <button type="button" class="btn btn-outline-light gallery-lightbox-previous" aria-label="Previous image" data-bind="click: previous, visible: hasPrevious, tAttr: { 'aria-label': 'galleryviewer.previousImage' }"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+        <button type="button" class="btn btn-outline-light gallery-lightbox-next" aria-label="Next image" data-bind="click: next, visible: hasNext, tAttr: { 'aria-label': 'galleryviewer.nextImage' }"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
         <p class="gallery-lightbox-caption text-break" data-bind="visible: hasCaption, text: caption"></p>
     </div>
 </article>

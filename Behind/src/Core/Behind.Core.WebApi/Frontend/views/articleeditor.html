@@ -1,52 +1,52 @@
 <section class="behind-wide">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <h1 class="mb-0" data-bind="text: heading"></h1>
-        <a class="btn btn-outline-secondary ms-auto" href="#/manage/articles">Back to articles</a>
+        <a class="btn btn-outline-secondary ms-auto" href="#/manage/articles" data-bind="t: 'articles.backToArticles'">Back to articles</a>
     </div>
-    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage articles.</p>
-    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need article access to manage articles.</div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'content.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'articles.signInToManage'">to manage articles.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'articles.denied'">You need article access to manage articles.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div data-bind="visible: canRead">
         <form data-bind="submit: saveDraft">
             <div class="mb-3">
-                <label class="form-label" for="article-title">Title</label>
+                <label class="form-label" for="article-title" data-bind="t: 'content.title'">Title</label>
                 <input id="article-title" class="form-control" type="text" maxlength="200" data-bind="value: title, valueUpdate: 'input', enable: canWrite">
             </div>
             <div class="mb-3">
-                <label class="form-label" for="article-category">Category</label>
-                <select id="article-category" class="form-select" data-bind="options: categories, optionsText: 'name', optionsValue: 'id', optionsCaption: 'No category', value: categoryId, enable: canWrite"></select>
+                <label class="form-label" for="article-category" data-bind="t: 'content.category'">Category</label>
+                <select id="article-category" class="form-select" data-bind="options: categories, optionsText: 'name', optionsValue: 'id', optionsCaption: noCategory, value: categoryId, enable: canWrite"></select>
             </div>
             <div class="mb-3">
-                <label class="form-label">Short content</label>
-                <div class="form-text mb-1">Shown in the article list.</div>
+                <label class="form-label" data-bind="t: 'content.shortContent'">Short content</label>
+                <div class="form-text mb-1" data-bind="t: 'articles.shortContentHelp'">Shown in the article list.</div>
                 <div class="site-editor news-summary-editor bg-body">
                     <div data-bind="richEditor: { value: summary, upload: uploadImage, enabled: canWrite }"></div>
                 </div>
             </div>
             <div class="mb-3">
-                <label class="form-label">Content</label>
-                <div class="form-text mb-1">Shown when the article is opened.</div>
+                <label class="form-label" data-bind="t: 'content.content'">Content</label>
+                <div class="form-text mb-1" data-bind="t: 'articles.contentHelp'">Shown when the article is opened.</div>
                 <div class="site-editor bg-body">
                     <div data-bind="richEditor: { value: content, upload: uploadImage, enabled: canWrite }"></div>
                 </div>
             </div>
             <div class="form-text mb-3" data-bind="visible: basedOnLabel() !== '', text: basedOnLabel"></div>
             <div class="d-flex flex-wrap gap-2 mb-4">
-                <button type="submit" class="btn btn-outline-primary" data-bind="enable: canSave">Save draft</button>
-                <button type="button" class="btn btn-primary" data-bind="enable: canSave, click: publish">Save and publish</button>
+                <button type="submit" class="btn btn-outline-primary" data-bind="enable: canSave, t: 'content.saveDraft'">Save draft</button>
+                <button type="button" class="btn btn-primary" data-bind="enable: canSave, click: publish, t: 'content.saveAndPublish'">Save and publish</button>
             </div>
         </form>
         <div data-bind="visible: !isNew">
-            <h2 class="h5">Versions</h2>
-            <p class="text-body-secondary" data-bind="visible: !hasVersions()">No versions found.</p>
+            <h2 class="h5" data-bind="t: 'content.versions'">Versions</h2>
+            <p class="text-body-secondary" data-bind="visible: !hasVersions(), t: 'content.noVersions'">No versions found.</p>
             <ul class="list-group mb-3" data-bind="foreach: versions">
                 <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
-                    <strong>Version <span data-bind="text: version"></span></strong>
+                    <strong data-bind="t: { key: 'content.version', args: [version] }">Version</strong>
                     <span class="badge" data-bind="text: status, css: statusCss"></span>
                     <span class="text-break" data-bind="text: title"></span>
-                    <span class="small text-body-secondary ms-md-auto">Saved <span data-bind="text: createdAt"></span></span>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: load, enable: !$root.busy()">Load into editor</button>
-                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: $root.canWrite() && !isActive, enable: canActivate, click: activate">Make live</button>
+                    <span class="small text-body-secondary ms-md-auto" data-bind="t: { key: 'content.savedAt', args: [createdAt] }">Saved</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: load, enable: !$root.busy(), t: 'content.loadIntoEditor'">Load into editor</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: $root.canWrite() && !isActive, enable: canActivate, click: activate, t: 'content.makeLive'">Make live</button>
                 </li>
             </ul>
         </div>

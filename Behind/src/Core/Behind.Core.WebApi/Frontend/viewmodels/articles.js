@@ -1,4 +1,4 @@
-define(["ko", "models/articles", "models/newsmeta", "models/pager"], function (ko, articles, meta, createPager) {
+define(["ko", "models/articles", "models/newsmeta", "models/pager", "models/i18n"], function (ko, articles, meta, createPager, i18n) {
     var pageSize = 10;
 
     var present = function (item) {
@@ -40,7 +40,7 @@ define(["ko", "models/articles", "models/newsmeta", "models/pager"], function (k
         });
 
         self.filters = ko.pureComputed(function () {
-            return [{ id: "", name: "All" }].concat(self.categories()).map(function (category) {
+            return [{ id: "", name: i18n.t("content.all") }].concat(self.categories()).map(function (category) {
                 return {
                     name: category.name,
                     isSelected: self.selected() === category.id,

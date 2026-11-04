@@ -1,21 +1,21 @@
 <section class="behind-wide">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <h1 class="mb-0">Galleries</h1>
-        <a class="btn btn-primary ms-auto" href="#/manage/galleries/new" data-bind="visible: canWrite">New gallery</a>
+        <h1 class="mb-0" data-bind="t: 'galleries.title'">Galleries</h1>
+        <a class="btn btn-primary ms-auto" href="#/manage/galleries/new" data-bind="visible: canWrite, t: 'gallerymanager.new'">New gallery</a>
     </div>
-    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> to manage galleries.</p>
-    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied">You need gallery access to manage galleries.</div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'gallerymanager.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'gallerymanager.signInToManage'">to manage galleries.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'gallerymanager.denied'">You need gallery access to manage galleries.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
     <div data-bind="visible: canRead, with: list">
         <form class="input-group mb-3" data-bind="submit: find">
-            <input class="form-control" type="search" maxlength="200" placeholder="Search by title or description" aria-label="Search galleries" data-bind="value: search">
-            <button type="submit" class="btn btn-primary" data-bind="enable: !busy()">Search</button>
+            <input class="form-control" type="search" maxlength="200" placeholder="Search by title or description" aria-label="Search galleries" data-bind="value: search, tAttr: { placeholder: 'galleries.searchPlaceholder', 'aria-label': 'galleries.searchLabel' }">
+            <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
         </form>
         <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
-            <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> Show deleted galleries</label>
+            <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'gallerymanager.showDeleted'">Show deleted galleries</span></label>
         </div>
         <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
-        <p class="text-body-secondary" data-bind="visible: !hasItems()">No galleries found.</p>
+        <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'gallerymanager.empty'">No galleries found.</p>
         <ul class="list-group mb-3" data-bind="foreach: items">
             <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                 <img class="gallery-manager-thumbnail" alt="" data-bind="visible: hasThumbnail, attr: { src: thumbnailUrl }">
@@ -25,17 +25,17 @@
                     <strong class="text-break" data-bind="text: title, visible: isDeleted"></strong>
                     <div class="small text-body-secondary" data-bind="text: author"></div>
                 </div>
-                <span class="badge text-bg-dark" data-bind="visible: isDeleted">Deleted</span>
-                <span class="badge text-bg-secondary" data-bind="visible: isDraft && !isDeleted">Draft</span>
-                <span class="badge text-bg-success" data-bind="visible: isPublished && !isDeleted">Published</span>
-                <span class="badge text-bg-warning" data-bind="visible: hasNewerDraft && !isDeleted">Newer draft</span>
+                <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'gallerymanager.deleted'">Deleted</span>
+                <span class="badge text-bg-secondary" data-bind="visible: isDraft && !isDeleted, t: 'gallerymanager.draft'">Draft</span>
+                <span class="badge text-bg-success" data-bind="visible: isPublished && !isDeleted, t: 'gallerymanager.published'">Published</span>
+                <span class="badge text-bg-warning" data-bind="visible: hasNewerDraft && !isDeleted, t: 'gallerymanager.newerDraft'">Newer draft</span>
                 <span class="badge text-bg-secondary" data-bind="text: count"></span>
                 <span class="small text-body-secondary" data-bind="text: version"></span>
                 <span class="small text-body-secondary" data-bind="text: stamp"></span>
-                <a class="btn btn-sm btn-outline-secondary" data-bind="visible: !isDeleted, attr: { href: '#/galleries/' + id }">View</a>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove">Delete</button>
-                <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore">Restore</button>
-                <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete">Delete permanently</button>
+                <a class="btn btn-sm btn-outline-secondary" data-bind="visible: !isDeleted, attr: { href: '#/galleries/' + id }, t: 'gallerymanager.view'">View</a>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
+                <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>
+                <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete, t: 'gallerymanager.hardDelete'">Delete permanently</button>
             </li>
         </ul>
         <pager class="d-block" params="pager: pager"></pager>

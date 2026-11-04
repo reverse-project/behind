@@ -1,16 +1,12 @@
-define(["ko", "models/session", "models/sites", "models/managedlist"], function (ko, session, sites, createManagedList) {
-    var formatDate = function (value) {
-        return value ? new Date(value).toLocaleString() : "";
-    };
-
+define(["ko", "models/session", "models/sites", "models/managedlist", "models/i18n"], function (ko, session, sites, createManagedList, i18n) {
     var statusOf = function (item) {
         if (item.activeVersion === null) {
-            return { label: "Draft", css: "text-bg-secondary" };
+            return { key: "sites.status.draft", css: "text-bg-secondary" };
         }
 
         return item.latestVersion > item.activeVersion
-            ? { label: "Live with newer draft", css: "text-bg-warning" }
-            : { label: "Live", css: "text-bg-success" };
+            ? { key: "sites.status.liveNewerDraft", css: "text-bg-warning" }
+            : { key: "sites.status.live", css: "text-bg-success" };
     };
 
     return function SitesViewModel() {
@@ -38,9 +34,15 @@ define(["ko", "models/session", "models/sites", "models/managedlist"], function 
                 title: item.title,
                 slug: item.slug,
                 latestVersion: item.latestVersion,
-                activeVersion: item.activeVersion === null ? "none" : item.activeVersion,
-                updatedAt: formatDate(item.updatedAt),
-                status: status.label,
+                activeVersion: ko.pureComputed(function () {
+                    return item.activeVersion === null ? i18n.t("sites.noneLive") : item.activeVersion;
+                }),
+                updatedAt: ko.pureComputed(function () {
+                    return i18n.dateTime(item.updatedAt);
+                }),
+                status: ko.pureComputed(function () {
+                    return i18n.t(status.key);
+                }),
                 statusCss: status.css,
                 isDeleted: item.isDeleted,
                 isIndex: indexSlug !== "" && item.activeSlug === indexSlug,
@@ -48,7 +50,7 @@ define(["ko", "models/session", "models/sites", "models/managedlist"], function 
             };
 
             row.remove = function () {
-                if (!window.confirm("Delete " + row.title + "? It stops being served and can be restored by a developer.")) {
+                if (!window.confirm(i18n.t("sites.confirm.delete", [row.title]))) {
                     return Promise.resolve();
                 }
 
@@ -62,7 +64,7 @@ define(["ko", "models/session", "models/sites", "models/managedlist"], function 
                 });
             };
             row.hardDelete = function () {
-                if (!window.confirm("Permanently delete " + row.title + " with all its versions? This cannot be undone.")) {
+                if (!window.confirm(i18n.t("sites.confirm.hardDelete", [row.title]))) {
                     return Promise.resolve();
                 }
 

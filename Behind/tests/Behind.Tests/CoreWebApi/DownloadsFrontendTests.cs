@@ -109,10 +109,10 @@ public class DownloadsFrontendTests
         Assert.Contains("fa-folder'", tree);
         Assert.Contains("fa-chevron-down", tree);
         Assert.Contains("fa-chevron-right", tree);
-        Assert.Contains("<th scope=\"col\">Name</th>", view);
-        Assert.Contains("<th scope=\"col\" class=\"text-end\">Size</th>", view);
-        Assert.Contains("<th scope=\"col\">Uploaded at</th>", view);
-        Assert.Contains("<th scope=\"col\">Uploaded by</th>", view);
+        Assert.Contains("<th scope=\"col\" data-bind=\"t: 'downloads.column.name'\">Name</th>", view);
+        Assert.Contains("<th scope=\"col\" class=\"text-end\" data-bind=\"t: 'downloads.column.size'\">Size</th>", view);
+        Assert.Contains("<th scope=\"col\" data-bind=\"t: 'downloads.column.uploadedAt'\">Uploaded at</th>", view);
+        Assert.Contains("<th scope=\"col\" data-bind=\"t: 'downloads.column.uploadedBy'\">Uploaded by</th>", view);
         Assert.Contains("css: icon", view);
         Assert.Contains("text: size", view);
         Assert.Contains("text: uploadedAt", view);

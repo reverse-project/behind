@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/menus", "models/managedlist"], function (ko, session, menus, createManagedList) {
+define(["ko", "models/session", "models/menus", "models/managedlist", "models/i18n"], function (ko, session, menus, createManagedList, i18n) {
     return function MenuItemsViewModel(context) {
         var self = this;
         var menuId = context.params.id;
@@ -21,7 +21,15 @@ define(["ko", "models/session", "models/menus", "models/managedlist"], function 
         self.allowsUserItems = ko.observable(false);
         self.parents = ko.observableArray([]);
         self.roles = ko.observableArray([]);
-        self.targets = menus.targets;
+        self.targets = ko.pureComputed(function () {
+            return menus.targets.map(function (target) {
+                return { value: target.value, label: i18n.t(target.label) };
+            });
+        });
+
+        self.noParentLabel = ko.pureComputed(function () {
+            return i18n.t("menuitems.noParent");
+        });
 
         self.editingId = ko.observable(null);
         self.title = ko.observable("");
@@ -37,7 +45,7 @@ define(["ko", "models/session", "models/menus", "models/managedlist"], function 
         });
 
         self.menuTitle = ko.pureComputed(function () {
-            return self.hasMenu() ? self.menu().title : "Menu";
+            return self.hasMenu() ? menus.label(self.menu().title) : i18n.t("menuitems.menu");
         });
 
         self.isEditing = ko.pureComputed(function () {
@@ -45,7 +53,7 @@ define(["ko", "models/session", "models/menus", "models/managedlist"], function 
         });
 
         self.heading = ko.pureComputed(function () {
-            return self.isEditing() ? "Edit menu item" : "New menu item";
+            return self.isEditing() ? i18n.t("menuitems.editor.edit") : i18n.t("menuitems.editor.new");
         });
 
         self.isUserItem = ko.pureComputed(function () {
@@ -61,6 +69,8 @@ define(["ko", "models/session", "models/menus", "models/managedlist"], function 
 
             return self.isUserItem() ? [] : self.parents().filter(function (parent) {
                 return parent.id !== editing;
+            }).map(function (parent) {
+                return { id: parent.id, title: menus.label(parent.title) };
             });
         });
 
@@ -77,7 +87,7 @@ define(["ko", "models/session", "models/menus", "models/managedlist"], function 
         };
 
         var rolesLabel = function (ids) {
-            return ids.length === 0 ? "All roles" : ids.map(function (id) {
+            return ids.length === 0 ? i18n.t("menuitems.allRoles") : ids.map(function (id) {
                 return labelOf(self.roles(), id, id);
             }).join(", ");
         };
@@ -86,16 +96,25 @@ define(["ko", "models/session", "models/menus", "models/managedlist"], function 
             var row = {
                 id: item.id,
                 title: item.title,
+                label: ko.pureComputed(function () {
+                    return menus.label(item.title);
+                }),
                 url: item.url,
                 kind: item.kind,
                 isDeleted: item.isDeleted,
                 isSub: !!item.parentId,
-                parentTitle: item.parentId ? labelOf(self.parents(), item.parentId, "") : "",
+                parentTitle: ko.pureComputed(function () {
+                    return item.parentId ? menus.label(labelOf(self.parents(), item.parentId, "")) : "";
+                }),
                 isUser: item.kind === "User",
-                targetLabel: labelOf(menus.targets.map(function (target) {
-                    return { id: target.value, title: target.label };
-                }), item.target, item.target),
-                rolesLabel: rolesLabel(item.roleIds)
+                targetLabel: ko.pureComputed(function () {
+                    return labelOf(self.targets().map(function (target) {
+                        return { id: target.value, title: target.label };
+                    }), item.target, item.target);
+                }),
+                rolesLabel: ko.pureComputed(function () {
+                    return rolesLabel(item.roleIds);
+                })
             };
 
             row.edit = function () {
@@ -109,7 +128,7 @@ define(["ko", "models/session", "models/menus", "models/managedlist"], function 
                 self.roleIds(item.roleIds.slice());
             };
             row.remove = function () {
-                if (!window.confirm("Delete the " + row.title + " menu item?")) {
+                if (!window.confirm(i18n.t("menuitems.confirm.delete", [row.label()]))) {
                     return Promise.resolve();
                 }
 
@@ -123,7 +142,7 @@ define(["ko", "models/session", "models/menus", "models/managedlist"], function 
                 });
             };
             row.hardDelete = function () {
-                if (!window.confirm("Permanently delete the " + row.title + " menu item and its sub items? This cannot be undone.")) {
+                if (!window.confirm(i18n.t("menuitems.confirm.hardDelete", [row.label()]))) {
                     return Promise.resolve();
                 }
 

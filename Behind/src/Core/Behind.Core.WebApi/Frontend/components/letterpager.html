@@ -1,5 +1,5 @@
-<nav class="d-flex align-items-center gap-2 overflow-x-auto pb-1" aria-label="Filter by first letter">
-    <button type="button" class="btn btn-sm flex-shrink-0" data-bind="css: isAll() ? 'btn-primary' : 'btn-outline-secondary', click: all, attr: { 'aria-current': isAll() ? 'true' : null }">All</button>
+<nav class="d-flex align-items-center gap-2 overflow-x-auto pb-1" aria-label="Filter by first letter" data-bind="tAttr: { 'aria-label': 'letterpager.label' }">
+    <button type="button" class="btn btn-sm flex-shrink-0" data-bind="css: isAll() ? 'btn-primary' : 'btn-outline-secondary', click: all, attr: { 'aria-current': isAll() ? 'true' : null }, t: 'letterpager.all'">All</button>
     <div class="btn-group btn-group-sm flex-nowrap flex-shrink-0" role="group" data-bind="foreach: letters">
         <button type="button" class="btn" data-bind="css: isCurrent ? 'btn-primary' : 'btn-outline-secondary', text: label, enable: isAvailable, click: $parent.select, attr: { 'aria-current': isCurrent ? 'true' : null }"></button>
     </div>

@@ -908,6 +908,25 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.ToTable("UserRoles");
                 });
 
+            modelBuilder.Entity("UserSettings", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "Key");
+
+                    b.ToTable("UserSettings");
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.UserRole", b =>
                 {
                     b.HasBaseType("Behind.Core.Domain.Role");
@@ -1139,6 +1158,15 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("UserSettings", b =>
+                {
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")

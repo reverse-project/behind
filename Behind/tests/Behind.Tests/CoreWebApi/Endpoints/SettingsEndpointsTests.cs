@@ -67,7 +67,7 @@ public sealed class SettingsEndpointsTests : IDisposable
 
     private async Task<SettingsResponse> Listed(bool readOnly = false) =>
         Assert.IsType<JsonHttpResult<SettingsResponse>>(
-            await SettingsEndpoints.Get(Catalog, Security(readOnly), CancellationToken.None)).Value!;
+            await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(readOnly), CancellationToken.None)).Value!;
 
     [Fact]
     public async Task Get_ListsEveryExistingFileAsATab()
@@ -148,6 +148,7 @@ public sealed class SettingsEndpointsTests : IDisposable
             "backend.json",
             Update(("Backend:Comments:News", "false"), ("Backend:Downloads:MaxFileBytes", "200")),
             Catalog,
+            TestLocales.Embedded,
             Security(),
             _logger,
             CancellationToken.None);
@@ -156,6 +157,65 @@ public sealed class SettingsEndpointsTests : IDisposable
         var backend = Read("backend.json")["Backend"]!;
         Assert.False((bool?)backend["Comments"]!["News"]);
         Assert.Equal(200, (int?)backend["Downloads"]!["MaxFileBytes"]);
+    }
+
+    private void WriteFrontend(string locale) =>
+        File.WriteAllText(
+            PathOf("frontend.json"),
+            $$"""{ "Frontend": { "Site": { "Title": "Behind", "DefaultLocale": "{{locale}}" } } }""");
+
+    [Fact]
+    public async Task Get_OffersTheAvailableLocalesByNameForTheDefaultLocale()
+    {
+        WriteFrontend("hu-HU");
+
+        var response = await Listed();
+
+        var field = Field(response, "frontend.json", SettingsLocaleExtensions.DefaultLocalePath);
+        Assert.Contains(new SettingsOption("hu-HU", "Magyar"), field.Options!);
+        Assert.Contains(new SettingsOption("en-US", "English (International)"), field.Options!);
+        Assert.Null(Field(response, "frontend.json", "Frontend:Site:Title").Options);
+    }
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("hu-HU")]
+    public async Task Update_AcceptsAnAvailableDefaultLocale(string locale)
+    {
+        WriteFrontend("en-US");
+
+        var result = await SettingsEndpoints.Update(
+            "frontend.json",
+            Update((SettingsLocaleExtensions.DefaultLocalePath, $"\"{locale}\"")),
+            Catalog,
+            TestLocales.Embedded,
+            Security(),
+            _logger,
+            CancellationToken.None);
+
+        Assert.IsType<NoContent>(result);
+        Assert.Equal(locale, (string?)Read("frontend.json")["Frontend"]!["Site"]!["DefaultLocale"]);
+    }
+
+    [Theory]
+    [InlineData("fr-FR")]
+    [InlineData("../hu-HU")]
+    [InlineData("")]
+    public async Task Update_RejectsAnUnavailableDefaultLocale(string locale)
+    {
+        WriteFrontend("en-US");
+
+        var result = await SettingsEndpoints.Update(
+            "frontend.json",
+            Update((SettingsLocaleExtensions.DefaultLocalePath, $"\"{locale}\"")),
+            Catalog,
+            TestLocales.Embedded,
+            Security(),
+            _logger,
+            CancellationToken.None);
+
+        Assert.IsType<BadRequest>(result);
+        Assert.Equal("en-US", (string?)Read("frontend.json")["Frontend"]!["Site"]!["DefaultLocale"]);
     }
 
     [Fact]
@@ -167,6 +227,7 @@ public sealed class SettingsEndpointsTests : IDisposable
             "database.json",
             Update(("ConnectionStrings:Default", "\"Data Source=b.db\"")),
             Catalog,
+            TestLocales.Embedded,
             Security(),
             _logger,
             CancellationToken.None);
@@ -187,6 +248,7 @@ public sealed class SettingsEndpointsTests : IDisposable
             "security.json",
             Update(("Security:Jwt:Audience", "\"changed\""), (path, json)),
             Catalog,
+            TestLocales.Embedded,
             Security(),
             _logger,
             CancellationToken.None);
@@ -202,6 +264,7 @@ public sealed class SettingsEndpointsTests : IDisposable
             "../secret.json",
             Update(("A", "\"b\"")),
             Catalog,
+            TestLocales.Embedded,
             Security(),
             _logger,
             CancellationToken.None);
@@ -218,6 +281,7 @@ public sealed class SettingsEndpointsTests : IDisposable
             "backend.json",
             Update(("Backend:Comments:News", "false")),
             Catalog,
+            TestLocales.Embedded,
             Security(readOnly: true),
             _logger,
             CancellationToken.None);

@@ -1,6 +1,6 @@
-define(["ko", "models/session", "models/articles", "models/newsmeta", "bindings/richeditor"], function (ko, session, articles, meta) {
+define(["ko", "models/session", "models/articles", "models/newsmeta", "models/i18n", "bindings/richeditor"], function (ko, session, articles, meta, i18n) {
     var statusOf = function (item) {
-        return item.isActive ? { label: "Live", css: "text-bg-success" } : { label: "Version", css: "text-bg-secondary" };
+        return item.isActive ? { label: "content.status.live", css: "text-bg-success" } : { label: "content.status.version", css: "text-bg-secondary" };
     };
 
     return function ArticleEditorViewModel(context) {
@@ -33,11 +33,15 @@ define(["ko", "models/session", "models/articles", "models/newsmeta", "bindings/
         });
 
         self.heading = ko.pureComputed(function () {
-            return self.isNew ? "New article" : "Edit article";
+            return self.isNew ? i18n.t("articles.new") : i18n.t("articles.edit");
+        });
+
+        self.noCategory = ko.pureComputed(function () {
+            return i18n.t("content.noCategory");
         });
 
         self.basedOnLabel = ko.pureComputed(function () {
-            return self.basedOn() === null ? "" : "Based on version " + self.basedOn() + ". Saving creates a new version.";
+            return self.basedOn() === null ? "" : i18n.t("content.basedOn", [self.basedOn()]);
         });
 
         self.hasVersions = ko.pureComputed(function () {
@@ -62,7 +66,7 @@ define(["ko", "models/session", "models/articles", "models/newsmeta", "bindings/
                 version: item.version,
                 title: item.title,
                 isActive: item.isActive,
-                status: status.label,
+                status: i18n.t(status.label),
                 statusCss: status.css,
                 createdAt: meta.formatDate(item.createdAt)
             };
@@ -74,7 +78,7 @@ define(["ko", "models/session", "models/articles", "models/newsmeta", "bindings/
                 return self.loadVersion(row.version);
             };
             row.activate = function () {
-                var question = "Make version " + row.version + " the live version of this article?";
+                var question = i18n.t("articles.confirmActivate", [row.version]);
 
                 return window.confirm(question) ? self.activateVersion(row.version) : Promise.resolve();
             };

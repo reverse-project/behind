@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/galleries", "models/newsmeta", "models/managedlist"], function (ko, session, galleries, meta, createManagedList) {
+define(["ko", "models/session", "models/galleries", "models/newsmeta", "models/managedlist", "models/i18n"], function (ko, session, galleries, meta, createManagedList, i18n) {
     return function GalleryManagerViewModel() {
         var self = this;
 
@@ -24,18 +24,20 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta", "models/m
                 stamp: meta.stamp(item),
                 thumbnailUrl: item.thumbnailUrl,
                 hasThumbnail: !!item.thumbnailUrl,
-                count: item.itemCount === 1 ? "1 image" : item.itemCount + " images",
+                count: galleries.imageCountLabel(item.itemCount),
                 isDeleted: item.isDeleted,
                 status: item.status,
                 isDraft: item.status === "draft",
                 isPublished: item.status === "published",
                 hasNewerDraft: item.hasNewerDraft,
-                version: "Version " + item.latestVersion + ", live: " + (item.activeVersion === null ? "none" : item.activeVersion),
+                version: ko.pureComputed(function () {
+                    return i18n.t("gallerymanager.version", [item.latestVersion, item.activeVersion === null ? i18n.t("gallerymanager.noLiveVersion") : item.activeVersion]);
+                }),
                 href: "#/manage/galleries/" + item.id
             };
 
             row.remove = function () {
-                if (!window.confirm("Delete " + row.title + "? It stops being shown and can be restored by a developer.")) {
+                if (!window.confirm(i18n.t("gallerymanager.confirmDelete", [row.title]))) {
                     return Promise.resolve();
                 }
 
@@ -49,7 +51,7 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta", "models/m
                 });
             };
             row.hardDelete = function () {
-                if (!window.confirm("Permanently delete " + row.title + " with all its versions? This cannot be undone.")) {
+                if (!window.confirm(i18n.t("gallerymanager.confirmHardDelete", [row.title]))) {
                     return Promise.resolve();
                 }
 

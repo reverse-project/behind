@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/pager"], function (ko, auth, session, createPager) {
+define(["ko", "models/auth", "models/session", "models/pager", "models/i18n"], function (ko, auth, session, createPager, i18n) {
     var pageSize = 20;
     var defaultRangeDays = 7;
 
@@ -12,6 +12,59 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
         Moved: "text-bg-secondary",
         ImpersonationStarted: "text-bg-warning",
         ImpersonationEnded: "text-bg-warning"
+    };
+
+    var actionKeys = {
+        Created: "audit.actions.Created",
+        Updated: "audit.actions.Updated",
+        Deleted: "audit.actions.Deleted",
+        HardDeleted: "audit.actions.HardDeleted",
+        Restored: "audit.actions.Restored",
+        ChangeOwnership: "audit.actions.ChangeOwnership",
+        Moved: "audit.actions.Moved",
+        ImpersonationStarted: "audit.actions.ImpersonationStarted",
+        ImpersonationEnded: "audit.actions.ImpersonationEnded"
+    };
+
+    var entityKeys = {
+        HumanUser: "audit.entities.HumanUser",
+        User: "audit.entities.User",
+        UserRole: "audit.entities.UserRole",
+        Role: "audit.entities.Role",
+        Grant: "audit.entities.Grant",
+        Restriction: "audit.entities.Restriction",
+        Email: "audit.entities.Email",
+        Password: "audit.entities.Password",
+        ValidSession: "audit.entities.ValidSession",
+        Session: "audit.entities.Session",
+        UserAgent: "audit.entities.UserAgent",
+        MagicLink: "audit.entities.MagicLink",
+        WallOfShameEntry: "audit.entities.WallOfShameEntry",
+        Site: "audit.entities.Site",
+        News: "audit.entities.News",
+        NewsCategory: "audit.entities.NewsCategory",
+        NewsComment: "audit.entities.NewsComment",
+        Article: "audit.entities.Article",
+        ArticleCategory: "audit.entities.ArticleCategory",
+        Menu: "audit.entities.Menu",
+        MenuItem: "audit.entities.MenuItem",
+        Gallery: "audit.entities.Gallery",
+        GalleryItem: "audit.entities.GalleryItem",
+        VfsFile: "audit.entities.VfsFile",
+        DownloadFolder: "audit.entities.DownloadFolder",
+        Download: "audit.entities.Download"
+    };
+
+    var known = function (keys, name) {
+        return ko.pureComputed(function () {
+            return i18n.tOr(keys[name], name);
+        });
+    };
+
+    var shown = function (value) {
+        return ko.pureComputed(function () {
+            return value === null ? i18n.t("audit.none") : value;
+        });
     };
 
     var pad = function (number) {
@@ -34,21 +87,23 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
 
     var present = function (item) {
         return {
-            timestamp: new Date(item.timestamp).toLocaleString(),
+            timestamp: ko.pureComputed(function () {
+                return i18n.dateTime(item.timestamp);
+            }),
             actor: item.actor.label,
             actorEmails: item.actor.emails.join(", "),
             hasBehalfOf: item.onBehalfOf !== null,
             behalfOf: item.onBehalfOf ? item.onBehalfOf.label : "",
-            action: item.action,
+            action: known(actionKeys, item.action),
             actionClass: actionClasses[item.action] || "text-bg-secondary",
-            entityName: item.entityName,
+            entityName: known(entityKeys, item.entityName),
             entityKey: item.entityKey,
             entityLabel: item.entityLabel,
             changes: item.changes.map(function (change) {
                 return {
                     property: change.property,
-                    oldValue: change.oldValue === null ? "(none)" : change.oldValue,
-                    newValue: change.newValue === null ? "(none)" : change.newValue
+                    oldValue: shown(change.oldValue),
+                    newValue: shown(change.newValue)
                 };
             })
         };
@@ -71,8 +126,18 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
         self.search = ko.observable("");
         self.oldestFirst = ko.observable(false);
         self.orders = [
-            { label: "Newest first", oldestFirst: false },
-            { label: "Oldest first", oldestFirst: true }
+            {
+                label: ko.pureComputed(function () {
+                    return i18n.t("audit.newestFirst");
+                }),
+                oldestFirst: false
+            },
+            {
+                label: ko.pureComputed(function () {
+                    return i18n.t("audit.oldestFirst");
+                }),
+                oldestFirst: true
+            }
         ];
         self.entries = ko.observableArray([]);
         self.pager = createPager(function () {
@@ -103,7 +168,7 @@ define(["ko", "models/auth", "models/session", "models/pager"], function (ko, au
 
             if (!self.hasValidRange()) {
                 self.entries([]);
-                self.message("Choose a start date that is not after the end date.");
+                self.message(i18n.t("audit.invalidRange"));
                 return Promise.resolve();
             }
 

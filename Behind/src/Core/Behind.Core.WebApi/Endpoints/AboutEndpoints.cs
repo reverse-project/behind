@@ -1,3 +1,4 @@
+using Behind.Common.WebApi.Infrastructure.Localization;
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +14,10 @@ public static class AboutEndpoints
                 Title = configuration.SiteSetting(nameof(Site.Title)) is { Length: > 0 } title
                     ? title
                     : AboutResponse.ProductName,
-                Copyright = configuration.SiteSetting(nameof(Site.Copyright)) ?? string.Empty
+                Copyright = configuration.SiteSetting(nameof(Site.Copyright)) ?? string.Empty,
+                DefaultLocale = configuration.SiteSetting(nameof(Site.DefaultLocale)) is { Length: > 0 } locale
+                    ? locale
+                    : LocaleCatalog.Fallback
             }
         );
 

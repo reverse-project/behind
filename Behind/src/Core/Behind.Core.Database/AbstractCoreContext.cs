@@ -46,6 +46,7 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
         UserConfiguration.ApplyHumanUser(modelBuilder);
         UserConfiguration.ApplyUserRoles(modelBuilder);
         UserConfiguration.ApplyUserAccess(modelBuilder);
+        UserConfiguration.ApplyUserSettings(modelBuilder);
         RoleConfiguration.ApplyRoleGrants(modelBuilder);
         RoleConfiguration.ApplyRoleRestrictions(modelBuilder);
         MenuItemConfiguration.ApplyMenuItemRoles(modelBuilder);

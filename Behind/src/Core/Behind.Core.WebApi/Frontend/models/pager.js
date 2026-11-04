@@ -1,4 +1,4 @@
-define(["ko"], function (ko) {
+define(["ko", "models/i18n"], function (ko, i18n) {
     var defaultVisiblePages = 5;
 
     return function createPager(onChange, visiblePages) {
@@ -42,7 +42,7 @@ define(["ko"], function (ko) {
             return numbers;
         });
         pager.label = ko.pureComputed(function () {
-            return "Page " + pager.page() + " of " + Math.max(pager.pageCount(), 1) + " (" + pager.total() + " total)";
+            return i18n.t("pager.summary", [pager.page(), Math.max(pager.pageCount(), 1), pager.total()]);
         });
         pager.first = function () {
             return moveTo(1);

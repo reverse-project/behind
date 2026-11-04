@@ -1,6 +1,6 @@
 define(["models/http"], function (http) {
     var unknownVersion = "";
-    var unknownSite = { title: "", copyright: "" };
+    var unknownSite = { title: "", copyright: "", defaultLocale: "" };
 
     var load = function (url, pick, fallback) {
         return http.get(url).then(function (response) {
@@ -25,8 +25,12 @@ define(["models/http"], function (http) {
 
         loadSite: function () {
             return load("/about", function (data) {
-                return { title: data.title, copyright: data.copyright };
+                return { title: data.title, copyright: data.copyright, defaultLocale: data.defaultLocale };
             }, unknownSite);
+        },
+
+        loadLocales: function () {
+            return loadList("/locales");
         },
 
         loadChangelog: function () {

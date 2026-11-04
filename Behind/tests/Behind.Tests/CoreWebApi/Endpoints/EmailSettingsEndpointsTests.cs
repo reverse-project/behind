@@ -41,7 +41,7 @@ public sealed class EmailSettingsEndpointsTests : IDisposable
         File.WriteAllText(PathOf("backend.json"), """{ "A": 1 }""");
 
         var response = Assert.IsType<JsonHttpResult<SettingsResponse>>(
-            await SettingsEndpoints.Get(Catalog, Security(), CancellationToken.None)).Value!;
+            await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(), CancellationToken.None)).Value!;
 
         var email = response.Files.Single(file => file.Name == "email.json");
         Assert.Equal("email", email.Editor);
@@ -137,7 +137,7 @@ public sealed class EmailSettingsEndpointsTests : IDisposable
                 ["Email:Provider"] = System.Text.Json.JsonDocument.Parse("\"Smtp\"").RootElement.Clone()
             });
 
-        var result = await SettingsEndpoints.Update("email.json", request, Catalog, Security(), _logger, CancellationToken.None);
+        var result = await SettingsEndpoints.Update("email.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None);
 
         Assert.IsType<NotFound>(result);
         Assert.Equal("Logger", (string)Email()["Provider"]!);

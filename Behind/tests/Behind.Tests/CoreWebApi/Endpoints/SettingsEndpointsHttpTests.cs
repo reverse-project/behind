@@ -39,6 +39,7 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddSingleton(ConfigurationFileCatalog.For(_directory));
+        builder.Services.AddSingleton(TestLocales.Embedded);
         builder.Services.AddSingleton(Options.Create(new SecurityConfiguration(false, None, None, None)));
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<IMagicLinkSettingsStore>(new MagicLinkSettingsStore(None));

@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/access", "models/managedlist"], function (ko, auth, session, access, createManagedList) {
+define(["ko", "models/auth", "models/session", "models/access", "models/managedlist", "models/i18n"], function (ko, auth, session, access, createManagedList, i18n) {
     return function RolesViewModel() {
         var self = this;
 
@@ -42,7 +42,7 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
                 });
             };
             row.remove = function () {
-                if (!window.confirm("Delete the " + row.name + " role? Users lose the access it gives.")) {
+                if (!window.confirm(i18n.t("roles.confirmDelete", [row.name]))) {
                     return Promise.resolve();
                 }
 
@@ -56,7 +56,7 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
                 });
             };
             row.hardDelete = function () {
-                if (!window.confirm("Permanently delete the " + row.name + " role? This cannot be undone.")) {
+                if (!window.confirm(i18n.t("roles.confirmHardDelete", [row.name]))) {
                     return Promise.resolve();
                 }
 

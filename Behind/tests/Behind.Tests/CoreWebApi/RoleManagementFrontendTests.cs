@@ -38,7 +38,7 @@ public class RoleManagementFrontendTests
 
         Assert.Contains("\"#/roles\": \"controllers/roles\"", app);
         Assert.Contains("ko.components.register(\"access-editor\", { require: \"components/accesseditor\" })", app);
-        Assert.Contains("name: \"Roles\", icon: \"fa-user-shield\", href: \"#/roles\", allowed: canManageRoles", administration);
+        Assert.Contains("name: \"administration.pages.roles\", icon: \"fa-user-shield\", href: \"#/roles\", allowed: canManageRoles", administration);
         Assert.Contains("session.hasGrant(\"Role.Manage\")", administration);
     }
 

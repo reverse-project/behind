@@ -9,7 +9,10 @@ public sealed record SettingsFieldResponse(
     string Value,
     bool Sensitive,
     bool Editable,
-    string? Action);
+    string? Action,
+    IReadOnlyList<SettingsOption>? Options = null);
+
+public sealed record SettingsOption(string Value, string Label);
 
 public sealed record SettingsFileResponse(string Name, IReadOnlyList<SettingsFieldResponse> Fields, string? Editor = null);
 

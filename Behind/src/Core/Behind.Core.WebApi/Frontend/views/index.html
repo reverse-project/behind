@@ -1,6 +1,6 @@
 <section>
-    <h1 class="mb-3">Welcome</h1>
-    <p data-bind="visible: isSignedIn">You are signed in.</p>
-    <p data-bind="visible: !isSignedIn()">You are not signed in. <a href="#/sign-in">Sign in</a> or <a href="#/sign-up">create an account</a>.</p>
-    <button type="button" class="btn btn-outline-secondary" data-bind="visible: isSignedIn, click: signOut">Sign out</button>
+    <h1 class="mb-3" data-bind="t: 'home.title'">Welcome</h1>
+    <p data-bind="visible: isSignedIn, t: 'home.signedIn'">You are signed in.</p>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'home.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'home.or'">or</span> <a href="#/sign-up" data-bind="t: 'home.createAccount'">create an account</a>.</p>
+    <button type="button" class="btn btn-outline-secondary" data-bind="visible: isSignedIn, click: signOut, t: 'app.signOut'">Sign out</button>
 </section>

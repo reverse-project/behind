@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/news", "models/managedlist"], function (ko, session, news, createManagedList) {
+define(["ko", "models/session", "models/news", "models/managedlist", "models/i18n"], function (ko, session, news, createManagedList, i18n) {
     return function NewsCategoriesViewModel() {
         var self = this;
 
@@ -27,7 +27,7 @@ define(["ko", "models/session", "models/news", "models/managedlist"], function (
         });
 
         self.heading = ko.pureComputed(function () {
-            return self.isEditing() ? "Edit category" : "New category";
+            return self.isEditing() ? i18n.t("content.editCategory") : i18n.t("content.newCategory");
         });
 
         self.hasHeaderImage = ko.pureComputed(function () {
@@ -60,7 +60,7 @@ define(["ko", "models/session", "models/news", "models/managedlist"], function (
                 self.uploadMessage("");
             };
             row.remove = function () {
-                if (!window.confirm("Delete the " + row.name + " category? Its news stay, without a category.")) {
+                if (!window.confirm(i18n.t("news.confirmDeleteCategory", [row.name]))) {
                     return Promise.resolve();
                 }
 
@@ -74,7 +74,7 @@ define(["ko", "models/session", "models/news", "models/managedlist"], function (
                 });
             };
             row.hardDelete = function () {
-                if (!window.confirm("Permanently delete the " + row.name + " category? This cannot be undone.")) {
+                if (!window.confirm(i18n.t("content.confirmHardDeleteCategory", [row.name]))) {
                     return Promise.resolve();
                 }
 

@@ -1,8 +1,8 @@
-define(["ko", "models/auth"], function (ko, auth) {
+define(["ko", "models/auth", "models/i18n"], function (ko, auth, i18n) {
     return function ConfirmEmailViewModel(context) {
         var self = this;
 
-        self.message = ko.observable("Confirming your email...");
+        self.message = ko.observable(i18n.t("confirmemail.confirming"));
         self.failed = ko.observable(false);
         self.confirmed = ko.observable(false);
 

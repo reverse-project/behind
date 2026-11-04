@@ -2,10 +2,10 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
     var sessionExpired = results.sessionExpired;
 
     var outcome = results.create({
-        "unknown-category": "The selected category no longer exists. Choose another one.",
-        "version-conflict": "The article was changed at the same time by someone else. Reload it and try again.",
-        "name-taken": "Another category already uses this name. Choose a different one.",
-        "unknown-image": "The header image could not be found. Upload it again."
+        "unknown-category": "content.error.unknownCategory",
+        "version-conflict": "articles.error.versionConflict",
+        "name-taken": "content.error.nameTaken",
+        "unknown-image": "content.error.unknownImage"
     });
 
     var failure = outcome.failure;
@@ -13,73 +13,73 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
     var saved = outcome.saved;
 
     var publicFailures = {
-        404: "This article does not exist."
+        404: "articles.error.doesNotExist"
     };
 
     var readFailures = {
         401: sessionExpired,
-        403: "You need article access to see articles.",
-        404: "This article no longer exists."
+        403: "articles.error.readForbidden",
+        404: "articles.error.gone"
     };
 
     var writeFailures = {
-        400: "Enter a title for the article.",
+        400: "articles.error.titleRequired",
         401: sessionExpired,
-        403: "You are not allowed to change articles.",
-        404: "This article no longer exists.",
-        409: "The article could not be saved."
+        403: "articles.error.writeForbidden",
+        404: "articles.error.gone",
+        409: "articles.error.saveFailed"
     };
 
     var removeFailures = {
         401: sessionExpired,
-        403: "You are not allowed to delete articles.",
-        404: "This article no longer exists."
+        403: "articles.error.deleteForbidden",
+        404: "articles.error.gone"
     };
 
     var deletedReadFailures = {
         401: sessionExpired,
-        403: "You need developer access to see deleted articles."
+        403: "articles.error.developerRead"
     };
 
     var deletedActionFailures = {
         401: sessionExpired,
-        403: "You need developer access to restore or permanently delete articles.",
-        404: "This article is not deleted.",
-        409: "The article could not be changed."
+        403: "articles.error.developerAction",
+        404: "articles.error.notDeleted",
+        409: "articles.error.changeFailed"
     };
 
     var categoryWriteFailures = {
-        400: "Enter a name for the category.",
+        400: "content.error.categoryNameRequired",
         401: sessionExpired,
-        403: "You are not allowed to change categories.",
-        404: "This category no longer exists.",
-        409: "The category could not be saved."
+        403: "content.error.categoryWriteForbidden",
+        404: "content.error.categoryGone",
+        409: "content.error.categorySaveFailed"
     };
 
     var categoryRemoveFailures = {
         401: sessionExpired,
-        403: "You are not allowed to delete categories.",
-        404: "This category no longer exists."
+        403: "content.error.categoryDeleteForbidden",
+        404: "content.error.categoryGone"
     };
 
     var categoryDeletedActionFailures = {
         401: sessionExpired,
-        403: "You need developer access to restore or permanently delete categories.",
-        404: "This category is not deleted.",
-        409: "The category could not be changed. A deleted category cannot come back while another uses its name."
+        403: "content.error.categoryDeveloperAction",
+        404: "content.error.categoryNotDeleted",
+        409: "content.error.categoryChangeFailed"
     };
 
     var categoryDeletedReadFailures = {
         401: sessionExpired,
-        403: "You need developer access to see deleted categories."
+        403: "content.error.categoryDeveloperRead"
     };
 
     var imageFailures = {
-        400: "Choose an image to upload.",
+        400: "content.error.imageRequired",
         401: sessionExpired,
-        403: "You are not allowed to upload images.",
-        413: "The image is too large. Choose a smaller one.",
-        415: "Only PNG, JPEG, GIF and WebP images can be uploaded."
+        403: "content.error.imageForbidden",
+        413: "content.error.imageTooLarge",
+        415: "content.error.imageType"
     };
 
     var draft = function (fields) {
@@ -142,37 +142,37 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
 
         create: function (fields) {
             return http.post("/articles", draft(fields)).then(function (response) {
-                return saved(response, "The article was saved.", writeFailures);
+                return saved(response, "articles.saved", writeFailures);
             });
         },
 
         saveVersion: function (id, fields) {
             return http.post("/articles/" + id + "/versions", draft(fields)).then(function (response) {
-                return saved(response, "A new version was saved.", writeFailures);
+                return saved(response, "content.versionSaved", writeFailures);
             });
         },
 
         activate: function (id, version) {
             return http.post("/articles/" + id + "/versions/" + version + "/activate").then(function (response) {
-                return saved(response, "The version is now live.", writeFailures);
+                return saved(response, "content.versionLive", writeFailures);
             });
         },
 
         remove: function (id) {
             return http.post("/articles/" + id + "/delete").then(function (response) {
-                return saved(response, "The article was deleted.", removeFailures);
+                return saved(response, "articles.deleted", removeFailures);
             });
         },
 
         restore: function (id) {
             return http.post("/articles/" + id + "/restore").then(function (response) {
-                return saved(response, "The article was restored.", deletedActionFailures);
+                return saved(response, "articles.restored", deletedActionFailures);
             });
         },
 
         hardDelete: function (id) {
             return http.post("/articles/" + id + "/hard/delete").then(function (response) {
-                return saved(response, "The article was permanently deleted.", deletedActionFailures);
+                return saved(response, "articles.permanentlyDeleted", deletedActionFailures);
             });
         },
 
@@ -190,31 +190,31 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
 
         createCategory: function (fields) {
             return http.post("/articles/categories", categoryDraft(fields)).then(function (response) {
-                return saved(response, "The category was saved.", categoryWriteFailures);
+                return saved(response, "content.categorySaved", categoryWriteFailures);
             });
         },
 
         saveCategory: function (id, fields) {
             return http.post("/articles/categories/" + id, categoryDraft(fields)).then(function (response) {
-                return saved(response, "The category was saved.", categoryWriteFailures);
+                return saved(response, "content.categorySaved", categoryWriteFailures);
             });
         },
 
         removeCategory: function (id) {
             return http.post("/articles/categories/" + id + "/delete").then(function (response) {
-                return saved(response, "The category was deleted.", categoryRemoveFailures);
+                return saved(response, "content.categoryDeleted", categoryRemoveFailures);
             });
         },
 
         restoreCategory: function (id) {
             return http.post("/articles/categories/" + id + "/restore").then(function (response) {
-                return saved(response, "The category was restored.", categoryDeletedActionFailures);
+                return saved(response, "content.categoryRestored", categoryDeletedActionFailures);
             });
         },
 
         hardDeleteCategory: function (id) {
             return http.post("/articles/categories/" + id + "/hard/delete").then(function (response) {
-                return saved(response, "The category was permanently deleted.", categoryDeletedActionFailures);
+                return saved(response, "content.categoryPermanentlyDeleted", categoryDeletedActionFailures);
             });
         },
 

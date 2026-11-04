@@ -35,7 +35,7 @@ define(["ko", "models/galleries", "models/newsmeta"], function (ko, galleries, m
         });
 
         self.count = ko.pureComputed(function () {
-            return self.images().length === 1 ? "1 image" : self.images().length + " images";
+            return galleries.imageCount(self.images().length);
         });
 
         self.selected = ko.pureComputed(function () {

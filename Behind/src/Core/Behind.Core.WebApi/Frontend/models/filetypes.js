@@ -1,4 +1,4 @@
-define(function () {
+define(["models/i18n"], function (i18n) {
     var unknown = "fa-file";
 
     var icons = {
@@ -29,7 +29,7 @@ define(function () {
         { prefix: "video/", icon: "fa-file-video" }
     ];
 
-    var units = ["B", "KB", "MB", "GB", "TB"];
+    var units = ["downloads.unit.b", "downloads.unit.kb", "downloads.unit.mb", "downloads.unit.gb", "downloads.unit.tb"];
 
     var extensionOf = function (fileName) {
         var name = String(fileName || "");
@@ -65,7 +65,9 @@ define(function () {
                 unit++;
             }
 
-            return (unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10) + " " + units[unit];
+            var rounded = unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
+
+            return rounded.toLocaleString(i18n.locale()) + " " + i18n.t(units[unit]);
         }
     };
 });

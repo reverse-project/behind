@@ -1,9 +1,13 @@
-define(["models/http", "models/results", "models/paging"], function (http, results, pagination) {
+define(["ko", "models/http", "models/results", "models/paging", "models/i18n"], function (ko, http, results, pagination, i18n) {
     var sessionExpired = results.sessionExpired;
 
+    var imageCount = function (count) {
+        return count === 1 ? i18n.t("galleries.imageCount.one") : i18n.t("galleries.imageCount.other", [count]);
+    };
+
     var outcome = results.create({
-        "unknown-image": "One of the images could not be found. Upload it again.",
-        "version-conflict": "The gallery was changed at the same time by someone else. Reload it and try again."
+        "unknown-image": "galleries.error.unknownImage",
+        "version-conflict": "galleries.error.versionConflict"
     });
 
     var failure = outcome.failure;
@@ -11,60 +15,60 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
     var saved = outcome.saved;
 
     var publicFailures = {
-        404: "This gallery does not exist."
+        404: "galleries.error.notFound"
     };
 
     var readFailures = {
         401: sessionExpired,
-        403: "You need gallery access to see galleries.",
-        404: "This gallery no longer exists."
+        403: "galleries.error.readDenied",
+        404: "galleries.error.gone"
     };
 
     var writeFailures = {
-        400: "Enter a title for the gallery.",
+        400: "galleries.error.titleRequired",
         401: sessionExpired,
-        403: "You are not allowed to change galleries.",
-        404: "This gallery no longer exists.",
-        409: "The gallery could not be saved."
+        403: "galleries.error.writeDenied",
+        404: "galleries.error.gone",
+        409: "galleries.error.notSaved"
     };
 
     var removeFailures = {
         401: sessionExpired,
-        403: "You are not allowed to delete galleries.",
-        404: "This gallery no longer exists."
+        403: "galleries.error.deleteDenied",
+        404: "galleries.error.gone"
     };
 
     var deletedReadFailures = {
         401: sessionExpired,
-        403: "You need developer access to see deleted galleries."
+        403: "galleries.error.deletedReadDenied"
     };
 
     var deletedActionFailures = {
         401: sessionExpired,
-        403: "You need developer access to restore or permanently delete galleries.",
-        404: "This gallery is not deleted.",
-        409: "The gallery could not be changed."
+        403: "galleries.error.restoreDenied",
+        404: "galleries.error.notDeleted",
+        409: "galleries.error.notChanged"
     };
 
     var uploadFailures = {
-        400: "Choose the images to upload.",
+        400: "galleries.error.chooseImages",
         401: sessionExpired,
-        403: "You are not allowed to upload images.",
-        413: "The images are too large. Upload fewer or smaller images at a time."
+        403: "galleries.error.uploadDenied",
+        413: "galleries.error.imagesTooLarge"
     };
 
     var thumbnailFailures = {
-        400: "Choose an image to upload.",
+        400: "galleries.error.chooseImage",
         401: sessionExpired,
-        403: "You are not allowed to upload images.",
-        413: "The image is too large. Choose a smaller one.",
-        415: "Only PNG, JPEG, GIF and WebP images can be uploaded."
+        403: "galleries.error.uploadDenied",
+        413: "galleries.error.imageTooLarge",
+        415: "galleries.error.imageType"
     };
 
     var fileErrors = {
-        unsupported: "Only PNG, JPEG, GIF and WebP images can be uploaded.",
-        "too-large": "The image is too large.",
-        unreadable: "The image could not be read."
+        unsupported: "galleries.error.imageType",
+        "too-large": "galleries.error.tooLarge",
+        unreadable: "galleries.error.unreadable"
     };
 
     var draft = function (fields) {
@@ -94,12 +98,20 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
 
     var uploaded = function (image) {
         return image.error
-            ? { ok: false, fileName: image.fileName, message: fileErrors[image.error] || "The image could not be uploaded." }
+            ? { ok: false, fileName: image.fileName, message: i18n.t(fileErrors[image.error] || "galleries.error.uploadFailed") }
             : { ok: true, fileName: image.fileName, image: image };
     };
 
     return {
         uploadBatchSize: 5,
+
+        imageCount: imageCount,
+
+        imageCountLabel: function (count) {
+            return ko.pureComputed(function () {
+                return imageCount(count);
+            });
+        },
 
         list: function (query) {
             return http.get(listing(query)).then(function (response) {
@@ -133,37 +145,37 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
 
         create: function (fields) {
             return http.post("/galleries", draft(fields)).then(function (response) {
-                return saved(response, fields.publish ? "The gallery was published." : "The draft was saved.", writeFailures);
+                return saved(response, fields.publish ? "galleries.saved.published" : "galleries.saved.draft", writeFailures);
             });
         },
 
         saveVersion: function (id, fields) {
             return http.post("/galleries/" + id + "/versions", draft(fields)).then(function (response) {
-                return saved(response, fields.publish ? "The gallery was published." : "A new version was saved.", writeFailures);
+                return saved(response, fields.publish ? "galleries.saved.published" : "galleries.saved.version", writeFailures);
             });
         },
 
         activate: function (id, version) {
             return http.post("/galleries/" + id + "/versions/" + version + "/activate").then(function (response) {
-                return saved(response, "The version is now live.", writeFailures);
+                return saved(response, "galleries.saved.live", writeFailures);
             });
         },
 
         remove: function (id) {
             return http.post("/galleries/" + id + "/delete").then(function (response) {
-                return saved(response, "The gallery was deleted.", removeFailures);
+                return saved(response, "galleries.saved.deleted", removeFailures);
             });
         },
 
         restore: function (id) {
             return http.post("/galleries/" + id + "/restore").then(function (response) {
-                return saved(response, "The gallery was restored.", deletedActionFailures);
+                return saved(response, "galleries.saved.restored", deletedActionFailures);
             });
         },
 
         hardDelete: function (id) {
             return http.post("/galleries/" + id + "/hard/delete").then(function (response) {
-                return saved(response, "The gallery was permanently deleted.", deletedActionFailures);
+                return saved(response, "galleries.saved.hardDeleted", deletedActionFailures);
             });
         },
 

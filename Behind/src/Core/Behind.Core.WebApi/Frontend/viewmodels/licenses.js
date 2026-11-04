@@ -1,8 +1,8 @@
-define(["ko", "models/about"], function (ko, about) {
+define(["ko", "models/about", "models/i18n"], function (ko, about, i18n) {
     var scopes = [
-        { key: "frontend", title: "Frontend libraries", description: "Bundled with the web interface and delivered to your browser." },
-        { key: "server", title: "Server packages", description: "NuGet packages used by the Behind server, including transitive dependencies." },
-        { key: "development", title: "Development and test tools", description: "Used to build, test and orchestrate Behind; not part of the running application." }
+        { key: "frontend", title: "licenses.scopes.frontend.title", description: "licenses.scopes.frontend.description" },
+        { key: "server", title: "licenses.scopes.server.title", description: "licenses.scopes.server.description" },
+        { key: "development", title: "licenses.scopes.development.title", description: "licenses.scopes.development.description" }
     ];
 
     var byName = function (left, right) {
@@ -24,8 +24,12 @@ define(["ko", "models/about"], function (ko, about) {
 
     var presentScope = function (licenses, scope) {
         return {
-            title: scope.title,
-            description: scope.description,
+            title: ko.pureComputed(function () {
+                return i18n.t(scope.title);
+            }),
+            description: ko.pureComputed(function () {
+                return i18n.t(scope.description);
+            }),
             licenses: licenses
                 .filter(function (license) {
                     return license.scope === scope.key;

@@ -1,9 +1,5 @@
-define(function () {
-    var anonymous = "Anonymous";
-
-    var formatDate = function (value) {
-        return value ? new Date(value).toLocaleString() : "";
-    };
+define(["models/i18n"], function (i18n) {
+    var formatDate = i18n.dateTime;
 
     var pad = function (value) {
         return value < 10 ? "0" + value : String(value);
@@ -25,17 +21,29 @@ define(function () {
             return value ? new Date(value).toISOString() : null;
         },
         author: function (name) {
-            return (name || "").trim() || anonymous;
+            return (name || "").trim() || i18n.t("content.anonymous");
         },
         stamp: function (item) {
             if (item.updatedAt) {
-                return "Updated " + formatDate(item.updatedAt);
+                return i18n.t("content.updated", [formatDate(item.updatedAt)]);
             }
 
-            return item.createdAt ? "Created " + formatDate(item.createdAt) : "";
+            return item.createdAt ? i18n.t("content.created", [formatDate(item.createdAt)]) : "";
         },
         created: function (item) {
-            return item.createdAt ? "Created " + formatDate(item.createdAt) : "";
+            return item.createdAt ? i18n.t("content.created", [formatDate(item.createdAt)]) : "";
+        },
+        schedule: function (item) {
+            if (!item.startAt) {
+                return "";
+            }
+
+            return item.endAt
+                ? i18n.t("news.scheduleStartsEnds", [formatDate(item.startAt), formatDate(item.endAt)])
+                : i18n.t("news.scheduleStarts", [formatDate(item.startAt)]);
+        },
+        version: function (item) {
+            return i18n.t("content.versionSummary", [item.latestVersion, item.activeVersion === null ? i18n.t("content.none") : item.activeVersion]);
         }
     };
 });

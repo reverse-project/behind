@@ -1,0 +1,24 @@
+{
+  "Security": {
+    "EmailConfirmation": true,
+    "SecretKey": "totp://HCNS2SKZIOTMWJXFKFPFUHOF4KFUYUDQ",
+    "Jwt": {
+      "Issuer": "Behind Backend",
+      "Audience": "Behind Frontend",
+      "SigningKey": "YZujFbkMb3hoaku-cZQvfZ0riYW3SWP8"
+    },
+    "DataProtection": {
+      "KeysPath": "/workspaces/behind/Data/fse/DataProtection-Keys",
+      "CertificatePath": "/workspaces/behind/Data/fse/dataprotection.pfx",
+      "CertificatePassword": "change-me-dev-only"
+    },
+    "Elevation": {
+      "Enabled": true,
+      "DeveloperSecretKey": "totp://HYHLPKNZAYMJHUPNYTK25PA5BN7X3QBP"
+    },
+    "MagicLink": {
+      "ActualSecret": "uuid://01a1ac59-c894-7034-a7dd-08c9d3016a5a",
+      "OldSecret": "uuid://6ffbcbf0-209b-4f15-8e2d-9e05e45623f4"
+    }
+  }
+}

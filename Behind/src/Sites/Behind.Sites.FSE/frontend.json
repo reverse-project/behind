@@ -1,0 +1,23 @@
+{
+  "Frontend": {
+    "Url": "http://localhost:5001/",
+    "Site": {
+      "Title": "F\u00E9nyeslitke Sportegyes\u00FClet",
+      "Copyright": "\u00A9 2026 F\u00E9nyeslitke Sportegyes\u00FClet",
+      "DefaultLocale": "hu-HU",
+      "ContactEmail": "info@fenyeslitkese.hu"
+    },
+    "Sites": {
+      "IndexSlug": "#/kezdolap",
+      "MaxImageBytes": 5242880
+    },
+    "Carousels": {
+      "MaxSlides": 20,
+      "MinIntervalSeconds": 2,
+      "MaxIntervalSeconds": 60,
+      "IntervalSeconds": 5,
+      "MaxCaptionLength": 300,
+      "MaxImageBytes": 5242880
+    }
+  }
+}

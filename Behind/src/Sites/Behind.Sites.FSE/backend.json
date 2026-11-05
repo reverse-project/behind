@@ -1,0 +1,15 @@
+{
+  "Backend": {
+    "DataDirectory": "/workspaces/behind/Data/fse",
+    "Downloads": {
+      "MaxFileBytes": 104857600
+    },
+    "Comments": {
+      "News": true
+    },
+    "Accounts": {
+      "SignIn": false,
+      "SignUp": false
+    }
+  }
+}

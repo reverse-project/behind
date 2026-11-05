@@ -30,6 +30,9 @@
   <Folder Name="/tests/">
     <Project Path="tests/Behind.Tests/Behind.Tests.csproj" />
   </Folder>
+  <Folder Name="/src/Sites/">
+    <Project Path="src/Sites/Behind.Sites.FSE/Behind.Sites.FSE.csproj" />
+  </Folder>
   <Folder Name="/src/Web/">
     <Project Path="src/Web/Behind.Web/Behind.Web.csproj" />
   </Folder>

@@ -98,9 +98,9 @@ public sealed class TwoFactorSignInEndpoints
         ILogger<TwoFactorSignInEndpoints> logger) =>
         WithTicket(request.Ticket, TwoFactorStage.Verify, tickets, logger, async ticket =>
         {
-            var options = Try(() => AssertionOptions.FromJson(ticket.Ceremony))
+            var options = Try(() => AssertionOptions.FromJson(ticket.Ceremony ?? string.Empty))
                 .Run()
-                .Match<Option<AssertionOptions>>(_ => None, parsed => parsed);
+                .Match<Option<AssertionOptions>>(_ => None, parsed => parsed.ToOption());
 
             return await options.Match(
                 () => Task.FromResult(Rejected(logger, ticket, "passkey")),

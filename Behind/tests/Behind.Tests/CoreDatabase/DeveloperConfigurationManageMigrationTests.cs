@@ -91,6 +91,6 @@ public sealed class DeveloperConfigurationManageMigrationTests : IDisposable
             await context.Database.MigrateAsync();
         }
 
-        Assert.Single((await DeveloperGrantNamesAsync()).Where(name => name == ConfigurationManage));
+        Assert.Single(await DeveloperGrantNamesAsync(), name => name == ConfigurationManage);
     }
 }

@@ -115,7 +115,7 @@ public sealed class TwoFactorEnrollmentTests : IDisposable
         Assert.Equal(TwoFactorStage.Setup, ticket.Stage);
         Assert.Equal(MagicLinkFunction.LostPassword, ticket.Function);
         Assert.Equal(user.Id, ticket.UserId);
-        Assert.Equal(CredentialCreateOptions.FromJson(ticket.Ceremony).Challenge, challenge.Options.Challenge);
+        Assert.Equal(CredentialCreateOptions.FromJson(ticket.Ceremony!).Challenge, challenge.Options.Challenge);
         Assert.Equal(user.Id.ToByteArray(), challenge.Options.User.Id);
         Assert.Equal("Ada", challenge.Options.User.DisplayName);
         Assert.Equal("ada@test.com", challenge.Options.User.Name);

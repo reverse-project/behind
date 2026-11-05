@@ -101,8 +101,8 @@ public sealed class PasskeyCeremonies(ILogger<PasskeyCeremonies> logger) : IPass
         new(
             new Fido2Configuration
             {
-                ServerDomain = origin.Host,
-                ServerName = RelyingPartyName,
+                RPID = origin.Host,
+                RPName = RelyingPartyName,
                 Origins = new HashSet<string> { origin.GetLeftPart(UriPartial.Authority) }
             },
             null!);

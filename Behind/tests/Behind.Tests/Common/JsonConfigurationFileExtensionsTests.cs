@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Text.Json.Nodes;
 using Behind.Common.Configuration;
 
@@ -133,6 +134,7 @@ public sealed class JsonConfigurationFileExtensionsTests : IDisposable
     }
 
     [Fact]
+    [SupportedOSPlatform("linux")]
     public async Task SetJsonValuesAsync_DirectoryNotWritable_WritesFileInPlace()
     {
         var file = FileWith("""{ "A": "old" }""");

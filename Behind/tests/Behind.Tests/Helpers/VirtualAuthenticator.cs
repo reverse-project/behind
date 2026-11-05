@@ -54,7 +54,7 @@ public sealed class VirtualAuthenticator : IDisposable
         Counter++;
 
         var clientData = ClientData("webauthn.get", options.Challenge, origin);
-        var authenticatorData = AuthenticatorData(options.RpId, UserPresent | UserVerified, false);
+        var authenticatorData = AuthenticatorData(options.RpId!, UserPresent | UserVerified, false);
         var signature = _key.SignData(
             [.. authenticatorData, .. SHA256.HashData(clientData)],
             HashAlgorithmName.SHA256,

@@ -44,12 +44,13 @@ public sealed class ImpersonationGrantsMigrationTests : IDisposable
         }
     }
 
-    private async Task<List<string>> NamesAsync(string table)
+    private async Task<List<string>> NamesAsync(Func<CoreContextSqlite, IQueryable<string>> names)
     {
         await using var context = CreateContext();
 
-        return await context.Database
-            .SqlQueryRaw<string>($"""SELECT "Name" AS "Value" FROM "{table}" WHERE "Name" LIKE 'Impersonation.%' ORDER BY "Name" """)
+        return await names(context)
+            .Where(name => EF.Functions.Like(name, "Impersonation.%"))
+            .OrderBy(name => name)
             .ToListAsync();
     }
 
@@ -63,8 +64,8 @@ public sealed class ImpersonationGrantsMigrationTests : IDisposable
             await context.Database.MigrateAsync();
         }
 
-        Assert.Equal(["Impersonation.Manage"], await NamesAsync("Grants"));
-        Assert.Equal(["Impersonation.Manage"], await NamesAsync("Restrictions"));
+        Assert.Equal(["Impersonation.Manage"], await NamesAsync(context => context.Grants.Select(grant => grant.Name)));
+        Assert.Equal(["Impersonation.Manage"], await NamesAsync(context => context.Restrictions.Select(restriction => restriction.Name)));
     }
 
     [Fact]

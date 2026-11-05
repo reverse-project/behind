@@ -41,6 +41,6 @@ public sealed class TwoFactorTickets(IDataProtectionProvider provider, TimeProvi
             ? None
             : Try(() => JsonSerializer.Deserialize<TwoFactorTicket>(_protector.Unprotect(token)))
                 .Run()
-                .Match<Option<TwoFactorTicket>>(_ => None, ticket => ticket)
+                .Match<Option<TwoFactorTicket>>(_ => None, ticket => ticket.ToOption())
                 .Where(ticket => ticket.Expires > timeProvider.GetUtcNow());
 }

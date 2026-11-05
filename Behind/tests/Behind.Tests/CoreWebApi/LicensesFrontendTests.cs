@@ -192,6 +192,6 @@ public class LicensesFrontendTests
         var listed = Licenses().Select(license => license.GetProperty("name").GetString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         Assert.NotEmpty(packages);
-        Assert.Empty(packages.Where(package => !listed.Contains(package)));
+        Assert.All(packages, package => Assert.Contains(package, listed));
     }
 }

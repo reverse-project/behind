@@ -203,6 +203,8 @@ public static partial class FunctionalExtensions
     
     extension<T>(T? t) where T : class
     {
+        public Option<T> ToOption() => t is null ? None : Some(t);
+
         public void Null(Action nullAction, Action<T>? notNullAction = null)
         {
             if (t is null)

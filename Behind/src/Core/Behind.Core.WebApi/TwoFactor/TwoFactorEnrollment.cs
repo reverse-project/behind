@@ -110,9 +110,9 @@ public sealed class TwoFactorEnrollment(
         AuthenticatorAttestationRawResponse response,
         CancellationToken cancellationToken = default)
     {
-        var options = Try(() => CredentialCreateOptions.FromJson(ticket.Ceremony))
+        var options = Try(() => CredentialCreateOptions.FromJson(ticket.Ceremony ?? string.Empty))
             .Run()
-            .Match<Option<CredentialCreateOptions>>(_ => None, parsed => parsed);
+            .Match<Option<CredentialCreateOptions>>(_ => None, parsed => parsed.ToOption());
 
         return await options.Match(
             () => Task.FromResult<Option<Enrolled>>(None),

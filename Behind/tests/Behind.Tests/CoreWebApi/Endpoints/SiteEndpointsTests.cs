@@ -3,6 +3,7 @@ using Behind.Tests.Helpers;
 using Behind.Common.Database;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
+using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -14,20 +15,39 @@ public class SiteEndpointsTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
     private static readonly Guid SiteId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid SectionId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+    private static IReadOnlyList<ISiteCommands.SiteSectionDraft>? NoSections =>
+        Arg.Is<IReadOnlyList<ISiteCommands.SiteSectionDraft>?>(sections => sections != null && sections.Count == 0);
 
     private static SiteEndpoints.SaveSiteRequest Request(
         string title = "About us",
         string? slug = null,
         string? content = "<p>hi</p>",
         bool publish = false,
-        bool hideTitle = false) =>
-        new(title, slug, content, publish, hideTitle);
+        bool hideTitle = false,
+        IReadOnlyList<SiteEndpoints.SaveSiteSectionRequest>? sections = null) =>
+        new(title, slug, content, publish, hideTitle, sections);
+
+    private static SiteEndpoints.SaveSiteSectionRequest SectionRequest(
+        SiteSectionTheme theme = SiteSectionTheme.Normal,
+        string? title = "Welcome",
+        string? content = "<p>text</p>",
+        Guid? imageId = null,
+        string? imageAlt = null,
+        SiteSectionImagePosition imagePosition = SiteSectionImagePosition.Left) =>
+        new(theme, title, content, imageId, imageAlt, imagePosition);
+
+    private static ISiteQueries.SiteSectionInfo SectionInfo(
+        SiteSectionTheme theme = SiteSectionTheme.Accented,
+        Option<Guid> imageId = default) =>
+        new(SectionId, theme, "Welcome", "<p>text</p>", imageId, "Alt", SiteSectionImagePosition.Right, 0);
 
     private static ISiteCommands CommandsReturning(SiteSaveResult result)
     {
         var commands = Substitute.For<ISiteCommands>();
-        commands.Create(default!, default!, default!, default, default).ReturnsForAnyArgs(result);
-        commands.SaveVersion(default, default!, default!, default!, default, default).ReturnsForAnyArgs(result);
+        commands.Create(default!, default!, default!, default, default, default, default).ReturnsForAnyArgs(result);
+        commands.SaveVersion(default, default!, default!, default!, default, default, default, default).ReturnsForAnyArgs(result);
         commands.Activate(default!, default).ReturnsForAnyArgs(result);
 
         return commands;
@@ -207,7 +227,34 @@ public class SiteEndpointsTests
         var result = await SiteEndpoints.GetVersion(SiteId, 2, new DefaultHttpContext(), queries);
 
         var body = Assert.IsType<JsonHttpResult<SiteVersionResponse>>(result).Value!;
-        Assert.Equal(new SiteVersionResponse(SiteId, 2, "About", "about", "<p>x</p>", null, Now, true, false), body);
+        Assert.Equal(new SiteVersionResponse(SiteId, 2, "About", "about", "<p>x</p>", null, Now, true, false, []), body with { Sections = [] });
+        Assert.Empty(body.Sections);
+    }
+
+    [Fact]
+    public async Task GetVersion_ReturnsTheSectionsOfTheVersion()
+    {
+        var queries = Substitute.For<ISiteQueries>();
+        var key = new VersionedKey<Guid>(SiteId, 2);
+        var imageId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        queries.FindVersion(key, Arg.Any<CancellationToken>())
+            .Returns(Some(new Site(key, "About", "about", "<p>x</p>", None, Now)));
+        queries.FindSections(key, Arg.Any<CancellationToken>()).Returns([SectionInfo(imageId: Some(imageId))]);
+
+        var result = await SiteEndpoints.GetVersion(SiteId, 2, new DefaultHttpContext(), queries);
+
+        var section = Assert.Single(Assert.IsType<JsonHttpResult<SiteVersionResponse>>(result).Value!.Sections);
+        Assert.Equal(
+            new SiteSectionResponse(
+                SectionId,
+                SiteSectionTheme.Accented,
+                "Welcome",
+                "<p>text</p>",
+                imageId,
+                $"/sites/images/{imageId}",
+                "Alt",
+                SiteSectionImagePosition.Right),
+            section);
     }
 
     [Fact]
@@ -231,7 +278,7 @@ public class SiteEndpointsTests
 
         var body = Assert.IsType<JsonHttpResult<SiteSavedResponse>>(result).Value!;
         Assert.Equal(new SiteSavedResponse(SiteId, 1), body);
-        await commands.Received(1).Create("About us", "about-us", "<p>hi</p>", true, false, Arg.Any<CancellationToken>());
+        await commands.Received(1).Create("About us", "about-us", "<p>hi</p>", true, false, NoSections, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -241,7 +288,7 @@ public class SiteEndpointsTests
 
         await SiteEndpoints.Create(Request(hideTitle: true), new DefaultHttpContext(), commands);
 
-        await commands.Received(1).Create("About us", "about-us", "<p>hi</p>", false, true, Arg.Any<CancellationToken>());
+        await commands.Received(1).Create("About us", "about-us", "<p>hi</p>", false, true, NoSections, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -251,7 +298,7 @@ public class SiteEndpointsTests
 
         await SiteEndpoints.SaveVersion(SiteId, Request(hideTitle: true), new DefaultHttpContext(), commands);
 
-        await commands.Received(1).SaveVersion(SiteId, "About us", "about-us", "<p>hi</p>", false, true, Arg.Any<CancellationToken>());
+        await commands.Received(1).SaveVersion(SiteId, "About us", "about-us", "<p>hi</p>", false, true, NoSections, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -267,13 +314,134 @@ public class SiteEndpointsTests
     }
 
     [Fact]
+    public async Task Create_PassesTheSanitizedSectionsInOrder()
+    {
+        var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 1)));
+        var imageId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var sections = new[]
+        {
+            SectionRequest(SiteSectionTheme.Accented, "  Hero  ", "<p>a</p><script>x</script>", imageId, "  Team  ", SiteSectionImagePosition.Right),
+            SectionRequest(SiteSectionTheme.Normal, null, "<p>b</p>")
+        };
+
+        await SiteEndpoints.Create(Request(sections: sections), new DefaultHttpContext(), commands);
+
+        await commands.Received(1).Create(
+            "About us",
+            "about-us",
+            "<p>hi</p>",
+            false,
+            false,
+            Arg.Is<IReadOnlyList<ISiteCommands.SiteSectionDraft>?>(drafts => drafts!.SequenceEqual(new[]
+            {
+                new ISiteCommands.SiteSectionDraft(SiteSectionTheme.Accented, "Hero", "<p>a</p>", Some(imageId), "Team", SiteSectionImagePosition.Right),
+                new ISiteCommands.SiteSectionDraft(SiteSectionTheme.Normal, string.Empty, "<p>b</p>", None, string.Empty, SiteSectionImagePosition.Left)
+            })),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SaveVersion_PassesTheSections()
+    {
+        var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 2)));
+
+        await SiteEndpoints.SaveVersion(SiteId, Request(sections: [SectionRequest()]), new DefaultHttpContext(), commands);
+
+        await commands.Received(1).SaveVersion(
+            SiteId,
+            "About us",
+            "about-us",
+            "<p>hi</p>",
+            false,
+            false,
+            Arg.Is<IReadOnlyList<ISiteCommands.SiteSectionDraft>?>(drafts => drafts!.Count == 1),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Create_ImageAltWithoutAnImage_IsDropped()
+    {
+        var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 1)));
+
+        await SiteEndpoints.Create(
+            Request(sections: [SectionRequest(imageAlt: "Alt")]),
+            new DefaultHttpContext(),
+            commands);
+
+        await commands.Received(1).Create(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<bool>(),
+            Arg.Any<bool>(),
+            Arg.Is<IReadOnlyList<ISiteCommands.SiteSectionDraft>?>(drafts => drafts![0].ImageAlt == string.Empty),
+            Arg.Any<CancellationToken>());
+    }
+
+    public static TheoryData<SiteEndpoints.SaveSiteSectionRequest> InvalidSections =>
+        new()
+        {
+            SectionRequest(title: "  ", content: null),
+            SectionRequest(title: new string('t', SiteSection.MaxTitleLength + 1)),
+            SectionRequest(content: "<p>" + new string('c', SiteSection.MaxContentLength) + "</p>"),
+            SectionRequest(imageId: Guid.Empty),
+            SectionRequest(imageId: Guid.NewGuid(), imageAlt: new string('a', SiteSection.MaxImageAltLength + 1)),
+            SectionRequest(theme: (SiteSectionTheme)99),
+            SectionRequest(imagePosition: (SiteSectionImagePosition)99)
+        };
+
+    [Theory]
+    [MemberData(nameof(InvalidSections))]
+    public async Task Create_WithAnInvalidSection_ReturnsBadRequest(SiteEndpoints.SaveSiteSectionRequest section)
+    {
+        var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 1)));
+
+        var result = await SiteEndpoints.Create(Request(sections: [section]), new DefaultHttpContext(), commands);
+
+        Assert.IsType<BadRequest>(result);
+        await commands.DidNotReceiveWithAnyArgs().Create(default!, default!, default!, default, default, default, default);
+    }
+
+    [Fact]
+    public async Task Create_WithTooManySections_ReturnsBadRequest()
+    {
+        var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 1)));
+        var sections = Enumerable.Range(0, Site.MaxSections + 1).Select(_ => SectionRequest()).ToList();
+
+        var result = await SiteEndpoints.Create(Request(sections: sections), new DefaultHttpContext(), commands);
+
+        Assert.IsType<BadRequest>(result);
+    }
+
+    [Fact]
+    public async Task Create_WithTheMostSections_IsAccepted()
+    {
+        var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 1)));
+        var sections = Enumerable.Range(0, Site.MaxSections).Select(_ => SectionRequest()).ToList();
+
+        var result = await SiteEndpoints.Create(Request(sections: sections), new DefaultHttpContext(), commands);
+
+        Assert.IsType<JsonHttpResult<SiteSavedResponse>>(result);
+    }
+
+    [Fact]
+    public async Task Create_UnknownSectionImage_ReturnsBadRequest()
+    {
+        var commands = CommandsReturning(new SiteSaveResult.UnknownImage());
+
+        var result = await SiteEndpoints.Create(Request(), new DefaultHttpContext(), commands);
+
+        Assert.IsType<BadRequest>(result);
+    }
+
+    [Fact]
     public async Task Create_UsesTheGivenSlugNormalized()
     {
         var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 1)));
 
         await SiteEndpoints.Create(Request(slug: "My Custom Slug!"), new DefaultHttpContext(), commands);
 
-        await commands.Received(1).Create("About us", "my-custom-slug", "<p>hi</p>", false, false, Arg.Any<CancellationToken>());
+        await commands.Received(1).Create("About us", "my-custom-slug", "<p>hi</p>", false, false, NoSections, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -283,7 +451,7 @@ public class SiteEndpointsTests
 
         await SiteEndpoints.Create(Request(content: null), new DefaultHttpContext(), commands);
 
-        await commands.Received(1).Create("About us", "about-us", string.Empty, false, false, Arg.Any<CancellationToken>());
+        await commands.Received(1).Create("About us", "about-us", string.Empty, false, false, NoSections, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -297,7 +465,7 @@ public class SiteEndpointsTests
         var result = await SiteEndpoints.Create(Request(title, slug), new DefaultHttpContext(), commands);
 
         Assert.IsType<BadRequest>(result);
-        await commands.DidNotReceiveWithAnyArgs().Create(default!, default!, default!, default);
+        await commands.DidNotReceiveWithAnyArgs().Create(default!, default!, default!, default, default, default, default);
     }
 
     [Fact]
@@ -319,7 +487,7 @@ public class SiteEndpointsTests
         var result = await SiteEndpoints.SaveVersion(SiteId, Request(publish: true), new DefaultHttpContext(), commands);
 
         Assert.Equal(new SiteSavedResponse(SiteId, 4), Assert.IsType<JsonHttpResult<SiteSavedResponse>>(result).Value);
-        await commands.Received(1).SaveVersion(SiteId, "About us", "about-us", "<p>hi</p>", true, false, Arg.Any<CancellationToken>());
+        await commands.Received(1).SaveVersion(SiteId, "About us", "about-us", "<p>hi</p>", true, false, NoSections, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -371,8 +539,24 @@ public class SiteEndpointsTests
 
         Assert.Equal("no-cache", context.Response.Headers.CacheControl);
         Assert.Equal(
-            new PublicSiteResponse(SiteId, "About us", "about-us", "<p>x</p>", Now, false),
-            Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value);
+            new PublicSiteResponse(SiteId, "About us", "about-us", "<p>x</p>", Now, false, []),
+            Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value! with { Sections = [] });
+    }
+
+    [Fact]
+    public async Task GetPublic_ReturnsTheSectionsOfTheActiveVersion()
+    {
+        var queries = Substitute.For<ISiteQueries>();
+        var key = new VersionedKey<Guid>(SiteId, 2);
+        queries.FindActiveBySlug("about-us", Arg.Any<CancellationToken>())
+            .Returns(Some(new Site(key, "About us", "about-us", "<p>x</p>", Some(Now), Now)));
+        queries.FindSections(key, Arg.Any<CancellationToken>()).Returns([SectionInfo(), SectionInfo(SiteSectionTheme.Normal)]);
+
+        var result = await SiteEndpoints.GetPublic("about-us", new DefaultHttpContext(), queries);
+
+        var sections = Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value!.Sections;
+        Assert.Equal([SiteSectionTheme.Accented, SiteSectionTheme.Normal], sections.Select(section => section.Theme));
+        Assert.All(sections, section => Assert.Null(section.ImageUrl));
     }
 
     [Fact]
@@ -413,7 +597,7 @@ public class SiteEndpointsTests
 
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
         Assert.Equal(
-            new SiteSettingsResponse("home-page", 2048),
+            new SiteSettingsResponse("home-page", 2048, Site.MaxSections),
             Assert.IsType<JsonHttpResult<SiteSettingsResponse>>(result).Value);
     }
 
@@ -442,8 +626,8 @@ public class SiteEndpointsTests
 
         Assert.Equal("no-cache", context.Response.Headers.CacheControl);
         Assert.Equal(
-            new PublicSiteResponse(SiteId, "Home", "home", "<p>x</p>", Now, false),
-            Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value);
+            new PublicSiteResponse(SiteId, "Home", "home", "<p>x</p>", Now, false, []),
+            Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value! with { Sections = [] });
     }
 
     [Fact]

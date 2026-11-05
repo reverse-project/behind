@@ -61,7 +61,8 @@ define(["models/http", "models/results"], function (http, results) {
             slug: fields.slug,
             content: fields.content,
             publish: !!fields.publish,
-            hideTitle: !!fields.hideTitle
+            hideTitle: !!fields.hideTitle,
+            sections: fields.sections || []
         };
     };
 

@@ -32,7 +32,7 @@ public static class SiteResponseExtensions
         public Option<string> IndexSlugOption => configuration.IndexSlug.ToSlug(Site.MaxSlugLength);
 
         public SiteSettingsResponse ToResponse() =>
-            new(configuration.IndexSlugOption.Match<string?>(() => null, slug => slug), configuration.ImageLimit);
+            new(configuration.IndexSlugOption.Match<string?>(() => null, slug => slug), configuration.ImageLimit, Site.MaxSections);
     }
 
     extension(ISiteQueries.SiteHistory history)
@@ -57,9 +57,23 @@ public static class SiteResponseExtensions
                 version.PublishedAt.Match(() => true, _ => false));
     }
 
+    extension(ISiteQueries.SiteSectionInfo section)
+    {
+        public SiteSectionResponse ToResponse() =>
+            new(
+                section.Id,
+                section.Theme,
+                section.Title,
+                section.Content,
+                section.ImageId.ToNullable(),
+                section.ImageId.Match<string?>(() => null, imageId => $"{VfsTypes.SiteImageUrl}/{imageId}"),
+                section.ImageAlt,
+                section.ImagePosition);
+    }
+
     extension(Site site)
     {
-        public SiteVersionResponse ToVersionResponse() =>
+        public SiteVersionResponse ToVersionResponse(IReadOnlyList<ISiteQueries.SiteSectionInfo> sections) =>
             new(
                 site.Id.Key,
                 site.Id.Version,
@@ -69,10 +83,18 @@ public static class SiteResponseExtensions
                 site.PublishedAt.ToNullable(),
                 site.CreatedAt,
                 site.IsDraft,
-                site.HideTitle);
+                site.HideTitle,
+                sections.Select(section => section.ToResponse()).ToList());
 
-        public Option<PublicSiteResponse> ToPublicResponse() =>
-            site.PublishedAt.Map(publishedAt => new PublicSiteResponse(site.Id.Key, site.Title, site.Slug, site.Content, publishedAt, site.HideTitle));
+        public Option<PublicSiteResponse> ToPublicResponse(IReadOnlyList<ISiteQueries.SiteSectionInfo> sections) =>
+            site.PublishedAt.Map(publishedAt => new PublicSiteResponse(
+                site.Id.Key,
+                site.Title,
+                site.Slug,
+                site.Content,
+                publishedAt,
+                site.HideTitle,
+                sections.Select(section => section.ToResponse()).ToList()));
     }
 
     extension(SiteSaveResult result)
@@ -82,6 +104,7 @@ public static class SiteResponseExtensions
             {
                 SiteSaveResult.Saved saved => Results.Json(new SiteSavedResponse(saved.Id.Key, saved.Id.Version)),
                 SiteSaveResult.NotFound => Results.NotFound(),
+                SiteSaveResult.UnknownImage => Results.BadRequest(),
                 SiteSaveResult.SlugTaken => Results.Conflict(new SiteConflictResponse(SlugTakenReason)),
                 _ => Results.Conflict(new SiteConflictResponse(VersionConflictReason))
             };

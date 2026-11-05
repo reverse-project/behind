@@ -34,6 +34,8 @@
                 <div class="form-text" data-bind="visible: basedOnLabel() !== '', text: basedOnLabel"></div>
                 <div class="form-text" data-bind="visible: imageLimitLabel() !== '', text: imageLimitLabel"></div>
             </div>
+            <site-sections-editor params="sections: sections, canWrite: canWrite, upload: uploadImage, maxSections: maxSections"></site-sections-editor>
+            <div class="alert alert-warning" role="alert" data-bind="visible: hasEmptySection, t: 'sites.editor.emptySection'">Every section needs a heading, text or a picture before the site can be saved.</div>
             <div class="d-flex flex-wrap gap-2 mb-4">
                 <button type="submit" class="btn btn-outline-primary" data-bind="enable: canSave, t: 'sites.editor.saveDraft'">Save draft</button>
                 <button type="button" class="btn btn-primary" data-bind="enable: canSave, click: publish, t: 'sites.editor.saveAndPublish'">Save and publish</button>

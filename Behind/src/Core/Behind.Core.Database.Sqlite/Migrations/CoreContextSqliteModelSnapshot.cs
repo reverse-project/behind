@@ -708,6 +708,56 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasAnnotation("Behind:SoftDeletable", true);
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.SiteSection", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImageAlt")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ImageId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImagePosition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("ImageId");
+
+                    b.HasIndex("SiteId", "Version");
+
+                    b.ToTable("SiteSections", (string)null);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.User", b =>
                 {
                     b.Property<Guid>("Id")

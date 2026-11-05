@@ -5,5 +5,18 @@
         <h1 class="mb-4 text-break" data-bind="text: title, visible: !hideTitle()"></h1>
         <div class="mb-4" data-bind="carousel: carousel, visible: carousel"></div>
         <div class="site-content" data-bind="html: content"></div>
+        <div class="behind-sections" data-bind="foreach: sections">
+            <section data-bind="attr: { class: cssClass }">
+                <div class="behind-section-inner">
+                    <div class="behind-section-image" data-bind="if: hasImage">
+                        <img data-bind="attr: { src: imageUrl, alt: imageAlt }">
+                    </div>
+                    <div class="behind-section-text">
+                        <h2 class="text-break" data-bind="text: title, visible: hasTitle"></h2>
+                        <div class="site-content" data-bind="html: content, visible: hasContent"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </article>

@@ -13,6 +13,20 @@ internal sealed record SiteRow(Site Entity, Guid SiteId, long Version, DateTimeO
         Entity.WithId(new VersionedKey<Guid>(SiteId, Version)).WithPublishedAt(PublishedAt.ToOption());
 }
 
+internal sealed record SectionRow(SiteSection Entity, Guid Key, Guid? ImageId, int Position)
+{
+    public ISiteQueries.SiteSectionInfo ToInfo() =>
+        new(
+            Key,
+            Entity.Theme,
+            Entity.Title,
+            Entity.Content,
+            ImageId.ToOption(),
+            Entity.ImageAlt,
+            Entity.ImagePosition,
+            Position);
+}
+
 internal static class SiteQueryExtensions
 {
     extension(IQueryable<Site> sites)
@@ -62,6 +76,25 @@ internal static class SiteQueryExtensions
                 .ToListAsync(cancellationToken);
 
             return latest.ToDictionary(item => item.SiteId, item => item.Version);
+        }
+
+        public async Task<IReadOnlyList<ISiteQueries.SiteSectionInfo>> SiteSectionsAsync(
+            VersionedKey<Guid> site,
+            CancellationToken cancellationToken)
+        {
+            var rows = await context.SiteSections
+                .Where(section => EF.Property<Guid>(section, SiteSectionConfiguration.SiteIdProperty) == site.Key
+                                  && EF.Property<long>(section, VersionedColumns.Version) == site.Version)
+                .OrderBy(section => EF.Property<int>(section, SiteSectionConfiguration.PositionProperty))
+                .Select(section => new SectionRow(
+                    section,
+                    EF.Property<Guid>(section, VersionedColumns.Key),
+                    EF.Property<Guid?>(section, SiteSectionConfiguration.ImageIdProperty),
+                    EF.Property<int>(section, SiteSectionConfiguration.PositionProperty)))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return rows.Select(row => row.ToInfo()).ToList();
         }
 
         public async Task<bool> IsSiteSlugTakenAsync(

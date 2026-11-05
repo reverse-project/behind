@@ -23,6 +23,16 @@ public interface ISiteQueries
         DateTimeOffset CreatedAt,
         bool IsActive);
 
+    public sealed record SiteSectionInfo(
+        Guid Id,
+        SiteSectionTheme Theme,
+        string Title,
+        string Content,
+        Option<Guid> ImageId,
+        string ImageAlt,
+        SiteSectionImagePosition ImagePosition,
+        int Position);
+
     public sealed record SiteHistory(Guid Id, Option<long> ActiveVersion, IReadOnlyList<SiteVersionInfo> Versions);
 
     Task<PagedResult<SiteListing>> List(
@@ -40,6 +50,10 @@ public interface ISiteQueries
     Task<Option<SiteHistory>> FindHistory(Guid siteId, CancellationToken cancellationToken = default);
 
     Task<Option<Site>> FindVersion(VersionedKey<Guid> id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SiteSectionInfo>> FindSections(
+        VersionedKey<Guid> id,
+        CancellationToken cancellationToken = default);
 
     Task<Option<Site>> FindActiveBySlug(string slug, CancellationToken cancellationToken = default);
 }

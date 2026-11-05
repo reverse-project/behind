@@ -66,6 +66,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     ko.components.register("menu-items", { require: "components/menuitems" });
     ko.components.register("menu-nav", { require: "components/menunav" });
     ko.components.register("carousel-editor", { require: "components/carouseleditor" });
+    ko.components.register("site-sections-editor", { require: "components/sectionseditor" });
 
     var container = function () {
         return $("#main-container");

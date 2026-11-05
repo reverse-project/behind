@@ -109,7 +109,17 @@ The `Frontend:Sites` section (`SitesConfiguration`, for example in `frontend.jso
 - `IndexSlug`: when a site with this slug (normalized like any slug) is live, `GET /sites/index` serves it and the frontend shows it at `#/` instead of the built-in welcome page. Empty or missing means no custom index.
 - `MaxImageBytes`: the largest accepted site image upload (default 5 MB, zero or negative falls back to the default). Larger uploads answer `413` with `{ "maxBytes": ... }`. The Kestrel request body limit (30 MB by default) still applies on top of it.
 
-`GET /sites/settings` (`Site.Read`) returns both values to the editor.
+`GET /sites/settings` (`Site.Read`) returns both values and the largest number of sections of a site (`maxSections`) to the editor.
+
+### Site Sections
+
+`POST /sites` and `POST /sites/{id}/versions` (`Site.Write`) accept an optional `sections` array next to `title`, `slug`, `content`, `publish` and `hideTitle`: `[{ theme: "Normal" | "Accented", title, content, imageId, imageAlt, imagePosition: "Left" | "Right" }]`. The order of the array is the order on the page and every save stores the complete list for the new version (an omitted or empty list means no sections).
+
+- `title`, `content` (sanitized like the site content) and `imageAlt` are trimmed and limited (200, 100000 and 300 characters). A section needs a title, a text or an `imageId`; `imageAlt` is dropped without an image.
+- More than 30 sections, an unknown theme or image position, an empty section, an empty `imageId` or too long texts answer `400`, and so does an `imageId` that is not an existing site image (`SiteSaveResult.UnknownImage`).
+- `imageId` is the `id` answered by `POST /sites/images`; the section responses carry `imageUrl` (`/sites/images/<id>`, `null` without a picture).
+- `GET /sites/slug/{slug}`, `GET /sites/index` and `GET /sites/{id}/versions/{version}` answer `sections: [{ id, theme, title, content, imageId, imageUrl, imageAlt, imagePosition }]`.
+- The web client renders every section as `<section class="behind-section behind-section-{theme}">` (plus `behind-section-with-image behind-section-image-{left|right}` with a picture): the picture and the text share a two column grid above 768 px and stack below it. Accented sections use `--behind-section-accent-bg` (default `--bs-primary`) and `--behind-section-accent-color` (default `--bs-white`), so a site theme can restyle them.
 
 ### Backend Settings
 

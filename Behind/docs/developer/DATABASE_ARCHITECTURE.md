@@ -690,6 +690,19 @@ The `Article` grant area (`Article.Read`, `Write`, `Delete`, `Manage`) is admini
 
 The `Gallery` grant area (`Gallery.Read`, `Write`, `Delete`, `Manage`) is administration only, like `Article`. The built-in main menu has a `Galleries` tab (`#/galleries`).
 
+## Site sections
+
+`SiteSection` is a versioned entity (`VersionedKey<Guid>` id) that turns a site into a section based page, for example a landing page with pictures next to the texts. The sections belong to one version of a site and are shown below its content.
+
+- `SiteSection` (`SiteSections`): `Theme` (`SiteSectionTheme`: `Normal` or `Accented`, stored as text), `Title` (up to 200 characters, may be empty), `Content` (sanitized rich text, up to 100000 characters, may be empty), `ImageAlt` (up to 300 characters) and `ImagePosition` (`SiteSectionImagePosition`: `Left` or `Right`, stored as text) plus the shadow columns `SiteId`, `ImageId` (nullable, a `VfsFile` key of the `Sites` type, no foreign key) and `Position`. A section needs a title, a text or a picture.
+- The key of a section is a fresh uuid and its version is the version of the site it belongs to. Like `GalleryItem`, every `ISiteCommands.Create` / `SaveVersion` inserts a fresh row per section together with the new site version, so every version is complete on its own, older versions keep their sections and a version saved without sections has none. A site has at most `Site.MaxSections` (30) sections.
+- Sections are not soft deleted on their own: they follow the site. `Delete` and `Restore` of a site leave them in place (they are only read through a site version that is visible), `HardDelete` removes the sections of the deleted versions with the site.
+- `SaveVersion` and `Create` check that every `ImageId` is an existing file of the `Sites` VFS kind and answer `SiteSaveResult.UnknownImage` (nothing is saved) otherwise. After the save the section images and the images embedded in the section content are attached to the site (`IVfsCommands.Attach`, content under `vfs/Sites/<site uuid>/<image uuid>`), exactly like the images of the site content. Section images are uploaded with the site image endpoint (`POST /sites/images`) and served from `/sites/images/<id>`.
+- Reading: `ISiteQueries.FindSections(VersionedKey<Guid>)` returns the sections of one site version in order. The public page (`GET /sites/slug/{slug}`, `GET /sites/index`) and the editor (`GET /sites/{id}/versions/{version}`) both include them.
+- Audit labels: a section is named by its title (`Section` when it has none), `SiteSection` entity name.
+- Raw database editor: `SiteSections` has a composite key and no sensitive column, so it is editable without any extra registration.
+- Migration: `AddSiteSections` creates `SiteSections`.
+
 ## Site carousels
 
 `Carousel` and `CarouselSlide` are versioned entities (`VersionedKey<Guid>` id, a save inserts the next version and never updates a row, soft delete, hard delete, restore) that give a site an optional image slider.

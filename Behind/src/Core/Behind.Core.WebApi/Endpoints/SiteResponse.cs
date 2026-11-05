@@ -1,4 +1,5 @@
 using Behind.Common.WebApi;
+using Behind.Core.Domain;
 
 namespace Behind.Core.WebApi.Endpoints;
 
@@ -34,16 +35,34 @@ public sealed record SiteVersionResponse(
     DateTimeOffset? PublishedAt,
     DateTimeOffset CreatedAt,
     bool IsDraft,
-    bool HideTitle);
+    bool HideTitle,
+    IReadOnlyList<SiteSectionResponse> Sections);
 
 public sealed record SiteSavedResponse(Guid Id, long Version);
 
 public sealed record SiteConflictResponse(string Reason);
 
-public sealed record PublicSiteResponse(Guid Id, string Title, string Slug, string Content, DateTimeOffset PublishedAt, bool HideTitle);
+public sealed record PublicSiteResponse(
+    Guid Id,
+    string Title,
+    string Slug,
+    string Content,
+    DateTimeOffset PublishedAt,
+    bool HideTitle,
+    IReadOnlyList<SiteSectionResponse> Sections);
+
+public sealed record SiteSectionResponse(
+    Guid Id,
+    SiteSectionTheme Theme,
+    string Title,
+    string Content,
+    Guid? ImageId,
+    string? ImageUrl,
+    string ImageAlt,
+    SiteSectionImagePosition ImagePosition);
 
 public sealed record SiteImageResponse(Guid Id, string Url);
 
-public sealed record SiteSettingsResponse(string? IndexSlug, long MaxImageBytes);
+public sealed record SiteSettingsResponse(string? IndexSlug, long MaxImageBytes, int MaxSections);
 
 public sealed record SiteImageLimitResponse(long MaxBytes);

@@ -310,6 +310,25 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesSiteSectionsAfterTheirTitleOrSection()
+    {
+        using var bed = new NewsTestBed();
+        var site = ((SiteSaveResult.Saved)await bed.CreateSiteWithSectionsAsync(
+        [
+            SiteSectionTestBedExtensions.SectionDraft("Our story"),
+            SiteSectionTestBedExtensions.SectionDraft(string.Empty, "<p>x</p>")
+        ])).Id;
+        var sections = await bed.SectionsOfAsync(site);
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels(sections.Select(section => section.Id).ToList());
+
+        Assert.Equal("Our story", labels.Label(sections[0].Id.ToString()));
+        Assert.Equal("Section", labels.Label(sections[1].Id.ToString()));
+        Assert.Equal($"SiteSection: Our story", labels.LabelKey($"SiteSection:{sections[0].Id}"));
+    }
+
+    [Fact]
     public async Task ResolveLabels_NamesDownloadFoldersAndDownloadsAfterTheirNewestDisplayName()
     {
         using var bed = new NewsTestBed();

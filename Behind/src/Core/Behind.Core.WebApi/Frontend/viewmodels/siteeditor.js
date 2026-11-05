@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "bindings/richeditor"], function (ko, session, sites, slug, i18n) {
+define(["ko", "models/session", "models/sites", "models/sitesections", "models/slug", "models/i18n", "bindings/richeditor"], function (ko, session, sites, sectionsModel, slug, i18n) {
     var statusOf = function (item) {
         if (item.isActive) {
             return { key: "sites.status.live", css: "text-bg-success" };
@@ -36,6 +36,8 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
         self.slugEdited = ko.observable(!self.isNew);
         self.content = ko.observable("");
         self.hideTitle = ko.observable(false);
+        self.sections = ko.observableArray([]);
+        self.maxSections = ko.observable(0);
         self.basedOn = ko.observable(null);
         self.versions = ko.observableArray([]);
         self.indexSlug = ko.observable("");
@@ -107,8 +109,14 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
             return self.hasLive() ? "#/site/" + self.live().slug : "";
         });
 
+        self.hasEmptySection = ko.pureComputed(function () {
+            return self.sections().some(function (section) {
+                return !section.isFilled();
+            });
+        });
+
         self.canSave = ko.pureComputed(function () {
-            return self.canWrite() && !self.busy() && self.title().trim() !== "" && slug.create(self.slug()) !== "";
+            return self.canWrite() && !self.busy() && self.title().trim() !== "" && slug.create(self.slug()) !== "" && !self.hasEmptySection();
         });
 
         var run = function (action) {
@@ -181,6 +189,7 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
                 self.slug(result.data.slug);
                 self.content(result.data.content);
                 self.hideTitle(result.data.hideTitle);
+                self.sections(result.data.sections.map(sectionsModel.editable));
                 self.basedOn(result.data.version);
             });
         };
@@ -211,6 +220,7 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
                 slug: slug.create(self.slug()),
                 content: self.content(),
                 hideTitle: self.hideTitle(),
+                sections: self.sections().map(sectionsModel.toRequest),
                 publish: publish
             };
 
@@ -266,6 +276,7 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
                 if (result.ok) {
                     self.indexSlug(result.data.indexSlug || "");
                     self.maxImageBytes(result.data.maxImageBytes);
+                    self.maxSections(result.data.maxSections);
                 }
             });
         };

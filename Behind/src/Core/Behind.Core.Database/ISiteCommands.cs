@@ -6,12 +6,21 @@ namespace Behind.Core.Database;
 
 public interface ISiteCommands
 {
+    public sealed record SiteSectionDraft(
+        SiteSectionTheme Theme,
+        string Title,
+        string Content,
+        Option<Guid> ImageId,
+        string ImageAlt,
+        SiteSectionImagePosition ImagePosition);
+
     Task<SiteSaveResult> Create(
         string title,
         string slug,
         string content,
         bool publish,
         bool hideTitle = false,
+        IReadOnlyList<SiteSectionDraft>? sections = null,
         CancellationToken cancellationToken = default);
 
     Task<SiteSaveResult> SaveVersion(
@@ -21,6 +30,7 @@ public interface ISiteCommands
         string content,
         bool publish,
         bool hideTitle = false,
+        IReadOnlyList<SiteSectionDraft>? sections = null,
         CancellationToken cancellationToken = default);
 
     Task<SiteSaveResult> Activate(VersionedKey<Guid> id, CancellationToken cancellationToken = default);

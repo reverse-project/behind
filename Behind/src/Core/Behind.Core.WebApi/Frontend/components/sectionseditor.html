@@ -1,0 +1,69 @@
+<section class="mb-4">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <h2 class="h5 mb-0" data-bind="t: 'sections.editor.title'">Sections</h2>
+        <button type="button" class="btn btn-sm btn-outline-primary ms-auto" data-bind="click: add, enable: canAdd, t: 'sections.editor.add'">Add section</button>
+    </div>
+    <p class="text-body-secondary mb-2" data-bind="t: 'sections.editor.help'">Build the page from sections shown below the content. A section has an optional heading, text and a picture next to the text. Accented sections use the accent colour of the site.</p>
+    <p class="form-text mt-0" data-bind="visible: limitHelp() !== '', text: limitHelp"></p>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <p class="text-body-secondary" data-bind="visible: !hasSections(), t: 'sections.editor.none'">No sections yet.</p>
+    <ol class="list-unstyled mb-3" data-bind="foreach: sections">
+        <li class="border rounded p-3 mb-3 site-section-editor" data-bind="css: { 'border-primary': isAccented, 'site-section-editor-accented': isAccented }">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <strong data-bind="t: { key: 'sections.editor.section', args: [$index() + 1] }">Section</strong>
+                <span class="badge text-bg-primary" data-bind="visible: isAccented, t: 'sections.editor.theme.accented'">Accented</span>
+                <div class="ms-auto d-flex gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Move earlier" data-bind="click: $parent.moveUp, enable: $parent.canMoveUp($data), tAttr: { 'aria-label': 'sections.editor.moveEarlier' }"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Move later" data-bind="click: $parent.moveDown, enable: $parent.canMoveDown($data), tAttr: { 'aria-label': 'sections.editor.moveLater' }"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="click: $parent.remove, enable: $parent.canWrite, t: 'sections.editor.remove'">Remove</button>
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-8">
+                    <label class="form-label small" data-bind="attr: { for: 'section-heading-' + $index() }, t: 'sections.editor.heading'">Heading (optional)</label>
+                    <input class="form-control" type="text" maxlength="200" data-bind="attr: { id: 'section-heading-' + $index() }, value: title, valueUpdate: 'input', enable: $parent.canWrite">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small" data-bind="attr: { for: 'section-theme-' + $index() }, t: 'sections.editor.theme'">Theme</label>
+                    <select class="form-select" data-bind="attr: { id: 'section-theme-' + $index() }, value: theme, enable: $parent.canWrite">
+                        <option value="Normal" data-bind="t: 'sections.editor.theme.normal'">Normal</option>
+                        <option value="Accented" data-bind="t: 'sections.editor.theme.accented'">Accented</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small" data-bind="t: 'sections.editor.text'">Text</label>
+                <div class="site-editor bg-body">
+                    <div data-bind="richEditor: { value: content, upload: $parent.upload, enabled: $parent.canWrite }"></div>
+                </div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label small" data-bind="attr: { for: 'section-image-' + $index() }, t: 'sections.editor.image'">Picture (optional)</label>
+                <div class="d-flex flex-wrap align-items-start gap-3">
+                    <img class="site-section-editor-preview rounded" alt="" data-bind="visible: hasImage, attr: { src: imageUrl }">
+                    <div class="flex-grow-1">
+                        <input class="form-control form-control-sm mb-2" type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-bind="attr: { id: 'section-image-' + $index() }, event: { change: $parent.pickImage }, enable: $parent.canWrite() && !$parent.busy()">
+                        <div data-bind="visible: hasImage">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-8">
+                                    <label class="form-label small" data-bind="attr: { for: 'section-alt-' + $index() }, t: 'sections.editor.imageAlt'">Picture description</label>
+                                    <input class="form-control form-control-sm" type="text" maxlength="300" data-bind="attr: { id: 'section-alt-' + $index() }, value: imageAlt, valueUpdate: 'input', enable: $parent.canWrite">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small" data-bind="attr: { for: 'section-position-' + $index() }, t: 'sections.editor.imagePosition'">Picture position</label>
+                                    <select class="form-select form-select-sm" data-bind="attr: { id: 'section-position-' + $index() }, value: imagePosition, enable: $parent.canWrite">
+                                        <option value="Left" data-bind="t: 'sections.editor.position.left'">Left of the text</option>
+                                        <option value="Right" data-bind="t: 'sections.editor.position.right'">Right of the text</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: clearImage, enable: $parent.canWrite, t: 'sections.editor.removeImage'">Remove picture</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-text text-danger" data-bind="visible: !isFilled(), t: 'sections.editor.empty'">Add a heading, text or a picture to this section.</div>
+        </li>
+    </ol>
+    <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: hasSections, click: add, enable: canAdd, t: 'sections.editor.add'">Add section</button>
+</section>

@@ -1,4 +1,4 @@
-define(["ko", "models/sites", "models/carousels", "bindings/carousel"], function (ko, sites, carousels) {
+define(["ko", "models/sites", "models/carousels", "models/sitesections", "bindings/carousel"], function (ko, sites, carousels, sectionsModel) {
     return function SiteViewModel(context) {
         var self = this;
 
@@ -6,6 +6,7 @@ define(["ko", "models/sites", "models/carousels", "bindings/carousel"], function
         self.title = ko.observable("");
         self.hideTitle = ko.observable(false);
         self.content = ko.observable("");
+        self.sections = ko.observableArray([]);
         self.carousel = ko.observable(null);
         self.message = ko.observable("");
 
@@ -28,6 +29,7 @@ define(["ko", "models/sites", "models/carousels", "bindings/carousel"], function
                         self.title(result.data.title);
                         self.hideTitle(result.data.hideTitle);
                         self.content(result.data.content);
+                        self.sections(result.data.sections.map(sectionsModel.present));
 
                         carousels.loadPublic(result.data.id).then(self.carousel);
                     }

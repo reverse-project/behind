@@ -16,6 +16,7 @@ public sealed record Site(
     public const int MaxTitleLength = 200;
     public const int MaxSlugLength = 100;
     public const int MaxContentLength = 1_000_000;
+    public const int MaxSections = 30;
 
     public Site(string title, string slug, string content, DateTimeOffset createdAt, bool hideTitle = false)
         : this(new VersionedKey<Guid>(Guid.Empty), title, slug, content, None, createdAt, hideTitle)

@@ -38,6 +38,19 @@ Each version row shows its status (Draft, Published or Live), its title, its slu
 
 The content is cleaned when it is saved: scripts, styles, event handlers and unknown tags are removed.
 
+## Sections
+
+Sections turn a site into a landing page style layout. They are shown below the content, in the order you set, and are part of the version you save: **Save draft** and **Save and publish** store the sections together with the title and the content, older versions keep their own sections, and **Load into editor** brings the sections of that version back.
+
+- **Add section** appends a section (a site can have up to 30). Use the arrow buttons to move a section earlier or later and **Remove** to take it out; nothing changes on the page until you save.
+- **Heading** is optional.
+- **Theme** is **Normal** (plain, like the rest of the page) or **Accented** (a block in the accent colour of the site, with light text).
+- **Text** is written in the same rich text editor as the content.
+- **Picture** is optional (PNG, JPEG, GIF or WebP, up to the image limit). With a picture you can add a description (shown when the picture cannot be seen and read by screen readers) and choose whether the picture is on the **left** or the **right** of the text. On narrow screens the picture is shown above the text. **Remove picture** takes it out of the section.
+- Every section needs a heading, a text or a picture, otherwise the site cannot be saved.
+
+A site with sections can have an empty content, then the page only shows the sections (and the carousel, when there is one). The text of the sections is cleaned like the content.
+
 ## Image carousel
 
 A site can have an image carousel: a slider shown above the content of the live page that moves on by itself. Using it is your choice for every site: a site without images is shown as before. Open an existing site in the editor and use the **Image carousel** section (it is not shown for a new site until it is saved).

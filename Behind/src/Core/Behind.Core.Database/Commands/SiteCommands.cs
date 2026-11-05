@@ -20,8 +20,9 @@ public sealed class SiteCommands(
         string content,
         bool publish,
         bool hideTitle = false,
+        IReadOnlyList<ISiteCommands.SiteSectionDraft>? sections = null,
         CancellationToken cancellationToken = default) =>
-        AddVersion(Guid.CreateVersion7(), 0, title, slug, content, publish, hideTitle, cancellationToken);
+        AddVersion(Guid.CreateVersion7(), 0, title, slug, content, publish, hideTitle, sections ?? [], cancellationToken);
 
     public async Task<SiteSaveResult> SaveVersion(
         Guid siteId,
@@ -30,13 +31,14 @@ public sealed class SiteCommands(
         string content,
         bool publish,
         bool hideTitle = false,
+        IReadOnlyList<ISiteCommands.SiteSectionDraft>? sections = null,
         CancellationToken cancellationToken = default)
     {
         var latest = (await context.LatestSiteVersionsAsync([siteId], cancellationToken)).Values.Head();
 
         return await latest.Match(
             () => Task.FromResult<SiteSaveResult>(new SiteSaveResult.NotFound()),
-            version => AddVersion(siteId, version, title, slug, content, publish, hideTitle, cancellationToken));
+            version => AddVersion(siteId, version, title, slug, content, publish, hideTitle, sections ?? [], cancellationToken));
     }
 
     public async Task<SiteSaveResult> Activate(VersionedKey<Guid> id, CancellationToken cancellationToken = default)
@@ -130,6 +132,7 @@ public sealed class SiteCommands(
         try
         {
             deleted.ForEach(context.HardDelete);
+            context.SiteSections.RemoveRange(await SectionsOf(siteId, deleted, cancellationToken));
             await context.SaveChangesAsync(cancellationToken);
 
             await versions.ClearActiveVersionAsync(Site.EntityType, siteId.ToKey(), cancellationToken);
@@ -143,6 +146,21 @@ public sealed class SiteCommands(
             context.ChangeTracker.Clear();
             return HardDeleteResult.Rejected;
         }
+    }
+
+    private async Task<List<SiteSection>> SectionsOf(
+        Guid siteId,
+        IReadOnlyCollection<Site> rows,
+        CancellationToken cancellationToken)
+    {
+        var rowVersions = rows
+            .Select(row => context.Entry(row).Property<long>(SiteConfiguration.VersionProperty).CurrentValue)
+            .ToList();
+
+        return await context.SiteSections
+            .Where(section => EF.Property<Guid>(section, SiteSectionConfiguration.SiteIdProperty) == siteId
+                              && rowVersions.Contains(EF.Property<long>(section, VersionedColumns.Version)))
+            .ToListAsync(cancellationToken);
     }
 
     private bool IsLiveCandidate(Site row, long latest, long active)
@@ -182,11 +200,17 @@ public sealed class SiteCommands(
         string content,
         bool publish,
         bool hideTitle,
+        IReadOnlyList<ISiteCommands.SiteSectionDraft> sections,
         CancellationToken cancellationToken)
     {
         if (await context.IsSiteSlugTakenAsync(versions, siteId, slug, cancellationToken))
         {
             return new SiteSaveResult.SlugTaken();
+        }
+
+        if (!await HasImages(sections, cancellationToken))
+        {
+            return new SiteSaveResult.UnknownImage();
         }
 
         var now = timeProvider.GetUtcNow();
@@ -200,6 +224,11 @@ public sealed class SiteCommands(
         entry.Property<long>(SiteConfiguration.VersionProperty).CurrentValue = version;
         entry.Property<DateTimeOffset?>(SiteConfiguration.PublishedAtProperty).CurrentValue = publish ? now : null;
 
+        foreach (var (section, position) in sections.Select((section, position) => (section, position)))
+        {
+            await AddSection(new VersionedKey<Guid>(siteId, version), section, position, cancellationToken);
+        }
+
         var result = await Save(
             new VersionedKey<Guid>(siteId, version),
             cancellationToken,
@@ -207,10 +236,52 @@ public sealed class SiteCommands(
 
         if (result is SiteSaveResult.Saved)
         {
-            await files.AttachSiteImagesOf(VfsTypes.Sites, siteId, [content], cancellationToken);
+            await files.AttachSiteImagesOf(
+                VfsTypes.Sites,
+                siteId,
+                [content, .. sections.Select(section => section.Content)],
+                ImageKeysOf(sections),
+                cancellationToken);
         }
 
         return result;
+    }
+
+    private async Task AddSection(
+        VersionedKey<Guid> site,
+        ISiteCommands.SiteSectionDraft draft,
+        int position,
+        CancellationToken cancellationToken)
+    {
+        var section = new SiteSection(draft.Theme, draft.Title, draft.Content, draft.ImageAlt, draft.ImagePosition);
+
+        await context.SiteSections.AddAsync(section, cancellationToken);
+
+        var entry = context.Entry(section);
+        entry.StampVersionedKey(Guid.CreateVersion7(), site.Version);
+        entry.Property<Guid>(SiteSectionConfiguration.SiteIdProperty).CurrentValue = site.Key;
+        entry.Property<Guid?>(SiteSectionConfiguration.ImageIdProperty).CurrentValue =
+            draft.ImageId.Match<Guid?>(() => null, imageId => imageId);
+        entry.Property<int>(SiteSectionConfiguration.PositionProperty).CurrentValue = position;
+    }
+
+    private static IReadOnlyList<Guid> ImageKeysOf(IEnumerable<ISiteCommands.SiteSectionDraft> sections) =>
+        sections.SelectMany(section => section.ImageId.AsEnumerable()).Distinct().ToList();
+
+    private async Task<bool> HasImages(
+        IReadOnlyList<ISiteCommands.SiteSectionDraft> sections,
+        CancellationToken cancellationToken)
+    {
+        var wanted = ImageKeysOf(sections);
+
+        var found = await context.VfsFiles
+            .InSameKindAs(VfsTypes.Sites)
+            .OfKeys(wanted)
+            .Select(file => EF.Property<Guid>(file, VersionedColumns.Key))
+            .Distinct()
+            .CountAsync(cancellationToken);
+
+        return found == wanted.Count;
     }
 
     private async Task SetActive(Guid siteId, long version, CancellationToken cancellationToken)

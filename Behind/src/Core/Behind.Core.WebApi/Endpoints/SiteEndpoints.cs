@@ -24,12 +24,21 @@ public sealed class SiteEndpoints
     public const string NoStore = ManagedListExtensions.NoStore;
     public const string NoCache = "no-cache";
 
+    public sealed record SaveSiteSectionRequest(
+        SiteSectionTheme Theme,
+        [property: MaxLength(SiteSection.MaxTitleLength * 2)] string? Title,
+        [property: MaxLength(SiteSection.MaxContentLength * 2)] string? Content,
+        Guid? ImageId,
+        [property: MaxLength(SiteSection.MaxImageAltLength * 2)] string? ImageAlt,
+        SiteSectionImagePosition ImagePosition);
+
     public sealed record SaveSiteRequest(
         [property: Required, MaxLength(Site.MaxTitleLength)] string Title,
         [property: MaxLength(Site.MaxSlugLength * 2)] string? Slug,
         [property: MaxLength(Site.MaxContentLength)] string? Content,
         bool Publish,
-        bool HideTitle = false);
+        bool HideTitle = false,
+        IReadOnlyList<SaveSiteSectionRequest>? Sections = null);
 
     [IgnoreETag]
     public static Task<IResult> List(
@@ -101,7 +110,10 @@ public sealed class SiteEndpoints
 
         var site = await queries.FindVersion(new VersionedKey<Guid>(id, version), httpContext.RequestAborted);
 
-        return site.Match(() => Results.NotFound(), found => Results.Json(found.ToVersionResponse()));
+        return await site.Match(
+            () => Task.FromResult<IResult>(Results.NotFound()),
+            async found => Results.Json(
+                found.ToVersionResponse(await queries.FindSections(found.Id, httpContext.RequestAborted))));
     }
 
     [IgnoreETag]
@@ -115,6 +127,7 @@ public sealed class SiteEndpoints
                     draft.Content,
                     draft.Publish,
                     draft.HideTitle,
+                    draft.Sections,
                     httpContext.RequestAborted)).ToResult());
 
     [IgnoreETag]
@@ -133,6 +146,7 @@ public sealed class SiteEndpoints
                     draft.Content,
                     draft.Publish,
                     draft.HideTitle,
+                    draft.Sections,
                     httpContext.RequestAborted)).ToResult());
 
     [IgnoreETag]
@@ -164,8 +178,15 @@ public sealed class SiteEndpoints
             () => Task.FromResult<Option<Site>>(None),
             value => queries.FindActiveBySlug(value, httpContext.RequestAborted));
 
-        return site.Bind(found => found.ToPublicResponse())
-            .Match(() => Results.NotFound(), response => Results.Json(response));
+        return await site.Match(
+            () => Task.FromResult<IResult>(Results.NotFound()),
+            async found =>
+            {
+                var sections = await queries.FindSections(found.Id, httpContext.RequestAborted);
+
+                return found.ToPublicResponse(sections)
+                    .Match(() => Results.NotFound(), response => Results.Json(response));
+            });
     }
 
     private static Task<IResult> WithDraft(SaveSiteRequest request, Func<SiteDraft, Task<IResult>> action) =>

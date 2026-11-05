@@ -18,6 +18,7 @@ public static class AuditLabelExtensions
     private const string NewsCommentKind = "News comment";
     private const string GuestLabel = "Guest";
     private const string GalleryItemKind = "Image";
+    private const string SiteSectionKind = "Section";
     private const int GalleryItemLabelLength = 80;
 
     private sealed record Named(Guid Id, string Label);
@@ -32,8 +33,10 @@ public static class AuditLabelExtensions
 
     extension(string description)
     {
-        private string Labelled(int maxLength) =>
-            string.IsNullOrWhiteSpace(description) ? GalleryItemKind : description.Shortened(maxLength);
+        private string Labelled(int maxLength) => description.Labelled(GalleryItemKind, maxLength);
+
+        private string Labelled(string fallback, int maxLength) =>
+            string.IsNullOrWhiteSpace(description) ? fallback : description.Shortened(maxLength);
     }
 
     extension(AbstractCoreContext context)
@@ -152,6 +155,13 @@ public static class AuditLabelExtensions
                     .AsNoTracking()
                     .ToListAsync(cancellationToken))
                 .Select(slide => slide with { Label = slide.Label.Labelled(GalleryItemLabelLength) }),
+            .. (await context.SiteSections
+                    .Where(section => ids.Contains(EF.Property<Guid>(section, VersionedColumns.Key)))
+                    .OrderByDescending(section => EF.Property<long>(section, VersionedColumns.Version))
+                    .Select(section => new Named(EF.Property<Guid>(section, VersionedColumns.Key), section.Title))
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken))
+                .Select(section => section with { Label = section.Label.Labelled(SiteSectionKind, GalleryItemLabelLength) }),
             .. await context.DownloadFolders
                 .Where(folder => ids.Contains(EF.Property<Guid>(folder, VersionedColumns.Key)))
                 .OrderByDescending(folder => EF.Property<long>(folder, VersionedColumns.Version))

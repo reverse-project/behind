@@ -10,5 +10,7 @@ public abstract record SiteSaveResult
 
     public sealed record SlugTaken : SiteSaveResult;
 
+    public sealed record UnknownImage : SiteSaveResult;
+
     public sealed record VersionConflict : SiteSaveResult;
 }

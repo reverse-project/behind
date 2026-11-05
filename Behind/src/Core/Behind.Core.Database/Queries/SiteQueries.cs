@@ -135,6 +135,11 @@ public sealed class SiteQueries(AbstractCoreContext context, AbstractVersioningC
         return rows.Head().Map(row => row.ToSite());
     }
 
+    public Task<IReadOnlyList<ISiteQueries.SiteSectionInfo>> FindSections(
+        VersionedKey<Guid> id,
+        CancellationToken cancellationToken = default) =>
+        context.SiteSectionsAsync(id, cancellationToken);
+
     public async Task<Option<Site>> FindActiveBySlug(string slug, CancellationToken cancellationToken = default)
     {
         var candidates = await context.Sites

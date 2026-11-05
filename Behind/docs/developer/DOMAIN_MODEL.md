@@ -32,6 +32,7 @@ Behind.Core.Domain/
 ├── SystemContext.cs        # System execution context
 ├── Password.cs             # Password value object
 ├── Site.cs                 # Site version record (VersionedKey id, draft / published)
+├── SiteSection.cs          # Site section record (theme, title, content, picture settings) and its theme / picture position enums
 ├── News.cs                 # News, news category and news comment records
 ├── Article.cs              # Article and article category records
 ├── Gallery.cs              # Gallery and gallery item records

@@ -29,6 +29,13 @@ public static class AccessPolicyExtensions
                    && (added.Count == 0 || !actor.HoldsRole(role));
         }
 
+        public bool CanResetRole(Role role, AccessSelection defaults) =>
+            actor.IsDeveloper
+            || actor.HoldsRole(BuiltInAccess.Developers.Role)
+            || (!role.IsDeveloperRole
+                && actor.CanGrant(role.EffectiveGrants)
+                && actor.CanGrant(role.GrantsAddedBy(role.With(defaults))));
+
         public bool CanDeleteRole(Guid roleId, Role role) =>
             !BuiltInAccess.IsBuiltIn(roleId) && actor.CanEditRole(role);
 

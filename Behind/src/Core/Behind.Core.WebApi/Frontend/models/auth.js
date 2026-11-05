@@ -551,6 +551,12 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
             });
         },
 
+        resetRoleGrants: function (roleId) {
+            return http.post("/roles/" + roleId + "/reset-grants").then(function (response) {
+                return saved(response, "auth.role.grantsReset", roleActionFailures);
+            });
+        },
+
         deleteRole: function (roleId) {
             return http.post("/roles/" + roleId + "/delete").then(function (response) {
                 return saved(response, "auth.role.deleted", roleActionFailures);

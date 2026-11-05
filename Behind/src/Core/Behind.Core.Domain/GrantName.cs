@@ -18,6 +18,9 @@ public static class GrantArea
     public const string RawDatabase = nameof(RawDatabase);
 
     public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download];
+
+    public static IReadOnlyList<string> ActionsOf(string area) =>
+        area == Impersonation ? [GrantAction.Manage] : GrantAction.All;
 }
 
 public static class GrantAction

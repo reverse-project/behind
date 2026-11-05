@@ -315,7 +315,8 @@ Built-in role grants are seeded once when the role (or the built-in grant) is fi
 through the Roles page persist across restarts. Editors can only raise a role or user to grants they hold
 themselves, unless they hold `RawDatabase.Manage`.
 
-Endpoints: `GET/POST /roles`, `PUT /roles/{id}/access`, `POST /roles/{id}/delete`,
+Endpoints: `GET/POST /roles`, `PUT /roles/{id}/access`, `POST /roles/{id}/reset-grants` (built-in roles only),
+`POST /roles/{id}/delete`,
 `GET/PUT /users/{id}/access`. `GET /session` returns the calculated grants in `user.grants`.
 
 ### 4. Session-Related Value Objects

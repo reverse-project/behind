@@ -19,7 +19,11 @@ public static class RoleManagementResponseExtensions
                 actor.CanDeleteRole(result.Id, result.Role) && state == DeletionState.Active,
                 state == DeletionState.Deleted,
                 result.Role.IsDeveloperRole,
-                actor.CanSetDeveloperFlag(result.Id) && state == DeletionState.Active);
+                actor.CanSetDeveloperFlag(result.Id) && state == DeletionState.Active,
+                state == DeletionState.Active
+                && BuiltInAccess.FindRole(result.Id).Match(
+                    () => false,
+                    builtIn => actor.CanResetRole(result.Role, builtIn.DefaultSelection(result.Role))));
 
         public AccessRoleItem ToAccessItem() =>
             new(

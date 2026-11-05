@@ -1,3 +1,4 @@
+using Behind.Common;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Domain;
@@ -18,8 +19,10 @@ public static class BuiltInAccess
     public static readonly IReadOnlyList<BuiltInGrant> AreaGrants =
     [
         ..GrantArea.All.SelectMany((area, areaIndex) =>
-            GrantAction.All.Select((action, actionIndex) =>
-                NewGrant(areaIndex * 10 + actionIndex + 1, area, action)))
+            GrantAction.All
+                .Select((action, actionIndex) => (action, actionIndex))
+                .Where(entry => GrantArea.ActionsOf(area).Contains(entry.action))
+                .Select(entry => NewGrant(areaIndex * 10 + entry.actionIndex + 1, area, entry.action)))
     ];
 
     public static readonly BuiltInGrant RawDatabaseManage =
@@ -49,7 +52,7 @@ public static class BuiltInAccess
     public static readonly BuiltInRole Developers = NewRole(
         5,
         DomainConstants.DevelopersRole,
-        [..AreaGrants.Where(grant => grant.Action == GrantAction.Read || grant.IsConfigurationManage), RawDatabaseManage],
+        [..AreaGrants.Where(grant => grant.IsDeveloperOnly && grant.Action is GrantAction.Read or GrantAction.Manage), RawDatabaseManage],
         true);
 
     public static readonly IReadOnlyList<BuiltInRole> Roles = [Administrators, Users, Developers];
@@ -61,6 +64,9 @@ public static class BuiltInAccess
 
     public static bool IsBuiltIn(Guid roleId) => Roles.Any(role => role.Id == roleId);
 
+    public static Option<BuiltInRole> FindRole(Guid roleId) =>
+        Roles.Find(role => role.Id == roleId);
+
     public static bool IsDeveloperGrant(string name) => DeveloperGrantNames.Contains(name);
 
     public static IReadOnlyList<string> GrantNames { get; } = [..Grants.Select(grant => grant.Grant.Name)];
@@ -70,8 +76,6 @@ public static class BuiltInAccess
     extension(BuiltInGrant grant)
     {
         private bool IsDeveloperOnly => grant.Area == GrantArea.Configuration;
-
-        private bool IsConfigurationManage => grant.Area == GrantArea.Configuration && grant.Action == GrantAction.Manage;
 
         private bool IsAdministrationOnly => grant.Area is GrantArea.AuditLog or GrantArea.Impersonation or GrantArea.Site or GrantArea.News or GrantArea.Article or GrantArea.Menu or GrantArea.Gallery or GrantArea.Download;
     }

@@ -12,7 +12,8 @@ public sealed record RoleItem(
     bool CanDelete,
     bool IsDeleted = false,
     bool IsDeveloper = false,
-    bool CanSetDeveloper = false);
+    bool CanSetDeveloper = false,
+    bool CanResetGrants = false);
 
 public sealed record RoleListResponse(
     PageResponse<RoleItem> Roles,

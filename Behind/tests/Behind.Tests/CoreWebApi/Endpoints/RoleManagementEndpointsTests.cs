@@ -614,6 +614,126 @@ public class RoleManagementEndpointsTests
         Assert.True(roles[1].CanSetDeveloper);
     }
 
+    [Fact]
+    public async Task ResetGrants_BuiltInRole_RestoresTheDefaultGrantsAndKeepsTheRestrictions()
+    {
+        SignedInAs(ActorRoles(BuiltInAccess.Developers));
+        RoleExists(BuiltInAccess.Users.Id, Custom(["AuditLog.Read"], ["User.Manage"]));
+
+        var result = await RoleManagementEndpoints.ResetGrants(
+            BuiltInAccess.Users.Id,
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.IsType<NoContent>(result);
+        await _accessCommands.Received(1).SetRoleAccess(
+            BuiltInAccess.Users.Id,
+            Arg.Is<AccessSelection>(selection =>
+                selection.Grants.Order().SequenceEqual(BuiltInAccess.Users.Grants.Select(grant => grant.Grant.Name).Order())
+                && selection.Restrictions.SequenceEqual(new[] { "User.Manage" })),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ResetGrants_CustomRole_ReturnsBadRequest()
+    {
+        RoleExists(CustomRoleId, Custom([]));
+
+        var result = await RoleManagementEndpoints.ResetGrants(CustomRoleId, SignedIn(), _gate, _roles, _accessCommands);
+
+        Assert.IsType<BadRequest>(result);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetRoleAccess(default, default!, default);
+    }
+
+    [Fact]
+    public async Task ResetGrants_UnknownRole_ReturnsNotFound()
+    {
+        _roles.GetRoleById(BuiltInAccess.Users.Id, Arg.Any<CancellationToken>()).Returns(None);
+
+        var result = await RoleManagementEndpoints.ResetGrants(
+            BuiltInAccess.Users.Id,
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.IsType<NotFound>(result);
+    }
+
+    [Fact]
+    public async Task ResetGrants_AdministratorAddingGrantsTheyLack_IsForbidden()
+    {
+        SignedInAs(Custom(["Role.Manage"]));
+        RoleExists(BuiltInAccess.Users.Id, Custom([]));
+
+        var result = await RoleManagementEndpoints.ResetGrants(
+            BuiltInAccess.Users.Id,
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetRoleAccess(default, default!, default);
+    }
+
+    private static Role EmptiedDevelopers() =>
+        new UserRole(DomainConstants.DevelopersRole, Some<IEnumerable<Grant>>([new Grant("Role.Manage")])) { IsDeveloper = true };
+
+    [Fact]
+    public async Task ResetGrants_HolderOfTheEmptiedDevelopersRole_RestoresItsGrants()
+    {
+        SignedInAs(EmptiedDevelopers());
+        RoleExists(BuiltInAccess.Developers.Id, EmptiedDevelopers());
+
+        var result = await RoleManagementEndpoints.ResetGrants(
+            BuiltInAccess.Developers.Id,
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.IsType<NoContent>(result);
+        await _accessCommands.Received(1).SetRoleAccess(
+            BuiltInAccess.Developers.Id,
+            Arg.Is<AccessSelection>(selection =>
+                selection.Grants.Order().SequenceEqual(BuiltInAccess.Developers.Grants.Select(grant => grant.Grant.Name).Order())),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ResetGrants_AdministratorOnTheDevelopersRole_IsForbidden()
+    {
+        RoleExists(BuiltInAccess.Developers.Id, EmptiedDevelopers());
+
+        var result = await RoleManagementEndpoints.ResetGrants(
+            BuiltInAccess.Developers.Id,
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_OffersResettingTheGrantsOfTheEmptiedDevelopersRoleToItsHolder()
+    {
+        SignedInAs(EmptiedDevelopers());
+        RolesPage(
+            DeletionState.Active,
+            new IRoleQueries.RoleResult(BuiltInAccess.Developers.Id, EmptiedDevelopers()),
+            new IRoleQueries.RoleResult(CustomRoleId, Custom([])));
+
+        var result = await RoleManagementEndpoints.Get(SignedIn(), _gate, _roles, new FakeAuthorizationService());
+
+        var roles = Assert.IsType<JsonHttpResult<RoleListResponse>>(result).Value!.Roles.Items;
+        Assert.True(roles[0].CanResetGrants);
+        Assert.False(roles[1].CanResetGrants);
+    }
+
     private Task<IResult> SetOwnRoleAccess(string[] grants)
     {
         SignedInAs(ActorRoles(BuiltInAccess.Developers));

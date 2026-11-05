@@ -61,7 +61,7 @@ public sealed class BuiltInRolesTests : IDisposable
         Assert.DoesNotContain("AuditLog.Read", names);
         Assert.Contains("User.Read", names);
         Assert.Contains("AuditLog.Read", BuiltInAccess.Administrators.Grants.Select(grant => grant.Grant.Name));
-        Assert.Contains("AuditLog.Read", BuiltInAccess.Developers.Grants.Select(grant => grant.Grant.Name));
+        Assert.DoesNotContain("AuditLog.Read", BuiltInAccess.Developers.Grants.Select(grant => grant.Grant.Name));
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public sealed class BuiltInRolesTests : IDisposable
         await ctx.EnsureBuiltInRolesAsync();
 
         Assert.Equal(3, await ctx.Roles.CountAsync());
-        Assert.Equal(49, await ctx.Grants.CountAsync());
+        Assert.Equal(46, await ctx.Grants.CountAsync());
         Assert.Equal(BuiltInAccess.Roles.Sum(role => role.Grants.Count), await ctx.Set<Dictionary<string, object>>("RoleGrants").CountAsync());
     }
 

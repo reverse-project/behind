@@ -9,7 +9,7 @@
 | open the page and read the settings | the `Configuration.Read` grant |
 | save changes, generate and rotate secrets | the `Configuration.Manage` grant |
 
-Both grants belong to the `Developers` role. `Configuration.Manage` is given to the role when the database is created; on an installation that already existed, add it to the `Developers` role (or to a role of your own) on the [Roles](./managing-roles-and-access.md) page. Administrators never have these grants.
+Both grants belong to the `Developers` role. Administrators never have these grants.
 
 ## Tabs
 

@@ -123,29 +123,36 @@ public sealed class RoleManagementEndpoints
             httpContext,
             gate,
             roleQueries,
-            async (actor, found) =>
-            {
-                var selection = new AccessSelection(request.Grants, request.Restrictions).Normalized;
+            (actor, found) => ApplyAccess(
+                actor,
+                found,
+                new AccessSelection(request.Grants, request.Restrictions),
+                (current, selection) => current.CanChangeRole(found.Role, selection),
+                accessCommands,
+                httpContext.RequestAborted));
 
-                if (!selection.IsValid)
-                {
-                    return Results.BadRequest();
-                }
-
-                if (!actor.CanChangeRole(found.Role, selection))
-                {
-                    return Results.StatusCode(StatusCodes.Status403Forbidden);
-                }
-
-                if (!found.Role.IsDeveloperRole && selection.GrantsDeveloperAccess)
-                {
-                    return Results.BadRequest();
-                }
-
-                await accessCommands.SetRoleAccess(id, selection, httpContext.RequestAborted);
-
-                return Results.NoContent();
-            });
+    [Authorize]
+    [IgnoreETag]
+    public static Task<IResult> ResetGrants(
+        Guid id,
+        HttpContext httpContext,
+        UserManagementGate gate,
+        IRoleQueries roleQueries,
+        IAccessCommands accessCommands) =>
+        WithRole(
+            id,
+            httpContext,
+            gate,
+            roleQueries,
+            (actor, found) => BuiltInAccess.FindRole(id).Match(
+                () => Task.FromResult<IResult>(Results.BadRequest()),
+                builtIn => ApplyAccess(
+                    actor,
+                    found,
+                    builtIn.DefaultSelection(found.Role),
+                    (current, selection) => current.CanResetRole(found.Role, selection),
+                    accessCommands,
+                    httpContext.RequestAborted)));
 
     [Authorize]
     [IgnoreETag]
@@ -212,6 +219,36 @@ public sealed class RoleManagementEndpoints
     [IgnoreETag]
     public static async Task<IResult> HardDelete(Guid id, HttpContext httpContext, IRoleCommands roleCommands) =>
         (await roleCommands.HardDelete(id, httpContext.RequestAborted)).ToResult();
+
+    private static async Task<IResult> ApplyAccess(
+        UserManagementActor actor,
+        IRoleQueries.RoleResult found,
+        AccessSelection requested,
+        Func<UserManagementActor, AccessSelection, bool> isAllowed,
+        IAccessCommands accessCommands,
+        CancellationToken cancellationToken)
+    {
+        var selection = requested.Normalized;
+
+        if (!selection.IsValid)
+        {
+            return Results.BadRequest();
+        }
+
+        if (!isAllowed(actor, selection))
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        if (!found.Role.IsDeveloperRole && selection.GrantsDeveloperAccess)
+        {
+            return Results.BadRequest();
+        }
+
+        await accessCommands.SetRoleAccess(found.Id, selection, cancellationToken);
+
+        return Results.NoContent();
+    }
 
     private static Task<IResult> WithRole(
         Guid id,

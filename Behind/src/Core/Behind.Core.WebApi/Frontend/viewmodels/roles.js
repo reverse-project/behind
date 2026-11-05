@@ -30,6 +30,7 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
                 grants: item.grants,
                 restrictions: item.restrictions,
                 canEdit: item.canEdit,
+                canResetGrants: item.canResetGrants,
                 canDelete: item.canDelete,
                 editing: ko.observable(false),
                 editor: access.create()
@@ -45,6 +46,15 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
             row.save = function () {
                 return self.list.perform(function () {
                     return auth.saveRoleAccess(row.id, row.editor.request());
+                });
+            };
+            row.resetGrants = function () {
+                if (!window.confirm(i18n.t("roles.confirmResetGrants", [row.name]))) {
+                    return Promise.resolve();
+                }
+
+                return self.list.perform(function () {
+                    return auth.resetRoleGrants(row.id);
                 });
             };
             row.toggleDeveloper = function () {

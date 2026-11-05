@@ -11,18 +11,25 @@ public class BuiltInAccessTests
 
     private static IReadOnlyList<string> AreaGrantNames =>
         GrantArea.All
-            .SelectMany(area => GrantAction.All.Select(action => GrantName.Of(area, action)))
+            .SelectMany(area => GrantArea.ActionsOf(area).Select(action => GrantName.Of(area, action)))
             .Order()
             .ToList();
 
     [Fact]
     public void Grants_CoverReadWriteDeleteAndManageForEveryAreaPlusRawDatabaseManage()
     {
-        Assert.Equal(49, BuiltInAccess.Grants.Count);
+        Assert.Equal(46, BuiltInAccess.Grants.Count);
         Assert.Equal(
             AreaGrantNames.Append(RawDatabaseManage).Order(),
             BuiltInAccess.Grants.Select(grant => grant.Grant.Name).Order());
         Assert.Equal(RawDatabaseManage, BuiltInAccess.RawDatabaseManage.Grant.Name);
+    }
+
+    [Fact]
+    public void FindRole_ReturnsTheBuiltInRoleOrNothing()
+    {
+        Assert.Equal(Some(BuiltInAccess.Users), BuiltInAccess.FindRole(BuiltInAccess.Users.Id));
+        Assert.Equal(None, BuiltInAccess.FindRole(Guid.NewGuid()));
     }
 
     [Fact]
@@ -47,15 +54,11 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void Developers_HaveReadOnEveryAreaConfigurationManageAndRawDatabaseManage()
+    public void Developers_HaveOnlyConfigurationReadConfigurationManageAndRawDatabaseManage()
     {
         Assert.Equal(DomainConstants.DevelopersRole, BuiltInAccess.Developers.Role.Name);
         Assert.Equal(
-            GrantArea.All
-                .Select(area => GrantName.Of(area, GrantAction.Read))
-                .Append(ConfigurationManage)
-                .Append(RawDatabaseManage)
-                .Order(),
+            new[] { ConfigurationRead, ConfigurationManage, RawDatabaseManage }.Order(),
             GrantNames(BuiltInAccess.Developers));
     }
 
@@ -77,6 +80,15 @@ public class BuiltInAccessTests
             .Select(role => role.Role.Name);
 
         Assert.Equal([DomainConstants.DevelopersRole], holders);
+    }
+
+    [Fact]
+    public void Impersonation_HasOnlyTheManageGrant()
+    {
+        Assert.Equal([GrantAction.Manage], GrantArea.ActionsOf(GrantArea.Impersonation));
+        Assert.Equal(
+            ["Impersonation.Manage"],
+            BuiltInAccess.Grants.Select(grant => grant.Grant.Name).Where(name => name.StartsWith("Impersonation.")));
     }
 
     [Fact]
@@ -102,13 +114,13 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void SiteRead_BelongsToAdministratorsAndDevelopers()
+    public void SiteRead_BelongsOnlyToAdministrators()
     {
         var holders = BuiltInAccess.Roles
             .Where(role => GrantNames(role).Contains(GrantName.Of(GrantArea.Site, GrantAction.Read)))
             .Select(role => role.Role.Name);
 
-        Assert.Equal([DomainConstants.AdministratorsRole, DomainConstants.DevelopersRole], holders);
+        Assert.Equal([DomainConstants.AdministratorsRole], holders);
     }
 
     [Theory]
@@ -125,23 +137,23 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void NewsRead_BelongsToAdministratorsAndDevelopers()
+    public void NewsRead_BelongsOnlyToAdministrators()
     {
         var holders = BuiltInAccess.Roles
             .Where(role => GrantNames(role).Contains(GrantName.Of(GrantArea.News, GrantAction.Read)))
             .Select(role => role.Role.Name);
 
-        Assert.Equal([DomainConstants.AdministratorsRole, DomainConstants.DevelopersRole], holders);
+        Assert.Equal([DomainConstants.AdministratorsRole], holders);
     }
 
     [Fact]
-    public void ArticleRead_BelongsToAdministratorsAndDevelopers()
+    public void ArticleRead_BelongsOnlyToAdministrators()
     {
         var holders = BuiltInAccess.Roles
             .Where(role => GrantNames(role).Contains(GrantName.Of(GrantArea.Article, GrantAction.Read)))
             .Select(role => role.Role.Name);
 
-        Assert.Equal([DomainConstants.AdministratorsRole, DomainConstants.DevelopersRole], holders);
+        Assert.Equal([DomainConstants.AdministratorsRole], holders);
     }
 
     [Theory]
@@ -158,13 +170,13 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void MenuRead_BelongsToAdministratorsAndDevelopers()
+    public void MenuRead_BelongsOnlyToAdministrators()
     {
         var holders = BuiltInAccess.Roles
             .Where(role => GrantNames(role).Contains(GrantName.Of(GrantArea.Menu, GrantAction.Read)))
             .Select(role => role.Role.Name);
 
-        Assert.Equal([DomainConstants.AdministratorsRole, DomainConstants.DevelopersRole], holders);
+        Assert.Equal([DomainConstants.AdministratorsRole], holders);
     }
 
     [Theory]
@@ -181,13 +193,13 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void GalleryRead_BelongsToAdministratorsAndDevelopers()
+    public void GalleryRead_BelongsOnlyToAdministrators()
     {
         var holders = BuiltInAccess.Roles
             .Where(role => GrantNames(role).Contains(GrantName.Of(GrantArea.Gallery, GrantAction.Read)))
             .Select(role => role.Role.Name);
 
-        Assert.Equal([DomainConstants.AdministratorsRole, DomainConstants.DevelopersRole], holders);
+        Assert.Equal([DomainConstants.AdministratorsRole], holders);
     }
 
     [Theory]
@@ -204,13 +216,13 @@ public class BuiltInAccessTests
     }
 
     [Fact]
-    public void DownloadRead_BelongsToAdministratorsAndDevelopers()
+    public void DownloadRead_BelongsOnlyToAdministrators()
     {
         var holders = BuiltInAccess.Roles
             .Where(role => GrantNames(role).Contains(GrantName.Of(GrantArea.Download, GrantAction.Read)))
             .Select(role => role.Role.Name);
 
-        Assert.Equal([DomainConstants.AdministratorsRole, DomainConstants.DevelopersRole], holders);
+        Assert.Equal([DomainConstants.AdministratorsRole], holders);
     }
 
     [Theory]
@@ -241,7 +253,7 @@ public class BuiltInAccessTests
     {
         var grants = BuiltInAccess.Developers.Role.Grants.GetOrElse([]);
 
-        Assert.Equal(14, grants.Count());
+        Assert.Equal(3, grants.Count());
     }
 
     [Fact]

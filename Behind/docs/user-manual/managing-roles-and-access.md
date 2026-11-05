@@ -6,7 +6,7 @@ Open **Administration > Roles**. You need the `Role.Manage` grant.
 
 - A **grant** allows something. Grant names are `Area.Action`, for example `User.Manage`.
   - Areas: Session, AuditLog, Role, User, Configuration, Impersonation, RawDatabase.
-  - Actions: Read, Write, Delete, Manage (RawDatabase only has Manage).
+  - Actions: Read, Write, Delete, Manage (Impersonation and RawDatabase only have Manage).
 - A **restriction** removes a grant. It uses the same names as grants.
 - A **role** is a named set of grants and restrictions. Users can have several roles.
 - A user can also have **direct** grants and restrictions that apply to them alone.
@@ -16,8 +16,8 @@ Open **Administration > Roles**. You need the `Role.Manage` grant.
 | Role | Default grants |
 |------|----------------|
 | Users | Read on Session, Role, and User |
-| Administrators | every action on Session, AuditLog, Role, User, and Impersonation |
-| Developers | Read on Session, AuditLog, Role, and User, plus Configuration.Read and RawDatabase.Manage |
+| Administrators | every action on Session, AuditLog, Role, and User, plus Impersonation.Manage |
+| Developers | only the developer grants: Configuration.Read, Configuration.Manage and RawDatabase.Manage (every user also has the Users role) |
 
 Built-in roles can be edited but not deleted. Changes you make to them are kept when the application restarts, so a database created before `AuditLog.Read` was removed from the Users role keeps it until an administrator removes it there.
 
@@ -54,6 +54,10 @@ Type a name (up to 100 characters) in **New role name** and choose **Create role
 3. Choose **Save**, or **Cancel** to discard.
 
 A grant can be either granted or restricted on one role, not both. Restrictions on a role apply to every user who has the role.
+
+### Resetting the grants of a built-in role
+
+Choose **Reset grants** on a built-in role and confirm to set its grants back to the built-in defaults. Restrictions on the role are kept. The same rules as for editing a role apply, so you can only reset a role when you may change it and hold every grant it would gain.
 
 ### Deleting a role
 

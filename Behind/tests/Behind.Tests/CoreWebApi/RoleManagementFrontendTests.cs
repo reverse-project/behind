@@ -55,6 +55,7 @@ public class RoleManagementFrontendTests
         Assert.Contains("http.put(\"/roles/\" + roleId + \"/developer\", { isDeveloper: isDeveloper })", auth);
         Assert.Contains("http.put(\"/roles/\" + roleId + \"/access\", access)", auth);
         Assert.Contains("http.post(\"/roles/\" + roleId + \"/delete\")", auth);
+        Assert.Contains("http.post(\"/roles/\" + roleId + \"/reset-grants\")", auth);
         Assert.Contains("http.get(\"/users/\" + userId + \"/access\")", auth);
         Assert.Contains("http.put(\"/users/\" + userId + \"/access\", access)", auth);
     }
@@ -131,5 +132,17 @@ public class RoleManagementFrontendTests
         Assert.Contains("createManagedList", viewModel);
         Assert.Contains("auth.restoreRole(row.id)", viewModel);
         Assert.Contains("auth.hardDeleteRole(row.id)", viewModel);
+    }
+
+    [Fact]
+    public void RolesView_OffersResettingTheGrantsOfBuiltInRoles()
+    {
+        var view = Read("views/roles.html");
+        var viewModel = Read("viewmodels/roles.js");
+
+        Assert.Contains("visible: canResetGrants", view);
+        Assert.Contains("click: resetGrants", view);
+        Assert.Contains("canResetGrants: item.canResetGrants", viewModel);
+        Assert.Contains("auth.resetRoleGrants(row.id)", viewModel);
     }
 }

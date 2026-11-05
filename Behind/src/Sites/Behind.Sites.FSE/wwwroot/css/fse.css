@@ -460,6 +460,19 @@ a.card:hover,
     box-shadow: 0 0.5rem 1.5rem var(--fse-shadow);
 }
 
+.ql-snow .ql-tooltip .ql-link-target {
+    color: var(--fse-text);
+}
+
+.ql-snow .ql-tooltip .ql-link-target input {
+    accent-color: var(--fse-green);
+}
+
+.ql-snow .ql-tooltip .ql-link-target input:focus-visible {
+    outline: 2px solid var(--fse-green-bright);
+    outline-offset: 2px;
+}
+
 .form-control,
 .form-select {
     color: var(--fse-text);

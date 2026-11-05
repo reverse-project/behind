@@ -45,6 +45,20 @@
     outline: 2px solid var(--bs-primary);
 }
 
+.ql-snow .ql-tooltip .ql-link-target {
+    display: none;
+    margin: 0.5rem 0 0;
+    white-space: nowrap;
+}
+
+.ql-snow .ql-tooltip.ql-editing .ql-link-target {
+    display: block;
+}
+
+.ql-snow .ql-tooltip .ql-link-target input {
+    margin-right: 0.5rem;
+}
+
 .ql-image-panel {
     position: absolute;
     z-index: 10;

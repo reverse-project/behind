@@ -33,6 +33,7 @@ public class SiteFrontendTests
     [InlineData("models/managedlist.js")]
     [InlineData("bindings/richeditor.js")]
     [InlineData("bindings/richeditorimages.js")]
+    [InlineData("bindings/richeditorlinks.js")]
     [InlineData("libraries/quill.min.js")]
     [InlineData("libraries/quill-LICENSE.txt")]
     [InlineData("css/quill.snow.min.css")]
@@ -148,6 +149,23 @@ public class SiteFrontendTests
         Assert.All(
             new[] { ".site-content .ql-image-left", ".site-content .ql-image-center", ".site-content .ql-image-right", ".ql-image-handle" },
             selector => Assert.Contains(selector, css));
+    }
+
+    [Fact]
+    public void Editor_LetsLinksOptionallyOpenInANewTab()
+    {
+        var binding = Read("bindings/richeditor.js");
+        var links = Read("bindings/richeditorlinks.js");
+        var css = Read("css/app.css");
+
+        Assert.Contains("bindings/richeditorlinks", binding);
+        Assert.Contains("links.register()", binding);
+        Assert.Contains("links.attach(quill)", binding);
+        Assert.Contains("Quill.register(\"formats/link\"", links);
+        Assert.Contains("node.removeAttribute(\"target\")", links);
+        Assert.Contains("\"_blank\"", links);
+        Assert.Contains("richeditor.linkNewTab", links);
+        Assert.Contains(".ql-link-target", css);
     }
 
     [Fact]

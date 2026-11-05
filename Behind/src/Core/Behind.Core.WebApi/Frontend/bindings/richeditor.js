@@ -1,5 +1,6 @@
-define(["ko", "quill", "models/i18n", "bindings/richeditorimages"], function (ko, Quill, i18n, images) {
+define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/richeditorlinks"], function (ko, Quill, i18n, images, links) {
     images.register();
+    links.register();
 
     var toolbar = [
         [{ header: [1, 2, 3, false] }],
@@ -107,6 +108,7 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages"], function (ko
             });
 
             images.attach(quill);
+            links.attach(quill);
 
             var labels = ko.computed(function () {
                 labelToolbar(quill.getModule("toolbar").container);

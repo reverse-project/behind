@@ -115,6 +115,7 @@ public class FseSiteTests
     [InlineData(".fse-menu")]
     [InlineData(".fse-contact")]
     [InlineData(".behind-carousel")]
+    [InlineData(".ql-snow .ql-tooltip .ql-link-target input")]
     public void Skin_UsesTheFseDesign(string marker)
     {
         Assert.Contains(marker, Read("wwwroot/css/fse.css"));

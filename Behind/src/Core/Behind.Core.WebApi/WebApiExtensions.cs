@@ -21,6 +21,7 @@ using Behind.Core.Domain;
 using Behind.Core.WebApi.Auditing;
 using Behind.Core.WebApi.Authorization;
 using Behind.Core.WebApi.Captcha;
+using Behind.Core.WebApi.TwoFactor;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
@@ -116,6 +117,7 @@ public static class WebApiExtensions
             builder.Services.AddElevationRateLimiting();
             builder.Services.AddConfirmationEmailRateLimiting();
             builder.Services.AddCaptcha();
+            builder.Services.AddTwoFactor();
 
             builder.Services.AddSingleton(ConfigurationFileCatalog.For(builder.Environment.ContentRootPath));
             builder.Services.AddMagicLink(
@@ -238,6 +240,8 @@ public static class WebApiExtensions
             builder.Services.AddScoped<UserManagementGate>();
             builder.Services.AddScoped<IMagicLinkCommands, MagicLinkCommands>();
             builder.Services.AddScoped<IMagicLinkQueries, MagicLinkQueries>();
+            builder.Services.AddScoped<ITwoFactorQueries, TwoFactorQueries>();
+            builder.Services.AddScoped<ITwoFactorCommands, TwoFactorCommands>();
             builder.Services.AddScoped<IAuditActorProvider, HttpAuditActorProvider>();
             builder.Services.TryAddSingleton(TimeProvider.System);
 
@@ -908,6 +912,7 @@ public static class WebApiExtensions
             application.MapArticleEndpoints();
             application.MapGalleryEndpoints();
             application.MapCarouselEndpoints();
+            application.MapTwoFactorEndpoints();
             application.MapDownloadEndpoints();
             application.MapMenuEndpoints();
             application.MapRawDatabaseEndpoints();

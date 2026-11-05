@@ -11,6 +11,7 @@ using Behind.Common;
 using Behind.Common.Logging;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.MagicLinks;
+using Behind.Core.WebApi.TwoFactor;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -39,7 +40,8 @@ public sealed class SignInEndpoints
         string AccessToken,
         DateTimeOffset Expires,
         string RefreshToken,
-        MagicLinkFunction? Function = null);
+        MagicLinkFunction? Function = null,
+        IReadOnlyList<string>? RecoveryCodes = null);
 
     public sealed record MagicLinkRequest(
         [property: Required, DataType(DataType.EmailAddress)]
@@ -52,7 +54,7 @@ public sealed class SignInEndpoints
     [IgnoreETag]
     public static async Task<IResult> SignInPassword(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, ISessionCommands sessionCommands,
-        IWallOfShameQueries wallOfShameQueries, TimeProvider timeProvider,
+        IWallOfShameQueries wallOfShameQueries, ITwoFactorGate twoFactorGate, TimeProvider timeProvider,
         HttpContext httpContext, ILogger<SignInEndpoints> logger, PasswordRequest request)
     {
         return await securityConfiguration.Value.Jwt.Match(
@@ -71,7 +73,7 @@ public sealed class SignInEndpoints
 
                 return await StartSession(
                     user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
-                    wallOfShameQueries, timeProvider.GetUtcNow(), httpContext, logger);
+                    wallOfShameQueries, timeProvider.GetUtcNow(), httpContext, logger, Some(twoFactorGate));
             });
     }
 
@@ -133,7 +135,7 @@ public sealed class SignInEndpoints
     public static async Task<IResult> SignInMagicLink(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, IMagicLinkSettingsStore settingsStore,
         IMagicLinkCommands magicLinkCommands, ISessionCommands sessionCommands,
-        IWallOfShameQueries wallOfShameQueries, TimeProvider timeProvider,
+        IWallOfShameQueries wallOfShameQueries, ITwoFactorGate twoFactorGate, TimeProvider timeProvider,
         HttpContext httpContext, ILogger<SignInEndpoints> logger, MagicLinkSignInRequest request)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
@@ -193,21 +195,22 @@ public sealed class SignInEndpoints
                         ? Results.Unauthorized()
                         : await StartSession(
                             user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
-                            wallOfShameQueries, now, httpContext, logger,
+                            wallOfShameQueries, now, httpContext, logger, Some(twoFactorGate),
                             redemption.Match(() => (MagicLinkFunction?)null, r => r.Function));
                 }));
     }
 
-    private static Task<IResult> NotConfigured(ILogger logger, string operation)
+    internal static Task<IResult> NotConfigured(ILogger logger, string operation)
     {
         logger.LogError("{Operation} rejected: JWT settings are not configured", () => [operation]);
 
         return Task.FromResult<IResult>(Results.InternalServerError());
     }
 
-    private static async Task<IResult> StartSession(ApplicationUser user, JwtSettings jwtSettings,
+    internal static async Task<IResult> StartSession(ApplicationUser user, JwtSettings jwtSettings,
         bool emailConfirmationRequired, ISessionCommands sessionCommands, IWallOfShameQueries wallOfShameQueries,
-        DateTimeOffset now, HttpContext httpContext, ILogger logger, MagicLinkFunction? function = null)
+        DateTimeOffset now, HttpContext httpContext, ILogger logger, Option<ITwoFactorGate> secondFactor,
+        MagicLinkFunction? function = null, IReadOnlyList<string>? recoveryCodes = null)
     {
         if (emailConfirmationRequired && !user.HasConfirmedEmail)
         {
@@ -219,7 +222,26 @@ public sealed class SignInEndpoints
         var ban = await wallOfShameQueries.FindActiveBan(user.Id, now, httpContext.RequestAborted);
 
         return await ban.Match(
-            none: () => StartPermittedSession(user, jwtSettings, sessionCommands, httpContext, logger, function),
+            none: async () =>
+            {
+                var challenge = await secondFactor.Match(
+                    none: () => Task.FromResult<Option<TwoFactorChallengeResponse>>(None),
+                    gate => gate.Challenge(user.Id, function, httpContext.RequestAborted));
+
+                return await challenge.Match(
+                    none: () => StartPermittedSession(
+                        user, jwtSettings, sessionCommands, httpContext, logger, function, recoveryCodes),
+                    pending =>
+                    {
+                        logger.LogInformation(
+                            "Second factor required for user {UserId}, setup required: {SetupRequired}",
+                            () => [user.Id, pending.SetupRequired]);
+
+                        httpContext.Response.Headers.CacheControl = NoStore;
+
+                        return Task.FromResult(Results.Json(pending));
+                    });
+            },
             some: active =>
             {
                 logger.LogWarning("Sign-in refused for banned user {UserId}", () => [user.Id]);
@@ -231,7 +253,8 @@ public sealed class SignInEndpoints
     }
 
     private static async Task<IResult> StartPermittedSession(ApplicationUser user, JwtSettings jwtSettings,
-        ISessionCommands sessionCommands, HttpContext httpContext, ILogger logger, MagicLinkFunction? function)
+        ISessionCommands sessionCommands, HttpContext httpContext, ILogger logger, MagicLinkFunction? function,
+        IReadOnlyList<string>? recoveryCodes)
     {
         var humanUser = user.ToHumanUser();
         var accessToken = AccessToken.Create(humanUser);
@@ -252,7 +275,8 @@ public sealed class SignInEndpoints
 
         return Results.Json(user.ToSignInResponse(accessToken, refreshToken, sessionId, jwtSettings) with
         {
-            Function = function
+            Function = function,
+            RecoveryCodes = recoveryCodes
         });
     }
 }

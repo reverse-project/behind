@@ -370,3 +370,43 @@
     height: 4.5rem;
     object-fit: cover;
 }
+
+.behind-totp-qrcode {
+    display: block;
+    width: 14rem;
+    height: 14rem;
+    background-color: #fff;
+    padding: 0.5rem;
+}
+
+.behind-totp-secret {
+    font-family: var(--bs-font-monospace);
+    word-break: break-all;
+    user-select: all;
+}
+
+.behind-recovery-codes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0;
+}
+
+.behind-recovery-code {
+    font-family: var(--bs-font-monospace);
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+    text-align: center;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background-color: var(--bs-body-bg);
+    user-select: all;
+}
+
+.behind-recovery-input {
+    font-family: var(--bs-font-monospace);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}

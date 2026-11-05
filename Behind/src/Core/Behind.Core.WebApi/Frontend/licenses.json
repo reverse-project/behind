@@ -204,6 +204,24 @@
     "text": "licenses/MIT.txt"
   },
   {
+    "name": "Fido2",
+    "version": "4.3.2",
+    "license": "MIT",
+    "copyright": ".NET Foundation and Contributors",
+    "url": "https://github.com/passwordless-lib/fido2-net-lib",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Fido2.Models",
+    "version": "4.3.2",
+    "license": "MIT",
+    "copyright": ".NET Foundation and Contributors",
+    "url": "https://github.com/passwordless-lib/fido2-net-lib",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
     "name": "HtmlSanitizer",
     "version": "9.2.1039",
     "license": "MIT",
@@ -220,6 +238,15 @@
     "url": "https://github.com/Humanizr/Humanizer",
     "scope": "server",
     "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "libsodium",
+    "version": "1.0.20.1",
+    "license": "ISC",
+    "copyright": "© 2013-2026 Frank Denis",
+    "url": "https://libsodium.org/",
+    "scope": "server",
+    "text": "licenses/ISC.txt"
   },
   {
     "name": "MessagePack",
@@ -245,6 +272,15 @@
     "license": "MIT",
     "copyright": "© Microsoft Corporation. All rights reserved.",
     "url": "https://asp.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Bcl.Memory",
+    "version": "9.0.14",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
     "scope": "server",
     "text": "licenses/MIT.txt"
   },
@@ -664,7 +700,7 @@
   },
   {
     "name": "Microsoft.IdentityModel.Abstractions",
-    "version": "8.0.1",
+    "version": "8.2.0",
     "license": "MIT",
     "copyright": "© Microsoft Corporation. All rights reserved.",
     "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
@@ -673,7 +709,7 @@
   },
   {
     "name": "Microsoft.IdentityModel.JsonWebTokens",
-    "version": "8.0.1",
+    "version": "8.2.0",
     "license": "MIT",
     "copyright": "© Microsoft Corporation. All rights reserved.",
     "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
@@ -682,7 +718,7 @@
   },
   {
     "name": "Microsoft.IdentityModel.Logging",
-    "version": "8.0.1",
+    "version": "8.2.0",
     "license": "MIT",
     "copyright": "© Microsoft Corporation. All rights reserved.",
     "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
@@ -709,7 +745,7 @@
   },
   {
     "name": "Microsoft.IdentityModel.Tokens",
-    "version": "8.0.1",
+    "version": "8.2.0",
     "license": "MIT",
     "copyright": "© Microsoft Corporation. All rights reserved.",
     "url": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
@@ -767,6 +803,15 @@
     "license": "MIT",
     "copyright": "Copyright © James Newton-King 2008",
     "url": "https://www.newtonsoft.com/json",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "NSec.Cryptography",
+    "version": "25.4.0",
+    "license": "MIT",
+    "copyright": "© 2025 Klaus Hartke",
+    "url": "https://nsec.rocks/",
     "scope": "server",
     "text": "licenses/MIT.txt"
   },
@@ -1100,6 +1145,15 @@
   {
     "name": "System.Drawing.Common",
     "version": "6.0.0",
+    "license": "MIT",
+    "copyright": "© Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "System.Formats.Cbor",
+    "version": "9.0.0",
     "license": "MIT",
     "copyright": "© Microsoft Corporation. All rights reserved.",
     "url": "https://dot.net/",

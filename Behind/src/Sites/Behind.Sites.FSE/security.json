@@ -1,6 +1,7 @@
 {
   "Security": {
     "EmailConfirmation": true,
+    "TwoFactorRequired": false,
     "SecretKey": "totp://HCNS2SKZIOTMWJXFKFPFUHOF4KFUYUDQ",
     "Jwt": {
       "Issuer": "Behind Backend",

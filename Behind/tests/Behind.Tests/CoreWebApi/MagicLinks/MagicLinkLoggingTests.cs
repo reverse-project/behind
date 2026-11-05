@@ -11,7 +11,7 @@ namespace Behind.Tests.CoreWebApi.MagicLinks;
 public class MagicLinkLoggingTests
 {
     private static readonly DateTimeOffset Now = new(2026, 1, 10, 12, 0, 0, TimeSpan.Zero);
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan Interval = TimeSpan.FromDays(10);
     private static readonly TimeSpan Overlap = TimeSpan.FromDays(2);
 

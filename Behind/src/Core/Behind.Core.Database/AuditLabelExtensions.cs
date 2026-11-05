@@ -11,6 +11,9 @@ public static class AuditLabelExtensions
     private const string SessionKind = "Session";
     private const string PasswordKind = "Password";
     private const string MagicLinkKind = "Magic link";
+    private const string TotpKind = "Authenticator app";
+    private const string PasskeyKind = "Passkey";
+    private const string RecoveryCodeKind = "Recovery code";
     private const string WallOfShameKind = "Wall of shame entry";
     private const string NewsCommentKind = "News comment";
     private const string GuestLabel = "Guest";
@@ -204,6 +207,30 @@ public static class AuditLabelExtensions
                     EF.Property<Guid>(link, "Id"),
                     MagicLinkKind,
                     EF.Property<Guid>(link, "UserId")))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.UserTotps
+                .Where(totp => ids.Contains(EF.Property<Guid>(totp, "Id")))
+                .Select(totp => new Owned(
+                    EF.Property<Guid>(totp, "Id"),
+                    TotpKind,
+                    EF.Property<Guid>(totp, UserTotpConfiguration.UserIdProperty)))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.UserPasskeys
+                .Where(passkey => ids.Contains(EF.Property<Guid>(passkey, "Id")))
+                .Select(passkey => new Owned(
+                    EF.Property<Guid>(passkey, "Id"),
+                    PasskeyKind,
+                    EF.Property<Guid>(passkey, UserPasskeyConfiguration.UserIdProperty)))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.UserRecoveryCodes
+                .Where(code => ids.Contains(EF.Property<Guid>(code, "Id")))
+                .Select(code => new Owned(
+                    EF.Property<Guid>(code, "Id"),
+                    RecoveryCodeKind,
+                    EF.Property<Guid>(code, UserRecoveryCodeConfiguration.UserIdProperty)))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken),
             .. await context.WallOfShameEntries

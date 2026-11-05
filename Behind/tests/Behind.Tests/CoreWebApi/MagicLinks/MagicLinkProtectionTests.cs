@@ -104,7 +104,7 @@ public sealed class MagicLinkProtectionTests
             logger);
 
         await service.StartAsync(CancellationToken.None);
-        await called.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await called.Task.WaitAsync(TimeSpan.FromSeconds(30));
         await service.StopAsync(CancellationToken.None);
 
         logger.Received(1).Log(

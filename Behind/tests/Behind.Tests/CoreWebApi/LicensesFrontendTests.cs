@@ -17,6 +17,7 @@ public class LicensesFrontendTests
         "Apache-2.0",
         "BSD-2-Clause",
         "BSD-3-Clause",
+        "ISC",
         "Public Domain",
         "CC-BY-4.0 AND OFL-1.1 AND MIT"
     };
@@ -63,6 +64,7 @@ public class LicensesFrontendTests
     [InlineData("licenses/Apache-2.0.txt")]
     [InlineData("licenses/BSD-2-Clause.txt")]
     [InlineData("licenses/BSD-3-Clause.txt")]
+    [InlineData("licenses/ISC.txt")]
     [InlineData("licenses/SQLite.txt")]
     public void Provider_ContainsFile(string path)
     {

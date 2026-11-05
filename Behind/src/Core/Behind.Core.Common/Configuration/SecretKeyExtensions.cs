@@ -1,5 +1,6 @@
 using Behind.Common;
 using OtpNet;
+using static Behind.Common.FunctionalExtensions;
 using TotpValue = Behind.Core.Common.Configuration.Totp;
 
 namespace Behind.Core.Common.Configuration;
@@ -18,16 +19,24 @@ public static class SecretKeyExtensions
     {
         public string ToConfigurationValue() => $"totp://{totp.Value}";
 
-        public string ToOtpUri(string account, string issuer) =>
+        public string ToOtpUri(string account, string issuer, OtpHashMode mode = TotpValue.HashMode) =>
             $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(account)}"
             + $"?secret={totp.Value.TrimEnd('=')}"
             + $"&issuer={Uri.EscapeDataString(issuer)}"
-            + $"&algorithm={TotpValue.HashMode.ToString().ToLowerInvariant()}"
+            + $"&algorithm={mode.ToString().ToLowerInvariant()}"
             + "&digits=6&period=30";
 
-        private bool Verify(string code, DateTimeOffset now) =>
-            new OtpNet.Totp(Base32Encoding.ToBytes(totp.Value), mode: TotpValue.HashMode)
-                .VerifyTotp(now.UtcDateTime, code, out _, new VerificationWindow());
+        public Option<long> VerifiedStep(
+            string code,
+            DateTimeOffset now,
+            OtpHashMode mode = TotpValue.HashMode,
+            int tolerance = 0) =>
+            new OtpNet.Totp(Base32Encoding.ToBytes(totp.Value), mode: mode)
+                .VerifyTotp(now.UtcDateTime, code, out var step, new VerificationWindow(tolerance, tolerance))
+                ? Some(step)
+                : None;
+
+        private bool Verify(string code, DateTimeOffset now) => totp.VerifiedStep(code, now) != None;
     }
 
     extension(SecurityConfiguration configuration)

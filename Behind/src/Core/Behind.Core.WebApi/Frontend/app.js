@@ -7,6 +7,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/sessions": "controllers/sessions",
         "#/profile": "controllers/profile",
         "#/profile/password": "controllers/profilepassword",
+        "#/profile/two-factor": "controllers/twofactor",
         "#/users": "controllers/users",
         "#/roles": "controllers/roles",
         "#/audit-log": "controllers/auditlog",
@@ -56,6 +57,9 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
 
     ko.components.register("pager", { require: "components/pager" });
     ko.components.register("captcha", { require: "components/captcha" });
+    ko.components.register("two-factor-challenge", { require: "components/twofactorchallenge" });
+    ko.components.register("recovery-codes", { require: "components/recoverycodes" });
+    ko.components.register("totp-enrollment", { require: "components/totpenrollment" });
     ko.components.register("letter-pager", { require: "components/letterpager" });
     ko.components.register("access-editor", { require: "components/accesseditor" });
     ko.components.register("download-tree", { require: "components/downloadtree" });

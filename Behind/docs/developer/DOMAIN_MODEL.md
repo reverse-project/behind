@@ -405,6 +405,20 @@ extension(Session)
 }
 ```
 
+### Second factor entities
+
+A user can protect the account with a second factor. The records are owned by a user (shadow `Id` and `UserId`), immutable and updated through the immutable repository:
+
+```csharp
+public sealed record UserTotp([property: Sensible] string Secret, bool IsConfirmed = false, long LastUsedStep = 0);
+
+public sealed record UserPasskey(string Name, string CredentialId, string PublicKey, long SignCount = 0);
+
+public sealed record UserRecoveryCode([property: Sensible] string Hash);
+```
+
+`UserTotp` holds the authenticator app secret (confirmed once a code of it was typed), `UserPasskey` a WebAuthn credential and `UserRecoveryCode` one of the 20 single use recovery codes (a BCrypt hash; see `RecoveryCodeExtensions` in `Behind.Core.Common`). See [Database Architecture](./DATABASE_ARCHITECTURE.md#two-factor-authentication).
+
 ## Audit & Compliance
 
 ### AuditLogEntry

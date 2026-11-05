@@ -1,4 +1,4 @@
-define(["models/http", "models/session", "models/user", "models/i18n"], function (http, session, user, i18n) {
+define(["models/http", "models/session", "models/user", "models/i18n", "models/webauthn"], function (http, session, user, i18n, webauthn) {
     var genericFailure = "common.error.generic";
     var sessionExpired = "common.error.sessionExpired";
 
@@ -99,16 +99,246 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
         return response.ok ? success(done) : failure(response, failures);
     };
 
+    var signedIn = function (data) {
+        var result = success("auth.signIn.done");
+
+        session.start(data);
+        result.lostPassword = data.function === "LostPassword";
+        result.recoveryCodes = data.recoveryCodes || [];
+
+        return result;
+    };
+
+    var isChallenge = function (data) {
+        return !!data && !!data.ticket && !data.accessToken;
+    };
+
+    var challengeOf = function (data) {
+        return {
+            ticket: data.ticket,
+            methods: data.methods || [],
+            setupRequired: data.setupRequired === true,
+            function: data.function || null
+        };
+    };
+
+    var completed = function (response) {
+        return isChallenge(response.data)
+            ? { ok: true, message: "", twoFactor: challengeOf(response.data) }
+            : signedIn(response.data);
+    };
+
+    var generic = function () {
+        return i18n.t(genericFailure);
+    };
+
+    var messageByCode = function (messages, otherwise) {
+        return function (response) {
+            var key = response.data ? messages[response.data.code] : undefined;
+
+            return key ? i18n.t(key) : otherwise(response);
+        };
+    };
+
+    var enrollment = function (data) {
+        return {
+            secret: data.secret,
+            uri: data.uri,
+            image: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(data.qrCode)
+        };
+    };
+
+    var enrollmentResult = function (response, failed) {
+        return response.ok ? { ok: true, message: "", data: enrollment(response.data) } : failed(response);
+    };
+
+    var optionalName = function (name) {
+        var trimmed = (name || "").trim();
+
+        return trimmed === "" ? undefined : trimmed;
+    };
+
+    var signInStepFailures = {
+        400: "auth.twoFactor.invalid",
+        401: "auth.twoFactor.ticketInvalid",
+        403: messageByCode({ invalidCode: "auth.twoFactor.invalidCode" }, bannedMessage),
+        404: "auth.twoFactor.unavailable",
+        429: "auth.tooManyAttempts"
+    };
+
+    var stepFailed = function (response, overrides) {
+        var result = failure(response, Object.assign({}, signInStepFailures, overrides));
+
+        result.restart = response.status === 401;
+
+        return result;
+    };
+
+    var signInStep = function (path, body, overrides) {
+        return http.post("/sign/in/two-factor/" + path, body).then(function (response) {
+            return response.ok ? signedIn(response.data) : stepFailed(response, overrides);
+        });
+    };
+
+    var twoFactorFailures = {
+        400: "auth.twoFactor.invalid",
+        401: messageByCode({ ticketInvalid: "auth.twoFactor.registrationExpired" }, function () {
+            return i18n.t(sessionExpired);
+        }),
+        403: messageByCode({ invalidCode: "auth.twoFactor.invalidCode" }, function () {
+            return i18n.t("auth.twoFactor.impersonated");
+        }),
+        404: "auth.twoFactor.notFound",
+        409: messageByCode({
+            alreadyEnabled: "auth.twoFactor.alreadyEnabled",
+            required: "auth.twoFactor.required",
+            notEnabled: "auth.twoFactor.notEnabled"
+        }, generic)
+    };
+
+    var withRecoveryCodes = function (response, done) {
+        if (!response.ok) {
+            return failure(response, twoFactorFailures);
+        }
+
+        var result = success(done);
+
+        result.recoveryCodes = response.data && response.data.recoveryCodes ? response.data.recoveryCodes : [];
+
+        return result;
+    };
+
+    var passkeyCeremony = function (optionsUrl, optionsBody, browserStep, submit, failed) {
+        return http.post(optionsUrl, optionsBody).then(function (response) {
+            if (!response.ok) {
+                return failed(response);
+            }
+
+            var ticket = response.data.ticket;
+
+            return browserStep(response.data.options).then(function (credential) {
+                if (!credential.ok) {
+                    return { ok: false, message: credential.message, ticket: ticket };
+                }
+
+                return submit(ticket, credential.credential).then(function (result) {
+                    return Object.assign({ ticket: ticket }, result);
+                });
+            });
+        });
+    };
+
+    var twoFactor = {
+        verifyTotp: function (ticket, code) {
+            return signInStep("totp", { ticket: ticket, code: code });
+        },
+
+        verifyRecovery: function (ticket, code) {
+            return signInStep("recovery", { ticket: ticket, code: code });
+        },
+
+        signInWithPasskey: function (ticket) {
+            return passkeyCeremony(
+                "/sign/in/two-factor/passkey/options",
+                { ticket: ticket },
+                webauthn.get,
+                function (next, credential) {
+                    return signInStep("passkey", { ticket: next, credential: credential });
+                },
+                function (response) {
+                    return stepFailed(response, { 404: "auth.twoFactor.noPasskey" });
+                }
+            );
+        },
+
+        setupTotp: function (ticket) {
+            return http.post("/sign/in/two-factor/setup/totp", { ticket: ticket }).then(function (response) {
+                return enrollmentResult(response, function (failed) {
+                    return stepFailed(failed, { 409: "auth.twoFactor.alreadyEnabled" });
+                });
+            });
+        },
+
+        confirmSetupTotp: function (ticket, code) {
+            return signInStep("setup/totp/confirm", { ticket: ticket, code: code });
+        },
+
+        setupPasskey: function (ticket, name) {
+            return passkeyCeremony(
+                "/sign/in/two-factor/setup/passkey/options",
+                { ticket: ticket },
+                webauthn.create,
+                function (next, credential) {
+                    return signInStep("setup/passkey", { ticket: next, credential: credential, name: optionalName(name) });
+                },
+                function (response) {
+                    return stepFailed(response);
+                }
+            );
+        },
+
+        load: function () {
+            return http.get("/profile/two-factor").then(function (response) {
+                return loaded(response, twoFactorFailures);
+            });
+        },
+
+        startTotp: function () {
+            return http.post("/profile/two-factor/totp").then(function (response) {
+                return enrollmentResult(response, function (failed) {
+                    return failure(failed, twoFactorFailures);
+                });
+            });
+        },
+
+        confirmTotp: function (code) {
+            return http.post("/profile/two-factor/totp/confirm", { code: code }).then(function (response) {
+                return withRecoveryCodes(response, "auth.twoFactor.totpEnabled");
+            });
+        },
+
+        removeTotp: function () {
+            return http.delete("/profile/two-factor/totp").then(function (response) {
+                return saved(response, "auth.twoFactor.totpRemoved", twoFactorFailures);
+            });
+        },
+
+        addPasskey: function (name) {
+            return passkeyCeremony(
+                "/profile/two-factor/passkeys/options",
+                undefined,
+                webauthn.create,
+                function (ticket, credential) {
+                    return http.post("/profile/two-factor/passkeys", { ticket: ticket, credential: credential, name: optionalName(name) }).then(function (response) {
+                        return withRecoveryCodes(response, "auth.twoFactor.passkeyAdded");
+                    });
+                },
+                function (response) {
+                    return failure(response, twoFactorFailures);
+                }
+            );
+        },
+
+        removePasskey: function (id) {
+            return http.delete("/profile/two-factor/passkeys/" + encodeURIComponent(id)).then(function (response) {
+                return saved(response, "auth.twoFactor.passkeyRemoved", twoFactorFailures);
+            });
+        },
+
+        regenerateRecoveryCodes: function () {
+            return http.post("/profile/two-factor/recovery-codes").then(function (response) {
+                return withRecoveryCodes(response, "auth.twoFactor.codesGenerated");
+            });
+        }
+    };
+
     return {
+        twoFactor: twoFactor,
+
         signIn: function (email, password, captcha) {
             return http.post("/sign/in/password", { email: email, password: password, captcha: captcha }).then(function (response) {
                 if (response.ok) {
-                    var signedIn = success("auth.signIn.done");
-
-                    session.start(response.data);
-                    signedIn.lostPassword = response.data.function === "LostPassword";
-
-                    return signedIn;
+                    return completed(response);
                 }
 
                 return failure(response, {
@@ -126,12 +356,7 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
 
             return http.post("/sign/in/magiclink/redeem", { token: token }).then(function (response) {
                 if (response.ok) {
-                    var signedIn = success("auth.signIn.done");
-
-                    session.start(response.data);
-                    signedIn.lostPassword = response.data.function === "LostPassword";
-
-                    return signedIn;
+                    return completed(response);
                 }
 
                 var result = failure(response, {

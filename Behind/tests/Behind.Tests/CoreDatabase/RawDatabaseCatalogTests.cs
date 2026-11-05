@@ -79,6 +79,28 @@ public sealed class RawDatabaseCatalogTests : IDisposable
         Assert.False(passwords.FindColumn("UserId").Match(() => true, column => column.IsSensitive));
     }
 
+    [Theory]
+    [InlineData("UserTotps", "Secret")]
+    [InlineData("UserRecoveryCodes", "Hash")]
+    public void RawTables_FlagTheTwoFactorSecretsAsSensible(string table, string column)
+    {
+        using var context = _factory.CreateContext();
+        var raw = context.FindRawTable(table).Match(() => throw new InvalidOperationException(), found => found);
+
+        Assert.True(raw.FindColumn(column).Match(() => false, found => found.IsSensitive));
+        Assert.False(raw.FindColumn("UserId").Match(() => true, found => found.IsSensitive));
+    }
+
+    [Fact]
+    public void RawTables_ListThePasskeysOfTheUsers()
+    {
+        using var context = _factory.CreateContext();
+        var passkeys = context.FindRawTable("UserPasskeys").Match(() => throw new InvalidOperationException(), table => table);
+
+        Assert.Equal(["Id"], passkeys.KeyColumns.Select(column => column.Name));
+        Assert.False(passkeys.FindColumn("PublicKey").Match(() => true, column => column.IsSensitive));
+    }
+
     [Fact]
     public void RawTables_NameSharedTypeTablesAfterTheirEntity()
     {

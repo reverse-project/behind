@@ -77,6 +77,31 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesTwoFactorEntitiesAfterTheirUser()
+    {
+        Guid userId;
+        await using (var seed = _factory.CreateContext())
+        {
+            userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "owner@test.com");
+            var commands = new TwoFactorCommands(seed);
+            await commands.SaveTotp(userId, "SECRET");
+            await commands.AddPasskey(userId, new UserPasskey("Laptop", "credential", "key"));
+            await commands.ReplaceRecoveryCodes(userId, ["hash"]);
+        }
+
+        await using var ctx = _factory.CreateContext();
+        var totpId = await ctx.UserTotps.Select(totp => EF.Property<Guid>(totp, "Id")).SingleAsync();
+        var passkeyId = await ctx.UserPasskeys.Select(passkey => EF.Property<Guid>(passkey, "Id")).SingleAsync();
+        var codeId = await ctx.UserRecoveryCodes.Select(code => EF.Property<Guid>(code, "Id")).SingleAsync();
+
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([totpId, passkeyId, codeId]);
+
+        Assert.Equal("Authenticator app of Test User", labels.Label(totpId.ToString()));
+        Assert.Equal("Passkey of Test User", labels.Label(passkeyId.ToString()));
+        Assert.Equal("Recovery code of Test User", labels.Label(codeId.ToString()));
+    }
+
+    [Fact]
     public async Task ResolveLabels_NamesSitesAfterTheirLatestVersionTitle()
     {
         Guid siteId;

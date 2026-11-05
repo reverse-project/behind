@@ -1,0 +1,59 @@
+<section>
+    <h1 class="mb-3" data-bind="t: 'twoFactor.title'">Two-factor authentication</h1>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'profile.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'twoFactor.signInToManage'">to manage two-factor authentication.</span></p>
+    <div data-bind="visible: isSignedIn">
+        <p><a href="#/profile" data-bind="t: 'twoFactor.backToProfile'">Back to the profile</a></p>
+        <p class="alert alert-info" role="status" data-bind="visible: required, t: 'twoFactor.requiredNotice'">Two-factor authentication is required by the administrator. At least one method must stay enabled.</p>
+        <div data-bind="visible: hasCodes">
+            <recovery-codes params="codes: recoveryCodes, done: dismissCodes, doneLabel: 'twoFactor.codes.saved'"></recovery-codes>
+        </div>
+        <div class="mb-3 p-3 border rounded">
+            <h2 class="h4" data-bind="t: 'twoFactor.totp.title'">Authenticator app</h2>
+            <p><span class="badge text-bg-secondary" data-bind="t: totpStatus">Not set up</span></p>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary" data-bind="visible: !totpEnabled(), enable: !busy(), click: startTotp, t: 'twoFactor.totp.setUp'">Set up</button>
+                <button type="button" class="btn btn-outline-danger" data-bind="visible: totpEnabled, enable: !busy(), click: removeTotp, t: 'twoFactor.totp.remove'">Remove</button>
+            </div>
+            <div class="mt-3" data-bind="if: hasEnrollment">
+                <totp-enrollment params="enrollment: enrollment, code: enrollmentCode, confirm: confirmTotp, busy: busy"></totp-enrollment>
+            </div>
+        </div>
+        <div class="mb-3 p-3 border rounded">
+            <h2 class="h4" data-bind="t: 'twoFactor.passkeys.title'">Passkeys</h2>
+            <p class="text-body-secondary" data-bind="visible: !hasPasskeys(), t: 'twoFactor.passkeys.empty'">No passkeys are registered.</p>
+            <div class="table-responsive" data-bind="visible: hasPasskeys">
+                <table class="table align-middle">
+                    <thead>
+                    <tr>
+                        <th scope="col" data-bind="t: 'twoFactor.passkeys.name'">Name</th>
+                        <th scope="col" data-bind="t: 'twoFactor.passkeys.created'">Added</th>
+                        <th scope="col"></th>
+                    </tr>
+                    </thead>
+                    <tbody data-bind="foreach: passkeys">
+                    <tr>
+                        <td class="text-break" data-bind="text: name"></td>
+                        <td data-bind="text: createdAt"></td>
+                        <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm" data-bind="enable: !$parent.busy(), click: $parent.removePasskey, t: 'twoFactor.passkeys.remove'">Remove</button></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-body-secondary" data-bind="visible: !passkeySupported, t: 'twoFactor.passkeys.unsupported'">This browser does not support passkeys.</p>
+            <form data-bind="visible: passkeySupported, submit: addPasskey">
+                <div class="mb-3">
+                    <label class="form-label" for="two-factor-new-passkey-name" data-bind="t: 'twoFactor.passkeys.nameLabel'">Passkey name (optional)</label>
+                    <input id="two-factor-new-passkey-name" class="form-control" type="text" maxlength="100" autocomplete="off" data-bind="value: passkeyName">
+                </div>
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'twoFactor.passkeys.add'">Add a passkey</button>
+            </form>
+        </div>
+        <div class="mb-3 p-3 border rounded">
+            <h2 class="h4" data-bind="t: 'twoFactor.recovery.title'">Recovery codes</h2>
+            <p data-bind="visible: enabled, text: recoveryRemaining"></p>
+            <p class="text-body-secondary" data-bind="visible: !enabled(), t: 'twoFactor.recovery.disabled'">Recovery codes are available after you enable a second factor.</p>
+            <button type="button" class="btn btn-outline-secondary" data-bind="visible: enabled, enable: !busy(), click: regenerateRecoveryCodes, t: 'twoFactor.recovery.generate'">Generate new recovery codes</button>
+        </div>
+    </div>
+    <p class="mt-3" role="status" data-bind="visible: hasMessage, text: message"></p>
+</section>

@@ -44,6 +44,18 @@ The same captcha protects the other buttons of the sign in page (**Email me a si
 
 A link works for a short time only. If it is invalid or expired, the page offers to request a new one. If requests come too quickly you are asked to wait.
 
+### Two-factor authentication
+
+If you turned on two-factor authentication (see [Two-factor authentication](./your-account.md#two-factor-authentication)), signing in with a password or an email link asks for a second step before you are signed in. It works the same after a password, a sign in link and a lost password link.
+
+- Type the six digit code of your **authenticator app**, or
+- choose **Use a passkey** and confirm with your device, or
+- choose **Use a recovery code** and type one of your recovery codes (8 letters and numbers). Every recovery code works once. When the last one is used you are shown a new set of 20.
+
+If the installation requires two-factor authentication and you have not set it up yet, you are led through the setup right after your password or link: choose an authenticator app (scan the QR code and type the code the app shows) or a passkey. You then get your recovery codes. Save them, they are shown only once.
+
+The second step must be completed within 5 minutes and you can try only a limited number of times every ten minutes.
+
 ### Lost password
 
 1. On the sign in page enter your email and choose **Lost your password?**. You receive a link the same way as with a magic link.

@@ -616,6 +616,16 @@ Every management page (users, roles, sites) follows the same shape: a paged list
 - A hard delete answers `409` when the database rejects it, for example because audit entries are attributed to the user (see the audit log notes above).
 - `IUserManagementQueries` takes a `DeletionState` (`Active` / `Deleted`) and opens the `IncludeDeleted` scope itself for `Deleted`; `Active` always excludes deleted users, even inside a `DeletedRecordsVisibilityMiddleware` scope.
 
+## Two-factor authentication
+
+Three tables hold the second factor of a user, each a plain entity with a generated `Id`, a `UserId` foreign key to `Users` (cascade delete, so hard deleting a user removes them) and no soft delete (a removed passkey or used recovery code is gone for good, the audit log keeps who did it):
+
+- `UserTotps` (`UserTotp`): `Secret` (Base32, `[Sensible]`), `IsConfirmed` (a pending secret is not a second factor until a code was confirmed) and `LastUsedStep` (replay protection); one row per user (unique `UserId`).
+- `UserPasskeys` (`UserPasskey`): `Name`, `CredentialId` (unique, base64url), `PublicKey` (base64url) and `SignCount`. The creation time is read from the audit log, never stored.
+- `UserRecoveryCodes` (`UserRecoveryCode`): `Hash` (BCrypt, `[Sensible]`). A code is deleted when it is used.
+
+`ITwoFactorQueries` / `ITwoFactorCommands` (`TwoFactorQueries`, `TwoFactorCommands`) read and change them; the step and the sign count are advanced with conditional updates so a replay loses the race. They are listed in `AuditLabelExtensions` ("Authenticator app of ...", "Passkey of ...", "Recovery code of ...") and are editable in the raw database editor (the secrets are masked). Migration `AddTwoFactor`.
+
 ## User settings
 
 The `UserSettings` table (migration `AddUserSettings`) holds simple per-user key/value pairs: `UserId` (foreign key to `Users`, cascade delete), `Key` (max 64) and `Value` (max 256), with the primary key `UserId` + `Key`. It is a shared-type join table like `UserGrants`, not an audited entity, so it is read and written through `IUserSettingQueries` / `IUserSettingCommands` and has no audit label. The only key so far is `locale` (`UserSettingKeys.Locale`).

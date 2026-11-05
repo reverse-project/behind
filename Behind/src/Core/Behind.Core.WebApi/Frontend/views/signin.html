@@ -1,6 +1,6 @@
 <section>
     <h1 class="mb-3" data-bind="t: 'signin.title'">Sign in</h1>
-    <form data-bind="submit: submit">
+    <form data-bind="visible: !twoFactor.active(), submit: submit">
         <div class="mb-3">
             <label class="form-label" for="signin-email" data-bind="t: 'signin.email'">Email</label>
             <input id="signin-email" class="form-control" type="email" autocomplete="username" required data-bind="value: email">
@@ -17,5 +17,6 @@
             <button type="button" class="btn btn-link" data-bind="enable: !busy(), click: resendConfirmation, t: 'signin.resendConfirmation'">Resend confirmation email</button>
         </div>
     </form>
-    <p class="mt-3" role="status" data-bind="visible: hasMessage, text: message"></p>
+    <two-factor-challenge params="challenge: twoFactor"></two-factor-challenge>
+    <p class="mt-3" role="status" data-bind="visible: hasMessage() && !twoFactor.active(), text: message"></p>
 </section>

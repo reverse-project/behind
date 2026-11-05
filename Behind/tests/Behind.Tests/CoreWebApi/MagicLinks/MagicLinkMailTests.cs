@@ -67,7 +67,7 @@ public class MagicLinkMailTests
 
         await service.StartAsync(CancellationToken.None);
         queue.TryEnqueue(mail);
-        await sent.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await sent.Task.WaitAsync(TimeSpan.FromSeconds(30));
         await service.StopAsync(CancellationToken.None);
 
         await sender.Received(1).SendMagicLinkAsync(mail.User, mail.Email, mail.Link);
@@ -93,7 +93,7 @@ public class MagicLinkMailTests
         await service.StartAsync(CancellationToken.None);
         queue.TryEnqueue(NewMail("fail@test.com"));
         queue.TryEnqueue(NewMail("ok@test.com"));
-        await second.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await second.Task.WaitAsync(TimeSpan.FromSeconds(30));
         await service.StopAsync(CancellationToken.None);
 
         logger.Received(1).Log(

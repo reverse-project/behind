@@ -17,6 +17,16 @@ Choose your **Language** from the list of available languages by their names (fo
 
 When you are signed in the choice is saved to your account and follows you to every device. Without signing in it is remembered in this browser only.
 
+## Two-factor authentication
+
+**Profile > Two-factor authentication** adds a second step to your sign in so that a stolen password or sign in link is not enough. It is optional unless the administrator requires it for everybody. It is not available while you impersonate another user.
+
+- **Authenticator app**: choose **Set up**, scan the QR code with an authenticator app (or type the shown key), then type the six digit code the app shows and choose **Confirm**. Until you confirm, the app is not used. **Remove** turns it off.
+- **Passkeys**: choose **Add passkey**, optionally name it (for example "Work laptop") and confirm with your device (security key, phone, Windows Hello, Touch ID). You can add several and **Remove** any of them.
+- **Recovery codes**: when you turn on the first method you get 20 recovery codes, 8 letters and numbers each. They are shown **only once**: copy them or download them and keep them somewhere safe. If you lose your authenticator app or passkey, type a recovery code at the second step of the sign in instead. Every code works only once, and when the last one is used you are shown a new set. **Generate new recovery codes** replaces all of them at any time; the old ones stop working.
+
+When the administrator requires two-factor authentication you cannot remove your last method. Removing the last method turns two-factor authentication off and deletes the recovery codes.
+
 ## Session
 
 **Session** shows who the app thinks you are right now and how long you stay signed in.

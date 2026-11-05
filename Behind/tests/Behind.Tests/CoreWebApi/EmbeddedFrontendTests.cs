@@ -404,7 +404,7 @@ public class EmbeddedFrontendTests
         var controller = Read(Provider.GetFileInfo("controllers/profilepassword.js"));
 
         Assert.Contains("function: magicLinkFunction || \"SignIn\"", auth);
-        Assert.Contains("signedIn.lostPassword = response.data.function === \"LostPassword\"", auth);
+        Assert.Contains("result.lostPassword = data.function === \"LostPassword\"", auth);
         Assert.Contains("context.replace(result.lostPassword ? \"#/profile/password\" : \"#/\")", viewModel);
         Assert.Contains("\"#/profile/password\": \"controllers/profilepassword\"", app);
         Assert.Contains("viewModel.settingNewPassword(true)", controller);

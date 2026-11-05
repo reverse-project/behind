@@ -15,7 +15,8 @@ public record SecurityConfiguration(
     Option<MagicLinkSettings> MagicLink,
     Option<DataProtectionSettings> DataProtection = default,
     Option<ElevationSettings> Elevation = default,
-    bool EmailConfirmation = true
+    bool EmailConfirmation = true,
+    bool TwoFactorRequired = false
 )
 {
     public SecurityConfiguration() : this(false, None, None, None)
@@ -33,6 +34,10 @@ public abstract record SecretKey;
 public sealed record Totp : SecretKey
 {
     public const OtpHashMode HashMode = OtpHashMode.Sha256;
+
+    public const OtpHashMode UserHashMode = OtpHashMode.Sha1;
+
+    public const int UserTolerance = 1;
 
     public const string Issuer = "Behind System";
 

@@ -6,6 +6,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.TwoFactor;
 using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -20,6 +21,8 @@ public class SignInEndpointsSessionTests
     private static readonly DateTimeOffset Now = new(2026, 11, 1, 9, 0, 0, TimeSpan.Zero);
 
     private static IWallOfShameQueries NoBans() => Substitute.For<IWallOfShameQueries>();
+
+    private static ITwoFactorGate NoTwoFactor() => Substitute.For<ITwoFactorGate>();
 
     private static IWallOfShameQueries BannedFor(string reason)
     {
@@ -72,6 +75,7 @@ public class SignInEndpointsSessionTests
             Security(Some(Jwt)),
             commands,
             NoBans(),
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             NullLogger<SignInEndpoints>.Instance,
@@ -107,6 +111,7 @@ public class SignInEndpointsSessionTests
             Security(Some(Jwt)),
             commands,
             NoBans(),
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             NullLogger<SignInEndpoints>.Instance,
@@ -125,6 +130,7 @@ public class SignInEndpointsSessionTests
             Security(Some(Jwt)),
             Substitute.For<ISessionCommands>(),
             NoBans(),
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             NullLogger<SignInEndpoints>.Instance,
@@ -141,6 +147,7 @@ public class SignInEndpointsSessionTests
             Security(None),
             Substitute.For<ISessionCommands>(),
             NoBans(),
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             NullLogger<SignInEndpoints>.Instance,
@@ -159,6 +166,7 @@ public class SignInEndpointsSessionTests
             Security(Some(Jwt)),
             commands,
             NoBans(),
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             NullLogger<SignInEndpoints>.Instance,
@@ -182,12 +190,103 @@ public class SignInEndpointsSessionTests
             Security(Some(Jwt), emailConfirmation: false),
             commands,
             NoBans(),
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             NullLogger<SignInEndpoints>.Instance,
             new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
 
         Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
+    }
+
+    private static readonly TwoFactorChallengeResponse Challenge =
+        new("ticket", [TwoFactorMethod.Totp, TwoFactorMethod.Recovery], false);
+
+    private static ITwoFactorGate ChallengingGate()
+    {
+        var gate = Substitute.For<ITwoFactorGate>();
+        gate.Challenge(Arg.Any<Guid>(), Arg.Any<MagicLinkFunction?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(Challenge)));
+
+        return gate;
+    }
+
+    private static Task<IResult> SignInWithGate(
+        ApplicationUser? user,
+        string password,
+        ITwoFactorGate gate,
+        ISessionCommands commands,
+        HttpContext? httpContext = null,
+        IWallOfShameQueries? bans = null) =>
+        SignInEndpoints.SignInPassword(
+            UserManagerFor(user),
+            Security(Some(Jwt)),
+            commands,
+            bans ?? NoBans(),
+            gate,
+            new FixedTimeProvider(Now),
+            httpContext ?? NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
+            new SignInEndpoints.PasswordRequest("user@test.com", password));
+
+    [Fact]
+    public async Task SignInPassword_WhenASecondFactorIsRequired_ReturnsTheChallengeInsteadOfASession()
+    {
+        var commands = Substitute.For<ISessionCommands>();
+        var httpContext = NewHttpContext();
+
+        var result = await SignInWithGate(NewUser("secret"), "secret", ChallengingGate(), commands, httpContext);
+
+        var json = Assert.IsType<JsonHttpResult<TwoFactorChallengeResponse>>(result);
+        Assert.Equal(Challenge, json.Value);
+        Assert.Equal("no-store", httpContext.Response.Headers.CacheControl.ToString());
+        await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SignInPassword_AsksTheGateAboutTheUserOfTheCredentials()
+    {
+        var user = NewUser("secret");
+        var gate = ChallengingGate();
+
+        await SignInWithGate(user, "secret", gate, Substitute.For<ISessionCommands>());
+
+        await gate.Received(1).Challenge(user.Id, null, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SignInPassword_WrongPassword_DoesNotAskTheGate()
+    {
+        var gate = ChallengingGate();
+
+        var result = await SignInWithGate(NewUser("secret"), "wrong", gate, Substitute.For<ISessionCommands>());
+
+        Assert.IsType<UnauthorizedHttpResult>(result);
+        await gate.DidNotReceiveWithAnyArgs().Challenge(default, default, default);
+    }
+
+    [Fact]
+    public async Task SignInPassword_UnconfirmedEmail_DoesNotAskTheGate()
+    {
+        var gate = ChallengingGate();
+
+        var result = await SignInWithGate(
+            NewUser("secret", emailConfirmed: false), "secret", gate, Substitute.For<ISessionCommands>());
+
+        Assert.IsType<JsonHttpResult<SignInEndpoints.EmailNotConfirmedResponse>>(result);
+        await gate.DidNotReceiveWithAnyArgs().Challenge(default, default, default);
+    }
+
+    [Fact]
+    public async Task SignInPassword_BannedUser_DoesNotAskTheGate()
+    {
+        var gate = ChallengingGate();
+
+        var result = await SignInWithGate(
+            NewUser("secret"), "secret", gate, Substitute.For<ISessionCommands>(), bans: BannedFor("spam"));
+
+        Assert.IsType<JsonHttpResult<SignInEndpoints.BannedResponse>>(result);
+        await gate.DidNotReceiveWithAnyArgs().Challenge(default, default, default);
     }
 
     [Fact]
@@ -200,6 +299,7 @@ public class SignInEndpointsSessionTests
             Security(Some(Jwt)),
             commands,
             BannedFor("spamming the wall"),
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             NullLogger<SignInEndpoints>.Instance,
@@ -219,6 +319,7 @@ public class SignInEndpointsSessionTests
             Security(Some(Jwt)),
             Substitute.For<ISessionCommands>(),
             BannedFor("spamming the wall"),
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             NullLogger<SignInEndpoints>.Instance,
@@ -241,6 +342,7 @@ public class SignInEndpointsSessionTests
             Security(jwt ?? Some(Jwt)),
             commands,
             bans,
+            NoTwoFactor(),
             new FixedTimeProvider(Now),
             NewHttpContext(),
             logger,

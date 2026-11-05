@@ -141,6 +141,9 @@ define(["jquery", "models/session"], function ($, session) {
         put: function (url, body) {
             return request("PUT", url, body);
         },
+        delete: function (url) {
+            return request("DELETE", url);
+        },
         postForm: function (url, form) {
             return request("POST", url, form);
         }

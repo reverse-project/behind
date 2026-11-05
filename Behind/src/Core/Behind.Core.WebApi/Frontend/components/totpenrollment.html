@@ -1,0 +1,10 @@
+<form data-bind="submit: confirm">
+    <p data-bind="t: 'twoFactor.totp.scan'">Scan the QR code with your authenticator app, or enter the secret manually.</p>
+    <img class="behind-totp-qrcode border rounded mb-3" data-bind="attr: { src: enrollment().image }, tAttr: { alt: 'twoFactor.totp.qrAlt' }">
+    <p class="mb-3"><span data-bind="t: 'twoFactor.totp.secret'">Secret</span>: <span class="behind-totp-secret" data-bind="text: enrollment().secret"></span></p>
+    <div class="mb-3">
+        <label class="form-label" for="totp-enrollment-code" data-bind="t: 'twoFactor.totp.code'">Code from the app</label>
+        <input id="totp-enrollment-code" class="form-control" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" required data-bind="value: code">
+    </div>
+    <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'twoFactor.totp.confirm'">Confirm</button>
+</form>

@@ -46,6 +46,7 @@ Settings that must follow the files are registered with `AddReloadableOptions<T>
 - `AddOptionsCacheInvalidation<TSource, TTarget>()` clears the cached named options of `TTarget` (the `JwtBearerOptions` of the Bearer scheme) when `TSource` changes.
 - `UseReloadable<T>(configure)` (`Behind.Common.WebApi`) builds a middleware branch from the current options and rebuilds it when they change (`UseStaticFrontend`).
 - `AddClientPolicy(name, Func<HttpContext, (int, TimeSpan)>)` reads the rate limit per request (the limits are part of the partition key); the magic link policies read `IMagicLinkSettingsStore`.
+- Two-factor services (`AddTwoFactor()`): `TwoFactorTickets` and `PasskeyCeremonies` are singletons, the others scoped; second step endpoints share the `two-factor` client rate limit and answer `{ code }` failures (`TwoFactorFailure`). The `Fido2` package declares a type named `None`, so its types are imported through the global aliases in `TwoFactor/Fido2Aliases.cs` instead of `using Fido2NetLib;`.
 - Email senders are transient and created from the current `EmailConfiguration`; `MagicLinkMailService` creates its sender per mail.
 - The database connection string and the VFS content store root are resolved per scope / per resolution.
 

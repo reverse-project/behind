@@ -18,6 +18,11 @@
         </div>
         <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.save'">Save</button>
     </form>
+    <div class="mt-4" data-bind="visible: isSignedIn">
+        <h2 class="h5" data-bind="t: 'profile.twoFactor'">Two-factor authentication</h2>
+        <p data-bind="t: 'profile.twoFactorHelp'">Protect your account with an authenticator app, passkeys and recovery codes.</p>
+        <a class="btn btn-outline-primary" href="#/profile/two-factor" data-bind="t: 'profile.twoFactorManage'">Manage two-factor authentication</a>
+    </div>
     <form class="mt-4" data-bind="submit: submitLocale">
         <div class="mb-3">
             <label class="form-label" for="profile-locale" data-bind="t: 'profile.language'">Language</label>

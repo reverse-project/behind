@@ -4,6 +4,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.TwoFactor;
 using Behind.Core.WebApi.MagicLinks;
 using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
@@ -27,6 +28,7 @@ public class SignInMagicLinkEndpointsTests
     private readonly IMagicLinkQueries _queries = Substitute.For<IMagicLinkQueries>();
     private readonly ISessionCommands _sessions = Substitute.For<ISessionCommands>();
     private readonly IWallOfShameQueries _bans = Substitute.For<IWallOfShameQueries>();
+    private readonly ITwoFactorGate _gate = Substitute.For<ITwoFactorGate>();
     private readonly IMagicLinkMailQueue _mailQueue = new MagicLinkMailQueue();
     private readonly TimeProvider _time = new FixedTimeProvider(Now);
     private readonly CapturingLogger<SignInEndpoints> _logger = new();
@@ -101,6 +103,7 @@ public class SignInMagicLinkEndpointsTests
             _magicLinks,
             _sessions,
             _bans,
+            _gate,
             _time,
             NewHttpContext(),
             _logger,
@@ -441,6 +444,41 @@ public class SignInMagicLinkEndpointsTests
         Assert.Equal(function, json.Value!.Function);
     }
 
+    [Fact]
+    public async Task SignInMagicLink_WhenASecondFactorIsRequired_ReturnsTheChallengeAndStartsNoSession()
+    {
+        var user = NewUser();
+        var challenge = new TwoFactorChallengeResponse(
+            "ticket",
+            [TwoFactorMethod.Totp, TwoFactorMethod.Recovery],
+            false,
+            MagicLinkFunction.LostPassword);
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.LostPassword))));
+        _gate.Challenge(user.Id, MagicLinkFunction.LostPassword, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(challenge)));
+
+        var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        Assert.Equal(challenge, Assert.IsType<JsonHttpResult<TwoFactorChallengeResponse>>(result).Value);
+        await _sessions.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_BannedUser_IsNotChallenged()
+    {
+        var user = NewUser();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn))));
+        _bans.FindActiveBan(user.Id, Now, Arg.Any<CancellationToken>())
+            .Returns(Some(new IWallOfShameQueries.ActiveBan("spam", None)));
+
+        var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        Assert.IsType<JsonHttpResult<SignInEndpoints.BannedResponse>>(result);
+        await _gate.DidNotReceiveWithAnyArgs().Challenge(default, default, default);
+    }
+
     [Theory]
     [InlineData(MagicLinkFunction.SignIn)]
     [InlineData(MagicLinkFunction.LostPassword)]
@@ -517,6 +555,7 @@ public class SignInMagicLinkEndpointsTests
             _magicLinks,
             _sessions,
             _bans,
+            _gate,
             _time,
             httpContext,
             NullLogger<SignInEndpoints>.Instance,

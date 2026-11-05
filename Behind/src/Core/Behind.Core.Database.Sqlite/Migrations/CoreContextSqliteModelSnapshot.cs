@@ -742,6 +742,92 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.ToTable("UserAgents", (string)null);
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.UserPasskey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CredentialId")
+                        .IsRequired()
+                        .HasMaxLength(1400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PublicKey")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("SignCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CredentialId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserPasskeys", (string)null);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.UserRecoveryCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserRecoveryCodes", (string)null);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsConfirmed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("LastUsedStep")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Secret")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserTotps", (string)null);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.ValidSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1096,6 +1182,33 @@ namespace Behind.Core.Database.Sqlite.Migrations
                 });
 
             modelBuilder.Entity("Behind.Core.Domain.Password", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.UserPasskey", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.UserRecoveryCode", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>
                 {
                     b.HasOne("Behind.Core.Domain.HumanUser", null)
                         .WithMany()

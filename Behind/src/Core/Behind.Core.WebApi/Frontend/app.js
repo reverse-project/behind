@@ -55,6 +55,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     };
 
     ko.components.register("pager", { require: "components/pager" });
+    ko.components.register("captcha", { require: "components/captcha" });
     ko.components.register("letter-pager", { require: "components/letterpager" });
     ko.components.register("access-editor", { require: "components/accesseditor" });
     ko.components.register("download-tree", { require: "components/downloadtree" });

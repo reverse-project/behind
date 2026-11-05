@@ -388,7 +388,7 @@ public class EmbeddedFrontendTests
         var auth = Read(Provider.GetFileInfo("models/auth.js"));
 
         Assert.Contains("click: requestLostPassword", signIn);
-        Assert.Contains("auth.requestMagicLink(self.email(), \"auth.lostPassword.requested\", \"LostPassword\")", signInModel);
+        Assert.Contains("auth.requestMagicLink(self.email(), captcha, \"auth.lostPassword.requested\", \"LostPassword\")", signInModel);
         Assert.Contains("submit: submitPassword", profile);
         Assert.Contains("value: newPassword", profile);
         Assert.Contains("http.put(\"/profile/password\"", auth);
@@ -431,7 +431,7 @@ public class EmbeddedFrontendTests
         var auth = Read(Provider.GetFileInfo("models/auth.js"));
 
         Assert.Contains("click: resendConfirmation", signIn);
-        Assert.Contains("auth.resendConfirmation(self.email())", signInModel);
+        Assert.Contains("auth.resendConfirmation(self.email(), captcha)", signInModel);
         Assert.Contains("http.post(\"/sign/up/confirm/resend\"", auth);
     }
 

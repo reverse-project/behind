@@ -6,7 +6,15 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
         return { ok: true, message: i18n.t(message) };
     };
 
+    var captchaRejected = function (response) {
+        return response.status === 400 && !!response.data && response.data.code === "captchaInvalid";
+    };
+
     var failureMessage = function (response, messages) {
+        if (captchaRejected(response)) {
+            return i18n.t("auth.captcha.invalid");
+        }
+
         var found = messages[response.status];
 
         if (typeof found === "function") {
@@ -92,8 +100,8 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
     };
 
     return {
-        signIn: function (email, password) {
-            return http.post("/sign/in/password", { email: email, password: password }).then(function (response) {
+        signIn: function (email, password, captcha) {
+            return http.post("/sign/in/password", { email: email, password: password, captcha: captcha }).then(function (response) {
                 if (response.ok) {
                     var signedIn = success("auth.signIn.done");
 
@@ -140,8 +148,8 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
             });
         },
 
-        signUp: function (email, password, displayName) {
-            return http.post("/sign/up/password", { email: email, password: password, displayName: displayName }).then(function (response) {
+        signUp: function (email, password, displayName, captcha) {
+            return http.post("/sign/up/password", { email: email, password: password, displayName: displayName, captcha: captcha }).then(function (response) {
                 return response.ok
                     ? success("auth.signUp.done")
                     : failure(response, { 409: "auth.signUp.emailInUse" });
@@ -162,8 +170,8 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
             });
         },
 
-        resendConfirmation: function (email) {
-            return http.post("/sign/up/confirm/resend", { email: email }).then(function (response) {
+        resendConfirmation: function (email, captcha) {
+            return http.post("/sign/up/confirm/resend", { email: email, captcha: captcha }).then(function (response) {
                 return response.ok
                     ? success("auth.resendConfirmation.requested")
                     : failure(response, {
@@ -174,8 +182,8 @@ define(["models/http", "models/session", "models/user", "models/i18n"], function
             });
         },
 
-        requestMagicLink: function (email, done, magicLinkFunction) {
-            return http.post("/sign/in/magiclink", { email: email, function: magicLinkFunction || "SignIn" }).then(function (response) {
+        requestMagicLink: function (email, captcha, done, magicLinkFunction) {
+            return http.post("/sign/in/magiclink", { email: email, function: magicLinkFunction || "SignIn", captcha: captcha }).then(function (response) {
                 return response.ok
                     ? success(done || "auth.magicLink.requested")
                     : failure(response, {

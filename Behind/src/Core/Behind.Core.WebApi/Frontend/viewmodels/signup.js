@@ -1,13 +1,13 @@
-define(["ko", "viewmodels/form", "models/auth"], function (ko, FormViewModel, auth) {
+define(["ko", "viewmodels/captchaform", "models/auth"], function (ko, CaptchaFormViewModel, auth) {
     return function SignUpViewModel() {
         var self = this;
-        FormViewModel.call(self);
+        CaptchaFormViewModel.call(self);
 
         self.displayName = ko.observable("");
 
         self.submit = function () {
-            return self.run(function () {
-                return auth.signUp(self.email(), self.password(), self.displayName());
+            return self.run(function (captcha) {
+                return auth.signUp(self.email(), self.password(), self.displayName(), captcha);
             });
         };
     };

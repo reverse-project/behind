@@ -16,7 +16,8 @@ If you have no display name, your email address is shown in the menu.
 1. Choose **Sign up**.
 2. Enter your **email** and a **password**.
 3. Optionally enter a **display name**. If you leave it empty your email address is shown instead.
-4. Choose **Create account**.
+4. Type the characters shown in the captcha picture. If they are hard to read, choose **New picture**.
+5. Choose **Create account**.
 
 If the email is already in use you are told so. The administrator of the server can hide the **Sign up** and **Sign in** buttons of the top menu in `backend.json`; this only hides the buttons, the pages themselves still work when you open their address. After the account is created, sign in.
 
@@ -29,7 +30,11 @@ Every new account gets the **Users** role, which lets you read the basic areas o
 ### With a password
 
 1. Choose **Sign in**.
-2. Enter your email and password and choose **Sign in**.
+2. Enter your email and password.
+3. Type the characters shown in the captcha picture.
+4. Choose **Sign in**.
+
+The same captcha protects the other buttons of the sign in page (**Email me a sign in link**, **Lost your password?** and **Resend confirmation email**). A picture can be used only once and expires after 5 minutes, so after every attempt you get a new picture and have to type the new characters. The letters are not case sensitive.
 
 ### With an email link (magic link)
 

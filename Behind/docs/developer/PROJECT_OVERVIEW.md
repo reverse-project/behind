@@ -320,6 +320,7 @@ Domain objects use `record` types for:
 - Role-based access control (RBAC)
 - Grant-based permissions
 - Email confirmation at sign-up: `Security:EmailConfirmation` (default `true`) sends a confirmation link; when `false`, the new email's `ConfirmedAt` is set to the sign-up time; `POST /sign/up/confirm/resend` sends a new link (404 when confirmation is off, 204 whether or not the account exists, rate limited by `ConfirmationEmailExtensions.ResendRateLimitPolicy`)
+- Captcha on the sign in and sign up pages: `GET /captcha` (rate limited by `CaptchaExtensions.RateLimitPolicy`) returns `{ id, image }` (PNG data URI rendered by `CaptchaImageExtensions` in `Behind.Common`); the `id` is an AES-GCM sealed ticket (expiry and answer) that only the server can open, so no challenge is stored. `POST /sign/in/password`, `/sign/in/magiclink`, `/sign/up/password` and `/sign/up/confirm/resend` require `captcha: { id, answer }` through `RequireCaptcha<TRequest>()` (the request implements `ICaptchaRequest`); `CaptchaService` accepts a challenge once, until it expires (5 minutes), and answers a rejection with 400 `{ code: "captchaInvalid" }`
 
 ### Best Practices
 - Sensitive field masking in logs

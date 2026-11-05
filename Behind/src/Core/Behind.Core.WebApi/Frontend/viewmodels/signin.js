@@ -1,11 +1,11 @@
-define(["viewmodels/form", "models/auth"], function (FormViewModel, auth) {
+define(["viewmodels/captchaform", "models/auth"], function (CaptchaFormViewModel, auth) {
     return function SignInViewModel(context) {
         var self = this;
-        FormViewModel.call(self);
+        CaptchaFormViewModel.call(self);
 
         self.submit = function () {
-            return self.run(function () {
-                return auth.signIn(self.email(), self.password());
+            return self.run(function (captcha) {
+                return auth.signIn(self.email(), self.password(), captcha);
             }).then(function (result) {
                 if (result.ok) {
                     context.navigate("#/");
@@ -14,20 +14,20 @@ define(["viewmodels/form", "models/auth"], function (FormViewModel, auth) {
         };
 
         self.requestMagicLink = function () {
-            return self.run(function () {
-                return auth.requestMagicLink(self.email());
+            return self.run(function (captcha) {
+                return auth.requestMagicLink(self.email(), captcha);
             });
         };
 
         self.requestLostPassword = function () {
-            return self.run(function () {
-                return auth.requestMagicLink(self.email(), "auth.lostPassword.requested", "LostPassword");
+            return self.run(function (captcha) {
+                return auth.requestMagicLink(self.email(), captcha, "auth.lostPassword.requested", "LostPassword");
             });
         };
 
         self.resendConfirmation = function () {
-            return self.run(function () {
-                return auth.resendConfirmation(self.email());
+            return self.run(function (captcha) {
+                return auth.resendConfirmation(self.email(), captcha);
             });
         };
     };

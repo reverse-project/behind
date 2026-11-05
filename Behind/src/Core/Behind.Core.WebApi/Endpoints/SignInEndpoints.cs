@@ -4,6 +4,7 @@ using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
+using Behind.Core.WebApi.Captcha;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
 using Behind.Common;
@@ -25,7 +26,8 @@ public sealed class SignInEndpoints
     public sealed record PasswordRequest(
         [property: Required, DataType(DataType.EmailAddress)]
         string Email,
-        [property: Required] string Password);
+        [property: Required] string Password,
+        CaptchaResponse? Captcha = null) : ICaptchaRequest;
 
     public sealed record BannedResponse(string Reason);
 
@@ -42,7 +44,8 @@ public sealed class SignInEndpoints
     public sealed record MagicLinkRequest(
         [property: Required, DataType(DataType.EmailAddress)]
         string Email,
-        MagicLinkFunction Function = MagicLinkFunction.SignIn);
+        MagicLinkFunction Function = MagicLinkFunction.SignIn,
+        CaptchaResponse? Captcha = null) : ICaptchaRequest;
 
     public sealed record MagicLinkSignInRequest([property: Required] string Token);
 

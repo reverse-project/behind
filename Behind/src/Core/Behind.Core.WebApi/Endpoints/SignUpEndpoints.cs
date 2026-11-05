@@ -5,6 +5,7 @@ using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Domain;
+using Behind.Core.WebApi.Captcha;
 using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -18,11 +19,14 @@ public sealed class SignUpEndpoints
 {
     public sealed record PasswordRequest([property: Required, DataType(DataType.EmailAddress)] string Email,
         [property: Required] string Password,
-        [property: MaxLength(DisplayNameExtensions.MaxLength)] string? DisplayName = null);
+        [property: MaxLength(DisplayNameExtensions.MaxLength)] string? DisplayName = null,
+        CaptchaResponse? Captcha = null) : ICaptchaRequest;
 
     public sealed record ConfirmEmailRequest([property: Required] Guid UserId, [property: Required] string Token);
 
-    public sealed record ResendConfirmationRequest([property: Required, DataType(DataType.EmailAddress)] string Email);
+    public sealed record ResendConfirmationRequest(
+        [property: Required, DataType(DataType.EmailAddress)] string Email,
+        CaptchaResponse? Captcha = null) : ICaptchaRequest;
 
     public const string ConfirmEmailRoute = "/sign/up/confirm";
     public const string ResendConfirmationRoute = "/sign/up/confirm/resend";

@@ -9,6 +9,7 @@
             <label class="form-label" for="signin-password" data-bind="t: 'signin.password'">Password</label>
             <input id="signin-password" class="form-control" type="password" autocomplete="current-password" data-bind="value: password">
         </div>
+        <captcha params="captcha: captcha"></captcha>
         <div class="d-flex flex-wrap gap-2">
             <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'signin.submit'">Sign in</button>
             <button type="button" class="btn btn-outline-secondary" data-bind="enable: !busy(), click: requestMagicLink, t: 'signin.magicLink'">Email me a sign in link</button>

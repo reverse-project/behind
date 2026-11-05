@@ -20,6 +20,7 @@ using Behind.Core.Database.Sqlite;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Auditing;
 using Behind.Core.WebApi.Authorization;
+using Behind.Core.WebApi.Captcha;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
@@ -114,6 +115,7 @@ public static class WebApiExtensions
 
             builder.Services.AddElevationRateLimiting();
             builder.Services.AddConfirmationEmailRateLimiting();
+            builder.Services.AddCaptcha();
 
             builder.Services.AddSingleton(ConfigurationFileCatalog.For(builder.Environment.ContentRootPath));
             builder.Services.AddMagicLink(
@@ -967,8 +969,15 @@ public static class WebApiExtensions
                 .Produces<AccountsSettingsResponse>()
                 .Produces(500);
 
+            application.MapGet(CaptchaExtensions.ChallengeRoute, CaptchaEndpoints.GetChallenge)
+                .RequireRateLimiting(CaptchaExtensions.RateLimitPolicy)
+                .Produces<CaptchaChallenge>()
+                .Produces(429)
+                .Produces(500);
+
             application.MapPost("/sign/up/password", SignUpEndpoints.SignUpPassword)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignUpEndpoints.PasswordRequest>>()
+                .RequireCaptcha<SignUpEndpoints.PasswordRequest>()
                 .Produces(204)
                 .Produces(400)
                 .Produces(409)
@@ -982,6 +991,7 @@ public static class WebApiExtensions
 
             application.MapPost(SignUpEndpoints.ResendConfirmationRoute, SignUpEndpoints.ResendConfirmation)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignUpEndpoints.ResendConfirmationRequest>>()
+                .RequireCaptcha<SignUpEndpoints.ResendConfirmationRequest>()
                 .RequireRateLimiting(ConfirmationEmailExtensions.ResendRateLimitPolicy)
                 .Produces(204)
                 .Produces(400)
@@ -991,6 +1001,7 @@ public static class WebApiExtensions
 
             application.MapPost("/sign/in/password", SignInEndpoints.SignInPassword)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.PasswordRequest>>()
+                .RequireCaptcha<SignInEndpoints.PasswordRequest>()
                 .Produces(200)
                 .Produces(400)
                 .Produces(401)
@@ -998,6 +1009,7 @@ public static class WebApiExtensions
 
             application.MapPost("/sign/in/magiclink", SignInEndpoints.RequestMagicLink)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkRequest>>()
+                .RequireCaptcha<SignInEndpoints.MagicLinkRequest>()
                 .RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy)
                 .Produces(204)
                 .Produces(400)

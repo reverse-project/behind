@@ -402,6 +402,64 @@ a.card:hover,
     box-shadow: 0 0.5rem 1.5rem var(--fse-shadow);
 }
 
+.behind-section {
+    --behind-section-accent-bg: var(--fse-green);
+    --behind-section-accent-color: #ffffff;
+}
+
+.behind-section-normal {
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.behind-section-normal:last-child {
+    border-bottom: 0;
+}
+
+.behind-section h2 {
+    margin-bottom: 1rem;
+}
+
+.behind-section h2::after {
+    content: "";
+    display: block;
+    width: 3rem;
+    height: 4px;
+    margin-top: 0.5rem;
+    background-color: var(--fse-yellow);
+}
+
+.behind-section-accented {
+    background-image: linear-gradient(135deg, var(--fse-green) 0%, var(--fse-green-dark) 100%);
+    box-shadow: 0 0.5rem 1.5rem var(--fse-shadow);
+}
+
+.behind-section-accented h2,
+.behind-section-accented h3,
+.behind-section-accented h4 {
+    color: #ffffff;
+}
+
+.behind-section-accented a {
+    color: var(--fse-yellow);
+}
+
+.behind-section-accented a:hover,
+.behind-section-accented a:focus-visible {
+    color: #ffffff;
+}
+
+.behind-section-accented .site-content blockquote {
+    border-left-color: var(--fse-yellow);
+}
+
+.behind-section-accented .site-content pre {
+    color: var(--fse-text);
+}
+
+.behind-section-image img {
+    box-shadow: 0 0.5rem 1.5rem var(--fse-shadow);
+}
+
 .form-control,
 .form-select {
     color: var(--fse-text);
@@ -677,6 +735,10 @@ button:focus-visible,
 
     #header-container .fse-menu .nav-link::after {
         display: none;
+    }
+
+    .behind-section-accented {
+        padding: 1.25rem;
     }
 
     .behind-carousel .carousel-caption {

@@ -800,6 +800,8 @@
     "sites.editor.edit": "Edit site",
     "sites.editor.slug": "Slug",
     "sites.editor.generateSlug": "Generate from title",
+    "sites.editor.hideTitle": "Hide the title on the page",
+    "sites.editor.hideTitleHelp": "The title is still used in lists and the browser, only the heading above the page content is not shown.",
     "sites.editor.slugHelp": "The page is served at {0}. When that address belongs to a built-in page, use {1}.",
     "sites.editor.indexSlugHelp": "This slug is the custom index: once this site is live it is also shown at {0}.",
     "sites.editor.content": "Content",

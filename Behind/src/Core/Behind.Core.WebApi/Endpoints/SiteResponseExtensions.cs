@@ -68,10 +68,11 @@ public static class SiteResponseExtensions
                 site.Content,
                 site.PublishedAt.ToNullable(),
                 site.CreatedAt,
-                site.IsDraft);
+                site.IsDraft,
+                site.HideTitle);
 
         public Option<PublicSiteResponse> ToPublicResponse() =>
-            site.PublishedAt.Map(publishedAt => new PublicSiteResponse(site.Id.Key, site.Title, site.Slug, site.Content, publishedAt));
+            site.PublishedAt.Map(publishedAt => new PublicSiteResponse(site.Id.Key, site.Title, site.Slug, site.Content, publishedAt, site.HideTitle));
     }
 
     extension(SiteSaveResult result)

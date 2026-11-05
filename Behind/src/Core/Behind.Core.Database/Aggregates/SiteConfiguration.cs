@@ -21,6 +21,7 @@ public sealed class SiteConfiguration : IEntityTypeConfiguration<Site>
         builder.Property(site => site.Title).HasMaxLength(Site.MaxTitleLength).IsRequired();
         builder.Property(site => site.Slug).HasMaxLength(Site.MaxSlugLength).IsRequired();
         builder.Property(site => site.Content).IsRequired();
+        builder.Property(site => site.HideTitle).HasDefaultValue(false);
         builder.Property(site => site.CreatedAt).HasConversion<DateTimeOffsetConverter>();
 
         builder.Ignore(site => site.PublishedAt);

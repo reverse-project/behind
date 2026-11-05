@@ -11,6 +11,7 @@ public interface ISiteCommands
         string slug,
         string content,
         bool publish,
+        bool hideTitle = false,
         CancellationToken cancellationToken = default);
 
     Task<SiteSaveResult> SaveVersion(
@@ -19,6 +20,7 @@ public interface ISiteCommands
         string slug,
         string content,
         bool publish,
+        bool hideTitle = false,
         CancellationToken cancellationToken = default);
 
     Task<SiteSaveResult> Activate(VersionedKey<Guid> id, CancellationToken cancellationToken = default);

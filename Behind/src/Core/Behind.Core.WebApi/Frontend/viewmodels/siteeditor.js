@@ -35,6 +35,7 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
         self.slug = ko.observable("");
         self.slugEdited = ko.observable(!self.isNew);
         self.content = ko.observable("");
+        self.hideTitle = ko.observable(false);
         self.basedOn = ko.observable(null);
         self.versions = ko.observableArray([]);
         self.indexSlug = ko.observable("");
@@ -179,6 +180,7 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
                 self.title(result.data.title);
                 self.slug(result.data.slug);
                 self.content(result.data.content);
+                self.hideTitle(result.data.hideTitle);
                 self.basedOn(result.data.version);
             });
         };
@@ -208,6 +210,7 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
                 title: self.title().trim(),
                 slug: slug.create(self.slug()),
                 content: self.content(),
+                hideTitle: self.hideTitle(),
                 publish: publish
             };
 

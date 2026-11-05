@@ -19,8 +19,9 @@ public sealed class SiteCommands(
         string slug,
         string content,
         bool publish,
+        bool hideTitle = false,
         CancellationToken cancellationToken = default) =>
-        AddVersion(Guid.CreateVersion7(), 0, title, slug, content, publish, cancellationToken);
+        AddVersion(Guid.CreateVersion7(), 0, title, slug, content, publish, hideTitle, cancellationToken);
 
     public async Task<SiteSaveResult> SaveVersion(
         Guid siteId,
@@ -28,13 +29,14 @@ public sealed class SiteCommands(
         string slug,
         string content,
         bool publish,
+        bool hideTitle = false,
         CancellationToken cancellationToken = default)
     {
         var latest = (await context.LatestSiteVersionsAsync([siteId], cancellationToken)).Values.Head();
 
         return await latest.Match(
             () => Task.FromResult<SiteSaveResult>(new SiteSaveResult.NotFound()),
-            version => AddVersion(siteId, version, title, slug, content, publish, cancellationToken));
+            version => AddVersion(siteId, version, title, slug, content, publish, hideTitle, cancellationToken));
     }
 
     public async Task<SiteSaveResult> Activate(VersionedKey<Guid> id, CancellationToken cancellationToken = default)
@@ -179,6 +181,7 @@ public sealed class SiteCommands(
         string slug,
         string content,
         bool publish,
+        bool hideTitle,
         CancellationToken cancellationToken)
     {
         if (await context.IsSiteSlugTakenAsync(versions, siteId, slug, cancellationToken))
@@ -188,7 +191,7 @@ public sealed class SiteCommands(
 
         var now = timeProvider.GetUtcNow();
         var version = previousVersion + 1;
-        var site = new Site(title, slug, content, now);
+        var site = new Site(title, slug, content, now, hideTitle);
 
         await context.Sites.AddAsync(site, cancellationToken);
 

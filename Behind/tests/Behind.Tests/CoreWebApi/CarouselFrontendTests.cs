@@ -52,6 +52,24 @@ public class CarouselFrontendTests
     }
 
     [Fact]
+    public void PublicSitePage_MarksALeadingCarouselWhenTheTitleIsHidden()
+    {
+        Assert.Contains(
+            "css: { 'behind-site-leading-carousel': hideTitle() && carousel() }",
+            Read("views/site.html"));
+    }
+
+    [Fact]
+    public void FseTheme_RemovesTheTopMarginAboveALeadingCarousel()
+    {
+        var css = File.ReadAllText(Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Sites", "Behind.Sites.FSE", "wwwroot", "css", "fse.css"));
+
+        Assert.Contains("#main-container:has(.behind-site-leading-carousel)", css);
+        Assert.Contains("margin-top: 0 !important;", css);
+    }
+
+    [Fact]
     public void SiteEditor_OffersTheCarouselEditorOnlyForExistingSites()
     {
         var view = Read("views/siteeditor.html");

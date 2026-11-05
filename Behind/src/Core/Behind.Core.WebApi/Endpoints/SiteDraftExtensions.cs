@@ -5,7 +5,7 @@ using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.WebApi.Endpoints;
 
-public sealed record SiteDraft(string Title, string Slug, string Content, bool Publish);
+public sealed record SiteDraft(string Title, string Slug, string Content, bool Publish, bool HideTitle);
 
 public static class SiteDraftExtensions
 {
@@ -19,7 +19,7 @@ public static class SiteDraftExtensions
             return title.Length == 0
                 ? None
                 : slugSource.ToSlug(Site.MaxSlugLength)
-                    .Map(slug => new SiteDraft(title, slug, (request.Content ?? string.Empty).SanitizeRichText(), request.Publish));
+                    .Map(slug => new SiteDraft(title, slug, (request.Content ?? string.Empty).SanitizeRichText(), request.Publish, request.HideTitle));
         }
     }
 }

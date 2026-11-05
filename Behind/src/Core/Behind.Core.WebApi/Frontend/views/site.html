@@ -1,8 +1,8 @@
-<article class="behind-wide">
+<article class="behind-wide" data-bind="css: { 'behind-site-leading-carousel': hideTitle() && carousel() }">
     <p class="text-body-secondary" data-bind="visible: loading, t: 'common.loading'">Loading...</p>
     <div class="alert alert-warning" role="alert" data-bind="visible: missing, text: message"></div>
     <div data-bind="visible: found">
-        <h1 class="mb-4 text-break" data-bind="text: title"></h1>
+        <h1 class="mb-4 text-break" data-bind="text: title, visible: !hideTitle()"></h1>
         <div class="mb-4" data-bind="carousel: carousel, visible: carousel"></div>
         <div class="site-content" data-bind="html: content"></div>
     </div>

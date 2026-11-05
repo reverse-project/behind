@@ -28,7 +28,8 @@ public sealed class SiteEndpoints
         [property: Required, MaxLength(Site.MaxTitleLength)] string Title,
         [property: MaxLength(Site.MaxSlugLength * 2)] string? Slug,
         [property: MaxLength(Site.MaxContentLength)] string? Content,
-        bool Publish);
+        bool Publish,
+        bool HideTitle = false);
 
     [IgnoreETag]
     public static Task<IResult> List(
@@ -113,6 +114,7 @@ public sealed class SiteEndpoints
                     draft.Slug,
                     draft.Content,
                     draft.Publish,
+                    draft.HideTitle,
                     httpContext.RequestAborted)).ToResult());
 
     [IgnoreETag]
@@ -130,6 +132,7 @@ public sealed class SiteEndpoints
                     draft.Slug,
                     draft.Content,
                     draft.Publish,
+                    draft.HideTitle,
                     httpContext.RequestAborted)).ToResult());
 
     [IgnoreETag]

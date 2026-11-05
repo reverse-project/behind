@@ -13,6 +13,13 @@ public class SiteTests
         Assert.Equal(None, site.PublishedAt);
         Assert.True(site.IsDraft);
         Assert.Equal(Now, site.CreatedAt);
+        Assert.False(site.HideTitle);
+    }
+
+    [Fact]
+    public void NewSite_CanHideItsTitle()
+    {
+        Assert.True(new Site("Home", "home", "<p/>", Now, true).HideTitle);
     }
 
     [Fact]

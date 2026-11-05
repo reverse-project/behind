@@ -9,15 +9,16 @@ public sealed record Site(
     string Slug,
     string Content,
     Option<DateTimeOffset> PublishedAt,
-    DateTimeOffset CreatedAt)
+    DateTimeOffset CreatedAt,
+    bool HideTitle = false)
 {
     public const string EntityType = nameof(Site);
     public const int MaxTitleLength = 200;
     public const int MaxSlugLength = 100;
     public const int MaxContentLength = 1_000_000;
 
-    public Site(string title, string slug, string content, DateTimeOffset createdAt)
-        : this(new VersionedKey<Guid>(Guid.Empty), title, slug, content, None, createdAt)
+    public Site(string title, string slug, string content, DateTimeOffset createdAt, bool hideTitle = false)
+        : this(new VersionedKey<Guid>(Guid.Empty), title, slug, content, None, createdAt, hideTitle)
     {
     }
 }

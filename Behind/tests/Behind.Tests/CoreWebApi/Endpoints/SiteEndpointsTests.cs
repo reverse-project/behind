@@ -19,8 +19,9 @@ public class SiteEndpointsTests
         string title = "About us",
         string? slug = null,
         string? content = "<p>hi</p>",
-        bool publish = false) =>
-        new(title, slug, content, publish);
+        bool publish = false,
+        bool hideTitle = false) =>
+        new(title, slug, content, publish, hideTitle);
 
     private static ISiteCommands CommandsReturning(SiteSaveResult result)
     {
@@ -206,7 +207,7 @@ public class SiteEndpointsTests
         var result = await SiteEndpoints.GetVersion(SiteId, 2, new DefaultHttpContext(), queries);
 
         var body = Assert.IsType<JsonHttpResult<SiteVersionResponse>>(result).Value!;
-        Assert.Equal(new SiteVersionResponse(SiteId, 2, "About", "about", "<p>x</p>", null, Now, true), body);
+        Assert.Equal(new SiteVersionResponse(SiteId, 2, "About", "about", "<p>x</p>", null, Now, true, false), body);
     }
 
     [Fact]
@@ -230,7 +231,39 @@ public class SiteEndpointsTests
 
         var body = Assert.IsType<JsonHttpResult<SiteSavedResponse>>(result).Value!;
         Assert.Equal(new SiteSavedResponse(SiteId, 1), body);
-        await commands.Received(1).Create("About us", "about-us", "<p>hi</p>", true, Arg.Any<CancellationToken>());
+        await commands.Received(1).Create("About us", "about-us", "<p>hi</p>", true, false, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Create_WithHideTitle_PassesItToTheCommand()
+    {
+        var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 1)));
+
+        await SiteEndpoints.Create(Request(hideTitle: true), new DefaultHttpContext(), commands);
+
+        await commands.Received(1).Create("About us", "about-us", "<p>hi</p>", false, true, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SaveVersion_WithHideTitle_PassesItToTheCommand()
+    {
+        var commands = CommandsReturning(new SiteSaveResult.Saved(new VersionedKey<Guid>(SiteId, 2)));
+
+        await SiteEndpoints.SaveVersion(SiteId, Request(hideTitle: true), new DefaultHttpContext(), commands);
+
+        await commands.Received(1).SaveVersion(SiteId, "About us", "about-us", "<p>hi</p>", false, true, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetPublic_ReturnsTheHideTitleFlag()
+    {
+        var queries = Substitute.For<ISiteQueries>();
+        queries.FindActiveBySlug("home", Arg.Any<CancellationToken>())
+            .Returns(Some(new Site(new VersionedKey<Guid>(SiteId, 1), "Home", "home", "<p>x</p>", Some(Now), Now, true)));
+
+        var result = await SiteEndpoints.GetPublic("home", new DefaultHttpContext(), queries);
+
+        Assert.True(Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value!.HideTitle);
     }
 
     [Fact]
@@ -240,7 +273,7 @@ public class SiteEndpointsTests
 
         await SiteEndpoints.Create(Request(slug: "My Custom Slug!"), new DefaultHttpContext(), commands);
 
-        await commands.Received(1).Create("About us", "my-custom-slug", "<p>hi</p>", false, Arg.Any<CancellationToken>());
+        await commands.Received(1).Create("About us", "my-custom-slug", "<p>hi</p>", false, false, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -250,7 +283,7 @@ public class SiteEndpointsTests
 
         await SiteEndpoints.Create(Request(content: null), new DefaultHttpContext(), commands);
 
-        await commands.Received(1).Create("About us", "about-us", string.Empty, false, Arg.Any<CancellationToken>());
+        await commands.Received(1).Create("About us", "about-us", string.Empty, false, false, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -286,7 +319,7 @@ public class SiteEndpointsTests
         var result = await SiteEndpoints.SaveVersion(SiteId, Request(publish: true), new DefaultHttpContext(), commands);
 
         Assert.Equal(new SiteSavedResponse(SiteId, 4), Assert.IsType<JsonHttpResult<SiteSavedResponse>>(result).Value);
-        await commands.Received(1).SaveVersion(SiteId, "About us", "about-us", "<p>hi</p>", true, Arg.Any<CancellationToken>());
+        await commands.Received(1).SaveVersion(SiteId, "About us", "about-us", "<p>hi</p>", true, false, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -338,7 +371,7 @@ public class SiteEndpointsTests
 
         Assert.Equal("no-cache", context.Response.Headers.CacheControl);
         Assert.Equal(
-            new PublicSiteResponse(SiteId, "About us", "about-us", "<p>x</p>", Now),
+            new PublicSiteResponse(SiteId, "About us", "about-us", "<p>x</p>", Now, false),
             Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value);
     }
 
@@ -409,7 +442,7 @@ public class SiteEndpointsTests
 
         Assert.Equal("no-cache", context.Response.Headers.CacheControl);
         Assert.Equal(
-            new PublicSiteResponse(SiteId, "Home", "home", "<p>x</p>", Now),
+            new PublicSiteResponse(SiteId, "Home", "home", "<p>x</p>", Now, false),
             Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value);
     }
 

@@ -111,6 +111,39 @@ public sealed class SiteCommandsTests : IDisposable
     }
 
     [Fact]
+    public async Task Create_WithHideTitle_StoresItAndNewVersionsCanChangeIt()
+    {
+        await using (var ctx = _factory.CreateContext())
+        await using (var versions = _factory.CreateVersioningContext())
+        {
+            var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>());
+            var created = Saved(await commands.Create("Home", "home", "<p/>", true, hideTitle: true));
+            var next = Saved(await commands.SaveVersion(created.Key, "Home", "home", "<p/>", false));
+
+            await using var read = _factory.CreateContext();
+            await using var readVersions = _factory.CreateVersioningContext();
+            var queries = new SiteQueries(read, readVersions);
+            var first = await queries.FindVersion(created);
+            var second = await queries.FindVersion(next);
+
+            Assert.True(first.Match(() => throw new InvalidOperationException(), site => site.HideTitle));
+            Assert.False(second.Match(() => throw new InvalidOperationException(), site => site.HideTitle));
+        }
+    }
+
+    [Fact]
+    public async Task Create_WithoutHideTitle_ShowsTheTitle()
+    {
+        var id = Saved(await CreateAsync("About", "about", publish: true));
+
+        await using var ctx = _factory.CreateContext();
+        await using var versions = _factory.CreateVersioningContext();
+        var site = await new SiteQueries(ctx, versions).FindActiveBySlug("about");
+
+        Assert.False(site.Match(() => throw new InvalidOperationException(), found => found.HideTitle));
+    }
+
+    [Fact]
     public async Task SaveVersion_UnknownSite_ReturnsNotFound()
     {
         var result = await SaveAsync(Guid.NewGuid(), "Nope", "nope");

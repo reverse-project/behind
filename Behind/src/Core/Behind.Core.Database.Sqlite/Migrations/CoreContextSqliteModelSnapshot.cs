@@ -681,6 +681,11 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("HideTitle")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<long?>("PublishedAtUtc")
                         .HasColumnType("INTEGER");
 

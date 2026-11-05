@@ -340,6 +340,10 @@ a.card:hover,
     box-shadow: none;
 }
 
+#main-container:has(.behind-site-leading-carousel) {
+    margin-top: 0 !important;
+}
+
 .behind-carousel .carousel-inner {
     background-color: var(--fse-darker);
 }

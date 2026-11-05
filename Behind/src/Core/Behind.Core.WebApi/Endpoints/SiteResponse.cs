@@ -33,13 +33,14 @@ public sealed record SiteVersionResponse(
     string Content,
     DateTimeOffset? PublishedAt,
     DateTimeOffset CreatedAt,
-    bool IsDraft);
+    bool IsDraft,
+    bool HideTitle);
 
 public sealed record SiteSavedResponse(Guid Id, long Version);
 
 public sealed record SiteConflictResponse(string Reason);
 
-public sealed record PublicSiteResponse(Guid Id, string Title, string Slug, string Content, DateTimeOffset PublishedAt);
+public sealed record PublicSiteResponse(Guid Id, string Title, string Slug, string Content, DateTimeOffset PublishedAt, bool HideTitle);
 
 public sealed record SiteImageResponse(Guid Id, string Url);
 

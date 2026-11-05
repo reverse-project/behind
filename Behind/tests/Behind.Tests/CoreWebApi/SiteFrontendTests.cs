@@ -161,9 +161,11 @@ public class SiteFrontendTests
             {
                 "value: title", "value: slugInput", "click: resetSlug", "richEditor: { value: content, upload: uploadImage",
                 "submit: saveDraft", "click: publish", "foreach: versions", "click: load", "click: activate",
-                "visible: isDenied", "visible: canRead"
+                "visible: isDenied", "visible: canRead", "checked: hideTitle"
             },
             binding => Assert.Contains(binding, view));
+        Assert.Contains("hideTitle: self.hideTitle()", viewModel);
+        Assert.Contains("self.hideTitle(result.data.hideTitle)", viewModel);
         Assert.Contains("self.slugEdited = ko.observable(!self.isNew)", viewModel);
         Assert.Contains("session.hasGrant(\"Site.Write\")", viewModel);
         Assert.Contains("\"#/site/\" + self.live().slug", viewModel);
@@ -192,6 +194,8 @@ public class SiteFrontendTests
         var viewModel = Read("viewmodels/site.js");
 
         Assert.Contains("html: content", view);
+        Assert.Contains("visible: !hideTitle()", view);
+        Assert.Contains("self.hideTitle(result.data.hideTitle)", viewModel);
         Assert.Contains("visible: missing", view);
         Assert.Contains("sites.loadPublic(context.params.slug)", viewModel);
         Assert.DoesNotContain("<!--", view);

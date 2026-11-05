@@ -4,6 +4,7 @@ define(["ko", "models/sites", "models/carousels", "bindings/carousel"], function
 
         self.loading = ko.observable(true);
         self.title = ko.observable("");
+        self.hideTitle = ko.observable(false);
         self.content = ko.observable("");
         self.carousel = ko.observable(null);
         self.message = ko.observable("");
@@ -25,6 +26,7 @@ define(["ko", "models/sites", "models/carousels", "bindings/carousel"], function
 
                     if (result.ok) {
                         self.title(result.data.title);
+                        self.hideTitle(result.data.hideTitle);
                         self.content(result.data.content);
 
                         carousels.loadPublic(result.data.id).then(self.carousel);

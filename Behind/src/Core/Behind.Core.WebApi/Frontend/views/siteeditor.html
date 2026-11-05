@@ -11,6 +11,10 @@
             <div class="mb-3">
                 <label class="form-label" for="site-title" data-bind="t: 'common.title'">Title</label>
                 <input id="site-title" class="form-control" type="text" maxlength="200" data-bind="value: title, valueUpdate: 'input', enable: canWrite">
+                <div class="form-check form-switch mt-2">
+                    <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: hideTitle, enable: canWrite"> <span data-bind="t: 'sites.editor.hideTitle'">Hide the title on the page</span></label>
+                </div>
+                <div class="form-text" data-bind="t: 'sites.editor.hideTitleHelp'">The title is still used in lists and the browser, only the heading above the page content is not shown.</div>
             </div>
             <div class="mb-3">
                 <label class="form-label" for="site-slug" data-bind="t: 'sites.editor.slug'">Slug</label>

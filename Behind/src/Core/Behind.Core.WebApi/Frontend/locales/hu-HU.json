@@ -800,6 +800,8 @@
     "sites.editor.edit": "Oldal szerkesztése",
     "sites.editor.slug": "URL-szegmens",
     "sites.editor.generateSlug": "Generálás a címből",
+    "sites.editor.hideTitle": "A cím elrejtése az oldalon",
+    "sites.editor.hideTitleHelp": "A cím a listákban és a böngészőben továbbra is megjelenik, csak az oldal tartalma feletti címsor nem látszik.",
     "sites.editor.slugHelp": "Az oldal itt érhető el: {0}. Ha ez a cím egy beépített oldalhoz tartozik, használja ezt: {1}.",
     "sites.editor.indexSlugHelp": "Ez az URL-szegmens az egyéni kezdőlap: amint ez az oldal élő lesz, a következő címen is megjelenik: {0}.",
     "sites.editor.content": "Tartalom",

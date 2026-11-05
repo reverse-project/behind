@@ -38,6 +38,17 @@ Each version row shows its status (Draft, Published or Live), its title, its slu
 
 The content is cleaned when it is saved: scripts, styles, event handlers and unknown tags are removed.
 
+## Image carousel
+
+A site can have an image carousel: a slider shown above the content of the live page that moves on by itself. Using it is your choice for every site: a site without images is shown as before. Open an existing site in the editor and use the **Image carousel** section (it is not shown for a new site until it is saved).
+
+- **Add images** uploads one or more pictures (PNG, JPEG, GIF or WebP, up to the image size limit, with a limited number of images; the limits are shown in the section). Use the arrows to change the order and the trash button to remove a picture from the carousel.
+- Every picture has an optional **caption**, shown over the picture, and an optional **link** that opens when the picture is clicked. A link starts with `https://`, `http://`, `mailto:`, `#/` (a page of this site) or `/`.
+- **Seconds per image** sets how long a picture stays (within the allowed range shown below the field). The **Preview** shows the slider as visitors see it.
+- **Save carousel** stores a new version of the carousel and shows it on the page right away, as long as the site itself is live. The carousel of a draft site is not shown to visitors.
+- Visitors can use the previous and next buttons, the dots and swipe gestures. The slider pauses while the pointer is over it, and it does not move by itself for visitors whose device asks for reduced motion.
+- **Remove carousel** (needs `Site.Delete`) hides it. A developer sees a **Deleted** badge in the section and can **Restore** it or **Delete permanently** (this also deletes its images). The carousel follows its site: deleting, restoring or permanently deleting a site does the same with its carousel.
+
 ## Addresses
 
 A live site is served at `#/<slug>`. If the slug is the same as a built-in page (for example `users`), the built-in page wins, and the site stays reachable at the fallback address `#/site/<slug>`. The editor lists both addresses of the live version.

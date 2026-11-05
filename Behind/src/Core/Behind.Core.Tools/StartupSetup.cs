@@ -72,8 +72,19 @@ public sealed record StartupBackendSection(string DataDirectory);
 
 public sealed record StartupFrontendFile(StartupFrontendSection Frontend);
 
-public sealed record StartupFrontendSection(StartupSiteSection Site, StartupSitesSection Sites);
+public sealed record StartupFrontendSection(
+    StartupSiteSection Site,
+    StartupSitesSection Sites,
+    StartupCarouselsSection Carousels);
 
 public sealed record StartupSiteSection(string Title, string Copyright, string DefaultLocale);
 
 public sealed record StartupSitesSection(string IndexSlug, long MaxImageBytes);
+
+public sealed record StartupCarouselsSection(
+    int MaxSlides,
+    int MinIntervalSeconds,
+    int MaxIntervalSeconds,
+    int IntervalSeconds,
+    int MaxCaptionLength,
+    long MaxImageBytes);

@@ -108,7 +108,7 @@ public static class VersionedEntityExtensions
             where TEntity : class =>
             (await context.DeletedRowsAsync(rows, cancellationToken)).Count > 0;
 
-        private async Task<List<TEntity>> DeletedRowsAsync<TEntity>(
+        public async Task<List<TEntity>> DeletedRowsAsync<TEntity>(
             IQueryable<TEntity> rows,
             CancellationToken cancellationToken)
             where TEntity : class

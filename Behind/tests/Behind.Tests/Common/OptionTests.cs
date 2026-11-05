@@ -21,6 +21,15 @@ public class OptionTests
     }
 
     [Fact]
+    public void IsNone_ReportsWhetherTheOptionIsEmpty()
+    {
+        Option<int> none = None;
+
+        Assert.True(none.IsNone());
+        Assert.False(Some(1).IsNone());
+    }
+
+    [Fact]
     public void ImplicitFromValue_NonNull_IsSome()
     {
         Option<string> opt = "hello";

@@ -11,7 +11,8 @@ public sealed class SiteCommands(
     AbstractCoreContext context,
     AbstractVersioningContext versions,
     TimeProvider timeProvider,
-    IVfsCommands files) : ISiteCommands
+    IVfsCommands files,
+    ICarouselCommands carousels) : ISiteCommands
 {
     public Task<SiteSaveResult> Create(
         string title,
@@ -72,6 +73,7 @@ public sealed class SiteCommands(
 
         context.Sites.RemoveRange(rows);
         await context.SaveChangesAsync(cancellationToken);
+        await carousels.Delete(siteId, cancellationToken);
 
         return true;
     }
@@ -104,7 +106,14 @@ public sealed class SiteCommands(
 
         deleted.ForEach(row => context.Restores.Mark(row));
 
-        return await Save(new VersionedKey<Guid>(siteId, latest), cancellationToken);
+        var result = await Save(new VersionedKey<Guid>(siteId, latest), cancellationToken);
+
+        if (result is SiteSaveResult.Saved)
+        {
+            await carousels.Restore(siteId, cancellationToken);
+        }
+
+        return result;
     }
 
     public async Task<HardDeleteResult> HardDelete(Guid siteId, CancellationToken cancellationToken = default)
@@ -123,6 +132,7 @@ public sealed class SiteCommands(
 
             await versions.ClearActiveVersionAsync(Site.EntityType, siteId.ToKey(), cancellationToken);
             await versions.SaveChangesAsync(cancellationToken);
+            await carousels.HardDelete(siteId, cancellationToken);
 
             return HardDeleteResult.Deleted;
         }

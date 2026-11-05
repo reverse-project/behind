@@ -145,6 +145,20 @@ public sealed class StartupSetupTests : IDisposable
     }
 
     [Fact]
+    public void Run_FrontendFileHasEditableCarouselSettings()
+    {
+        Request().Run(new StringWriter());
+
+        var carousels = Section(FrontendPath, "Frontend").GetProperty("Carousels");
+        Assert.Equal(CarouselsConfiguration.DefaultMaxSlides, carousels.GetProperty("MaxSlides").GetInt32());
+        Assert.Equal(CarouselsConfiguration.DefaultMinIntervalSeconds, carousels.GetProperty("MinIntervalSeconds").GetInt32());
+        Assert.Equal(CarouselsConfiguration.DefaultMaxIntervalSeconds, carousels.GetProperty("MaxIntervalSeconds").GetInt32());
+        Assert.Equal(CarouselsConfiguration.DefaultIntervalSeconds, carousels.GetProperty("IntervalSeconds").GetInt32());
+        Assert.Equal(CarouselsConfiguration.DefaultMaxCaptionLength, carousels.GetProperty("MaxCaptionLength").GetInt32());
+        Assert.Equal(CarouselsConfiguration.DefaultMaxImageBytes, carousels.GetProperty("MaxImageBytes").GetInt64());
+    }
+
+    [Fact]
     public void Run_PrintsFilesAndAuthenticatorUris()
     {
         var writer = new StringWriter();

@@ -83,14 +83,14 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await using (var seed = _factory.CreateContext())
         {
             await using var seedVersions = _factory.CreateVersioningContext();
-            var commands = new SiteCommands(seed, seedVersions, TimeProvider.System, Substitute.For<IVfsCommands>());
+            var commands = new SiteCommands(seed, seedVersions, TimeProvider.System, Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>());
             siteId = ((SiteSaveResult.Saved)await commands.Create("Old title", "old", "<p/>", true)).Id.Key;
         }
 
         await using (var update = _factory.CreateContext())
         {
             await using var updateVersions = _factory.CreateVersioningContext();
-            await new SiteCommands(update, updateVersions, TimeProvider.System, Substitute.For<IVfsCommands>()).SaveVersion(siteId, "New title", "new", "<p/>", false);
+            await new SiteCommands(update, updateVersions, TimeProvider.System, Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).SaveVersion(siteId, "New title", "new", "<p/>", false);
         }
 
         await using var ctx = _factory.CreateContext();
@@ -261,6 +261,27 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([galleryId]);
 
         Assert.Equal("Gone", labels.Label(galleryId.ToString()));
+    }
+
+    [Fact]
+    public async Task ResolveLabels_NamesCarouselsAfterTheirSiteAndSlidesAfterTheirCaption()
+    {
+        using var bed = new NewsTestBed();
+        var siteId = await bed.CreateSiteAsync("Landing", "landing");
+        await bed.SaveCarouselAsync(siteId, await bed.NewCarouselDraftAsync(5, "Sunrise", " "));
+
+        await using var ctx = bed.Read();
+        var slideKeys = await ctx.CarouselSlides
+            .OrderBy(slide => EF.Property<int>(slide, "Position"))
+            .Select(slide => EF.Property<Guid>(slide, VersionedColumns.Key))
+            .ToListAsync();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([siteId, .. slideKeys]);
+
+        Assert.Equal("Landing", labels.Label(siteId.ToString()));
+        Assert.Equal("Carousel: Landing", labels.LabelKey($"Carousel:{siteId}"));
+        Assert.Equal("Sunrise", labels.Label(slideKeys[0].ToString()));
+        Assert.Equal("Image", labels.Label(slideKeys[1].ToString()));
+        Assert.Equal($"CarouselSlide: Sunrise", labels.LabelKey($"CarouselSlide:{slideKeys[0]}"));
     }
 
     [Fact]

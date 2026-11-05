@@ -145,6 +145,60 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.ToTable("AuditLogEntries");
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.Carousel", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IntervalSeconds")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Key", "Version");
+
+                    b.ToTable("Carousels", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
+            modelBuilder.Entity("Behind.Core.Domain.CarouselSlide", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Caption")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CarouselId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ImageId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LinkUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("ImageId");
+
+                    b.HasIndex("CarouselId", "Version");
+
+                    b.ToTable("CarouselSlides", (string)null);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.Download", b =>
                 {
                     b.Property<Guid>("Key")

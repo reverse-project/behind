@@ -18,7 +18,8 @@ public sealed class SiteImageAttachTests : IDisposable
             ctx,
             versions,
             new FixedTimeProvider(NewsTestBed.Now),
-            new VfsCommands(ctx, _bed.ContentStore));
+            new VfsCommands(ctx, _bed.ContentStore),
+            Substitute.For<ICarouselCommands>());
 
         return siteId is { } id
             ? await commands.SaveVersion(id, "About", slug, content, true)

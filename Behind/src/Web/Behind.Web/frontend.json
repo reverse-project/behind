@@ -10,6 +10,14 @@
     "Sites": {
       "IndexSlug": "",
       "MaxImageBytes": 5242880
+    },
+    "Carousels": {
+      "MaxSlides": 20,
+      "MinIntervalSeconds": 2,
+      "MaxIntervalSeconds": 60,
+      "IntervalSeconds": 5,
+      "MaxCaptionLength": 300,
+      "MaxImageBytes": 5242880
     }
   }
 }

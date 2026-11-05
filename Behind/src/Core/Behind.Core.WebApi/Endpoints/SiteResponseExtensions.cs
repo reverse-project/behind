@@ -71,7 +71,7 @@ public static class SiteResponseExtensions
                 site.IsDraft);
 
         public Option<PublicSiteResponse> ToPublicResponse() =>
-            site.PublishedAt.Map(publishedAt => new PublicSiteResponse(site.Title, site.Slug, site.Content, publishedAt));
+            site.PublishedAt.Map(publishedAt => new PublicSiteResponse(site.Id.Key, site.Title, site.Slug, site.Content, publishedAt));
     }
 
     extension(SiteSaveResult result)

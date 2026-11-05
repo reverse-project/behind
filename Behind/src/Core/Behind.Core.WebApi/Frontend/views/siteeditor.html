@@ -35,6 +35,9 @@
                 <button type="button" class="btn btn-primary" data-bind="enable: canSave, click: publish, t: 'sites.editor.saveAndPublish'">Save and publish</button>
             </div>
         </form>
+        <div data-bind="if: !isNew">
+            <carousel-editor params="siteId: siteId"></carousel-editor>
+        </div>
         <div class="mb-4" data-bind="visible: hasLive">
             <h2 class="h5" data-bind="t: 'sites.editor.liveAddress'">Live address</h2>
             <p class="mb-0"><a data-bind="attr: { href: primaryPath }, text: primaryPath"></a></p>

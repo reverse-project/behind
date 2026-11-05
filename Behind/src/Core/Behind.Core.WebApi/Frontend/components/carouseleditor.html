@@ -1,0 +1,54 @@
+<section class="border rounded p-3 mb-4" data-bind="visible: ready">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <h2 class="h5 mb-0" data-bind="t: 'carousels.editor.title'">Image carousel</h2>
+        <span class="badge text-bg-success" data-bind="visible: isLive, t: 'carousels.editor.live'">Live</span>
+        <span class="badge text-bg-secondary" data-bind="visible: version() !== null, t: { key: 'carousels.editor.version', args: [version()] }">Version</span>
+        <span class="badge text-bg-warning" data-bind="visible: isDeleted, t: 'carousels.editor.deleted'">Deleted</span>
+    </div>
+    <p class="text-body-secondary" data-bind="t: 'carousels.editor.help'">Optional for every site. Without images the page stays as it is. With images they are shown above the page content as a slider that moves on by itself.</p>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: isDeleted">
+        <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2" role="status">
+            <span data-bind="t: 'carousels.editor.deletedNotice'">A deleted carousel exists for this site. Restore it or delete it permanently.</span>
+            <button type="button" class="btn btn-sm btn-outline-success ms-auto" data-bind="click: restore, enable: !busy(), t: 'carousels.editor.restore'">Restore</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bind="click: hardDelete, enable: !busy(), t: 'carousels.editor.hardDelete'">Delete permanently</button>
+        </div>
+    </div>
+    <div data-bind="visible: canWrite">
+        <label class="form-label" for="carousel-files" data-bind="t: 'carousels.editor.uploadImages'">Add images</label>
+        <input id="carousel-files" class="form-control mb-1" type="file" multiple accept="image/png,image/jpeg,image/gif,image/webp" data-bind="event: { change: addFiles }, enable: canUpload">
+        <div class="form-text mb-3" data-bind="text: slideLimitHelp"></div>
+    </div>
+    <p class="text-body-secondary" data-bind="visible: !hasSlides(), t: 'carousels.editor.noSlides'">No images yet.</p>
+    <ul class="list-group mb-3" data-bind="foreach: slides">
+        <li class="list-group-item">
+            <div class="d-flex flex-wrap gap-3">
+                <img class="carousel-editor-preview rounded" alt="" data-bind="attr: { src: imageUrl }">
+                <div class="flex-grow-1">
+                    <label class="form-label small" data-bind="t: 'carousels.editor.caption'">Caption (optional)</label>
+                    <input class="form-control form-control-sm mb-2" type="text" data-bind="attr: { maxlength: $parent.captionLimit }, value: caption, valueUpdate: 'input', enable: $parent.canWrite">
+                    <label class="form-label small" data-bind="t: 'carousels.editor.link'">Link (optional)</label>
+                    <input class="form-control form-control-sm" type="text" placeholder="https://example.com" data-bind="attr: { maxlength: $parent.linkLimit }, value: linkUrl, valueUpdate: 'input', enable: $parent.canWrite">
+                </div>
+                <div class="d-flex flex-md-column gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Move earlier" data-bind="click: moveUp, enable: canMoveUp() && $parent.canWrite(), tAttr: { 'aria-label': 'carousels.editor.moveEarlier' }"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Move later" data-bind="click: moveDown, enable: canMoveDown() && $parent.canWrite(), tAttr: { 'aria-label': 'carousels.editor.moveLater' }"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" aria-label="Remove image" data-bind="click: remove, enable: $parent.canWrite, tAttr: { 'aria-label': 'carousels.editor.removeImage' }"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                </div>
+            </div>
+        </li>
+    </ul>
+    <div class="mb-3" data-bind="visible: hasSlides">
+        <label class="form-label" for="carousel-interval" data-bind="t: 'carousels.editor.interval'">Seconds per image</label>
+        <input id="carousel-interval" class="form-control w-auto" type="number" step="1" data-bind="attr: { min: minInterval, max: maxInterval }, value: intervalSeconds, valueUpdate: 'input', enable: canWrite, css: { 'is-invalid': !intervalValid() }">
+        <div class="form-text" data-bind="text: intervalHelp"></div>
+    </div>
+    <div class="mb-3" data-bind="visible: hasSlides">
+        <h3 class="h6" data-bind="t: 'carousels.editor.preview'">Preview</h3>
+        <div data-bind="carousel: previewData"></div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary" data-bind="enable: canSave, click: save, t: 'carousels.editor.save'">Save carousel</button>
+        <button type="button" class="btn btn-outline-danger" data-bind="visible: isLive() && canDelete(), enable: !busy(), click: remove, t: 'carousels.editor.remove'">Remove carousel</button>
+    </div>
+</section>

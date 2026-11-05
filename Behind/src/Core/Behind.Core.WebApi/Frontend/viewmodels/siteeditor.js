@@ -17,6 +17,7 @@ define(["ko", "models/session", "models/sites", "models/slug", "models/i18n", "b
         var self = this;
         var siteId = context.params.id || null;
 
+        self.siteId = siteId;
         self.isNew = siteId === null;
         self.isSignedIn = session.isSignedIn;
         self.canRead = ko.pureComputed(function () {

@@ -39,7 +39,7 @@ public sealed record SiteSavedResponse(Guid Id, long Version);
 
 public sealed record SiteConflictResponse(string Reason);
 
-public sealed record PublicSiteResponse(string Title, string Slug, string Content, DateTimeOffset PublishedAt);
+public sealed record PublicSiteResponse(Guid Id, string Title, string Slug, string Content, DateTimeOffset PublishedAt);
 
 public sealed record SiteImageResponse(Guid Id, string Url);
 

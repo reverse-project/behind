@@ -347,3 +347,26 @@
     white-space: pre-wrap;
     word-break: break-word;
 }
+
+.behind-carousel {
+    overflow: hidden;
+    border-radius: var(--bs-border-radius);
+}
+
+.behind-carousel-image {
+    aspect-ratio: 16 / 7;
+    object-fit: cover;
+}
+
+.behind-carousel .carousel-caption {
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: var(--bs-border-radius);
+    bottom: 2.5rem;
+    padding: 0.5rem 1rem;
+}
+
+.carousel-editor-preview {
+    width: 8rem;
+    height: 4.5rem;
+    object-fit: cover;
+}

@@ -125,6 +125,40 @@ The `Frontend:Sites` section (`SitesConfiguration`, for example in `frontend.jso
 - `Accounts` (`AccountsConfiguration`, section `Backend:Accounts`): `SignIn` and `SignUp` (both default `true`) show or hide the **Sign in** and **Sign up** buttons of the header of the web client, for example `{ "Backend": { "Accounts": { "SignUp": false } } }`. It is only a user interface switch: the sign in and sign up endpoints and pages keep working. `GET /accounts/settings` (public) returns `{ "signIn": ..., "signUp": ... }` and the client reads it at startup (`models/accounts.js`).
 - `Comments` (`CommentsConfiguration`, section `Backend:Comments`): switches the commenting feature on or off per entity, one boolean per commentable entity (`News`, default `true`), for example `{ "Backend": { "Comments": { "News": false } } }`. While an entity's comments are off, every comment endpoint of it (`GET`/`POST /news/{id}/comments`, `POST /news/comments/{id}` and `.../delete`) answers `404` (`CommentsEnabledExtensions.RequireCommentsOf`, checked after the authorization), existing comments are kept and come back when the setting is turned on again. `GET /comments/settings` (public) returns `{ "news": true|false }`; the web client reads it and hides the comment count of the news list and of the news manager and the comments section of the news page. A new commentable entity adds its own property and `IsEnabled` case and uses `RequireCommentsOf` on its comment routes.
 
+### Carousel Endpoints
+
+A site has at most one carousel, and using it is optional per site: a site without a carousel is shown as before (see "Site carousels" in the database architecture). The limits are configuration, not constants, see "Carousels Settings".
+
+| Endpoint | Access |
+|----------|--------|
+| `GET /carousels/settings` | public, the effective limits `{ maxSlides, minIntervalSeconds, maxIntervalSeconds, defaultIntervalSeconds, maxCaptionLength, maxLinkUrlLength, maxImageBytes }` |
+| `GET /carousels/sites/{siteId}` | public, `404` unless the site is live and has a carousel |
+| `GET /carousels/images/{id}` | public, only images of the `Carousels` VFS type |
+| `POST /carousels/images` | `Site.Write` (multipart `file`, `413` over `MaxImageBytes`, `415` for other than PNG, JPEG, GIF, WebP) |
+| `GET /sites/{siteId}/carousel` | `Site.Read` (`?deleted=true` needs `RawDatabase.Manage`) |
+| `POST /sites/{siteId}/carousel` | `Site.Write`, body `{ intervalSeconds, slides: [{ imageId, caption, linkUrl }] }` (1 to `MaxSlides` slides, an interval inside the configured range, a caption up to `MaxCaptionLength`, a link that is empty, `#/...`, `/...` or an `http`, `https` or `mailto` URL), answers `{ siteId, version }`, `404` for an unknown site, `400` for an invalid draft or an unknown image, `409` on a version conflict |
+| `POST /sites/{siteId}/carousel/delete` | `Site.Delete` (soft delete) |
+| `POST /sites/{siteId}/carousel/restore` | `RawDatabase.Manage` |
+| `POST /sites/{siteId}/carousel/hard/delete` | `RawDatabase.Manage` |
+
+The public site responses (`GET /sites/slug/{slug}`, `GET /sites/index`) include the `id` of the site, the web client uses it to read the carousel. Stored links that are not safe are answered as empty links.
+
+### Carousels Settings
+
+The `Frontend:Carousels` section (`CarouselsConfiguration`, in `frontend.json`) holds the limits of the site carousels. Like every field of the configuration files it is edited on the Settings page and picked up while the application runs (the endpoints read `IOptionsSnapshot<CarouselsConfiguration>`), and the startup create command of the behind-core tool writes the defaults:
+
+```json
+{ "Frontend": { "Carousels": { "MaxSlides": 20, "MinIntervalSeconds": 2, "MaxIntervalSeconds": 60, "IntervalSeconds": 5, "MaxCaptionLength": 300, "MaxImageBytes": 5242880 } } }
+```
+
+- `MaxSlides`: the most images of one carousel (default 20, zero or negative falls back to the default).
+- `MinIntervalSeconds` and `MaxIntervalSeconds`: the allowed range of the seconds an image is shown (default 2 to 60). A minimum below 1 or a maximum below the minimum falls back to the default range.
+- `IntervalSeconds`: the interval a new carousel starts with (default 5), kept inside the range.
+- `MaxCaptionLength`: the longest caption (default 300, never more than `CarouselsConfiguration.CaptionCeiling`, 1000, the size of the column).
+- `MaxImageBytes`: the largest accepted carousel image upload (default 5 MB, zero or negative falls back to the default); larger uploads answer `413` with `{ "maxBytes": ... }`.
+
+The values of existing carousels are kept when a limit changes, only new saves are checked against the current limits. `GET /carousels/settings` returns the effective values and the web client reads them before showing the carousel section of the site editor.
+
 ### Galleries Settings
 
 The `Frontend:Galleries` section (`GalleriesConfiguration`) has `MaxImageBytes`, the largest accepted gallery image or thumbnail upload (default 10 MB, zero or negative falls back to the default). Larger files are reported per file as `too-large` in a batch upload, and answer `413` for the thumbnail upload. The gallery upload endpoints accept request bodies up to `GalleryImageEndpoints.MaxRequestBytes` (128 MB), so the web client sends five files per request.

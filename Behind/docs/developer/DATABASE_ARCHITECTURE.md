@@ -679,6 +679,21 @@ The `Article` grant area (`Article.Read`, `Write`, `Delete`, `Manage`) is admini
 
 The `Gallery` grant area (`Gallery.Read`, `Write`, `Delete`, `Manage`) is administration only, like `Article`. The built-in main menu has a `Galleries` tab (`#/galleries`).
 
+## Site carousels
+
+`Carousel` and `CarouselSlide` are versioned entities (`VersionedKey<Guid>` id, a save inserts the next version and never updates a row, soft delete, hard delete, restore) that give a site an optional image slider.
+
+- `Carousel` (`Carousels`): `IntervalSeconds` (inside the configured range). The key of a carousel is the key of its site (no foreign key because the keys are composite), so a site has at most one carousel and every save of it adds a version. A save makes the new version live (`ActiveVersions` with `Carousel.EntityType`), there are no drafts.
+- `CarouselSlide` (`CarouselSlides`): `Caption` (up to 1000 characters, the configured limit is lower or equal) and `LinkUrl` (both may be empty) plus the shadow `CarouselId` (the site key), `ImageId` (a `VfsFile` key of the `Carousels` type, no foreign key) and `Position`. Like `GalleryItem`, every save inserts the new carousel row and a fresh row per slide, so a version is complete on its own. Slides are not soft deleted on their own.
+- `CarouselCommands.Save` needs a site that is not deleted and checks that every image exists with the `Carousels` VFS type. The next version is computed over all rows including the deleted ones, so a carousel can be created again after it was removed.
+- Deletion: `Delete` soft deletes every version, `Restore` brings the deleted versions back and `HardDelete` (only deleted rows) removes them with their slides and the images no other slide uses, and clears the active version once no version is left. `SiteCommands` calls them when a site is deleted, restored or permanently deleted, so the carousel follows its site.
+- Public reading: `ICarouselQueries.FindLive` only answers for a site that has a live version, so the carousel of a draft or deleted site is never served. The management read (`FindManaged`) returns the latest carousel in the requested deletion state.
+- Images: the `Carousels` VFS type has its own kind (`VfsTypes.CarouselImages`), its own URL `/carousels/images/<id>` and its own upload endpoint. A save attaches the images to the site (`IVfsCommands.Attach`, content under `vfs/Carousels/<site uuid>/<image uuid>`).
+- Optional per site: a site only has a carousel once one is saved, a site without one is served exactly as before. The limits (slides, interval range, caption length, image size) are configuration (`Frontend:Carousels`, `CarouselsConfiguration`) and checked by the endpoint, see the web API conventions; the database only stores the values.
+- Audit labels: the carousel key is the site key, so the audit log shows the title of the site (`Carousel` entity name); a slide is named by its caption (`Image` when it has none).
+- Raw database editor: both tables are editable like every other table, no registration is needed.
+- Migration: `AddCarousels` creates `Carousels` and `CarouselSlides`.
+
 ## Downloads
 
 `DownloadFolder` and `Download` are versioned entities (`VersionedKey<Guid>` id, a save inserts the next version and never updates a row, no drafts, soft delete, hard delete, restore) like `Menu`.

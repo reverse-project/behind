@@ -67,6 +67,7 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
             typeof(Article),
             typeof(ArticleCategory),
             typeof(Gallery),
+            typeof(Carousel),
             typeof(DownloadFolder),
             typeof(Download),
             typeof(Menu),

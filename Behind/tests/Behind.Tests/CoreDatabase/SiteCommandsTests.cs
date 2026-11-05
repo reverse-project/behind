@@ -28,21 +28,21 @@ public sealed class SiteCommandsTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
         await using var versions = _factory.CreateVersioningContext();
-        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>()).Create(title, slug, content, publish);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).Create(title, slug, content, publish);
     }
 
     private async Task<SiteSaveResult> SaveAsync(Guid id, string title, string slug, bool publish = false, string content = "<p>v</p>")
     {
         await using var ctx = _factory.CreateContext();
         await using var versions = _factory.CreateVersioningContext();
-        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now.AddMinutes(1)), Substitute.For<IVfsCommands>()).SaveVersion(id, title, slug, content, publish);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now.AddMinutes(1)), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).SaveVersion(id, title, slug, content, publish);
     }
 
     private async Task<SiteSaveResult> ActivateAsync(VersionedKey<Guid> id)
     {
         await using var ctx = _factory.CreateContext();
         await using var versions = _factory.CreateVersioningContext();
-        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now.AddMinutes(2)), Substitute.For<IVfsCommands>()).Activate(id);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now.AddMinutes(2)), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).Activate(id);
     }
 
     private async Task<ISiteQueries.SiteHistory> HistoryAsync(Guid id)
@@ -229,13 +229,13 @@ public sealed class SiteCommandsTests : IDisposable
         await using (var ctx = _factory.CreateAuditedContext(_actor))
         await using (var versions = _factory.CreateAuditedVersioningContext(_actor))
         {
-            siteId = Saved(await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>()).Create("About", "about", "<p/>", true)).Key;
+            siteId = Saved(await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).Create("About", "about", "<p/>", true)).Key;
         }
 
         await using (var ctx = _factory.CreateAuditedContext(_actor))
         await using (var versions = _factory.CreateAuditedVersioningContext(_actor))
         {
-            await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>()).SaveVersion(siteId, "About", "about", "<p/>", true);
+            await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).SaveVersion(siteId, "About", "about", "<p/>", true);
         }
 
         await using var read = _factory.CreateContext();
@@ -263,21 +263,21 @@ public sealed class SiteCommandsTests : IDisposable
     {
         await using var ctx = _factory.CreateAuditedContext(_actor);
         await using var versions = _factory.CreateAuditedVersioningContext(_actor);
-        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>()).Delete(id);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).Delete(id);
     }
 
     private async Task<SiteSaveResult> RestoreAsync(Guid id)
     {
         await using var ctx = _factory.CreateAuditedContext(_actor);
         await using var versions = _factory.CreateAuditedVersioningContext(_actor);
-        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>()).Restore(id);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).Restore(id);
     }
 
     private async Task<HardDeleteResult> HardDeleteAsync(Guid id)
     {
         await using var ctx = _factory.CreateAuditedContext(_actor);
         await using var versions = _factory.CreateAuditedVersioningContext(_actor);
-        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>()).HardDelete(id);
+        return await new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>()).HardDelete(id);
     }
 
     private async Task<(int Sites, int Active)> CountRowsAsync()
@@ -383,7 +383,7 @@ public sealed class SiteCommandsTests : IDisposable
         await using (var ctx = _factory.CreateAuditedContext(_actor))
         await using (var versions = _factory.CreateAuditedVersioningContext(_actor))
         {
-            var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>());
+            var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>());
             siteId = Saved(await commands.Create("About", "about", "<p/>", true)).Key;
             await commands.SaveVersion(siteId, "About", "about", "<p/>", false);
         }
@@ -392,7 +392,7 @@ public sealed class SiteCommandsTests : IDisposable
         {
             await using var ctx = _factory.CreateAuditedContext(_actor);
             await using var versions = _factory.CreateAuditedVersioningContext(_actor);
-            var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>());
+            var commands = new SiteCommands(ctx, versions, new FixedTimeProvider(Now), Substitute.For<IVfsCommands>(), Substitute.For<ICarouselCommands>());
 
             _ = step switch
             {

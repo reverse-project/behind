@@ -185,6 +185,11 @@ namespace Behind.Common
         public static Unit Match<T>(this Option<T> @this, Action none, Action<T> some)
             => @this.Match(ActionExtensions.ToFunc(none), ActionExtensions.ToFunc(some));
 
+        public static bool IsNone<T>(this Option<T> @this)
+            => @this.Match(
+                () => true,
+                (_) => false);
+
         internal static bool IsSome<T>(this Option<T> @this)
             => @this.Match(
                 () => false,

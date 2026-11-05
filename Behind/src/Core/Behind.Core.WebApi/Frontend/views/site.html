@@ -3,6 +3,7 @@
     <div class="alert alert-warning" role="alert" data-bind="visible: missing, text: message"></div>
     <div data-bind="visible: found">
         <h1 class="mb-4 text-break" data-bind="text: title"></h1>
+        <div class="mb-4" data-bind="carousel: carousel, visible: carousel"></div>
         <div class="site-content" data-bind="html: content"></div>
     </div>
 </article>

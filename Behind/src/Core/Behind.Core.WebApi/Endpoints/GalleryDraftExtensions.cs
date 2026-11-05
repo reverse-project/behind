@@ -38,9 +38,4 @@ public static class GalleryDraftExtensions
                 : Some(new IGalleryCommands.GalleryItemDraft(item.ImageId, item.ThumbnailId, description));
         }
     }
-
-    extension<T>(Option<T> option)
-    {
-        private bool IsNone() => option.Match(() => true, _ => false);
-    }
 }

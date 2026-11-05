@@ -132,6 +132,10 @@ public static class WebApiExtensions
                 builder.Configuration.GetSection(GalleriesConfiguration.SectionName)
             );
 
+            builder.Services.Configure<CarouselsConfiguration>(
+                builder.Configuration.GetSection(CarouselsConfiguration.SectionName)
+            );
+
             securityConfiguration.DataProtection.Match(
                 none: () => builder,
                 settings =>
@@ -215,6 +219,8 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IArticleCategoryCommands, ArticleCategoryCommands>();
             builder.Services.AddScoped<IGalleryQueries, GalleryQueries>();
             builder.Services.AddScoped<IGalleryCommands, GalleryCommands>();
+            builder.Services.AddScoped<ICarouselQueries, CarouselQueries>();
+            builder.Services.AddScoped<ICarouselCommands, CarouselCommands>();
             builder.Services.AddScoped<IVfsQueries, VfsQueries>();
             builder.Services.AddScoped<IVfsCommands, VfsCommands>();
             builder.Services.AddScoped<GalleryThumbnails>();
@@ -899,6 +905,7 @@ public static class WebApiExtensions
 
             application.MapArticleEndpoints();
             application.MapGalleryEndpoints();
+            application.MapCarouselEndpoints();
             application.MapDownloadEndpoints();
             application.MapMenuEndpoints();
             application.MapRawDatabaseEndpoints();

@@ -132,7 +132,14 @@ public static class StartupSetupExtensions
                         StartupSetupRequest.DefaultTitle,
                         string.Empty,
                         StartupSetupRequest.DefaultLocale),
-                    new StartupSitesSection(string.Empty, SitesConfiguration.DefaultMaxImageBytes)))
+                    new StartupSitesSection(string.Empty, SitesConfiguration.DefaultMaxImageBytes),
+                    new StartupCarouselsSection(
+                        CarouselsConfiguration.DefaultMaxSlides,
+                        CarouselsConfiguration.DefaultMinIntervalSeconds,
+                        CarouselsConfiguration.DefaultMaxIntervalSeconds,
+                        CarouselsConfiguration.DefaultIntervalSeconds,
+                        CarouselsConfiguration.DefaultMaxCaptionLength,
+                        CarouselsConfiguration.DefaultMaxImageBytes)))
                     .ToConfigurationJson(),
                 []);
     }

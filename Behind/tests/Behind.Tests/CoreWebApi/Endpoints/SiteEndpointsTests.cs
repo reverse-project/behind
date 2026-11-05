@@ -338,7 +338,7 @@ public class SiteEndpointsTests
 
         Assert.Equal("no-cache", context.Response.Headers.CacheControl);
         Assert.Equal(
-            new PublicSiteResponse("About us", "about-us", "<p>x</p>", Now),
+            new PublicSiteResponse(SiteId, "About us", "about-us", "<p>x</p>", Now),
             Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value);
     }
 
@@ -409,7 +409,7 @@ public class SiteEndpointsTests
 
         Assert.Equal("no-cache", context.Response.Headers.CacheControl);
         Assert.Equal(
-            new PublicSiteResponse("Home", "home", "<p>x</p>", Now),
+            new PublicSiteResponse(SiteId, "Home", "home", "<p>x</p>", Now),
             Assert.IsType<JsonHttpResult<PublicSiteResponse>>(result).Value);
     }
 

@@ -50,6 +50,8 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n"], f
         MenuItem: "audit.entities.MenuItem",
         Gallery: "audit.entities.Gallery",
         GalleryItem: "audit.entities.GalleryItem",
+        Carousel: "audit.entities.Carousel",
+        CarouselSlide: "audit.entities.CarouselSlide",
         VfsFile: "audit.entities.VfsFile",
         DownloadFolder: "audit.entities.DownloadFolder",
         Download: "audit.entities.Download"

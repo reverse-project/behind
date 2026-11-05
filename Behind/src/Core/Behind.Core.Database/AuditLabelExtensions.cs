@@ -142,6 +142,13 @@ public static class AuditLabelExtensions
                     .AsNoTracking()
                     .ToListAsync(cancellationToken))
                 .Select(item => item with { Label = item.Label.Labelled(GalleryItemLabelLength) }),
+            .. (await context.CarouselSlides
+                    .Where(slide => ids.Contains(EF.Property<Guid>(slide, VersionedColumns.Key)))
+                    .OrderByDescending(slide => EF.Property<long>(slide, VersionedColumns.Version))
+                    .Select(slide => new Named(EF.Property<Guid>(slide, VersionedColumns.Key), slide.Caption))
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken))
+                .Select(slide => slide with { Label = slide.Label.Labelled(GalleryItemLabelLength) }),
             .. await context.DownloadFolders
                 .Where(folder => ids.Contains(EF.Property<Guid>(folder, VersionedColumns.Key)))
                 .OrderByDescending(folder => EF.Property<long>(folder, VersionedColumns.Version))

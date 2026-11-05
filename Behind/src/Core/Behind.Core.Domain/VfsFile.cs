@@ -30,9 +30,11 @@ public static class VfsTypes
     public const string ArticleCategories = "ArticleCategories";
     public const string Galleries = "Galleries";
     public const string Downloads = "Downloads";
+    public const string Carousels = "Carousels";
     public const string SiteImageUrl = "/sites/images";
     public const string NewsImageUrl = "/news/images";
     public const string ArticleImageUrl = "/articles/images";
+    public const string CarouselImageUrl = "/carousels/images";
 
     public static readonly IReadOnlyList<string> NewsImages = [News, NewsCategories];
 
@@ -42,17 +44,27 @@ public static class VfsTypes
 
     public static readonly IReadOnlyList<string> DownloadFiles = [Downloads];
 
+    public static readonly IReadOnlyList<string> CarouselImages = [Carousels];
+
     public static readonly IReadOnlyList<string> AllSiteImages = [Sites, .. NewsImages, .. ArticleImages];
 
     public static IReadOnlyList<string> SameKindAs(string type) =>
-        type == Galleries ? GalleryImages : type == Downloads ? DownloadFiles : AllSiteImages;
+        type == Galleries
+            ? GalleryImages
+            : type == Downloads
+                ? DownloadFiles
+                : type == Carousels
+                    ? CarouselImages
+                    : AllSiteImages;
 
     public static string ImageUrlOf(string type) =>
         NewsImages.Contains(type)
             ? NewsImageUrl
             : ArticleImages.Contains(type)
                 ? ArticleImageUrl
-                : SiteImageUrl;
+                : CarouselImages.Contains(type)
+                    ? CarouselImageUrl
+                    : SiteImageUrl;
 
     public static IReadOnlyList<string> ReferencedImageUrlsOf(string type) =>
         ImageUrlOf(type) == SiteImageUrl ? [SiteImageUrl] : [ImageUrlOf(type), SiteImageUrl];

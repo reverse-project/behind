@@ -20,7 +20,7 @@ public sealed class SiteImageEndpoints
         HttpContext httpContext,
         IVfsCommands commands,
         IOptionsSnapshot<SitesConfiguration> configuration) =>
-        Store(VfsTypes.Sites, file, httpContext, commands, configuration);
+        Store(VfsTypes.Sites, file, httpContext, commands, configuration.Value.ImageLimit);
 
     [IgnoreETag]
     public static Task<IResult> UploadNews(
@@ -28,7 +28,7 @@ public sealed class SiteImageEndpoints
         HttpContext httpContext,
         IVfsCommands commands,
         IOptionsSnapshot<SitesConfiguration> configuration) =>
-        Store(VfsTypes.News, file, httpContext, commands, configuration);
+        Store(VfsTypes.News, file, httpContext, commands, configuration.Value.ImageLimit);
 
     [IgnoreETag]
     public static Task<IResult> UploadArticle(
@@ -36,21 +36,27 @@ public sealed class SiteImageEndpoints
         HttpContext httpContext,
         IVfsCommands commands,
         IOptionsSnapshot<SitesConfiguration> configuration) =>
-        Store(VfsTypes.Articles, file, httpContext, commands, configuration);
+        Store(VfsTypes.Articles, file, httpContext, commands, configuration.Value.ImageLimit);
+
+    [IgnoreETag]
+    public static Task<IResult> UploadCarousel(
+        IFormFile? file,
+        HttpContext httpContext,
+        IVfsCommands commands,
+        IOptionsSnapshot<CarouselsConfiguration> configuration) =>
+        Store(VfsTypes.Carousels, file, httpContext, commands, configuration.Value.ImageLimit);
 
     private static async Task<IResult> Store(
         string type,
         IFormFile? file,
         HttpContext httpContext,
         IVfsCommands commands,
-        IOptionsSnapshot<SitesConfiguration> configuration)
+        long limit)
     {
         if (file is null || file.Length == 0)
         {
             return Results.BadRequest();
         }
-
-        var limit = configuration.Value.ImageLimit;
 
         if (file.Length > limit)
         {
@@ -86,6 +92,10 @@ public sealed class SiteImageEndpoints
     [IgnoreETag]
     public static Task<IResult> GetArticle(Guid id, HttpContext httpContext, IVfsQueries queries) =>
         Serve(VfsTypes.ArticleImages, id, httpContext, queries);
+
+    [IgnoreETag]
+    public static Task<IResult> GetCarousel(Guid id, HttpContext httpContext, IVfsQueries queries) =>
+        Serve(VfsTypes.CarouselImages, id, httpContext, queries);
 
     private static async Task<IResult> Serve(
         IReadOnlyList<string> types,

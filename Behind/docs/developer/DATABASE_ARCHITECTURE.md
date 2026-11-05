@@ -756,6 +756,17 @@ Everything that is uploaded is a file of one virtual file system (VFS) instead o
 
 The `Menu` grant area (`Menu.Read`, `Write`, `Delete`, `Manage`) is administration only: `Users` do not get `Menu.Read`. Resolving a menu for the page is public.
 
+## Route Aliases
+
+`RouteAlias` is a versioned entity (`VersionedKey<Guid>` id, a save inserts the next version and never updates a row, soft delete, hard delete, restore) like `Menu`. It maps a short route to a page of the application, for example `manuals` to `#/downloads/products/manuals`.
+
+- Columns: `Alias` (a slug of up to 100 characters, unique among the active route aliases, indexed) and `Target` (up to 2000 characters, validated by `RouteTargetExtensions.IsValidRouteTarget`: it starts with `#/` and holds no whitespace, control characters or backslashes).
+- Queries: `IRouteAliasQueries.FindTarget` answers the target of the newest version of an active alias; the management list is paged with search, letters and the deleted state.
+- Audit labels: `AuditLabelExtensions` names a route alias by the alias of its newest version, also when it is deleted.
+- Migration: `AddRouteAliases` creates `RouteAliases`.
+
+The `RouteAlias` grant area (`RouteAlias.Read`, `Write`, `Delete`, `Manage`) is administration only, like `Menu`. Resolving an alias is public. The table is editable in the raw database editor like every other table.
+
 ## Raw Database Editors
 
 Developers (`RawDatabase.Manage`) can edit the rows of every table as they are stored (`#/manage/raw-database`, see `WEBAPI_CONVENTIONS.md`). The editor is generic and driven by the EF Core model, so a new entity needs no extra code to appear in it:

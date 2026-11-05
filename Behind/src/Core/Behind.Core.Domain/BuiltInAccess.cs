@@ -77,7 +77,7 @@ public static class BuiltInAccess
     {
         private bool IsDeveloperOnly => grant.Area == GrantArea.Configuration;
 
-        private bool IsAdministrationOnly => grant.Area is GrantArea.AuditLog or GrantArea.Impersonation or GrantArea.Site or GrantArea.News or GrantArea.Article or GrantArea.Menu or GrantArea.Gallery or GrantArea.Download;
+        private bool IsAdministrationOnly => grant.Area is GrantArea.AuditLog or GrantArea.Impersonation or GrantArea.Site or GrantArea.News or GrantArea.Article or GrantArea.Menu or GrantArea.Gallery or GrantArea.Download or GrantArea.RouteAlias;
     }
 
     private static BuiltInGrant NewGrant(int number, string area, string action) =>

@@ -45,6 +45,8 @@ Behind.Core.Domain/
 ├── BuiltInMenus.cs         # The built-in main menu with its tabs and user menu items
 ├── MenuUrlExtensions.cs    # Which menu item URLs are safe (relative, http, https, mailto, tel)
 ├── MenuVisibilityExtensions.cs # Role based visibility of menu items
+├── RouteAlias.cs           # The route alias record (short route and target route)
+├── RouteTargetExtensions.cs # Which route alias targets are valid (internal #/ routes)
 └── Reason.cs              # Business reason value object
 ```
 

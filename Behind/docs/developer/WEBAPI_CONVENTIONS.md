@@ -270,6 +270,20 @@ Menus are under `/menus` (`MenuRoutesExtensions.MapMenuEndpoints`). The page bui
 
 Saving answers `409` with `{ "reason": ... }`: `name-taken`, `built-in` (renaming or deleting the main menu), `unknown-menu`, `invalid-parent`, `kind-not-allowed`, `unknown-role`, `version-conflict`.
 
+### Route Alias Endpoints
+
+Route aliases are under `/route-aliases` (`RouteAliasRoutesExtensions.MapRouteAliasEndpoints`). The frontend router asks for an alias before it shows a site for an unknown `#/<slug>`; when the alias exists the router runs the route of the target without changing the address.
+
+| Endpoint | Access |
+|----------|--------|
+| `GET /route-aliases/resolve/{alias}` | public, answers `{ "alias", "target" }` for an active alias (the alias is trimmed and lowercased) or `404`. Not cached |
+| `GET /route-aliases/manage` | `RouteAlias.Read`, paged (`page`, `pageSize`) with `search` (alias or target), `letter` (first letter of the alias) and `deleted` (`RawDatabase.Manage` for `deleted`) and the available `letters` |
+| `POST /route-aliases`, `POST /route-aliases/{id}` | `RouteAlias.Write`, saving inserts a new version; the alias is turned into a slug, `400` for a blank alias or a target that does not start with `#/`, is longer than 2000 characters or holds whitespace, control characters or backslashes |
+| `POST /route-aliases/{id}/delete` | `RouteAlias.Delete` |
+| `POST /route-aliases/{id}/restore`, `POST /route-aliases/{id}/hard/delete` | `RawDatabase.Manage` |
+
+Saving answers `409` with `{ "reason": ... }`: `alias-taken`, `version-conflict`.
+
 ### Raw Database Endpoints
 
 The raw database editor is under `/raw-database` (`RawDatabaseRoutesExtensions.MapRawDatabaseEndpoints`). Every route needs `RawDatabase.Manage`. The tables come from the EF Core relational model (`DbContext.RawTables`, `Behind.Common.Database.Raw`), so every entity, join table and versioning table with a primary key is covered without any per entity code.

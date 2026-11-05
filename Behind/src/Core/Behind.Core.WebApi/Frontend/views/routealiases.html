@@ -1,0 +1,58 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'routeAliases.title'">Route aliases</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'routeAliases.back'">Back to administration</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'routeAliases.signInToManage'">to manage route aliases.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'routeAliases.denied'">You need route alias access to manage route aliases.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
+    <div data-bind="visible: canRead">
+        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
+            <h2 class="h5" data-bind="text: heading"></h2>
+            <div class="mb-3">
+                <label class="form-label" for="route-alias-alias" data-bind="t: 'routeAliases.alias'">Short route</label>
+                <div class="input-group">
+                    <span class="input-group-text">#/</span>
+                    <input id="route-alias-alias" class="form-control" type="text" maxlength="200" data-bind="value: alias, valueUpdate: 'input'">
+                </div>
+                <div class="form-text" data-bind="t: { key: 'routeAliases.aliasHelp', args: ['manuals'] }">The short route typed after #/, for example <code>manuals</code>. It is turned into lowercase letters, digits and dashes. Built-in pages win over an alias with the same name.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="route-alias-target" data-bind="t: 'routeAliases.target'">Target route</label>
+                <input id="route-alias-target" class="form-control" type="text" maxlength="2000" data-bind="value: target, valueUpdate: 'input', tAttr: { placeholder: 'routeAliases.targetPlaceholder' }">
+                <div class="form-text" data-bind="t: 'routeAliases.targetHelp'">The page the short route opens. It must start with #/, for example #/downloads/products/manuals.</div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isEditing, click: reset, t: 'common.cancel'">Cancel</button>
+            </div>
+        </form>
+        <div data-bind="with: list">
+            <form class="input-group mb-3" data-bind="submit: find">
+                <input class="form-control" type="search" maxlength="200" placeholder="Search by route or target" aria-label="Search route aliases" data-bind="value: search, tAttr: { placeholder: 'routeAliases.search.placeholder', 'aria-label': 'routeAliases.search.label' }">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
+            </form>
+            <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+                <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'routeAliases.showDeleted'">Show deleted route aliases</span></label>
+            </div>
+            <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
+            <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'routeAliases.empty'">No route aliases found.</p>
+            <ul class="list-group mb-3" data-bind="foreach: items">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <div class="me-auto">
+                        <a class="text-break" data-bind="attr: { href: href }, visible: !isDeleted"><strong data-bind="text: '#/' + alias"></strong></a>
+                        <strong class="text-break" data-bind="text: '#/' + alias, visible: isDeleted"></strong>
+                        <span class="text-body-secondary mx-2">&rarr;</span>
+                        <code class="text-break" data-bind="text: target"></code>
+                    </div>
+                    <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete, t: 'common.deletePermanently'">Delete permanently</button>
+                </li>
+            </ul>
+            <pager class="d-block" params="pager: pager"></pager>
+        </div>
+    </div>
+</section>

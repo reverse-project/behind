@@ -666,6 +666,33 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         .HasAnnotation("Behind:SoftDeletable", true);
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.RouteAlias", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Alias")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key", "Version");
+
+                    b.HasIndex("Alias");
+
+                    b.ToTable("RouteAliases", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.Site", b =>
                 {
                     b.Property<Guid>("SiteId")

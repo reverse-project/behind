@@ -190,6 +190,12 @@ public static class AuditLabelExtensions
                 .OrderByDescending(item => EF.Property<long>(item, VersionedColumns.Version))
                 .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key), item.Title))
                 .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.RouteAliases
+                .Where(alias => ids.Contains(EF.Property<Guid>(alias, VersionedColumns.Key)))
+                .OrderByDescending(alias => EF.Property<long>(alias, VersionedColumns.Version))
+                .Select(alias => new Named(EF.Property<Guid>(alias, VersionedColumns.Key), alias.Alias))
+                .AsNoTracking()
                 .ToListAsync(cancellationToken)
         ];
 

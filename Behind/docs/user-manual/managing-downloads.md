@@ -41,3 +41,7 @@ Use **Rename** in the table to change the display name of an uploaded file later
 - Developers see a **Show deleted folders and files** switch. Deleted folders and files can be **restored** or **permanently deleted**. A folder can only be restored when the folder it was in is not deleted and no other folder in it uses its slug; a file can only be restored when its folder is not deleted. Permanently deleting a folder also removes its subfolders and files, and the content of the files, for good.
 
 Everything you change here is recorded in the [audit log](./audit-log.md) with the display names of the folders and files.
+
+## Short routes for folders
+
+A deep folder such as `#/downloads/products/manuals` can get a short route like `#/manuals` with a [route alias](./managing-route-aliases.md).

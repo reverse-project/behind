@@ -401,6 +401,25 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesRouteAliasesAfterTheirNewestAliasEvenWhenDeleted()
+    {
+        using var bed = new NewsTestBed();
+        var aliasId = await bed.CreateRouteAliasAsync("manuals", "#/downloads/a");
+        await bed.WithRouteAliasCommandsAsync(commands => commands.Update(
+            aliasId,
+            RouteAliasTestBedExtensions.Draft("handbooks", "#/downloads/b")));
+        var goneId = await bed.CreateRouteAliasAsync("gone", "#/news");
+        await bed.WithRouteAliasCommandsAsync(commands => commands.Delete(goneId));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([aliasId, goneId]);
+
+        Assert.Equal("handbooks", labels.Label(aliasId.ToString()));
+        Assert.Equal("gone", labels.Label(goneId.ToString()));
+        Assert.Equal("handbooks: 1", labels.LabelKey($"{aliasId}:1"));
+    }
+
+    [Fact]
     public async Task ResolveLabels_UnknownIdentifierIsKeptAsIs()
     {
         var unknown = Guid.NewGuid();

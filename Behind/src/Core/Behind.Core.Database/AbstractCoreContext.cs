@@ -71,7 +71,8 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
             typeof(DownloadFolder),
             typeof(Download),
             typeof(Menu),
-            typeof(MenuItem));
+            typeof(MenuItem),
+            typeof(RouteAlias));
     }
 
     public static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =

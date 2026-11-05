@@ -19,6 +19,7 @@ This manual describes what you can do in the Behind web application today.
 - **[Galleries](./managing-galleries.md)** - browsing the galleries, uploading images in batches, describing them and publishing a gallery.
 - **[Downloads](./managing-downloads.md)** - browsing the folder tree, downloading files, creating folders and uploading several files at once.
 - **[Menus](./managing-menus.md)** - the main menu and other menus, their items, sub items, targets and who sees them.
+- **[Route aliases](./managing-route-aliases.md)** - short routes for pages, for example `#/manuals` for a download directory.
 - **[Impersonation](./impersonation.md)** - acting as another user to see what they see, and how it shows in the audit log.
 - **[Raw database](./managing-raw-database.md)** - viewing, inserting, editing and permanently deleting the rows of any table (developers).
 - **[Audit log](./audit-log.md)** - browsing who changed what and when.

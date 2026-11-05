@@ -235,6 +235,8 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IMenuCommands, MenuCommands>();
             builder.Services.AddScoped<IMenuItemQueries, MenuItemQueries>();
             builder.Services.AddScoped<IMenuItemCommands, MenuItemCommands>();
+            builder.Services.AddScoped<IRouteAliasQueries, RouteAliasQueries>();
+            builder.Services.AddScoped<IRouteAliasCommands, RouteAliasCommands>();
             builder.Services.AddScoped<IRawDatabaseQueries, RawDatabaseQueries>();
             builder.Services.AddScoped<IRawDatabaseCommands, RawDatabaseCommands>();
             builder.Services.AddScoped<UserManagementGate>();
@@ -924,6 +926,7 @@ public static class WebApiExtensions
             application.MapTwoFactorEndpoints();
             application.MapDownloadEndpoints();
             application.MapMenuEndpoints();
+            application.MapRouteAliasEndpoints();
             application.MapRawDatabaseEndpoints();
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)

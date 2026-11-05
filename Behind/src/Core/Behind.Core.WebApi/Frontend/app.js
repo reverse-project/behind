@@ -38,6 +38,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/manage/downloads": "controllers/downloadmanager",
         "#/manage/menus": "controllers/menus",
         "#/manage/menus/:id": "controllers/menuitems",
+        "#/manage/route-aliases": "controllers/routealiases",
         "#/manage/raw-database": "controllers/rawdatabase",
         "#/changelog": "controllers/changelog",
         "#/licenses": "controllers/licenses",
@@ -51,9 +52,13 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     ];
 
     var siteRoutes = {
-        "#/site/:slug": "controllers/site",
-        "#/:slug": "controllers/site"
+        "#/site/:slug": "controllers/site"
     };
+
+    var aliasRoute = "#/:slug";
+    var siteController = "controllers/site";
+    var aliasController = "controllers/routealias";
+    var following = false;
 
     ko.components.register("pager", { require: "components/pager" });
     ko.components.register("captcha", { require: "components/captcha" });
@@ -88,6 +93,24 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         scrub: function (hash) {
             window.history.replaceState(null, "", window.location.pathname + window.location.search + hash);
             router.last_location = ["get", router.getLocation()];
+        },
+        follow: function (hash) {
+            if (!router.lookupRoute("get", hash)) {
+                return false;
+            }
+
+            following = true;
+
+            try {
+                router.runRoute("get", hash);
+            } finally {
+                following = false;
+            }
+
+            return true;
+        },
+        fallback: function (params) {
+            execute(siteController, params);
         }
     };
 
@@ -118,6 +141,10 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
                     execute(table[path], this.params.toHash());
                 });
             });
+        });
+
+        app.get(aliasRoute, function () {
+            execute(following ? siteController : aliasController, this.params.toHash());
         });
     });
 

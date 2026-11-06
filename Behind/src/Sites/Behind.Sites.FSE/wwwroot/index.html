@@ -100,6 +100,7 @@
             <a href="#/changelog" data-bind="visible: hasVersion, text: label, tAttr: { title: 'app.changelog' }" title="Changelog"></a>
             <a href="#/licenses" title="Licenses" data-bind="t: 'app.licenses', tAttr: { title: 'app.licenses' }">Licenses</a>
             <menu-nav params="name: 'footer'"></menu-nav>
+            <button type="button" class="btn btn-outline-light btn-sm ms-auto behind-scroll-top" title="Back to top" data-bind="click: scrollToTop, tAttr: { title: 'app.backToTop', 'aria-label': 'app.backToTop' }" aria-label="Back to top"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
         </div>
     </div>
 </footer>

@@ -713,6 +713,18 @@ button:focus-visible,
     text-decoration: underline;
 }
 
+#footer-container .rp-bottom .behind-scroll-top {
+    color: var(--rp-blue);
+    border-color: var(--rp-blue);
+}
+
+#footer-container .rp-bottom .behind-scroll-top:hover,
+#footer-container .rp-bottom .behind-scroll-top:focus-visible {
+    color: #ffffff;
+    background-color: var(--rp-blue);
+    text-decoration: none;
+}
+
 #footer-container .rp-bottom .nav {
     gap: 0.25rem;
 }

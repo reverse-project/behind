@@ -13,6 +13,7 @@
     "app.stopImpersonating": "Stop impersonating",
     "app.changelog": "Changelog",
     "app.licenses": "Licenses",
+    "app.backToTop": "Back to top",
     "common.error.generic": "Something went wrong. Please try again.",
     "common.error.sessionExpired": "Your session has expired. Please sign in again.",
     "usersettings.invalid": "The value is not valid.",

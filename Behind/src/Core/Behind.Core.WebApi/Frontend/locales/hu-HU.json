@@ -13,6 +13,7 @@
     "app.stopImpersonating": "Megszemélyesítés befejezése",
     "app.changelog": "Változásnapló",
     "app.licenses": "Licencek",
+    "app.backToTop": "Vissza a lap tetejére",
     "common.error.generic": "Valami hiba történt. Kérjük, próbálja újra.",
     "common.error.sessionExpired": "A munkamenet lejárt. Kérjük, jelentkezzen be újra.",
     "usersettings.invalid": "Az érték érvénytelen.",

@@ -82,6 +82,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
             var element = container();
             ko.cleanNode(element[0]);
             element.html(view);
+            window.scrollTo(0, 0);
             ko.applyBindings(viewModel, element[0]);
         },
         navigate: function (hash) {

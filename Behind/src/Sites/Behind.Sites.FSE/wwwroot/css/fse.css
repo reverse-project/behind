@@ -718,6 +718,11 @@ button:focus-visible,
     color: var(--fse-yellow);
 }
 
+#footer-container .fse-bottom .behind-scroll-top:hover,
+#footer-container .fse-bottom .behind-scroll-top:focus-visible {
+    color: var(--fse-green);
+}
+
 #footer-container .fse-bottom .nav {
     gap: 0.25rem;
 }

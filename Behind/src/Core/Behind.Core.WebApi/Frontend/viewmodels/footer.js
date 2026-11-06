@@ -18,6 +18,10 @@ define(["ko", "models/about", "models/branding"], function (ko, about, branding)
             return "v" + self.version();
         });
 
+        self.scrollToTop = function () {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        };
+
         self.activate = function () {
             return about.loadVersion().then(self.version);
         };

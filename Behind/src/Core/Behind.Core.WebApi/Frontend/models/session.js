@@ -12,6 +12,7 @@ define(["jquery", "ko"], function ($, ko) {
 
     var tokens = ko.observable(restore(storageKey));
     var stashed = ko.observable(restore(impersonatorKey));
+    var verified = ko.observable(false);
 
     window.addEventListener("storage", function (event) {
         if (event.storageArea !== window.localStorage) {
@@ -93,12 +94,21 @@ define(["jquery", "ko"], function ($, ko) {
             }
         },
         start: function (response) {
+            stash(null);
             persist(begin(response));
         },
+        confirmImpersonation: function (impersonated) {
+            if (impersonated === false) {
+                stash(null);
+            }
+
+            verified(true);
+        },
         isImpersonating: ko.pureComputed(function () {
-            return stashed() !== null && tokens() !== null;
+            return verified() && stashed() !== null && tokens() !== null;
         }),
         impersonate: function (response) {
+            verified(true);
             stash(tokens());
             persist(begin(response));
         },

@@ -47,7 +47,7 @@
             </div>
         </div>
     </nav>
-    <div class="alert alert-warning rounded-0 mb-0 border-0 border-bottom" role="alert" data-bind="visible: isImpersonating">
+    <div class="alert alert-warning rounded-0 mb-0 border-0 border-bottom d-none" role="alert" data-bind="css: { 'd-none': !isImpersonating() }">
         <div class="container d-flex flex-wrap align-items-center gap-2">
             <span data-bind="t: { key: 'app.impersonating', args: [label] }">You are impersonating <strong data-bind="text: label"></strong>. Everything you do is recorded in the audit log on their behalf.</span>
             <button type="button" class="btn btn-sm btn-warning ms-md-auto" data-bind="click: stopImpersonating, t: 'app.stopImpersonating'">Stop impersonating</button>

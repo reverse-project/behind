@@ -59,6 +59,23 @@ body {
     color: var(--rp-text-muted) !important;
 }
 
+.text-bg-secondary,
+.bg-secondary {
+    color: var(--rp-blue-dark) !important;
+    background-color: var(--rp-silver) !important;
+    border: 1px solid var(--rp-silver-dark);
+}
+
+.text-secondary,
+.link-secondary {
+    --bs-link-opacity: 1;
+    color: var(--rp-text-muted) !important;
+}
+
+.border-secondary {
+    border-color: var(--rp-silver-dark) !important;
+}
+
 ::selection {
     color: #ffffff;
     background-color: var(--rp-blue);
@@ -101,6 +118,9 @@ h4, .h4, h5, .h5, h6, .h6 {
     --bs-navbar-brand-color: var(--rp-blue);
     --bs-navbar-brand-hover-color: var(--rp-blue-dark);
     --bs-navbar-toggler-border-color: rgba(20, 52, 127, 0.45);
+}
+
+#header-container .rp-menu .navbar-toggler-icon {
     --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2820, 52, 127, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 

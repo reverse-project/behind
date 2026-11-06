@@ -170,6 +170,32 @@ public class RpDotHuSiteTests
     }
 
     [Fact]
+    public void Css_SecondaryColorIsVisibleOnTheLightBackground()
+    {
+        var css = Read("wwwroot/css/rpdothu.css");
+
+        Assert.Matches(@"\.text-bg-secondary,\s*\.bg-secondary \{[^}]*background-color: var\(--rp-silver\) !important;", css);
+        Assert.Matches(@"\.link-secondary \{[^}]*color: var\(--rp-text-muted\) !important;", css);
+    }
+
+    [Fact]
+    public void Css_NavbarTogglerIconIsSetOnTheIconItself()
+    {
+        var css = Read("wwwroot/css/rpdothu.css");
+
+        Assert.Contains("#header-container .rp-menu .navbar-toggler-icon {", css);
+        Assert.Matches(@"\.navbar-toggler-icon \{\s*--bs-navbar-toggler-icon-bg: url\(", css);
+    }
+
+    [Fact]
+    public void Index_HidesTheImpersonationBannerUntilTheBindingsAreApplied()
+    {
+        var index = Read("wwwroot/index.html");
+
+        Assert.Contains("border-bottom d-none\" role=\"alert\" data-bind=\"css: { 'd-none': !isImpersonating() }\"", index);
+    }
+
+    [Fact]
     public void DatabaseJson_UsesItsOwnDatabase()
     {
         var connection = ReadJson("database.json")

@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [
+      { "type": "fixed", "text": "The impersonation banner is no longer flashed while the page is loading; it stays hidden until the server has confirmed the impersonation of the loaded session; a stale impersonation left in the browser (for example after the impersonation expired) is dropped when the session is loaded and on every new sign in." },
       { "type": "added", "text": "A Back to top button (up arrow) at the bottom of every page of the frontend scrolls the page smoothly back to the top." },
       { "type": "fixed", "text": "Navigating to another page of the frontend now scrolls back to the top of the page instead of keeping the scroll position of the previous page." },
       { "type": "added", "text": "PostgreSQL database provider: Behind can now run on PostgreSQL besides SQLite. Set \"Provider\": \"Postgres\" and an Npgsql connection string in database.json; the migrator (Behind.Core.Database.Migrator) creates the schema, applies the versioning migrations and the built-in data on the PostgreSQL database, and the web application, the audit log, soft delete, restore and versioning work the same as on SQLite." },

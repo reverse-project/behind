@@ -44,12 +44,27 @@ public class ImpersonationFrontendTests
     }
 
     [Fact]
+    public void Session_DropsAStaleImpersonationWhenTheServerDoesNotConfirmIt()
+    {
+        var session = Read("models/session.js");
+        var auth = Read("models/auth.js");
+
+        Assert.Contains("confirmImpersonation: function (impersonated)", session);
+        Assert.Contains("session.confirmImpersonation(!!response.data.impersonator)", auth);
+        Assert.Contains("return verified() && stashed() !== null && tokens() !== null;", session);
+        Assert.Contains("session.confirmImpersonation();", auth);
+        Assert.Matches(@"start: function \(response\) \{\s*stash\(null\);\s*persist\(begin\(response\)\);", session);
+    }
+
+    [Fact]
     public void Header_ShowsABannerWithAStopButtonWhileImpersonating()
     {
         var index = Read("index.html");
         var header = Read("viewmodels/header.js");
 
-        Assert.Contains("visible: isImpersonating", index);
+        Assert.Contains("css: { 'd-none': !isImpersonating() }", index);
+        Assert.Contains("border-bottom d-none\" role=\"alert\"", index);
+        Assert.DoesNotContain("style=\"display", index);
         Assert.Contains("click: stopImpersonating", index);
         Assert.Contains("self.isImpersonating = session.isImpersonating", header);
         Assert.Contains("auth.stopImpersonating()", header);

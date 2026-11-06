@@ -423,9 +423,12 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
             return http.loadSession().then(function (response) {
                 if (response.ok) {
                     session.identify(user.label(response.data.user), user.grants(response.data.user));
+                    session.confirmImpersonation(!!response.data.impersonator);
 
                     return { ok: true, message: "", data: response.data };
                 }
+
+                session.confirmImpersonation();
 
                 return failure(response, {
                     401: sessionExpired,

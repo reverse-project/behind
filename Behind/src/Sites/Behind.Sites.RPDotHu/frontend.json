@@ -1,0 +1,23 @@
+{
+  "Frontend": {
+    "Url": "http://localhost:5002/",
+    "Site": {
+      "Title": "Reverse Project",
+      "Copyright": "\u00A9 2026 \u00C1bel Zolt\u00E1n E.V.",
+      "DefaultLocale": "hu-HU",
+      "ContactEmail": "abel.zoltan@reverseproject.hu"
+    },
+    "Sites": {
+      "IndexSlug": "#/kezdolap",
+      "MaxImageBytes": 5242880
+    },
+    "Carousels": {
+      "MaxSlides": 20,
+      "MinIntervalSeconds": 2,
+      "MaxIntervalSeconds": 60,
+      "IntervalSeconds": 5,
+      "MaxCaptionLength": 300,
+      "MaxImageBytes": 5242880
+    }
+  }
+}

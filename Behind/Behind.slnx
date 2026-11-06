@@ -32,6 +32,7 @@
   </Folder>
   <Folder Name="/src/Sites/">
     <Project Path="src/Sites/Behind.Sites.FSE/Behind.Sites.FSE.csproj" />
+    <Project Path="src/Sites/Behind.Sites.RPDotHu/Behind.Sites.RPDotHu.csproj" />
   </Folder>
   <Folder Name="/src/Web/">
     <Project Path="src/Web/Behind.Web/Behind.Web.csproj" />

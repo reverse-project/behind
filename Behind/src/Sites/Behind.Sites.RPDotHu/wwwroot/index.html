@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Reverse Project</title>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Reverse Project" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+    <link rel="stylesheet" href="css/solid.min.css">
+    <link rel="stylesheet" href="css/quill.snow.min.css">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/rpdothu.css">
+    <script src="libraries/require.min.js" data-main="bootloader.js"></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+<header id="header-container">
+    <nav class="navbar navbar-expand-lg rp-menu">
+        <div class="container">
+            <a class="navbar-brand rp-brand" href="#/">
+                <img class="rp-brand-logo" src="/logo.png" alt="Reverse Project" width="44" height="44">
+                <span class="rp-brand-name" data-bind="text: title">Reverse Project</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navigation" aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation" data-bind="tAttr: { 'aria-label': 'app.toggleNavigation' }">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navigation">
+                <menu-items params="items: links, variant: 'navbar'"></menu-items>
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item dropdown" data-bind="visible: isSignedIn">
+                        <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: label"></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <menu-items params="items: userItems, variant: 'dropdown'"></menu-items>
+                            <hr class="dropdown-divider">
+                            <button type="button" class="dropdown-item" data-bind="click: signOut, t: 'app.signOut'">Sign out</button>
+                        </div>
+                    </li>
+                    <li class="nav-item" data-bind="visible: !isSignedIn() && canSignIn()"><a class="nav-link" href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a></li>
+                    <li class="nav-item" data-bind="visible: !isSignedIn() && canSignUp()"><a class="nav-link" href="#/sign-up" data-bind="t: 'app.signUp'">Sign up</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="alert alert-warning rounded-0 mb-0 border-0 border-bottom" role="alert" data-bind="visible: isImpersonating">
+        <div class="container d-flex flex-wrap align-items-center gap-2">
+            <span data-bind="t: { key: 'app.impersonating', args: [label] }">You are impersonating <strong data-bind="text: label"></strong>. Everything you do is recorded in the audit log on their behalf.</span>
+            <button type="button" class="btn btn-sm btn-warning ms-md-auto" data-bind="click: stopImpersonating, t: 'app.stopImpersonating'">Stop impersonating</button>
+        </div>
+    </div>
+</header>
+<main id="main-container" class="container my-4 behind-main flex-grow-1">
+    <div id="page-loading" class="d-flex justify-content-center align-items-center py-5" role="status">
+        <div class="spinner-border text-primary">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</main>
+<footer id="footer-container" class="mt-auto">
+    <div class="rp-contact">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <a class="rp-footer-brand" href="#/">
+                        <img class="rp-footer-logo" src="/logo.png" alt="Reverse Project" width="56" height="56">
+                        <span>Reverse Project</span>
+                    </a>
+                    <p class="rp-footer-owner">Ábel Zoltán egyéni vállalkozó</p>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <h2 class="rp-contact-title">Vállalkozás adatai</h2>
+                    <ul class="rp-contact-list">
+                        <li>
+                            <i class="fa-solid fa-user" aria-hidden="true"></i>
+                            <p><strong>Név:</strong> Ábel Zoltán E.V.</p>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-house" aria-hidden="true"></i>
+                            <p><strong>Székhely:</strong> Debrecen</p>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+                            <p><strong>Adószám:</strong> 59357311-1-29</p>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+                            <p><strong>Nyilvántartási szám:</strong> 57377928</p>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <h2 class="rp-contact-title">Elérhetőségek</h2>
+                    <ul class="rp-contact-list">
+                        <li>
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                            <p><strong>Email:</strong> <a href="mailto:abel.zoltan@reverseproject.hu">abel.zoltan@reverseproject.hu</a></p>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                            <p><strong>Telefon:</strong> <a href="tel:+36303661148">+36 30 366 1148</a></p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="rp-bottom">
+        <div class="container d-flex flex-wrap align-items-center gap-2">
+            <strong data-bind="text: name"></strong>
+            <span data-bind="visible: hasCopyright, text: copyright"></span>
+            <a href="#/changelog" data-bind="visible: hasVersion, text: label, tAttr: { title: 'app.changelog' }" title="Changelog"></a>
+            <a href="#/licenses" title="Licenses" data-bind="t: 'app.licenses', tAttr: { title: 'app.licenses' }">Licenses</a>
+            <menu-nav params="name: 'footer'"></menu-nav>
+        </div>
+    </div>
+</footer>
+<noscript>
+    <div class="alert alert-warning m-3" role="alert">This application requires JavaScript.</div>
+</noscript>
+</body>
+</html>

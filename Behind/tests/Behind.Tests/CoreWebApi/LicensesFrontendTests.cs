@@ -18,6 +18,7 @@ public class LicensesFrontendTests
         "BSD-2-Clause",
         "BSD-3-Clause",
         "ISC",
+        "PostgreSQL",
         "Public Domain",
         "CC-BY-4.0 AND OFL-1.1 AND MIT"
     };
@@ -66,6 +67,7 @@ public class LicensesFrontendTests
     [InlineData("licenses/BSD-3-Clause.txt")]
     [InlineData("licenses/ISC.txt")]
     [InlineData("licenses/SQLite.txt")]
+    [InlineData("licenses/PostgreSQL.txt")]
     public void Provider_ContainsFile(string path)
     {
         Assert.True(Provider.GetFileInfo(path).Exists);

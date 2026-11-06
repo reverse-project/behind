@@ -27,7 +27,29 @@ Behind.Core.Database/
 │   └── ...
 ```
 
-EF Migrations live in `Behind.Core.Database.Sqlite/Migrations` (core context, `CoreContextSqlite`) and `Behind.Core.Database.Sqlite/Migrations/Versioning` (versioning context, `VersioningContextSqlite`).
+EF Migrations live in `Behind.Core.Database.Sqlite/Migrations` (core context, `CoreContextSqlite`) and `Behind.Core.Database.Sqlite/Migrations/Versioning` (versioning context, `VersioningContextSqlite`). The PostgreSQL provider has its own migrations in `Behind.Core.Database.Postgres/Migrations` (`CoreContextPostgres`) and `Behind.Core.Database.Postgres/Migrations/Versioning` (`VersioningContextPostgres`).
+
+### Database Providers
+
+`database.json` selects the provider (`"Provider": "Sqlite"` or `"Provider": "Postgres"`) and the connection string by its `Key`. Every provider project (`Behind.Core.Database.Sqlite`, `Behind.Core.Database.Postgres`) has the same shape:
+
+- a core context and a versioning context that only add provider conventions (`ApplyCoreProviderConventions`, `ApplyVersioningProviderConventions`: UUID v7 ids and the tick based audit timestamps, shared in `Behind.Core.Database`),
+- an `ICoreDatabaseMigrator` (`SqliteCoreDatabaseMigrator` also runs the VFS legacy migration, `PostgresCoreDatabaseMigrator` applies the migrations) used by `Behind.Core.Database.Migrator`,
+- `RegisterSqlite` / `RegisterPostgres` extension methods for `DatabaseConfiguration` (web application and migrator host) that call the shared `AddAuditedDatabase` / `AddMigrationDatabase` of `Behind.Core.Database` and only register when the configured provider matches.
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=behind;Username=behind;Password=<password>"
+  },
+  "Database": {
+    "Provider": "Postgres",
+    "Key": "DefaultConnection"
+  }
+}
+```
+
+Dates are stored as UTC ticks (`bigint`) on both providers. The PostgreSQL migrations are a fresh `Initial` migration generated from the model; databases that were created with SQLite are not converted.
 
 ### DbContext Implementation
 
@@ -806,6 +828,8 @@ dotnet ef migrations remove \
 ```
 
 The migrations live in `Behind.Core.Database.Sqlite`; apply them by running `Behind.Core.Database.Migrator`.
+
+For PostgreSQL use the same commands with `--project src/Core/Behind.Core.Database.Postgres` and `--context CoreContextPostgres` (output `Migrations`) or `--context VersioningContextPostgres` (output `Migrations/Versioning`). The contexts have design time factories, so the startup project only has to reference `Microsoft.EntityFrameworkCore.Design`. Keep both providers in sync: a model change needs a migration in each provider project (`PostgresMigrations_MatchTheModelSnapshots` fails otherwise).
 
 ### Migration Best Practices
 

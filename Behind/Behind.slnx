@@ -10,6 +10,7 @@
   <Folder Name="/src/Core/">
     <Project Path="src/Core/Behind.Core.Common/Behind.Core.Common.csproj" />
     <Project Path="src/Core/Behind.Core.Database.Migrator/Behind.Core.Database.Migrator.csproj" />
+    <Project Path="src/Core/Behind.Core.Database.Postgres/Behind.Core.Database.Postgres.csproj" />
     <Project Path="src/Core/Behind.Core.Database.Sqlite/Behind.Core.Database.Sqlite.csproj" />
     <Project Path="src/Core/Behind.Core.Database/Behind.Core.Database.csproj" />
     <Project Path="src/Core/Behind.Core.Domain/Behind.Core.Domain.csproj" />

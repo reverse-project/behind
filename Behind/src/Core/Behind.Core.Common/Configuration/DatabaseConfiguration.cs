@@ -27,6 +27,8 @@ public abstract record Provider(string Value)
 
 public sealed record Sqlite() : Provider(nameof(Sqlite));
 
+public sealed record Postgres() : Provider(nameof(Postgres));
+
 [TypeConverter(typeof(KeyTypeConverter))]
 [JsonConverter(typeof(KeyJsonConverter))]
 public sealed record Key(string Value)

@@ -1,6 +1,4 @@
 using Behind.Common.Logging;
-using Behind.Common.Storage;
-using Behind.Core.Database.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,30 +11,31 @@ public sealed class MigratorService(IServiceProvider services, ILogger<MigratorS
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var scope = services.CreateScope();
-        var sqlite = scope.ServiceProvider.GetRequiredService<CoreContextSqlite>();
+        var migrator = scope.ServiceProvider.GetRequiredService<ICoreDatabaseMigrator>();
+        var context = scope.ServiceProvider.GetRequiredService<AbstractCoreContext>();
 
-        var pending = (await sqlite.Database.GetPendingMigrationsAsync(stoppingToken)).ToList();
+        var pending = await migrator.PendingMigrationsAsync(stoppingToken);
         logger.LogInformation(
             "Applying {PendingMigrationCount} pending migrations: {PendingMigrations}",
             () => [pending.Count, pending]);
 
-        await sqlite.MigrateWithVfsAsync(scope.ServiceProvider.GetRequiredService<IContentStore>(), stoppingToken);
+        await migrator.MigrateAsync(stoppingToken);
         logger.LogInformation("Database migrations applied");
 
-        var versioning = scope.ServiceProvider.GetRequiredService<VersioningContextSqlite>();
+        var versioning = scope.ServiceProvider.GetRequiredService<AbstractVersioningContext>();
         await versioning.Database.MigrateAsync(stoppingToken);
         logger.LogInformation("Versioning database migrations applied");
 
-        await sqlite.EnsureBuiltInUsersAsync(stoppingToken);
+        await context.EnsureBuiltInUsersAsync(stoppingToken);
         logger.LogDebug("Built-in users ensured");
 
-        await sqlite.EnsureBuiltInRolesAsync(stoppingToken);
+        await context.EnsureBuiltInRolesAsync(stoppingToken);
         logger.LogDebug("Built-in roles ensured");
 
-        await sqlite.EnsureUsersHaveUsersRoleAsync(stoppingToken);
+        await context.EnsureUsersHaveUsersRoleAsync(stoppingToken);
         logger.LogDebug("Users role ensured for all users");
 
-        await sqlite.EnsureBuiltInMenusAsync(stoppingToken);
+        await context.EnsureBuiltInMenusAsync(stoppingToken);
         logger.LogDebug("Built-in menus ensured");
 
         var host = scope.ServiceProvider.GetRequiredService<IHost>();

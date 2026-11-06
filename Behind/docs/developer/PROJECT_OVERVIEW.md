@@ -22,7 +22,7 @@ Behind is designed as a scalable, maintainable backend system using microservice
 - **ORM**: Entity Framework Core 10.0.10
 - **Database Support**:
   - SQLite 3.53.3 (SQLitePCLRaw 2.1.12)
-  - PostgreSQL (via Aspire)
+  - PostgreSQL (Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3)
 - **Migration**: EF Core Code Migrations via Behind.Core.Database.Migrator
 
 ### Security & Authentication
@@ -130,6 +130,10 @@ Core business logic and domain implementation.
 
 - **Behind.Core.Database.Sqlite**
   - SQLite-specific configurations
+
+- **Behind.Core.Database.Postgres**
+  - PostgreSQL-specific configurations (`CoreContextPostgres`, `VersioningContextPostgres`)
+  - Its own migrations, starting from one `Initial` migration per context
 
 - **Behind.Core.WebApi** (API endpoints)
   - API controllers
@@ -260,7 +264,7 @@ Domain objects use `record` types for:
 ### Local Development
 - Dev container with .NET 10 SDK pre-configured
 - Aspire orchestration for service coordination
-- SQLite for local database
+- SQLite (or PostgreSQL) for the local database
 - Docker compose via Aspire
 
 ### Development Environment

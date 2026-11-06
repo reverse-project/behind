@@ -48,7 +48,7 @@ public sealed class ProviderJsonConverter : JsonConverter<Provider>
     {
         string serialized = value switch
         {
-            Sqlite sqlite => sqlite.Value,
+            Sqlite or Postgres => value.Value,
             _ => throw new JsonException($"Unsupported provider type '{value.GetType().Name}'.")
         };
 

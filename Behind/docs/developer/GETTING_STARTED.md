@@ -143,6 +143,9 @@ cd Behind
 # Using SQLite (development)
 # Database automatically created on first run
 
+# Using PostgreSQL: set "Provider": "Postgres" and an Npgsql connection string in database.json,
+# then run Behind.Core.Database.Migrator to create the schema
+
 # If needed, manually initialize
 dotnet ef database update \
     --project src/Core/Behind.Core.Database.Sqlite \
@@ -179,6 +182,8 @@ dotnet ef migrations remove \
 ```
 
 Install the tool once with `dotnet tool install --global dotnet-ef`.
+
+For PostgreSQL run the same commands with `--project src/Core/Behind.Core.Database.Postgres` and the `CoreContextPostgres` / `VersioningContextPostgres` contexts, and add the migration to both provider projects.
 
 ### Connection Strings
 

@@ -6,6 +6,8 @@ namespace Behind.Core.Common.Converters;
 
 public sealed class ProviderTypeConverter : TypeConverter
 {
+    private static readonly string[] PostgresNames = [nameof(Postgres), "Npgsql"];
+
     public override bool CanConvertFrom(
         ITypeDescriptorContext? context,
         Type sourceType)
@@ -42,8 +44,13 @@ public sealed class ProviderTypeConverter : TypeConverter
             return new Sqlite();
         }
 
+        if (PostgresNames.Any(name => provider.Contains(name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return new Postgres();
+        }
+
         throw new FormatException(
-            $"Provider value '{provider}' is not supported. Expected a value containing '{nameof(Sqlite)}'.");
+            $"Provider value '{provider}' is not supported. Expected a value containing '{nameof(Sqlite)}' or '{nameof(Postgres)}'.");
     }
 
     public override object? ConvertTo(

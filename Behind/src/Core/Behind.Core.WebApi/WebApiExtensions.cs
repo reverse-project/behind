@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Behind.Common.Configuration;
 using Behind.Common.Converters;
@@ -16,6 +16,7 @@ using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Converters;
 using Behind.Core.Database.Queries;
+using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Sqlite;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Auditing;
@@ -65,10 +66,11 @@ public static class WebApiExtensions
         {
             builder.AddReloadableJsonFile("database.json", false);
 
-            (builder.Configuration
+            var database = builder.Configuration
                 .GetSection(DatabaseConfiguration.SectionName)
-                .GetOptionAware<DatabaseConfiguration>() ?? new DatabaseConfiguration())
-                .RegisterSqlite(builder);
+                .GetOptionAware<DatabaseConfiguration>() ?? new DatabaseConfiguration();
+            database.RegisterSqlite(builder);
+            database.RegisterPostgres(builder);
 
             return builder;
         }

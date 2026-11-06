@@ -834,6 +834,24 @@
     "text": "licenses/MIT.txt"
   },
   {
+    "name": "Npgsql",
+    "version": "10.0.3",
+    "license": "PostgreSQL",
+    "copyright": "Copyright 2025 © The Npgsql Development Team",
+    "url": "https://github.com/npgsql/npgsql",
+    "scope": "server",
+    "text": "licenses/PostgreSQL.txt"
+  },
+  {
+    "name": "Npgsql.EntityFrameworkCore.PostgreSQL",
+    "version": "10.0.3",
+    "license": "PostgreSQL",
+    "copyright": "Copyright 2025 © The Npgsql Development Team",
+    "url": "https://github.com/npgsql/efcore.pg",
+    "scope": "server",
+    "text": "licenses/PostgreSQL.txt"
+  },
+  {
     "name": "NUglify",
     "version": "1.23.6",
     "license": "BSD-2-Clause",

@@ -17,6 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Core\Behind.Core.Database.Postgres\Behind.Core.Database.Postgres.csproj" />
     <ProjectReference Include="..\..\src\Core\Behind.Core.Database.Sqlite\Behind.Core.Database.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\Core\Behind.Core.Common\Behind.Core.Common.csproj" />
     <ProjectReference Include="..\..\src\Common\Behind.Common\Behind.Common.csproj" />

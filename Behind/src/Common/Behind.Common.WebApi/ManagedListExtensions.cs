@@ -1,11 +1,10 @@
 using Behind.Common;
 using Behind.Common.Database;
-using Behind.Core.WebApi.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using static Behind.Common.FunctionalExtensions;
 
-namespace Behind.Core.WebApi.Endpoints;
+namespace Behind.Common.WebApi;
 
 public sealed record ManagedListQuery(Option<string> Search, Option<string> Letter, DeletionState State);
 

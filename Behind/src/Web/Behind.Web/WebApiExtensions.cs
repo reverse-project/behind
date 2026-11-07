@@ -1,7 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
+using Behind.Common.Configuration;
 using Behind.Common.Logging;
 using Behind.Common.WebApi;
+using Behind.Core.Common.Configuration;
+using Behind.Core.Database.Postgres;
+using Behind.Core.Database.Sqlite;
 using Behind.Core.WebApi;
+using Behind.Quotes.WebApi;
+using Behind.Web.Database.Postgres;
+using Behind.Web.Database.Sqlite;
 using Scalar.AspNetCore;
 
 namespace Behind.Web;
@@ -14,7 +21,20 @@ public static class WebApiExtensions
         public WebApplicationBuilder AddWeb() => builder
             .AddSerilog()
             .AddOpenTelemetry()
-            .AddCore();
+            .AddCore()
+            .AddWebDatabase()
+            .AddQuotes();
+
+        WebApplicationBuilder AddWebDatabase()
+        {
+            var database = builder.Configuration
+                .GetSection(DatabaseConfiguration.SectionName)
+                .GetOptionAware<DatabaseConfiguration>() ?? new DatabaseConfiguration();
+            database.RegisterSqlite<WebContextSqlite>(builder);
+            database.RegisterPostgres<WebContextPostgres>(builder);
+
+            return builder;
+        }
     }
     
     extension(WebApplication application)
@@ -22,6 +42,7 @@ public static class WebApiExtensions
         public WebApplication UseWeb()
         {
             application.UseCore();
+            application.UseQuotes();
             application.MapScalarApiReference();
             
             return application;

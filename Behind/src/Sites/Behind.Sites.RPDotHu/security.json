@@ -18,8 +18,7 @@
       "DeveloperSecretKey": "totp://ODKMOGTUQ6R4PEH7BXMSYLSTZ5VZ5CHZ"
     },
     "MagicLink": {
-      "ActualSecret": "uuid://01a1af94-3ca4-7a58-a638-617f189e4cfe",
-      "OldSecret": "uuid://02ed750b-5b91-4dcd-aec7-381806574d10"
+      "ActualSecret": "uuid://01a1af94-3ca4-7a58-a638-617f189e4cfe"
     }
   }
 }

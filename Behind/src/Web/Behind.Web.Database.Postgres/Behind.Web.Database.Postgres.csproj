@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Behind.Core.Database.Postgres\Behind.Core.Database.Postgres.csproj" />
+      <ProjectReference Include="..\..\Quotes\Behind.Quotes.Database\Behind.Quotes.Database.csproj" />
+    </ItemGroup>
+
+</Project>

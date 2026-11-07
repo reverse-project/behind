@@ -1,0 +1,51 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'quotes.manage.title'">Manage quotes</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'quotes.back'">Back to administration</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'quotes.signInToManage'">to manage quotes.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'quotes.denied'">You need quote access to manage quotes.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
+    <div data-bind="visible: canRead">
+        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
+            <h2 class="h5" data-bind="text: heading"></h2>
+            <div class="mb-3">
+                <label class="form-label" for="quote-text" data-bind="t: 'quotes.text'">Quote</label>
+                <textarea id="quote-text" class="form-control" rows="3" maxlength="1000" data-bind="value: text, valueUpdate: 'input'"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="quote-author" data-bind="t: 'quotes.author'">Author</label>
+                <input id="quote-author" class="form-control" type="text" maxlength="200" data-bind="value: author, valueUpdate: 'input'">
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isEditing, click: reset, t: 'common.cancel'">Cancel</button>
+            </div>
+        </form>
+        <div data-bind="with: list">
+            <form class="input-group mb-3" data-bind="submit: find">
+                <input class="form-control" type="search" maxlength="200" placeholder="Search by quote or author" aria-label="Search quotes" data-bind="value: search, tAttr: { placeholder: 'quotes.search.placeholder', 'aria-label': 'quotes.search.label' }">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
+            </form>
+            <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+                <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'quotes.showDeleted'">Show deleted quotes</span></label>
+            </div>
+            <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
+            <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'quotes.manage.empty'">No quotes found.</p>
+            <ul class="list-group mb-3" data-bind="foreach: items">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <div class="me-auto">
+                        <span class="text-break" data-bind="text: text"></span>
+                        <strong class="ms-2 text-break" data-bind="text: author"></strong>
+                    </div>
+                    <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete, t: 'common.deletePermanently'">Delete permanently</button>
+                </li>
+            </ul>
+            <pager class="d-block" params="pager: pager"></pager>
+        </div>
+    </div>
+</section>

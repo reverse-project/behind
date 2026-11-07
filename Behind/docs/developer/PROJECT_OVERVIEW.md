@@ -190,6 +190,20 @@ A module describes everything the application needs to integrate it in one immut
 
 See `.github/skills/add-module/SKILL.md` for the full checklist and `DATABASE_ARCHITECTURE.md` for the flattened database and the migrations.
 
+### Example module: Quotes
+
+`src/Quotes` is a complete, deliberately small example module (a list of quotes with an author) that shows every part of the module checklist. It is loaded by the host `src/Web/Behind.Web` next to Core:
+
+| Project | Holds |
+|---|---|
+| `Behind.Quotes.Domain` | the immutable `Quote` record (`VersionedKey<Guid>` id, text, author) |
+| `Behind.Quotes.Common` | `QuotesModuleNames`: the module key, grant area, grant names, routes and the menu item id |
+| `Behind.Quotes.Database` | `IQuotesContext`, `QuoteConfiguration`, `IQuoteCommands`/`IQuoteQueries` and their implementations, `QuotesAuditLabelSource`, `QuotesSeed`, `AddQuotesDatabase()` |
+| `Behind.Quotes.Database.Sqlite`, `Behind.Quotes.Database.Postgres` | the design-time only migration contexts, their design-time factories and the `CreateQuotes` migrations |
+| `Behind.Quotes.WebApi` | `QuotesModule.Descriptor`, the `/quotes` endpoints, `AddQuotes()`/`UseQuotes()` and the embedded frontend under `Frontend/modules/quotes/` |
+
+The project side lives in `src/Web`: `Behind.Web.Database.Sqlite`/`.Postgres` hold the one DbContext per provider (`WebContextSqlite`, `WebContextPostgres`: `AbstractCoreContext` plus `IQuotesContext`), `Behind.Web.Database.Migrator` is the migrator of the project (Core migrations, then the Quotes migrations, then the seeds), and `Behind.Web` calls `AddQuotes()`/`UseQuotes()` after `AddCore()`/`UseCore()`.
+
 ## Architecture Layers
 
 ### 1. Common Layer (/src/Common)

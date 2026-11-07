@@ -26,6 +26,11 @@
     <ProjectReference Include="..\..\src\Common\Behind.Common.WebApi\Behind.Common.WebApi.csproj" />
     <ProjectReference Include="..\..\src\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
     <ProjectReference Include="..\..\src\Core\Behind.Core.Tools\Behind.Core.Tools.csproj" />
+    <ProjectReference Include="..\..\src\Quotes\Behind.Quotes.Database.Postgres\Behind.Quotes.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Quotes\Behind.Quotes.Database.Sqlite\Behind.Quotes.Database.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\Quotes\Behind.Quotes.WebApi\Behind.Quotes.WebApi.csproj" />
+    <ProjectReference Include="..\..\src\Web\Behind.Web.Database.Postgres\Behind.Web.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Web\Behind.Web.Database.Sqlite\Behind.Web.Database.Sqlite.csproj" />
   </ItemGroup>
 
   <ItemGroup>

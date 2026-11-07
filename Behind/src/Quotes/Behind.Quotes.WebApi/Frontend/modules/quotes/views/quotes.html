@@ -1,0 +1,12 @@
+<section class="behind-wide">
+    <h1 data-bind="t: 'quotes.title'">Quotes</h1>
+    <div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
+    <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'quotes.empty'">There are no quotes yet.</p>
+    <div data-bind="foreach: items">
+        <figure class="mb-4">
+            <blockquote class="blockquote text-break" data-bind="text: text"></blockquote>
+            <figcaption class="blockquote-footer" data-bind="text: author"></figcaption>
+        </figure>
+    </div>
+    <pager class="d-block" params="pager: pager"></pager>
+</section>

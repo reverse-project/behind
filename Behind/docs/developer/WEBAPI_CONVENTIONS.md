@@ -355,6 +355,18 @@ A module web API project exposes `Add<Module>()`/`Use<Module>()`, like `AddCore(
 - The embedded frontend of a module lives in `Frontend/modules/<key>/` (controllers, viewmodels, views, models, components, `css`, `locales/<code>.json`) and is loaded with RequireJS ids like `modules/<key>/controllers/<name>`; the Core files always win, the module files never replace them. The locale files of the module have the same format as the Core ones (`{"name": ..., "messages": {...}}`), their messages are merged under the Core messages for the selected language, and every message key must be prefixed with the module key.
 - `GET /modules` lists the routes, administration pages and styles for the frontend, which registers the module routes before the route alias fallback and adds the administration pages to the Administration page for the holders of their grants.
 
+### Example: the Quotes endpoints
+
+`Behind.Quotes.WebApi` maps its endpoints with `UseQuotes()`; the list helpers (`ManagedListExtensions`, `HoldsGrantAsync`) are shared from `Behind.Common.WebApi`, so a module needs no Core reference:
+
+| Endpoint | Access |
+|---|---|
+| `GET /quotes` | open; the active quotes, paged |
+| `GET /quotes/manage` | `Quotes.Read` (`deleted=true` needs `RawDatabase.Manage`) |
+| `POST /quotes`, `POST /quotes/{id}` | `Quotes.Write`; answers `{ id, version }`, `409` `{ reason: "version-conflict" }` on a version conflict |
+| `POST /quotes/{id}/delete` | `Quotes.Delete`; soft delete |
+| `POST /quotes/{id}/restore`, `POST /quotes/{id}/hard/delete` | `RawDatabase.Manage` |
+
 ## Controller Structure
 
 ### Base Pattern

@@ -11,13 +11,18 @@ using Microsoft.Extensions.Logging;
 namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog modules)
-    : DbContext(options), IUnitOfWork, ISoftDeleteContext
+    : DbContext(options), IUnitOfWork, IModuleContext
 {
     protected AbstractCoreContext(DbContextOptions options) : this(options, ModuleCatalog.Empty)
     {
     }
 
     public ModuleCatalog Modules { get; } = modules;
+
+    DbContext IModuleContext.Context => this;
+
+    IQueryable<TEntity> IModuleContext.InDeletionState<TEntity>(IQueryable<TEntity> source, DeletionState state) =>
+        source.InDeletionState(this, DeletionRecorded, state);
 
     public SoftDeleteSwitch SoftDelete { get; } = new();
 

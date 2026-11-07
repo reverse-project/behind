@@ -90,8 +90,22 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
         "Administration": "menu.item.administration"
     };
 
+    var keyOf = function (name) {
+        var words = name.split(/[^A-Za-z0-9]+/).filter(function (word) {
+            return word !== "";
+        });
+
+        return "menu.item." + words.map(function (word, index) {
+            var lowered = word.toLowerCase();
+
+            return index === 0 ? lowered : lowered.charAt(0).toUpperCase() + lowered.slice(1);
+        }).join("");
+    };
+
     var labelOf = function (name) {
-        return Object.prototype.hasOwnProperty.call(builtInNames, name) ? i18n.tOr(builtInNames[name], name) : name;
+        return Object.prototype.hasOwnProperty.call(builtInNames, name)
+            ? i18n.tOr(builtInNames[name], name)
+            : i18n.tOr(keyOf(name), name);
     };
 
     var windowFeatures = "popup,width=1024,height=768,noopener,noreferrer";

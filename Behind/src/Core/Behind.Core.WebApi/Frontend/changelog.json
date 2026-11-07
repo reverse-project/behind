@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [
+      { "type": "added", "text": "Menu item titles are translated when the selected language has a menu.item.<title in camel case> message, so modules can translate their menu items (for example Quotes becomes Idézetek in Hungarian) while other titles are shown as they are." },
+      { "type": "added", "text": "Quotes, a small example module that is loaded next to the Core module by the Behind web application: everybody can read the quotes under Quotes in the main menu, and users holding the Quotes grants manage them under Administration > Quotes with search, letters, paging, versions, soft delete, restore (developers) and permanent delete (developers)." },
+      { "type": "added", "text": "The Quotes module brings its own endpoints (/quotes), grants (Quotes.Read, Quotes.Write, Quotes.Delete, Quotes.Manage), audit log labels, welcome quote seed, English and Hungarian translations and migrations, and the web application gets its own database migrator that applies the Core migrations followed by the module migrations." },
       { "type": "added", "text": "Optional modules can plug into Behind next to the Core module: a module describes its grants, default menu items, administration pages, pages, frontend files, translations and database in one module descriptor, and the application picks them up automatically." },
       { "type": "added", "text": "The grants of the modules appear on the Roles and Users pages, are added to the built-in roles (Administrators, Users or Developers by the audience of the grant) without overwriting the edits made to those roles, and protect the module endpoints." },
       { "type": "added", "text": "The Administration page lists the pages of the modules for the users who hold their grants, the default menu items of the modules are added to the main menu, and the module pages are routed before the route alias fallback." },

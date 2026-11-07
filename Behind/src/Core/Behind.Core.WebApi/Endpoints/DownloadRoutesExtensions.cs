@@ -1,3 +1,4 @@
+using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Domain;

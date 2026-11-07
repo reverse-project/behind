@@ -12,6 +12,7 @@
 | Galleries | the `Gallery.Read` grant (`Gallery.Write` to change them) | [Galleries](./managing-galleries.md) |
 | Downloads | the `Download.Read` grant (`Download.Write` to change them) | [Downloads](./managing-downloads.md) |
 | Menus | the `Menu.Read` grant (`Menu.Write` to change them) | [Menus](./managing-menus.md) |
+| Quotes (module) | the `Quotes.Read` grant (`Quotes.Write` to change them) | [Quotes](./managing-quotes.md) |
 | Route aliases | the `RouteAlias.Read` grant (`RouteAlias.Write` to change them) | [Route aliases](./managing-route-aliases.md) |
 | Access settings | the `Access.Read` grant (`Access.Write` to change them) | [Access settings](./managing-access-settings.md) |
 | Raw database | the `RawDatabase.Manage` grant (developers) | [Raw database](./managing-raw-database.md) |

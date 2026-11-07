@@ -17,6 +17,14 @@
     <Project Path="src/Core/Behind.Core.Tools/Behind.Core.Tools.csproj" />
     <Project Path="src/Core/Behind.Core.WebApi/Behind.Core.WebApi.csproj" />
   </Folder>
+  <Folder Name="/src/Quotes/">
+    <Project Path="src/Quotes/Behind.Quotes.Common/Behind.Quotes.Common.csproj" />
+    <Project Path="src/Quotes/Behind.Quotes.Database.Postgres/Behind.Quotes.Database.Postgres.csproj" />
+    <Project Path="src/Quotes/Behind.Quotes.Database.Sqlite/Behind.Quotes.Database.Sqlite.csproj" />
+    <Project Path="src/Quotes/Behind.Quotes.Database/Behind.Quotes.Database.csproj" />
+    <Project Path="src/Quotes/Behind.Quotes.Domain/Behind.Quotes.Domain.csproj" />
+    <Project Path="src/Quotes/Behind.Quotes.WebApi/Behind.Quotes.WebApi.csproj" />
+  </Folder>
   <Folder Name="/DevContainer/">
     <File Path="..\.devcontainer\devcontainer.json" />
     <File Path="..\.devcontainer\Dockerfile" />
@@ -36,6 +44,9 @@
     <Project Path="src/Sites/Behind.Sites.RPDotHu/Behind.Sites.RPDotHu.csproj" />
   </Folder>
   <Folder Name="/src/Web/">
+    <Project Path="src/Web/Behind.Web.Database.Migrator/Behind.Web.Database.Migrator.csproj" />
+    <Project Path="src/Web/Behind.Web.Database.Postgres/Behind.Web.Database.Postgres.csproj" />
+    <Project Path="src/Web/Behind.Web.Database.Sqlite/Behind.Web.Database.Sqlite.csproj" />
     <Project Path="src/Web/Behind.Web/Behind.Web.csproj" />
   </Folder>
 </Solution>

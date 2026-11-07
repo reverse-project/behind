@@ -846,6 +846,19 @@ Module tables never have foreign keys to Core tables; they refer to users and ot
 - A module registers an `IAuditLabelSource` (`LabelsAsync(ids)` returning `AuditLabel(id, label)`) so the audit log shows human readable names for its entities; `AuditLogEntryQueries` merges the labels of every source with the Core ones.
 - Every table of the flattened model is editable in the raw database editor automatically. Mark sensitive properties with `[Sensible]` and list read-only tables in `ModuleDatabase.ReadOnlyEntities`.
 
+### The Quotes example module
+
+`Quote` is stored in the `Quotes` table (`Key`, `Version`, `Text`, `Author`; composite primary key `Key` + `Version`, index on `Author`). A save inserts the next version and never updates a row; the created and updated times come from the audit log, so the table has no timestamp columns, and it has no foreign keys. `Quote` is listed in `ModuleDatabase.SoftDeletedEntities`, so deleting soft deletes (all versions), developers list deleted quotes, restore them and delete them permanently.
+
+The module commands and queries use the module context interface `IQuotesContext`, which extends `IModuleContext` (`Behind.Common.Database/Modules`): `IModuleContext` is an `ISoftDeleteContext` that hands out the underlying `DbContext` (`Context`) and filters any query by `DeletionState` (`InDeletionState`). `AbstractCoreContext` implements it, so the project context `WebContextSqlite`/`WebContextPostgres` only adds `DbSet<Quote> Quotes` to satisfy `IQuotesContext`, and the module never references Core. The migration history table of the module is `__quotesMigrationsHistory`; the migrations live in `Behind.Quotes.Database.Sqlite/Migrations` and `Behind.Quotes.Database.Postgres/Migrations` and are created from `Behind/` with:
+
+```bash
+dotnet ef migrations add "<Name>" --project src/Quotes/Behind.Quotes.Database.Sqlite --startup-project src/Web/Behind.Web.Database.Migrator --context QuotesContextSqlite --output-dir Migrations
+dotnet ef migrations add "<Name>" --project src/Quotes/Behind.Quotes.Database.Postgres --startup-project src/Web/Behind.Web.Database.Migrator --context QuotesContextPostgres --output-dir Migrations
+```
+
+`QuotesAuditLabelSource` shows the text of a quote (latest version, deleted ones included) in the audit log, `QuotesSeed` adds one welcome quote once, and the `Quotes` table is editable in the raw database editor like every other table.
+
 ## Migrations
 
 ### Creating Migrations

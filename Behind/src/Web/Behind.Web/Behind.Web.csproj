@@ -15,6 +15,9 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
+      <ProjectReference Include="..\..\Quotes\Behind.Quotes.WebApi\Behind.Quotes.WebApi.csproj" />
+      <ProjectReference Include="..\Behind.Web.Database.Postgres\Behind.Web.Database.Postgres.csproj" />
+      <ProjectReference Include="..\Behind.Web.Database.Sqlite\Behind.Web.Database.Sqlite.csproj" />
     </ItemGroup>
 
     <ItemGroup>

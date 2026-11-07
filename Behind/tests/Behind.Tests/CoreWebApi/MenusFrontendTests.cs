@@ -1,3 +1,4 @@
+using Behind.Common.WebApi;
 using System.Text;
 using Behind.Core.WebApi;
 using Microsoft.Extensions.FileProviders;
@@ -33,6 +34,15 @@ public class MenusFrontendTests
     public void Provider_ContainsFile(string path)
     {
         Assert.True(Provider.GetFileInfo(path).Exists);
+    }
+
+    [Fact]
+    public void Model_TranslatesMenuTitlesThroughTheMenuItemKeys()
+    {
+        var model = Read("models/menus.js");
+
+        Assert.Contains("\"menu.item.\" + words.map", model);
+        Assert.Contains("i18n.tOr(keyOf(name), name)", model);
     }
 
     [Theory]

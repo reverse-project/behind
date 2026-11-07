@@ -1,3 +1,4 @@
+using Behind.Common.WebApi;
 using System.Security.Claims;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;

@@ -19,6 +19,7 @@ This manual describes what you can do in the Behind web application today.
 - **[Galleries](./managing-galleries.md)** - browsing the galleries, uploading images in batches, describing them and publishing a gallery.
 - **[Downloads](./managing-downloads.md)** - browsing the folder tree, downloading files, creating folders and uploading several files at once.
 - **[Menus](./managing-menus.md)** - the main menu and other menus, their items, sub items, targets and who sees them.
+- **[Quotes](./managing-quotes.md)** - the example module: reading the quotes and managing them with soft delete, restore and permanent delete.
 - **[Route aliases](./managing-route-aliases.md)** - short routes for pages, for example `#/manuals` for a download directory.
 - **[Access settings](./managing-access-settings.md)** - a restriction page that shows the website only to users with a role, and approval of new accounts before they can sign in.
 - **[Impersonation](./impersonation.md)** - acting as another user to see what they see, and how it shows in the audit log.

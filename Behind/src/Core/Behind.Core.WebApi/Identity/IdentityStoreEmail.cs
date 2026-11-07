@@ -40,6 +40,12 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                         cancellationToken
                     );
                     await roleCommands.AssignBuiltIn(user.Id, BuiltInAccess.Users, cancellationToken);
+
+                    if (user.PendingApproval)
+                    {
+                        await approvalCommands.RequireApproval(user.Id, cancellationToken);
+                    }
+
                     return IdentityResult.Success;
                 },
                 some: _ =>
@@ -118,10 +124,10 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                 return null;
             }
 
-            return (await unitOfWork.GetRepository<HumanUser, Guid>().TryFindAsync(id, cancellationToken))
+            return await (await unitOfWork.GetRepository<HumanUser, Guid>().TryFindAsync(id, cancellationToken))
                 .Match(
-                    none: () => null!,
-                    some: user => user.ToApplicationUser(id)
+                    none: () => Task.FromResult<ApplicationUser?>(null),
+                    some: async user => await user.ToApplicationUser(id).WithApproval(approvalQueries, cancellationToken)
                 );
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -134,10 +140,11 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
 
     public async Task<ApplicationUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
     {
-        return (await userQueries.GetUserByEmail(normalizedUserName, cancellationToken))
+        return await (await userQueries.GetUserByEmail(normalizedUserName, cancellationToken))
             .Match(
-                none: () => null!,
-                some: user => user.User.ToApplicationUser(user.Id)
+                none: () => Task.FromResult<ApplicationUser?>(null),
+                some: async user => await user.User.ToApplicationUser(user.Id)
+                    .WithApproval(approvalQueries, cancellationToken)
             );
     }
 
@@ -176,7 +183,7 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                     (await passwordQueries.GetPasswordsFromUserId(u.Id, cancellationToken)).FirstOrDefault(x =>
                         x.IsActive);
 
-                var au = u.User.ToApplicationUser(u.Id);
+                var au = await u.User.ToApplicationUser(u.Id).WithApproval(approvalQueries, cancellationToken);
                 if (password is not null)
                 {
                     au.Password = password.Value;

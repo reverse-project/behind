@@ -19,7 +19,7 @@ If you have no display name, your email address is shown in the menu.
 4. Type the characters shown in the captcha picture. If they are hard to read, choose **New picture**.
 5. Choose **Create account**.
 
-If the email is already in use you are told so. The administrator of the server can hide the **Sign up** and **Sign in** buttons of the top menu in `backend.json`; this only hides the buttons, the pages themselves still work when you open their address. After the account is created, sign in.
+If the email is already in use you are told so. When the administrators turned on [sign-up moderation](./managing-access-settings.md), the new account has to be approved by an administrator before you can sign in. The administrator of the server can hide the **Sign up** and **Sign in** buttons of the top menu in `backend.json`; this only hides the buttons, the pages themselves still work when you open their address. After the account is created, sign in.
 
 Unless the installation has turned email confirmation off, you also receive an email with a link to confirm your address. Follow it to mark your email as confirmed. If confirmation is turned off, your email counts as confirmed the moment you sign up. If the mail did not arrive or the link expired, enter your email on the sign in page and choose **Resend confirmation email**. The answer is the same whether or not the account exists, and you can ask only a few times every ten minutes.
 

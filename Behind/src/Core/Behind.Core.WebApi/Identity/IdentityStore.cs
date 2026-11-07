@@ -13,6 +13,8 @@ public partial class IdentityStore(
     IRoleQueries roleQueries,
     IPasswordCommands passwordCommands,
     IUserCommands userCommands,
+    IUserApprovalQueries approvalQueries,
+    IUserApprovalCommands approvalCommands,
     IRoleCommands roleCommands,
     ILogger<IdentityStore> logger
 );

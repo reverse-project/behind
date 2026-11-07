@@ -35,9 +35,11 @@ public sealed class ResilientJsonConfigurationTests : IDisposable
         var path = Write("app.json", """{ "Section": { "Value": "one" } }""");
         var builder = BuilderFor(path);
 
-        File.WriteAllText(path, """{ "Section": { "Value": "two" } }""");
+        void Update() => File.WriteAllText(path, """{ "Section": { "Value": "two" } }""");
 
-        Assert.Equal("two", await Wait.UntilAsync(() => builder.Configuration["Section:Value"], value => value == "two"));
+        Update();
+
+        Assert.Equal("two", await Wait.UntilAsync(() => builder.Configuration["Section:Value"], value => value == "two", Update));
     }
 
     [Fact]
@@ -46,9 +48,11 @@ public sealed class ResilientJsonConfigurationTests : IDisposable
         var path = Path.Combine(_directory, "later.json");
         var builder = BuilderFor(path, optional: true);
 
-        File.WriteAllText(path, """{ "Section": { "Value": "created" } }""");
+        void Create() => File.WriteAllText(path, """{ "Section": { "Value": "created" } }""");
 
-        Assert.Equal("created", await Wait.UntilAsync(() => builder.Configuration["Section:Value"], value => value == "created"));
+        Create();
+
+        Assert.Equal("created", await Wait.UntilAsync(() => builder.Configuration["Section:Value"], value => value == "created", Create));
     }
 
     [Fact]
@@ -56,13 +60,15 @@ public sealed class ResilientJsonConfigurationTests : IDisposable
     {
         var path = Write("app.json", """{ "Section": { "Value": "good" } }""");
         var builder = BuilderFor(path);
-        var failures = new List<string>();
+        var failures = new System.Collections.Concurrent.ConcurrentQueue<string>();
         var shared = (ConfigurationReloadFailures)builder.Services
             .Single(d => d.ServiceType == typeof(ConfigurationReloadFailures)).ImplementationInstance!;
-        shared.Failed += (source, _) => failures.Add(source);
+        shared.Failed += (source, _) => failures.Enqueue(source);
 
-        File.WriteAllText(path, "{ not json");
-        await Wait.UntilAsync(() => failures.Count, count => count > 0);
+        void Break() => File.WriteAllText(path, "{ not json");
+
+        Break();
+        await Wait.UntilAsync(() => failures.Count, count => count > 0, Break);
 
         Assert.Equal("good", builder.Configuration["Section:Value"]);
         Assert.Equal(Path.GetFileName(path), failures.First());
@@ -74,11 +80,13 @@ public sealed class ResilientJsonConfigurationTests : IDisposable
         var path = Write("app.json", """{ "Section": { "Value": "good" } }""");
         var builder = BuilderFor(path);
 
+        void Fix() => File.WriteAllText(path, """{ "Section": { "Value": "fixed" } }""");
+
         File.WriteAllText(path, "{ not json");
         await Task.Delay(500);
-        File.WriteAllText(path, """{ "Section": { "Value": "fixed" } }""");
+        Fix();
 
-        Assert.Equal("fixed", await Wait.UntilAsync(() => builder.Configuration["Section:Value"], value => value == "fixed"));
+        Assert.Equal("fixed", await Wait.UntilAsync(() => builder.Configuration["Section:Value"], value => value == "fixed", Fix));
     }
 
     [Fact]

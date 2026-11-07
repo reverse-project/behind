@@ -2,16 +2,18 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
     images.register();
     links.register();
 
-    var toolbar = [
-        [{ header: [1, 2, 3, false] }],
-        ["bold", "italic", "underline", "strike"],
-        [{ list: "ordered" }, { list: "bullet" }],
-        [{ indent: "-1" }, { indent: "+1" }],
-        [{ align: [] }],
-        ["blockquote", "code-block"],
-        ["link", "image"],
-        ["clean"]
-    ];
+    var toolbarOf = function (withImages) {
+        return [
+            [{ header: [1, 2, 3, false] }],
+            ["bold", "italic", "underline", "strike"],
+            [{ list: "ordered" }, { list: "bullet" }],
+            [{ indent: "-1" }, { indent: "+1" }],
+            [{ align: [] }],
+            ["blockquote", "code-block"],
+            withImages ? ["link", "image"] : ["link"],
+            ["clean"]
+        ];
+    };
 
     var toolbarLabels = [
         [".ql-header", "richeditor.heading"],
@@ -85,13 +87,14 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
         init: function (element, valueAccessor) {
             var options = valueAccessor();
             var upload = options.upload;
+            var withImages = typeof upload === "function";
             var writing = false;
 
             var quill = new Quill(element, {
                 theme: "snow",
                 modules: {
                     toolbar: {
-                        container: toolbar,
+                        container: toolbarOf(withImages),
                         handlers: {
                             image: function () {
                                 pickImage(quill, upload);
@@ -99,9 +102,11 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
                         }
                     },
                     uploader: {
-                        mimetypes: imageTypes,
+                        mimetypes: withImages ? imageTypes : [],
                         handler: function (range, files) {
-                            insertImages(quill, upload, range.index, files);
+                            if (withImages) {
+                                insertImages(quill, upload, range.index, files);
+                            }
                         }
                     }
                 }

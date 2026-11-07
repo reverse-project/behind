@@ -214,7 +214,7 @@ public sealed class MagicLinkRotationTests : IDisposable
         using var service = new MagicLinkSecretRotationService(rotator, TimeProvider.System);
 
         await service.StartAsync(CancellationToken.None);
-        await Task.WhenAny(service.ExecuteTask!, Task.Delay(TimeSpan.FromMilliseconds(200)));
+        await Wait.UntilAsync(() => CurrentOf(store).ActualSecret.CreatedAt, created => created == Some(Start + Interval));
         await service.StopAsync(CancellationToken.None);
 
         Assert.Equal(Some(Start + Interval), CurrentOf(store).ActualSecret.CreatedAt);

@@ -15,6 +15,9 @@ public static class UserAccessExtensions
 
         public bool Holds(string grantName) => access.CalculatedGrants.Contains(new Grant(grantName));
 
+        public bool HasRole(string roleName) =>
+            access.Roles.Any(role => string.Equals(role.Name, roleName, StringComparison.OrdinalIgnoreCase));
+
         public bool IsDeveloper => access.Holds(ManagedRole.Developer.RequiredGrant);
 
         public IReadOnlyList<Grant> GrantsAddedBy(UserAccess proposed) =>

@@ -789,6 +789,19 @@ The `Menu` grant area (`Menu.Read`, `Write`, `Delete`, `Manage`) is administrati
 
 The `RouteAlias` grant area (`RouteAlias.Read`, `Write`, `Delete`, `Manage`) is administration only, like `Menu`. Resolving an alias is public. The table is editable in the raw database editor like every other table.
 
+## Access Settings and User Approvals
+
+`AccessSettings` is a versioned singleton (`VersionedKey<Guid>` id with the fixed key `AccessSettings.SingletonKey`, a save inserts the next version and never updates a row, soft delete, hard delete, restore). It holds the restriction page (`RestrictionEnabled`, `RestrictedToRole`, `RestrictionTitle`, `RestrictionMessage`) and `ModeratedSignUp`. Without active rows `AccessSettings.Open` applies (everything off).
+
+- Table `AccessSettings`: `Key`, `Version`, `RestrictionEnabled`, `RestrictedToRole` (up to 100 characters), `RestrictionTitle` (up to 200 characters, empty means the default heading), `RestrictionMessage` (sanitized rich text, up to 20000 characters), `ModeratedSignUp`.
+- Queries: `IAccessSettingsQueries.Current` answers the latest active version (or `Open`), `FindDeleted` the latest deleted version while no active one exists.
+- Audit labels: `AuditLabelExtensions` names the entity `Access settings`.
+- Images: the message may hold images. They are files of the `AccessSettings` VFS type with their own kind (`VfsTypes.AccessImages`), their own URL `/access/images/<id>` and their own upload endpoint. A save attaches the images referenced by the message to the singleton key (`IVfsCommands.Attach`), so the content moves to `vfs/AccessSettings/<singleton key>/<file uuid>`.
+- Table `PendingUserApprovals` (`UserId`, a foreign key to the user with cascade delete): a row means the user waits for approval, no row means the user may sign in. Existing users therefore stay allowed. `IUserApprovalCommands.RequireApproval` adds the row (sign-up while moderation is on), `Approve` removes it; `IUserApprovalQueries` answers `IsPending` and the paged pending list (soft deleted users are left out). `IdentityStore` fills `ApplicationUser.PendingApproval` from it.
+- Migrations: `AddAccessSettingsAndUserApprovals` and `AddAccessRestrictionTitle` (SQLite and PostgreSQL).
+
+The `Access` grant area (`Access.Read`, `Write`, `Delete`, `Manage`) is administration only. `Access.Manage` also exempts a user from the restriction page (`AccessSettingsExtensions.IsRestrictedFor`). Both tables are editable in the raw database editor like every other table.
+
 ## Raw Database Editors
 
 Developers (`RawDatabase.Manage`) can edit the rows of every table as they are stored (`#/manage/raw-database`, see `WEBAPI_CONVENTIONS.md`). The editor is generic and driven by the EF Core model, so a new entity needs no extra code to appear in it:

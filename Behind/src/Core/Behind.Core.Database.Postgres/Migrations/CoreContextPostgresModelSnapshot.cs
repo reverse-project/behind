@@ -44,6 +44,44 @@ namespace Behind.Core.Database.Postgres.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.AccessSettings", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("ModeratedSignUp")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RestrictedToRole")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("RestrictionEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RestrictionMessage")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("character varying(20000)");
+
+                    b.Property<string>("RestrictionTitle")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasDefaultValue("");
+
+                    b.HasKey("Key", "Version");
+
+                    b.ToTable("AccessSettings", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.Article", b =>
                 {
                     b.Property<Guid>("Key")
@@ -1067,6 +1105,16 @@ namespace Behind.Core.Database.Postgres.Migrations
                     b.ToTable("MenuItemRoles");
                 });
 
+            modelBuilder.Entity("PendingUserApprovals", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("PendingUserApprovals");
+                });
+
             modelBuilder.Entity("RoleGrants", b =>
                 {
                     b.Property<Guid>("RoleId")
@@ -1350,6 +1398,15 @@ namespace Behind.Core.Database.Postgres.Migrations
                     b.HasOne("Behind.Core.Domain.MenuItem", null)
                         .WithMany()
                         .HasForeignKey("MenuItemKey", "MenuItemVersion")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PendingUserApprovals", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

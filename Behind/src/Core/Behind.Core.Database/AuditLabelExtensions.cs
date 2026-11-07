@@ -17,6 +17,7 @@ public static class AuditLabelExtensions
     private const string WallOfShameKind = "Wall of shame entry";
     private const string NewsCommentKind = "News comment";
     private const string GuestLabel = "Guest";
+    private const string AccessSettingsKind = "Access settings";
     private const string GalleryItemKind = "Image";
     private const string SiteSectionKind = "Section";
     private const int GalleryItemLabelLength = 80;
@@ -195,6 +196,12 @@ public static class AuditLabelExtensions
                 .Where(alias => ids.Contains(EF.Property<Guid>(alias, VersionedColumns.Key)))
                 .OrderByDescending(alias => EF.Property<long>(alias, VersionedColumns.Version))
                 .Select(alias => new Named(EF.Property<Guid>(alias, VersionedColumns.Key), alias.Alias))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.AccessSettings
+                .Where(settings => ids.Contains(EF.Property<Guid>(settings, VersionedColumns.Key)))
+                .Select(settings => new Named(EF.Property<Guid>(settings, VersionedColumns.Key), AccessSettingsKind))
+                .Distinct()
                 .AsNoTracking()
                 .ToListAsync(cancellationToken)
         ];

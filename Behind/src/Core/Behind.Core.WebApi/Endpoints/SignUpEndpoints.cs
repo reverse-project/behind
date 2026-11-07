@@ -4,6 +4,7 @@ using Behind.Common.Logging;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Captcha;
 using Behind.Core.WebApi.Identity;
@@ -35,6 +36,7 @@ public sealed class SignUpEndpoints
     public static async Task<IResult> SignUpPassword(
         UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration,
+        IAccessSettingsQueries accessSettings,
         IEmailSender<ApplicationUser> emailSender,
         IConfiguration configuration,
         TimeProvider timeProvider,
@@ -51,10 +53,13 @@ public sealed class SignUpEndpoints
             return Results.Conflict("Email already in use");
         }
 
+        var moderated = (await accessSettings.Current(httpContext.RequestAborted)).ModeratedSignUp;
+
         var user = new ApplicationUser
         {
             DisplayName = request.DisplayName.ToDisplayName(),
-            Emails = [new Email(request.Email, confirmationEnabled ? null : timeProvider.GetUtcNow())]
+            Emails = [new Email(request.Email, confirmationEnabled ? null : timeProvider.GetUtcNow())],
+            PendingApproval = moderated
         };
         
         var result = await userManager.CreateAsync(user, request.Password);
@@ -72,6 +77,15 @@ public sealed class SignUpEndpoints
                 logger.LogInformation(
                     "Email of user {UserId} confirmed at sign-up: email confirmation is disabled",
                     () => [user.Id]);
+            }
+
+            if (moderated)
+            {
+                logger.LogInformation("User {UserId} is waiting for approval", () => [user.Id]);
+
+                return Results.Json(
+                    new SignInEndpoints.ApprovalPendingResponse(),
+                    statusCode: StatusCodes.Status202Accepted);
             }
 
             return Results.StatusCode(204);

@@ -39,6 +39,44 @@ namespace Behind.Core.Database.Sqlite.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Behind.Core.Domain.AccessSettings", b =>
+                {
+                    b.Property<Guid>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("ModeratedSignUp")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RestrictedToRole")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("RestrictionEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RestrictionMessage")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RestrictionTitle")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
+                    b.HasKey("Key", "Version");
+
+                    b.ToTable("AccessSettings", (string)null);
+
+                    b.HasAnnotation("Behind:SoftDeletable", true);
+                });
+
             modelBuilder.Entity("Behind.Core.Domain.Article", b =>
                 {
                     b.Property<Guid>("Key")
@@ -1062,6 +1100,16 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.ToTable("MenuItemRoles");
                 });
 
+            modelBuilder.Entity("PendingUserApprovals", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("PendingUserApprovals");
+                });
+
             modelBuilder.Entity("RoleGrants", b =>
                 {
                     b.Property<Guid>("RoleId")
@@ -1345,6 +1393,15 @@ namespace Behind.Core.Database.Sqlite.Migrations
                     b.HasOne("Behind.Core.Domain.MenuItem", null)
                         .WithMany()
                         .HasForeignKey("MenuItemKey", "MenuItemVersion")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PendingUserApprovals", b =>
+                {
+                    b.HasOne("Behind.Core.Domain.HumanUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

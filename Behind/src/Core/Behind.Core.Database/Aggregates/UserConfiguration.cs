@@ -77,6 +77,19 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+    public static void ApplyUserApprovals(ModelBuilder modelBuilder) =>
+        modelBuilder.Entity(UserApprovalStore.Table, approval =>
+        {
+            approval.Property<Guid>(UserApprovalStore.UserId);
+
+            approval.HasKey(UserApprovalStore.UserId);
+
+            approval.HasOne(typeof(HumanUser))
+                .WithMany()
+                .HasForeignKey(UserApprovalStore.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
     public static void ApplyUserRoles(ModelBuilder modelBuilder) =>
         modelBuilder.Entity("UserRoles", ur =>
         {

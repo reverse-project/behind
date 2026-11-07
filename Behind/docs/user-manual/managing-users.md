@@ -16,7 +16,7 @@ Buttons only appear or work when you are allowed to use them. You can never mode
 
 **Make administrator** / **Remove administrator** and **Make developer** / **Remove developer** add or remove those built-in roles. Only developers can change the developer role.
 
-For any other role, use the [Access panel](#editing-a-users-access).
+For any other role, choose **Roles** on a user and tick the roles the user should have (see [Changing a user's roles](#changing-a-users-roles)), or use the [Access panel](#editing-a-users-access).
 
 ## Signing a user out
 
@@ -40,6 +40,10 @@ The user is banned and signed out of all sessions. **Unban** lifts the ban.
 
 - **Delete** removes the user. It needs the `User.Delete` grant and you are asked to confirm. A deleted user can be restored by a developer.
 - Developers also see **Show deleted users**. For deleted users they can **Restore** the account or **Delete permanently**. A permanent delete cannot be undone and is refused when the audit log still refers to the user.
+
+## Changing a user's roles
+
+Choose **Roles** on a user to open the roles panel, tick or untick the roles and choose **Save roles**. Choose **Hide roles** to close it. The **Users** role is required and cannot be unticked. You can only change roles of users you may moderate, and only within the grants you hold yourself. Direct grants and restrictions of the user stay as they are.
 
 ## Editing a user's access
 

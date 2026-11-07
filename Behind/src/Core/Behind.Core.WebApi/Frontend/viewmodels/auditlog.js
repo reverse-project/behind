@@ -49,6 +49,8 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n"], f
         Menu: "audit.entities.Menu",
         MenuItem: "audit.entities.MenuItem",
         RouteAlias: "audit.entities.RouteAlias",
+        AccessSettings: "audit.entities.AccessSettings",
+        PendingUserApprovals: "audit.entities.PendingUserApprovals",
         Gallery: "audit.entities.Gallery",
         GalleryItem: "audit.entities.GalleryItem",
         Carousel: "audit.entities.Carousel",

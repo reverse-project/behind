@@ -104,15 +104,18 @@ public class SerilogExtensionsTests
             using var host = builder.Build();
             var logger = host.Services.GetRequiredService<ILogger<SerilogExtensionsTests>>();
 
+                    void Rewrite() => File.WriteAllText(path, """{ "Serilog": { "MinimumLevel": { "Default": "Debug" } } }""");
+
             logger.LogInformation("before");
-            await File.WriteAllTextAsync(path, """{ "Serilog": { "MinimumLevel": { "Default": "Debug" } } }""");
+            Rewrite();
             await Wait.UntilAsync(
                 () =>
                 {
                     logger.LogDebug("after");
                     return writer.ToString();
                 },
-                output => output.Contains("after"));
+                output => output.Contains("after"),
+                Rewrite);
 
             Assert.DoesNotContain("before", writer.ToString());
         }

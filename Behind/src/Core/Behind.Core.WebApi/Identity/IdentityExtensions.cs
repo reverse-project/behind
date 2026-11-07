@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
 using Behind.Core.Domain;
 using Microsoft.IdentityModel.Tokens;
 
@@ -9,6 +10,18 @@ namespace Behind.Core.WebApi.Identity;
 
 public static class IdentityExtensions
 {
+    extension(ApplicationUser user)
+    {
+        public async Task<ApplicationUser> WithApproval(
+            IUserApprovalQueries approvals,
+            CancellationToken cancellationToken)
+        {
+            user.PendingApproval = await approvals.IsPending(user.Id, cancellationToken);
+
+            return user;
+        }
+    }
+
     extension(AccessToken accessToken)
     {
         public string ToJwtToken(ApplicationUser user, Guid sessionId, JwtSettings settings) =>

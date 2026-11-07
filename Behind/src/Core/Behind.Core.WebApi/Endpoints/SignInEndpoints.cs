@@ -36,6 +36,10 @@ public sealed class SignInEndpoints
 
     public const string EmailNotConfirmedCode = "emailNotConfirmed";
 
+    public sealed record ApprovalPendingResponse(string Code = ApprovalPendingCode);
+
+    public const string ApprovalPendingCode = "approvalPending";
+
     public sealed record SignInResponse(
         string AccessToken,
         DateTimeOffset Expires,
@@ -217,6 +221,13 @@ public sealed class SignInEndpoints
             logger.LogWarning("Sign-in refused for user {UserId}: the email is not confirmed", () => [user.Id]);
 
             return Results.Json(new EmailNotConfirmedResponse(), statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        if (user.PendingApproval)
+        {
+            logger.LogWarning("Sign-in refused for user {UserId}: the account is waiting for approval", () => [user.Id]);
+
+            return Results.Json(new ApprovalPendingResponse(), statusCode: StatusCodes.Status403Forbidden);
         }
 
         var ban = await wallOfShameQueries.FindActiveBan(user.Id, now, httpContext.RequestAborted);

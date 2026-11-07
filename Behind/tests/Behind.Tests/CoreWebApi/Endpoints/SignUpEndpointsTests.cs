@@ -1,4 +1,6 @@
 using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
+using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Tests.Helpers;
@@ -15,6 +17,15 @@ public class SignUpEndpointsTests
     private static readonly DateTimeOffset Now = new(2026, 11, 1, 10, 0, 0, TimeSpan.Zero);
 
     private readonly IEmailSender<ApplicationUser> _emailSender = Substitute.For<IEmailSender<ApplicationUser>>();
+
+    private static IAccessSettingsQueries AccessSettingsOf(bool moderated)
+    {
+        var queries = Substitute.For<IAccessSettingsQueries>();
+        queries.Current(Arg.Any<CancellationToken>())
+            .Returns(AccessSettings.Open with { ModeratedSignUp = moderated });
+
+        return queries;
+    }
 
     private static IOptions<SecurityConfiguration> Security(bool emailConfirmation) =>
         Options.Create(new SecurityConfiguration { EmailConfirmation = emailConfirmation });
@@ -37,10 +48,12 @@ public class SignUpEndpointsTests
         SignUpEndpoints.PasswordRequest request,
         ILogger<SignUpEndpoints>? logger = null,
         bool emailConfirmation = true,
-        string? frontendUrl = null) =>
+        string? frontendUrl = null,
+        bool moderated = false) =>
         SignUpEndpoints.SignUpPassword(
             manager,
             Security(emailConfirmation),
+            AccessSettingsOf(moderated),
             _emailSender,
             FrontendConfigurationOf(frontendUrl),
             new FixedTimeProvider(Now),
@@ -354,5 +367,33 @@ public class SignUpEndpointsTests
 
         Assert.IsType<NoContent>(result);
         Assert.Equal("smtp down", logger.Single(LogLevel.Error).Exception!.Message);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_ModerationOn_MarksTheUserPendingAndAnswersApprovalPending()
+    {
+        ApplicationUser? created = null;
+
+        var result = await SignUp(
+            ManagerCapturing(user => created = user),
+            new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"),
+            moderated: true);
+
+        Assert.True(created!.PendingApproval);
+        var json = Assert.IsType<JsonHttpResult<SignInEndpoints.ApprovalPendingResponse>>(result);
+        Assert.Equal(StatusCodes.Status202Accepted, json.StatusCode);
+        Assert.Equal(SignInEndpoints.ApprovalPendingCode, json.Value!.Code);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_ModerationOff_LeavesTheUserApproved()
+    {
+        ApplicationUser? created = null;
+
+        await SignUp(
+            ManagerCapturing(user => created = user),
+            new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"));
+
+        Assert.False(created!.PendingApproval);
     }
 }

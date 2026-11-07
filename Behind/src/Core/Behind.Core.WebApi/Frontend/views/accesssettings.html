@@ -1,0 +1,70 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'accessSettings.title'">Access settings</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'accessSettings.back'">Back to administration</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'accessSettings.signInToManage'">to manage the access settings.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'accessSettings.denied'">You need access settings access to manage them.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: canRead">
+        <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+            <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'accessSettings.showDeleted'">Show deleted access settings</span></label>
+        </div>
+        <form class="card card-body mb-4" data-bind="visible: hasSettings, submit: save">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <h2 class="h5 mb-0" data-bind="t: 'accessSettings.restriction.title'">Restriction page</h2>
+                <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+            </div>
+            <div class="form-check form-switch mb-3">
+                <label class="form-check-label"><input id="access-restriction-enabled" class="form-check-input" type="checkbox" role="switch" data-bind="checked: restrictionEnabled, enable: canWrite() && !isDeleted()"> <span data-bind="t: 'accessSettings.restriction.enabled'">Show the restriction page to visitors without the required role</span></label>
+                <div class="form-text" data-bind="t: 'accessSettings.restriction.enabledHelp'">While this is on, only users holding the role below see the website contents; everybody else sees only the restriction page and the sign-in pages. Administrators with access settings management always see the website.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="access-restricted-role" data-bind="t: 'accessSettings.restriction.role'">Required role</label>
+                <select id="access-restricted-role" class="form-select" data-bind="options: roles, value: restrictedToRole, enable: canWrite() && !isDeleted()"></select>
+                <div class="form-text" data-bind="t: 'accessSettings.restriction.roleHelp'">Choose Users to let every registered user in.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="access-restriction-title" data-bind="t: 'accessSettings.restriction.pageTitle'">Title</label>
+                <input id="access-restriction-title" class="form-control" type="text" maxlength="200" data-bind="value: restrictionTitle, valueUpdate: 'input', enable: canWrite() && !isDeleted(), tAttr: { placeholder: 'restriction.title' }">
+                <div class="form-text" data-bind="t: 'accessSettings.restriction.pageTitleHelp'">The heading of the restriction page. Leave it empty to show Restricted website.</div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label" for="access-restriction-message" data-bind="t: 'accessSettings.restriction.message'">Message</label>
+                <div id="access-restriction-message" data-bind="richEditor: { value: restrictionMessage, upload: uploadImage, enabled: canWrite() && !isDeleted() }"></div>
+                <div class="form-text" data-bind="t: 'accessSettings.restriction.messageHelp'">The text visitors see on the restriction page. Leave it empty to show the default message.</div>
+            </div>
+            <h2 class="h5" data-bind="t: 'accessSettings.moderation.title'">Sign-up moderation</h2>
+            <div class="form-check form-switch mb-3">
+                <label class="form-check-label"><input id="access-moderated-sign-up" class="form-check-input" type="checkbox" role="switch" data-bind="checked: moderatedSignUp, enable: canWrite() && !isDeleted()"> <span data-bind="t: 'accessSettings.moderation.enabled'">Only approved users can sign in</span></label>
+                <div class="form-text" data-bind="t: 'accessSettings.moderation.enabledHelp'">While this is on, new accounts have to be approved below before their owners can sign in. Existing users are not affected.</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary" data-bind="visible: !isDeleted(), enable: canSave, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-danger" data-bind="visible: !isDeleted() && canDelete(), enable: canReset, click: reset, t: 'accessSettings.reset'">Reset to defaults</button>
+                <button type="button" class="btn btn-outline-success" data-bind="visible: isDeleted() && canViewDeleted(), enable: canRestore, click: restore, t: 'common.restore'">Restore</button>
+                <button type="button" class="btn btn-danger" data-bind="visible: isDeleted() && canViewDeleted(), enable: canRestore, click: hardDelete, t: 'common.deletePermanently'">Delete permanently</button>
+            </div>
+        </form>
+        <div data-bind="with: pending, visible: !showDeleted()">
+            <h2 class="h5" data-bind="t: 'accessSettings.pending.title'">Users waiting for approval</h2>
+            <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+            <form class="input-group mb-3" data-bind="submit: find">
+                <input class="form-control" type="search" maxlength="200" placeholder="Search by name or email" aria-label="Search users waiting for approval" data-bind="value: search, tAttr: { placeholder: 'accessSettings.pending.searchPlaceholder', 'aria-label': 'accessSettings.pending.searchLabel' }">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
+            </form>
+            <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'accessSettings.pending.empty'">No users are waiting for approval.</p>
+            <ul class="list-group mb-3" data-bind="foreach: items">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <div class="me-auto">
+                        <strong class="text-break" data-bind="text: displayName"></strong>
+                        <span class="text-body-secondary text-break ms-2" data-bind="text: emails"></span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success" data-bind="visible: $root.canWrite(), enable: !$parent.busy(), click: approve, t: 'accessSettings.pending.approve'">Approve</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: $root.canWrite(), enable: !$parent.busy(), click: reject, t: 'accessSettings.pending.reject'">Reject</button>
+                </li>
+            </ul>
+            <pager class="d-block" params="pager: pager"></pager>
+        </div>
+    </div>
+</section>

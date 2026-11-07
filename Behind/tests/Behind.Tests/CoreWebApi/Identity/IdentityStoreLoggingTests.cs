@@ -32,6 +32,8 @@ public class IdentityStoreLoggingTests
             Substitute.For<IRoleQueries>(),
             Substitute.For<IPasswordCommands>(),
             Substitute.For<IUserCommands>(),
+            Substitute.For<IUserApprovalQueries>(),
+            Substitute.For<IUserApprovalCommands>(),
             Substitute.For<IRoleCommands>(),
             _logger);
 

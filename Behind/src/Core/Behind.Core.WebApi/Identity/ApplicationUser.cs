@@ -9,4 +9,5 @@ public sealed class ApplicationUser
     public string DisplayName { get; set; } = string.Empty;
     public IEnumerable<Email> Emails { get; set; } = Enumerable.Empty<Email>();
     public PasswordHash? Password { get; set; }
+    public bool PendingApproval { get; set; }
 }

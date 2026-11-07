@@ -3,6 +3,7 @@ define(["ko", "models/auth", "models/access"], function (ko, auth, access) {
         var self = this;
 
         self.isOpen = ko.observable(false);
+        self.isRolesOpen = ko.observable(false);
         self.isLoading = ko.observable(false);
         self.message = ko.observable("");
         self.canEdit = ko.observable(false);
@@ -53,9 +54,17 @@ define(["ko", "models/auth", "models/access"], function (ko, auth, access) {
         };
 
         self.toggle = function () {
+            self.isRolesOpen(false);
             self.isOpen(!self.isOpen());
 
             return self.isOpen() ? self.load() : Promise.resolve();
+        };
+
+        self.toggleRoles = function () {
+            self.isOpen(false);
+            self.isRolesOpen(!self.isRolesOpen());
+
+            return self.isRolesOpen() ? self.load() : Promise.resolve();
         };
 
         self.save = function () {

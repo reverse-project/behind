@@ -46,6 +46,14 @@ public sealed class SiteImageEndpoints
         IOptionsSnapshot<CarouselsConfiguration> configuration) =>
         Store(VfsTypes.Carousels, file, httpContext, commands, configuration.Value.ImageLimit);
 
+    [IgnoreETag]
+    public static Task<IResult> UploadAccess(
+        IFormFile? file,
+        HttpContext httpContext,
+        IVfsCommands commands,
+        IOptionsSnapshot<SitesConfiguration> configuration) =>
+        Store(VfsTypes.AccessSettings, file, httpContext, commands, configuration.Value.ImageLimit);
+
     private static async Task<IResult> Store(
         string type,
         IFormFile? file,
@@ -96,6 +104,10 @@ public sealed class SiteImageEndpoints
     [IgnoreETag]
     public static Task<IResult> GetCarousel(Guid id, HttpContext httpContext, IVfsQueries queries) =>
         Serve(VfsTypes.CarouselImages, id, httpContext, queries);
+
+    [IgnoreETag]
+    public static Task<IResult> GetAccess(Guid id, HttpContext httpContext, IVfsQueries queries) =>
+        Serve(VfsTypes.AccessImages, id, httpContext, queries);
 
     private static async Task<IResult> Serve(
         IReadOnlyList<string> types,

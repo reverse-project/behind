@@ -43,6 +43,10 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
             return i18n.t("auth.emailNotConfirmed");
         }
 
+        if (response.data && response.data.code === "approvalPending") {
+            return i18n.t("auth.approvalPending");
+        }
+
         var reason = response.data && response.data.reason ? response.data.reason : "";
 
         return reason ? i18n.t("auth.bannedReason", [reason]) : i18n.t("auth.banned");
@@ -376,7 +380,7 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
         signUp: function (email, password, displayName, captcha) {
             return http.post("/sign/up/password", { email: email, password: password, displayName: displayName, captcha: captcha }).then(function (response) {
                 return response.ok
-                    ? success("auth.signUp.done")
+                    ? success(response.data && response.data.code === "approvalPending" ? "auth.signUp.pendingApproval" : "auth.signUp.done")
                     : failure(response, { 409: "auth.signUp.emailInUse" });
             });
         },

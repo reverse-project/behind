@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/i18n"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding, session, usersettings, i18n) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding, session, usersettings, restriction, i18n) {
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
@@ -39,6 +39,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/manage/menus": "controllers/menus",
         "#/manage/menus/:id": "controllers/menuitems",
         "#/manage/route-aliases": "controllers/routealiases",
+        "#/manage/access-settings": "controllers/accesssettings",
         "#/manage/raw-database": "controllers/rawdatabase",
         "#/changelog": "controllers/changelog",
         "#/licenses": "controllers/licenses",
@@ -55,6 +56,15 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/site/:slug": "controllers/site"
     };
 
+    var openControllers = [
+        "controllers/signin",
+        "controllers/signup",
+        "controllers/magiclink",
+        "controllers/confirmemail",
+        "controllers/profilepassword"
+    ];
+
+    var restrictionController = "controllers/restriction";
     var aliasRoute = "#/:slug";
     var siteController = "controllers/site";
     var aliasController = "controllers/routealias";
@@ -115,7 +125,11 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         }
     };
 
-    var execute = function (controllerName, params) {
+    var execute = function (requested, params) {
+        var controllerName = restriction.restricted() && openControllers.indexOf(requested) < 0
+            ? restrictionController
+            : requested;
+
         require([controllerName], function (Controller) {
             new Controller($.extend({}, context, { params: params })).exec();
         });
@@ -159,6 +173,10 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         query.addEventListener("change", apply);
     };
 
+    var syncRestriction = function () {
+        return restriction.load();
+    };
+
     var syncUserSettings = function () {
         return session.isSignedIn() ? usersettings.load() : usersettings.clear();
     };
@@ -175,13 +193,18 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
                 .then(function () {
                     i18n.useDefault(branding.locale());
 
-                    return syncUserSettings();
+                    return Promise.all([syncUserSettings(), syncRestriction()]);
                 })
                 .then(function () {
                     i18n.useAccount(usersettings.locale());
                     usersettings.locale.subscribe(i18n.useAccount);
                     session.isSignedIn.subscribe(syncUserSettings);
                     session.isImpersonating.subscribe(syncUserSettings);
+                    session.isSignedIn.subscribe(syncRestriction);
+                    session.isImpersonating.subscribe(syncRestriction);
+                    restriction.restricted.subscribe(function () {
+                        router.runRoute("get", window.location.hash || "#/");
+                    });
 
                     return i18n.apply();
                 })

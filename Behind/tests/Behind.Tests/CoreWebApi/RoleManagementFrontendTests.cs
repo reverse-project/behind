@@ -109,6 +109,20 @@ public class RoleManagementFrontendTests
     }
 
     [Fact]
+    public void UsersView_OffersADedicatedRolesPanelNextToTheAccessPanel()
+    {
+        var view = Read("views/users.html");
+        var access = Read("viewmodels/useraccess.js");
+
+        Assert.Contains("click: access.toggleRoles", view);
+        Assert.Contains("visible: access.isRolesOpen, with: access", view);
+        Assert.Contains("click: save, t: 'users.saveRoles'", view);
+        Assert.Contains("self.toggleRoles = function", access);
+        Assert.Contains("self.isRolesOpen(false)", access);
+        Assert.Contains("self.isOpen(false)", access);
+    }
+
+    [Fact]
     public void UserModel_PrefersTheCalculatedGrantsFromTheServer()
     {
         var user = Read("models/user.js");

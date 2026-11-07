@@ -15,10 +15,11 @@ public static class GrantArea
     public const string Gallery = nameof(Gallery);
     public const string Download = nameof(Download);
     public const string RouteAlias = nameof(RouteAlias);
+    public const string Access = nameof(Access);
 
     public const string RawDatabase = nameof(RawDatabase);
 
-    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download, RouteAlias];
+    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download, RouteAlias, Access];
 
     public static IReadOnlyList<string> ActionsOf(string area) =>
         area == Impersonation ? [GrantAction.Manage] : GrantAction.All;

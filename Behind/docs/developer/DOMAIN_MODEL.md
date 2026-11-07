@@ -46,6 +46,8 @@ Behind.Core.Domain/
 ├── MenuUrlExtensions.cs    # Which menu item URLs are safe (relative, http, https, mailto, tel)
 ├── MenuVisibilityExtensions.cs # Role based visibility of menu items
 ├── RouteAlias.cs           # The route alias record (short route and target route)
+├── AccessSettings.cs        # The singleton access settings (restriction page and sign-up moderation)
+├── AccessSettingsExtensions.cs # Whether the restriction applies to a user's access
 ├── RouteTargetExtensions.cs # Which route alias targets are valid (internal #/ routes)
 └── Reason.cs              # Business reason value object
 ```

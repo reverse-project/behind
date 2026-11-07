@@ -13,6 +13,7 @@
 | Downloads | the `Download.Read` grant (`Download.Write` to change them) | [Downloads](./managing-downloads.md) |
 | Menus | the `Menu.Read` grant (`Menu.Write` to change them) | [Menus](./managing-menus.md) |
 | Route aliases | the `RouteAlias.Read` grant (`RouteAlias.Write` to change them) | [Route aliases](./managing-route-aliases.md) |
+| Access settings | the `Access.Read` grant (`Access.Write` to change them) | [Access settings](./managing-access-settings.md) |
 | Raw database | the `RawDatabase.Manage` grant (developers) | [Raw database](./managing-raw-database.md) |
 | Audit log | the `AuditLog.Read` grant | [Audit log](./audit-log.md) |
 | Settings | the `Configuration.Read` grant (`Configuration.Manage` to change them) | [Settings](./managing-settings.md) |

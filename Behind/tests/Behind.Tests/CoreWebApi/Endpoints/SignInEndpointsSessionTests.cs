@@ -179,6 +179,50 @@ public class SignInEndpointsSessionTests
     }
 
     [Fact]
+    public async Task SignInPassword_UserWaitingForApproval_ReturnsForbiddenAndStartsNoSession()
+    {
+        var commands = Substitute.For<ISessionCommands>();
+        var user = NewUser("secret");
+        user.PendingApproval = true;
+
+        var result = await SignInEndpoints.SignInPassword(
+            UserManagerFor(user),
+            Security(Some(Jwt)),
+            commands,
+            NoBans(),
+            NoTwoFactor(),
+            new FixedTimeProvider(Now),
+            NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
+            new SignInEndpoints.PasswordRequest("user@test.com", "secret"));
+
+        var json = Assert.IsType<JsonHttpResult<SignInEndpoints.ApprovalPendingResponse>>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, json.StatusCode);
+        Assert.Equal(SignInEndpoints.ApprovalPendingCode, json.Value!.Code);
+        await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SignInPassword_WrongPasswordOfAUserWaitingForApproval_IsStillUnauthorized()
+    {
+        var user = NewUser("secret");
+        user.PendingApproval = true;
+
+        var result = await SignInEndpoints.SignInPassword(
+            UserManagerFor(user),
+            Security(Some(Jwt)),
+            Substitute.For<ISessionCommands>(),
+            NoBans(),
+            NoTwoFactor(),
+            new FixedTimeProvider(Now),
+            NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance,
+            new SignInEndpoints.PasswordRequest("user@test.com", "wrong"));
+
+        Assert.IsType<UnauthorizedHttpResult>(result);
+    }
+
+    [Fact]
     public async Task SignInPassword_UnconfirmedEmailWhenConfirmationNotRequired_StartsSession()
     {
         var commands = Substitute.For<ISessionCommands>();

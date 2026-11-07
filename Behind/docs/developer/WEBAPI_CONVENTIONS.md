@@ -284,6 +284,25 @@ Route aliases are under `/route-aliases` (`RouteAliasRoutesExtensions.MapRouteAl
 
 Saving answers `409` with `{ "reason": ... }`: `alias-taken`, `version-conflict`.
 
+### Access Endpoints
+
+The access settings are under `/access` (`AccessRoutesExtensions.MapAccessEndpoints`). `AccessGateMiddleware` (after `UseAuthorization`) enforces the restriction: while it is on, a request from a visitor who neither holds the required role nor `Access.Manage` is answered with `403` and `{ "code": "restricted" }`, except for the paths that always stay open (`AccessGateExtensions`): `/sign`, `/session`, `/accounts`, `/captcha`, `/access/images`, `/locales`, `/about`, `/profile` and `/access/restriction`.
+
+| Endpoint | Access |
+|----------|--------|
+| `GET /access/restriction` | public, answers `{ "restricted", "title", "message" }` for the caller (title and message only while the caller is restricted; the message is sanitized HTML, `POST /access` runs `SanitizeRichText` on it). Not cached |
+| `GET /access/manage` | `Access.Read`, answers the current `settings` (defaults when nothing is saved) and the role names; `?deleted=true` (`RawDatabase.Manage`) answers the deleted settings or `404` |
+| `POST /access` | `Access.Write`, saving inserts a new version of the singleton; `409` with `unknown-role` or `version-conflict` |
+| `GET /access/images/{id}` | public (the restriction page shows the images), serves only files of the `AccessSettings` VFS kind with an immutable cache header |
+| `POST /access/images` | `Access.Write`, uploads an image (limit `Frontend:Sites:MaxImageBytes`) and answers `{ "id", "url" }` with `/access/images/<id>` |
+| `POST /access/delete` | `Access.Delete` |
+| `POST /access/restore`, `POST /access/hard/delete` | `RawDatabase.Manage` |
+| `GET /access/pending-users` | `Access.Read`, paged (`page`, `pageSize`) with `search` (name or email) |
+| `POST /access/pending-users/{id}/approve` | `Access.Write`, runs through `UserManagementGate` (`CanModerate`), `404` when the user does not wait for approval |
+| `POST /access/pending-users/{id}/reject` | `Access.Write`, runs through `UserManagementGate` (`CanDelete`, so it also needs `User.Delete`) and soft deletes the user |
+
+A user waiting for approval gets `403` with `{ "code": "approvalPending" }` from every sign-in path (`SignInEndpoints.StartSession`), and `POST /sign/up/password` answers `202` with the same body while moderation is on.
+
 ### Raw Database Endpoints
 
 The raw database editor is under `/raw-database` (`RawDatabaseRoutesExtensions.MapRawDatabaseEndpoints`). Every route needs `RawDatabase.Manage`. The tables come from the EF Core relational model (`DbContext.RawTables`, `Behind.Common.Database.Raw`), so every entity, join table and versioning table with a primary key is covered without any per entity code.

@@ -239,6 +239,11 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IMenuItemCommands, MenuItemCommands>();
             builder.Services.AddScoped<IRouteAliasQueries, RouteAliasQueries>();
             builder.Services.AddScoped<IRouteAliasCommands, RouteAliasCommands>();
+            builder.Services.AddScoped<IAccessSettingsQueries, AccessSettingsQueries>();
+            builder.Services.AddScoped<IAccessSettingsCommands, AccessSettingsCommands>();
+            builder.Services.AddScoped<IUserApprovalQueries, UserApprovalQueries>();
+            builder.Services.AddScoped<IUserApprovalCommands, UserApprovalCommands>();
+            builder.Services.AddScoped<AccessGate>();
             builder.Services.AddScoped<IRawDatabaseQueries, RawDatabaseQueries>();
             builder.Services.AddScoped<IRawDatabaseCommands, RawDatabaseCommands>();
             builder.Services.AddScoped<UserManagementGate>();
@@ -384,6 +389,7 @@ public static class WebApiExtensions
             application.UseAuthentication();
             application.UseSessionValidation();
             application.UseAuthorization();
+            application.UseAccessGate();
             application.UseDeletedRecordsVisibility();
 
             application.MapGet("/session", SessionEndpoints.Get)
@@ -929,6 +935,7 @@ public static class WebApiExtensions
             application.MapDownloadEndpoints();
             application.MapMenuEndpoints();
             application.MapRouteAliasEndpoints();
+            application.MapAccessEndpoints();
             application.MapRawDatabaseEndpoints();
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)

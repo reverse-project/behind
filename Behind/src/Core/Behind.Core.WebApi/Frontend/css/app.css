@@ -485,3 +485,9 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
 }
+
+.behind-restriction-message {
+    max-width: 40rem;
+    margin-left: auto;
+    margin-right: auto;
+}

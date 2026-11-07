@@ -65,12 +65,16 @@ public sealed class WebApiExtensionsReloadTests : IAsyncLifetime
     {
         Assert.IsType<LoggerEmailSender>(_app.Services.GetRequiredService<IEmailSender>());
 
-        await new FileInfo(PathOf("email.json")).WriteEmailConfigurationAsync(
-            new SmtpEmailConfiguration("smtp.example.com", 587, new Ssl(true), Some<Authentication>(new NoAuthentication()), None));
+        void Rewrite() => new FileInfo(PathOf("email.json")).WriteEmailConfigurationAsync(
+            new SmtpEmailConfiguration("smtp.example.com", 587, new Ssl(true), Some<Authentication>(new NoAuthentication()), None))
+            .GetAwaiter().GetResult();
+
+        Rewrite();
 
         var sender = await Wait.UntilAsync(
             () => _app.Services.GetRequiredService<IEmailSender>(),
-            current => current is SmtpEmailSender);
+            current => current is SmtpEmailSender,
+            Rewrite);
         Assert.IsType<SmtpEmailSender>(sender);
     }
 
@@ -79,11 +83,12 @@ public sealed class WebApiExtensionsReloadTests : IAsyncLifetime
     {
         Assert.True(Current<SecurityConfiguration>().Jwt.Match(() => true, _ => false));
 
-        await File.WriteAllTextAsync(
-            PathOf("security.json"),
-            """{ "Security": { "EmailConfirmation": false, "Jwt": { "Issuer": "issuer-two", "Audience": "audience", "SigningKey": "0123456789abcdef0123456789abcdef" } } }""");
+        const string Json = """{ "Security": { "EmailConfirmation": false, "Jwt": { "Issuer": "issuer-two", "Audience": "audience", "SigningKey": "0123456789abcdef0123456789abcdef" } } }""";
+        void Rewrite() => File.WriteAllText(PathOf("security.json"), Json);
 
-        var security = await Wait.UntilAsync(() => Current<SecurityConfiguration>(), current => !current.EmailConfirmation);
+        Rewrite();
+
+        var security = await Wait.UntilAsync(() => Current<SecurityConfiguration>(), current => !current.EmailConfirmation, Rewrite);
         Assert.Equal("issuer-two", security.Jwt.Match(() => string.Empty, jwt => jwt.Issuer));
     }
 
@@ -93,22 +98,26 @@ public sealed class WebApiExtensionsReloadTests : IAsyncLifetime
         var monitor = _app.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>();
         Assert.Null(monitor.Get(JwtBearerDefaults.AuthenticationScheme).TokenValidationParameters.ValidIssuer);
 
-        await File.WriteAllTextAsync(
-            PathOf("security.json"),
-            """{ "Security": { "Jwt": { "Issuer": "issuer-three", "Audience": "audience", "SigningKey": "0123456789abcdef0123456789abcdef" } } }""");
+        const string Json = """{ "Security": { "Jwt": { "Issuer": "issuer-three", "Audience": "audience", "SigningKey": "0123456789abcdef0123456789abcdef" } } }""";
+        void Rewrite() => File.WriteAllText(PathOf("security.json"), Json);
+
+        Rewrite();
 
         var issuer = await Wait.UntilAsync(
             () => monitor.Get(JwtBearerDefaults.AuthenticationScheme).TokenValidationParameters.ValidIssuer,
-            current => current == "issuer-three");
+            current => current == "issuer-three",
+            Rewrite);
         Assert.Equal("issuer-three", issuer);
     }
 
     [Fact]
     public async Task Backend_AfterBackend_json_Changes_StoresContentInTheNewDataDirectory()
     {
-        await File.WriteAllTextAsync(PathOf("backend.json"), BackendJson(DataDirectory("data-two")));
+        void Rewrite() => File.WriteAllText(PathOf("backend.json"), BackendJson(DataDirectory("data-two")));
 
-        await Wait.UntilAsync(() => Current<BackendConfiguration>().DataDirectory, current => current == DataDirectory("data-two"));
+        Rewrite();
+
+        await Wait.UntilAsync(() => Current<BackendConfiguration>().DataDirectory, current => current == DataDirectory("data-two"), Rewrite);
         await _app.Services.GetRequiredService<IContentStore>().Write("Sites/file", [1]);
 
         Assert.True(File.Exists(Path.Combine(DataDirectory("data-two"), "vfs", "Sites", "file")));
@@ -126,18 +135,20 @@ public sealed class WebApiExtensionsReloadTests : IAsyncLifetime
     [Fact]
     public async Task Database_AfterDatabase_json_Changes_UsesTheNewConnection()
     {
-        await File.WriteAllTextAsync(
-            PathOf("database.json"),
-            $$"""
+        var database = $$"""
               {
                 "ConnectionStrings": { "Default": "Data Source={{PathOf("one.db")}}", "Other": "Data Source={{PathOf("two.db")}}" },
                 "Database": { "Provider": "Sqlite", "Key": "Other" }
               }
-              """);
+              """;
+        void Rewrite() => File.WriteAllText(PathOf("database.json"), database);
+
+        Rewrite();
 
         await Wait.UntilAsync(
             () => Current<DatabaseConfiguration>().Key.Match(() => string.Empty, key => key.Value),
-            current => current == "Other");
+            current => current == "Other",
+            Rewrite);
         await using var scope = _app.Services.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<Behind.Core.Database.AbstractCoreContext>();
 
@@ -147,9 +158,11 @@ public sealed class WebApiExtensionsReloadTests : IAsyncLifetime
     [Fact]
     public async Task Frontend_AfterFrontend_json_Changes_ServesTheNewStaticFileOptions()
     {
-        await File.WriteAllTextAsync(PathOf("frontend.json"), """{ "Frontend": { "StaticFiles": { "ReferrerPolicy": "origin" } } }""");
+        void Rewrite() => File.WriteAllText(PathOf("frontend.json"), """{ "Frontend": { "StaticFiles": { "ReferrerPolicy": "origin" } } }""");
 
-        var options = await Wait.UntilAsync(() => Current<FrontendOptions>(), current => current.ReferrerPolicy == "origin");
+        Rewrite();
+
+        var options = await Wait.UntilAsync(() => Current<FrontendOptions>(), current => current.ReferrerPolicy == "origin", Rewrite);
         Assert.Equal("origin", options.ReferrerPolicy);
     }
 

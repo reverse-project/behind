@@ -228,6 +228,11 @@ h4, .h4, h5, .h5, h6, .h6 {
     background-color: var(--rp-blue);
 }
 
+.behind-restriction h1::after {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .btn {
     font-weight: 600;
     border-radius: var(--bs-border-radius);

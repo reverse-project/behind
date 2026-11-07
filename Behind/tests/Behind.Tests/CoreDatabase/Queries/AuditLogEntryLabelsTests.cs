@@ -420,6 +420,20 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesTheAccessSettingsByTheirKind()
+    {
+        using var bed = new NewsTestBed();
+        var saved = await bed.SaveAccessSettingsAsync();
+        await bed.SaveAccessSettingsAsync(AccessSettingsTestBedExtensions.AccessDraft(message: "Again"));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([saved.Id.Key]);
+
+        Assert.Equal("Access settings", labels.Label(saved.Id.Key.ToString()));
+        Assert.Equal("Access settings: 2", labels.LabelKey($"{saved.Id.Key}:2"));
+    }
+
+    [Fact]
     public async Task ResolveLabels_UnknownIdentifierIsKeptAsIs()
     {
         var unknown = Guid.NewGuid();

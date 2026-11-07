@@ -32,6 +32,8 @@ public sealed class IdentityStoreAuditTests : IDisposable
             new RoleQueries(context),
             new PasswordCommands(context),
             new UserCommands(context),
+            new UserApprovalQueries(context),
+            new UserApprovalCommands(context),
             new RoleCommands(context),
             NullLogger<IdentityStore>.Instance);
 
@@ -63,6 +65,58 @@ public sealed class IdentityStoreAuditTests : IDisposable
 
         var actions = await ActionsAsync("User", user.Id);
         Assert.IsType<AuditLogEntry.Created>(Assert.Single(actions));
+    }
+
+    [Fact]
+    public async Task CreateAsync_UserWaitingForApproval_IsStoredAsPendingAndFoundAsPending()
+    {
+        var user = NewUser("store-pending@test.com");
+        user.PendingApproval = true;
+
+        await using (var ctx = Audited())
+        {
+            Assert.True((await StoreFor(ctx).CreateAsync(user, CancellationToken.None)).Succeeded);
+        }
+
+        await using var read = _factory.CreateContext();
+        Assert.True(await new UserApprovalQueries(read).IsPending(user.Id));
+        Assert.True((await StoreFor(read).FindByEmailAsync("store-pending@test.com", CancellationToken.None))!.PendingApproval);
+        Assert.True((await StoreFor(read).FindByIdAsync(user.Id.ToString(), CancellationToken.None))!.PendingApproval);
+        Assert.True((await StoreFor(read).FindByNameAsync("store-pending@test.com", CancellationToken.None))!.PendingApproval);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ApprovedUser_IsNotPending()
+    {
+        var user = NewUser("store-approved@test.com");
+
+        await using (var ctx = Audited())
+        {
+            Assert.True((await StoreFor(ctx).CreateAsync(user, CancellationToken.None)).Succeeded);
+        }
+
+        await using var read = _factory.CreateContext();
+        Assert.False(await new UserApprovalQueries(read).IsPending(user.Id));
+        Assert.False((await StoreFor(read).FindByEmailAsync("store-approved@test.com", CancellationToken.None))!.PendingApproval);
+    }
+
+    [Fact]
+    public async Task FindByEmailAsync_AfterApproval_IsNoLongerPending()
+    {
+        var user = NewUser("store-approve@test.com");
+        user.PendingApproval = true;
+        await using (var ctx = Audited())
+        {
+            await StoreFor(ctx).CreateAsync(user, CancellationToken.None);
+        }
+
+        await using (var ctx = Audited())
+        {
+            Assert.True(await new UserApprovalCommands(ctx).Approve(user.Id));
+        }
+
+        await using var read = _factory.CreateContext();
+        Assert.False((await StoreFor(read).FindByEmailAsync("store-approve@test.com", CancellationToken.None))!.PendingApproval);
     }
 
     [Fact]

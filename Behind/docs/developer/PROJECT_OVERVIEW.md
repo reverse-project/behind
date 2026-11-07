@@ -117,6 +117,7 @@ Core business logic and domain implementation.
   - Downloads: a tree of folders (slug and display name) with the uploaded files (display name, size, uploaded at and by) of the virtual file system
   - Menus with menu items (sub items, target, user menu items, visibility by role) and the built-in main menu
   - Route aliases: short routes (`#/manuals`) that open a longer page of the application (`#/downloads/products/manuals`)
+  - Access settings: a restriction page that shows the website only to users with a chosen role (with a custom message), and sign-up moderation (new accounts wait for approval before they can sign in)
 
 - **Behind.Core.Database** (Data implementation)
   - DbContext configuration

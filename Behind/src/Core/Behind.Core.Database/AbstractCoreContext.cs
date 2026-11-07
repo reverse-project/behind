@@ -47,6 +47,7 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
         UserConfiguration.ApplyUserRoles(modelBuilder);
         UserConfiguration.ApplyUserAccess(modelBuilder);
         UserConfiguration.ApplyUserSettings(modelBuilder);
+        UserConfiguration.ApplyUserApprovals(modelBuilder);
         RoleConfiguration.ApplyRoleGrants(modelBuilder);
         RoleConfiguration.ApplyRoleRestrictions(modelBuilder);
         MenuItemConfiguration.ApplyMenuItemRoles(modelBuilder);
@@ -72,7 +73,8 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
             typeof(Download),
             typeof(Menu),
             typeof(MenuItem),
-            typeof(RouteAlias));
+            typeof(RouteAlias),
+            typeof(AccessSettings));
     }
 
     public static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =

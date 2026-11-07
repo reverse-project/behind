@@ -47,7 +47,7 @@ public sealed class SessionImpersonationTests : IDisposable
             new Flipper(1, 100),
             new OrderByCollection());
 
-        var page = await new AuditLogEntryQueries(ctx).GetAuditLog(request);
+        var page = await new AuditLogEntryQueries(ctx, []).GetAuditLog(request);
 
         return page
             .Bind(paged => paged.Results)

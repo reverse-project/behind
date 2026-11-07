@@ -12,7 +12,7 @@ public static class RoleManagementResponseExtensions
             new(
                 result.Id,
                 result.Role.Name,
-                BuiltInAccess.IsBuiltIn(result.Id),
+                actor.Catalog.IsBuiltIn(result.Id),
                 result.Role.GrantNames,
                 result.Role.RestrictionNames,
                 actor.CanEditRole(result.Role) && state == DeletionState.Active,
@@ -21,7 +21,7 @@ public static class RoleManagementResponseExtensions
                 result.Role.IsDeveloperRole,
                 actor.CanSetDeveloperFlag(result.Id) && state == DeletionState.Active,
                 state == DeletionState.Active
-                && BuiltInAccess.FindRole(result.Id).Match(
+                && actor.Catalog.FindRole(result.Id).Match(
                     () => false,
                     builtIn => actor.CanResetRole(result.Role, builtIn.DefaultSelection(result.Role))));
 
@@ -39,7 +39,8 @@ public static class RoleManagementResponseExtensions
         public UserAccessResponse ToResponse(
             Guid userId,
             bool canEdit,
-            IReadOnlyList<IRoleQueries.RoleResult> allRoles)
+            IReadOnlyList<IRoleQueries.RoleResult> allRoles,
+            AccessCatalog catalog)
         {
             var assigned = access.Roles.Select(role => role.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -51,7 +52,7 @@ public static class RoleManagementResponseExtensions
                 access.Grants.Names,
                 access.Restrictions.Names,
                 access.CalculatedGrants.Names,
-                BuiltInAccess.GrantNames);
+                catalog.GrantNames);
         }
     }
 }

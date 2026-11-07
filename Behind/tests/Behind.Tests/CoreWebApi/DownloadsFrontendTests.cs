@@ -59,7 +59,7 @@ public class DownloadsFrontendTests
         Assert.Contains("ko.components.register(\"download-tree\", { require: \"components/downloadtree\" })", app);
         Assert.True(
             app.IndexOf("patternRoutes.forEach", StringComparison.Ordinal)
-            < app.IndexOf("[routes, siteRoutes].forEach", StringComparison.Ordinal));
+            < app.IndexOf("[routes, moduleRouteTable(), siteRoutes].forEach", StringComparison.Ordinal));
     }
 
     [Fact]

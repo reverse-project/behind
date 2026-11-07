@@ -346,6 +346,15 @@ app
     .Run();
 ```
 
+## Modules in the host
+
+A module web API project exposes `Add<Module>()`/`Use<Module>()`, like `AddCore()`/`UseCore()`:
+
+- `Add<Module>()` calls `services.AddModule(<Module>Module.Descriptor)`, registers the module commands/queries and `services.AddModuleContext<I<Module>Context>()`, the `IAuditLabelSource` and the `IModuleSeed`.
+- Endpoints are protected with the policies of the grants of the module (`RequireAuthorization(GrantName.Of("<Area>", GrantAction.Read))`); the policies exist because `AddGrantAuthorization()` builds them from the `AccessCatalog`.
+- The embedded frontend of a module lives in `Frontend/modules/<key>/` (controllers, viewmodels, views, models, components, `css`, `locales/<code>.json`) and is loaded with RequireJS ids like `modules/<key>/controllers/<name>`; the Core files always win, the module files never replace them. The locale files of the module have the same format as the Core ones (`{"name": ..., "messages": {...}}`), their messages are merged under the Core messages for the selected language, and every message key must be prefixed with the module key.
+- `GET /modules` lists the routes, administration pages and styles for the frontend, which registers the module routes before the route alias fallback and adds the administration pages to the Administration page for the holders of their grants.
+
 ## Controller Structure
 
 ### Base Pattern

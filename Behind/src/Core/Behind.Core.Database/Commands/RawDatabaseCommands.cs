@@ -147,7 +147,7 @@ public sealed class RawDatabaseCommands(
         Func<RawTable, Task<RawWriteResult>> write) =>
         context.FindRawTable(name).Match(
             () => Task.FromResult<RawWriteResult>(new RawWriteResult.NotFound()),
-            table => table.IsReadOnly
+            table => context.IsReadOnly(table)
                 ? Task.FromResult<RawWriteResult>(new RawWriteResult.ReadOnly())
                 : Transacted(() => write(table), cancellationToken));
 

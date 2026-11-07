@@ -7,11 +7,11 @@ public static class BuiltInRolesExtensions
 {
     extension(AbstractCoreContext context)
     {
-        public async Task EnsureBuiltInRolesAsync(CancellationToken cancellationToken = default)
+        public async Task EnsureBuiltInRolesAsync(AccessCatalog catalog, CancellationToken cancellationToken = default)
         {
             var addedGrants = new HashSet<Guid>();
 
-            foreach (var grant in BuiltInAccess.Grants)
+            foreach (var grant in catalog.Grants)
             {
                 if (await context.EnsureBuiltInGrantAsync(grant, cancellationToken))
                 {
@@ -19,12 +19,12 @@ public static class BuiltInRolesExtensions
                 }
             }
 
-            foreach (var restriction in BuiltInAccess.Restrictions)
+            foreach (var restriction in catalog.Restrictions)
             {
                 await context.EnsureBuiltInRestrictionAsync(restriction, cancellationToken);
             }
 
-            foreach (var role in BuiltInAccess.Roles)
+            foreach (var role in catalog.Roles)
             {
                 var created = await context.EnsureBuiltInRoleAsync(role, cancellationToken);
 

@@ -1,3 +1,4 @@
+using Behind.Common.Modules;
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,10 @@ public static class CoreSqliteExtensions
 {
     private static readonly DatabaseProviderOptions SqliteProviderOptions = new(
         (options, connectionString) => options.UseSqlite(connectionString),
-        (options, connectionString) => options.UseVersioningSqlite(connectionString));
+        (options, connectionString) => options.UseVersioningSqlite(connectionString),
+        (options, connectionString, historyTable) => options.UseSqlite(
+            connectionString,
+            sqlite => sqlite.MigrationsHistoryTable(historyTable)));
 
     extension(DbContextOptionsBuilder options)
     {
@@ -23,24 +27,52 @@ public static class CoreSqliteExtensions
 
     extension(DatabaseConfiguration database)
     {
-        public WebApplicationBuilder RegisterSqlite(WebApplicationBuilder builder)
+        public WebApplicationBuilder RegisterSqlite(WebApplicationBuilder builder) =>
+            database.RegisterSqlite<CoreContextSqlite>(builder);
+
+        public WebApplicationBuilder RegisterSqlite<TContext>(WebApplicationBuilder builder)
+            where TContext : AbstractCoreContext
         {
             database.RegisterProvider<SqliteProvider>(
                 builder.Services,
                 builder.Configuration,
-                services => services.AddAuditedDatabase<CoreContextSqlite, VersioningContextSqlite, SqliteCoreDatabaseMigrator>(
-                    builder.Configuration,
-                    SqliteProviderOptions));
+                services => services
+                    .AddAuditedDatabase<TContext, VersioningContextSqlite, SqliteCoreDatabaseMigrator>(
+                        builder.Configuration,
+                        SqliteProviderOptions)
+                    .AddCoreMigrationDatabase<CoreContextSqlite>(builder.Configuration, SqliteProviderOptions));
 
             return builder;
         }
 
-        public HostApplicationBuilder RegisterSqlite(HostApplicationBuilder builder)
+        public HostApplicationBuilder RegisterSqlite(HostApplicationBuilder builder) =>
+            database.RegisterSqlite<CoreContextSqlite>(builder);
+
+        public HostApplicationBuilder RegisterSqlite<TContext>(HostApplicationBuilder builder)
+            where TContext : AbstractCoreContext
         {
             database.RegisterProvider<SqliteProvider>(
                 builder.Services,
                 builder.Configuration,
-                services => services.AddMigrationDatabase<CoreContextSqlite, VersioningContextSqlite, SqliteCoreDatabaseMigrator>(
+                services => services
+                    .AddMigrationDatabase<TContext, VersioningContextSqlite, SqliteCoreDatabaseMigrator>(
+                        builder.Configuration,
+                        SqliteProviderOptions)
+                    .AddCoreMigrationDatabase<CoreContextSqlite>(builder.Configuration, SqliteProviderOptions));
+
+            return builder;
+        }
+
+        public HostApplicationBuilder RegisterSqliteModule<TContext>(
+            HostApplicationBuilder builder,
+            ModuleDescriptor module)
+            where TContext : DbContext
+        {
+            database.RegisterProvider<SqliteProvider>(
+                builder.Services,
+                builder.Configuration,
+                services => services.AddModuleMigrationDatabase<TContext>(
+                    module,
                     builder.Configuration,
                     SqliteProviderOptions));
 

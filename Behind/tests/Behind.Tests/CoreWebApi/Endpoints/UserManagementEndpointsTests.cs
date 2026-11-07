@@ -30,7 +30,7 @@ public class UserManagementEndpointsTests
     public UserManagementEndpointsTests()
     {
         _gate = new UserManagementGate(
-            _sessions, _access, _users, new FixedTimeProvider(Now), _gateLogger);
+            _sessions, _access, _users, AccessCatalog.Core, new FixedTimeProvider(Now), _gateLogger);
         SignedInAs(ActorId, developer: false);
     }
 

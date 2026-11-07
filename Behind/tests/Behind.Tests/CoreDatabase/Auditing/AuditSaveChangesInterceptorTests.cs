@@ -142,7 +142,7 @@ public sealed class AuditSaveChangesInterceptorTests : IDisposable
         var id = Guid.NewGuid();
         await using (var ctx = Audited())
         {
-            await new RoleCommands(ctx).CreateWithId(id, new UserRole("auditor"));
+            await new RoleCommands(ctx, AccessCatalog.Core).CreateWithId(id, new UserRole("auditor"));
         }
 
         var row = Assert.Single(await AuditRowsAsync("Role", id.ToString()));

@@ -106,7 +106,7 @@ public sealed class MenuItemCommandsTests : IDisposable
         var roleId = await _bed.SeedRoleAsync("Editors");
         await using (var ctx = _bed.Write())
         {
-            await new RoleCommands(ctx).Delete(roleId);
+            await new RoleCommands(ctx, AccessCatalog.Core).Delete(roleId);
         }
 
         var menuId = await _bed.CreateMenuAsync();

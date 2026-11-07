@@ -28,7 +28,7 @@ public sealed class DeveloperConfigurationManageMigrationTests : IDisposable
     {
         await using var context = CreateContext();
         await context.GetService<IMigrator>().MigrateAsync(BeforeMigration);
-        await context.EnsureBuiltInRolesAsync();
+        await context.EnsureBuiltInRolesAsync(AccessCatalog.Core);
 
         var configurationManage = BuiltInAccess.Grants.Single(grant => grant.Grant.Name == ConfigurationManage);
         var roleGrants = context.Set<Dictionary<string, object>>("RoleGrants");
@@ -87,7 +87,7 @@ public sealed class DeveloperConfigurationManageMigrationTests : IDisposable
         await using (var context = CreateContext())
         {
             await context.GetService<IMigrator>().MigrateAsync(BeforeMigration);
-            await context.EnsureBuiltInRolesAsync();
+            await context.EnsureBuiltInRolesAsync(AccessCatalog.Core);
             await context.Database.MigrateAsync();
         }
 

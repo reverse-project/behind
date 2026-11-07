@@ -4,7 +4,7 @@ Open **Administration > Roles**. You need the `Role.Manage` grant.
 
 ## Concepts
 
-- A **grant** allows something. Grant names are `Area.Action`, for example `User.Manage`.
+- A **grant** allows something. Grant names are `Area.Action`, for example `User.Manage`. Installed modules add their own areas (for example `Notes.Read`); they are listed next to the built-in ones and the built-in roles receive them automatically, without losing the changes you made to those roles.
   - Areas: Session, AuditLog, Role, User, Configuration, Impersonation, RawDatabase.
   - Actions: Read, Write, Delete, Manage (Impersonation and RawDatabase only have Manage).
 - A **restriction** removes a grant. It uses the same names as grants.

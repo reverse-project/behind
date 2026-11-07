@@ -425,6 +425,10 @@ public sealed record UserRecoveryCode([property: Sensible] string Hash);
 
 `UserTotp` holds the authenticator app secret (confirmed once a code of it was typed), `UserPasskey` a WebAuthn credential and `UserRecoveryCode` one of the 20 single use recovery codes (a BCrypt hash; see `RecoveryCodeExtensions` in `Behind.Core.Common`). See [Database Architecture](./DATABASE_ARCHITECTURE.md#two-factor-authentication).
 
+## Grants and the access catalog
+
+The Core grant areas (`GrantArea`, `GrantAction`) and built-in roles (`BuiltInAccess`) are the Core part of the access model. Modules add grant areas through their `ModuleDescriptor`; the `AccessCatalog` (`AccessCatalog.Core` or `AccessCatalog.From(moduleCatalog)`) is the complete, immutable view that every consumer uses: the grants, restrictions and built-in roles to seed (`catalog.Grants`/`Restrictions`/`Roles`), `IsKnownGrant`, `IsDeveloperGrant`, `GrantsDeveloperAccess`, `IsValid(selection)`, `IsBuiltIn(roleId)` and `FindRole(roleId)` (the reset defaults of a built-in role include the grants of the modules). Module grant ids are deterministic (`Guid.FromName("61000000", "<Area>.<Action>")`), so every installation seeds the same ids. Never read `BuiltInAccess.Grants`, `Roles` or `GrantNames` in production code: they only describe the Core.
+
 ## Audit & Compliance
 
 ### AuditLogEntry

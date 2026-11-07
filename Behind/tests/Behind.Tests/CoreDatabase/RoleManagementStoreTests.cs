@@ -33,7 +33,7 @@ public sealed class RoleManagementStoreTests : IDisposable
     private async Task<T> WithCommandsAsync<T>(Func<RoleCommands, Task<T>> action)
     {
         await using var ctx = _factory.CreateAuditedContext(_actor);
-        return await action(new RoleCommands(ctx));
+        return await action(new RoleCommands(ctx, AccessCatalog.Core));
     }
 
     private async Task<IReadOnlyList<string>> NamesAsync(

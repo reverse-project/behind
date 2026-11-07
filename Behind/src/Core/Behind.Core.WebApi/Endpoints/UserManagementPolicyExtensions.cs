@@ -11,6 +11,7 @@ public sealed record UserManagementActor(
     bool IsDeveloper,
     bool CanDeleteUsers,
     UserAccess Access,
+    AccessCatalog Catalog,
     bool IsImpersonating = false);
 
 public static class UserManagementPolicyExtensions

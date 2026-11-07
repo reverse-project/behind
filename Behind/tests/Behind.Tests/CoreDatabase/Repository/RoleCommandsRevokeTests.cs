@@ -25,14 +25,14 @@ public sealed class RoleCommandsRevokeTests : IDisposable
         await using (var seed = _factory.CreateContext())
         {
             userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "revoke@test.com");
-            var commands = new RoleCommands(seed);
+            var commands = new RoleCommands(seed, AccessCatalog.Core);
             await commands.AssignBuiltIn(userId, BuiltInAccess.Administrators);
             await commands.AssignBuiltIn(userId, BuiltInAccess.Developers);
         }
 
         await using (var ctx = _factory.CreateContext())
         {
-            await new RoleCommands(ctx).RevokeBuiltIn(userId, BuiltInAccess.Administrators);
+            await new RoleCommands(ctx, AccessCatalog.Core).RevokeBuiltIn(userId, BuiltInAccess.Administrators);
         }
 
         Assert.Equal([DomainConstants.DevelopersRole], await RoleNamesAsync(userId));
@@ -45,12 +45,12 @@ public sealed class RoleCommandsRevokeTests : IDisposable
         await using (var seed = _factory.CreateContext())
         {
             userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "none@test.com");
-            await new RoleCommands(seed).AssignBuiltIn(userId, BuiltInAccess.Users);
+            await new RoleCommands(seed, AccessCatalog.Core).AssignBuiltIn(userId, BuiltInAccess.Users);
         }
 
         await using (var ctx = _factory.CreateContext())
         {
-            await new RoleCommands(ctx).RevokeBuiltIn(userId, BuiltInAccess.Developers);
+            await new RoleCommands(ctx, AccessCatalog.Core).RevokeBuiltIn(userId, BuiltInAccess.Developers);
         }
 
         Assert.Equal([DomainConstants.UsersRole], await RoleNamesAsync(userId));
@@ -63,12 +63,12 @@ public sealed class RoleCommandsRevokeTests : IDisposable
         await using (var seed = _factory.CreateContext())
         {
             userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "again@test.com");
-            await new RoleCommands(seed).AssignBuiltIn(userId, BuiltInAccess.Administrators);
+            await new RoleCommands(seed, AccessCatalog.Core).AssignBuiltIn(userId, BuiltInAccess.Administrators);
         }
 
         await using (var ctx = _factory.CreateContext())
         {
-            var commands = new RoleCommands(ctx);
+            var commands = new RoleCommands(ctx, AccessCatalog.Core);
             await commands.RevokeBuiltIn(userId, BuiltInAccess.Administrators);
             await commands.AssignBuiltIn(userId, BuiltInAccess.Administrators);
         }

@@ -76,7 +76,7 @@ public sealed class RoleManagementEndpoints
 
                 return Results.Json(new RoleListResponse(
                     roles.ToPageResponse(role => role.ToItem(actor, state)),
-                    BuiltInAccess.GrantNames,
+                    actor.Catalog.GrantNames,
                     letters));
             });
     }
@@ -144,7 +144,7 @@ public sealed class RoleManagementEndpoints
             httpContext,
             gate,
             roleQueries,
-            (actor, found) => BuiltInAccess.FindRole(id).Match(
+            (actor, found) => actor.Catalog.FindRole(id).Match(
                 () => Task.FromResult<IResult>(Results.BadRequest()),
                 builtIn => ApplyAccess(
                     actor,
@@ -175,7 +175,7 @@ public sealed class RoleManagementEndpoints
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
                 }
 
-                if (!request.IsDeveloper && found.Role.GrantsDeveloperAccess)
+                if (!request.IsDeveloper && actor.Catalog.GrantsDeveloperAccess(found.Role))
                 {
                     return Results.Conflict();
                 }
@@ -230,7 +230,7 @@ public sealed class RoleManagementEndpoints
     {
         var selection = requested.Normalized;
 
-        if (!selection.IsValid)
+        if (!actor.Catalog.IsValid(selection))
         {
             return Results.BadRequest();
         }
@@ -240,7 +240,7 @@ public sealed class RoleManagementEndpoints
             return Results.StatusCode(StatusCodes.Status403Forbidden);
         }
 
-        if (!found.Role.IsDeveloperRole && selection.GrantsDeveloperAccess)
+        if (!found.Role.IsDeveloperRole && actor.Catalog.GrantsDeveloperAccess(selection))
         {
             return Results.BadRequest();
         }

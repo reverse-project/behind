@@ -1,3 +1,5 @@
+using Behind.Common.Modules;
+
 namespace Behind.Core.Domain;
 
 public static class GrantArea
@@ -27,12 +29,12 @@ public static class GrantArea
 
 public static class GrantAction
 {
-    public const string Read = nameof(Read);
-    public const string Write = nameof(Write);
-    public const string Delete = nameof(Delete);
-    public const string Manage = nameof(Manage);
+    public const string Read = GrantActions.Read;
+    public const string Write = GrantActions.Write;
+    public const string Delete = GrantActions.Delete;
+    public const string Manage = GrantActions.Manage;
 
-    public static readonly IReadOnlyList<string> All = [Read, Write, Delete, Manage];
+    public static readonly IReadOnlyList<string> All = GrantActions.All;
 }
 
 public static class GrantName

@@ -1,6 +1,8 @@
 using Behind.Common;
 using Behind.Common.Configuration;
 using Behind.Common.Database;
+using Behind.Common.Database.Modules;
+using Behind.Common.Modules;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database.Auditing;
 using Microsoft.EntityFrameworkCore;
@@ -80,6 +82,39 @@ public static class DatabaseServiceExtensions
             where TMigrator : class, ICoreDatabaseMigrator =>
             services.AddDatabase<TCore, TVersioning, TMigrator>(configuration, provider, (_, _) => { });
 
+        public IServiceCollection AddCoreMigrationDatabase<TMigration>(
+            IConfiguration configuration,
+            DatabaseProviderOptions provider)
+            where TMigration : AbstractCoreContext
+        {
+            if (services.Any(descriptor => descriptor.ServiceType == typeof(TMigration)))
+            {
+                return services;
+            }
+
+            return services.AddDbContext<TMigration>((serviceProvider, options) =>
+                serviceProvider.ConnectionString(configuration).Match(
+                    none: () => { },
+                    some: connectionString => provider.UseCore(options, connectionString)));
+        }
+
+        public IServiceCollection AddModuleMigrationDatabase<TContext>(
+            ModuleDescriptor module,
+            IConfiguration configuration,
+            DatabaseProviderOptions provider)
+            where TContext : DbContext
+        {
+            services.AddDbContext<TContext>((serviceProvider, options) =>
+                serviceProvider.ConnectionString(configuration).Match(
+                    none: () => { },
+                    some: connectionString => provider.UseModule(
+                        options,
+                        connectionString,
+                        module.MigrationsHistoryTable)));
+
+            return services.AddModuleMigrator<TContext>(module.Key);
+        }
+
         private IServiceCollection AddDatabase<TCore, TVersioning, TMigrator>(
             IConfiguration configuration,
             DatabaseProviderOptions provider,
@@ -88,6 +123,7 @@ public static class DatabaseServiceExtensions
             where TVersioning : AbstractVersioningContext
             where TMigrator : class, ICoreDatabaseMigrator
         {
+            services.AddAccessCatalog();
             services.AddDbContext<TCore>((serviceProvider, options) =>
             {
                 extend(options, serviceProvider);

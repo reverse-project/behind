@@ -13,19 +13,28 @@ public static class HostApplicationBuilderExtensions
     extension(HostApplicationBuilder builder)
     {
         public HostApplicationBuilder AddMigrator() =>
+            builder.AddMigrator((database, host) => database.Register(host));
+
+        public HostApplicationBuilder AddMigrator(
+            Func<DatabaseConfiguration, HostApplicationBuilder, HostApplicationBuilder> register) =>
             builder
                 .AddSerilog()
-                .AddConfiguration()
+                .AddConfiguration(register)
                 .AddHostedServices();
-        
-        HostApplicationBuilder AddConfiguration()
+
+        HostApplicationBuilder AddConfiguration(
+            Func<DatabaseConfiguration, HostApplicationBuilder, HostApplicationBuilder> register)
         {
             builder.Configuration.AddJsonFile("database.json", optional: false, reloadOnChange: true);
 
-            builder.Configuration
+            var database = builder.Configuration
                 .GetSection(DatabaseConfiguration.SectionName)
-                .GetOptionAware<DatabaseConfiguration>()
-                ?.Register(builder);
+                .GetOptionAware<DatabaseConfiguration>();
+
+            if (database is not null)
+            {
+                register(database, builder);
+            }
 
             builder.Configuration.AddJsonFile("backend.json", optional: false, reloadOnChange: true);
             builder.Services.AddVfsContentStore(builder.Configuration);

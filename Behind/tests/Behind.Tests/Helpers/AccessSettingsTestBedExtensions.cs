@@ -18,7 +18,7 @@ public static class AccessSettingsTestBedExtensions
         public async Task EnsureRolesAsync()
         {
             await using var ctx = bed.Write();
-            await ctx.EnsureBuiltInRolesAsync();
+            await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         }
 
         public async Task<TResult> WithAccessSettingsCommandsAsync<TResult>(

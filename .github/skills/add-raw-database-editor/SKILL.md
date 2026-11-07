@@ -31,3 +31,6 @@ Load `csharp-code-standards` first. Every persisted entity must be editable in t
 - Every raw write and its audit entry are saved together or not at all; database errors answer `409` with `rejected`, never a stack trace.
 - Soft delete does not apply: raw deletes remove the row for good and are audited as `HardDeleted`.
 - No comments in code, extension(...) blocks in `*Extensions.cs` files, braces everywhere (`csharp-code-standards`).
+
+## Modules
+Module tables join the flattened project database and show up in the raw editor automatically. Mark sensitive properties with `[Sensible]` and list read-only entity names in `ModuleDatabase.ReadOnlyEntities` of the module descriptor (`AbstractCoreContext.IsReadOnly(table)` merges them with the Core ones).

@@ -1,5 +1,6 @@
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Captcha;
+using Behind.Core.WebApi.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
@@ -16,6 +17,7 @@ public static class AccessGateExtensions
         "/accounts",
         "/locales",
         "/about",
+        ModuleEndpoints.Route,
         "/profile",
         CaptchaExtensions.ChallengeRoute,
         VfsTypes.AccessImageUrl,

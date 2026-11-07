@@ -29,7 +29,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
     public async Task GetAuditLog_NoEntries_ReturnsNone()
     {
         await using var ctx = _factory.CreateContext();
-        var queries = new AuditLogEntryQueries(ctx);
+        var queries = new AuditLogEntryQueries(ctx, []);
         var result = await queries.GetAuditLog(TodayRequest());
 
         var isNone = true;
@@ -48,7 +48,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed);
 
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(TodayRequest());
 
         result.Match(
             () => Assert.Fail("Expected Some"),
@@ -73,7 +73,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, userId: userId);
 
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
         {
@@ -93,7 +93,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, userId: DomainConstants.SystemUserId);
 
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
         {
@@ -110,7 +110,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, behalfOfId: behalfId);
 
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
         {
@@ -137,7 +137,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
 
         // Request covers yesterday to tomorrow — old entry should be excluded
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(TodayRequest());
 
         var isNone = true;
         result.Match(() => { }, _ => isNone = false);
@@ -155,7 +155,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, timestamp: oldTs);
 
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
         {
@@ -180,7 +180,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
 
         var request = TodayRequest(flipper: new Flipper(2, 2));
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(request);
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(request);
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
         {
@@ -205,7 +205,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
 
         var request = TodayRequest(flipper: new Flipper(3, 2));
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(request);
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(request);
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
         {
@@ -230,7 +230,7 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, timestamp: baseTs.AddSeconds(1));
 
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(TodayRequest());
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(TodayRequest());
 
         result.Match(() => Assert.Fail("Expected Some"), paged =>
         {

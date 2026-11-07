@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding, session, usersettings, restriction, i18n) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding, session, usersettings, restriction, i18n, modules) {
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
@@ -56,13 +56,15 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/site/:slug": "controllers/site"
     };
 
-    var openControllers = [
+    var coreOpenControllers = [
         "controllers/signin",
         "controllers/signup",
         "controllers/magiclink",
         "controllers/confirmemail",
         "controllers/profilepassword"
     ];
+
+    var openControllers = coreOpenControllers.slice();
 
     var restrictionController = "controllers/restriction";
     var aliasRoute = "#/:slug";
@@ -139,29 +141,47 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         return false;
     };
 
-    var router = Sammy(function () {
-        var app = this;
+    var moduleRouteTable = function () {
+        return modules.routes().reduce(function (table, route) {
+            table[route.path] = route.controller;
 
-        app._checkFormSubmission = ignoreFormSubmissions;
+            return table;
+        }, {});
+    };
 
-        patternRoutes.forEach(function (route) {
-            app.get(route.pattern, function () {
-                execute(route.controller, this.params.toHash());
-            });
-        });
+    var createRouter = function () {
+        openControllers = coreOpenControllers.concat(modules.routes().filter(function (route) {
+            return route.open;
+        }).map(function (route) {
+            return route.controller;
+        }));
 
-        [routes, siteRoutes].forEach(function (table) {
-            Object.keys(table).forEach(function (path) {
-                app.get(path, function () {
-                    execute(table[path], this.params.toHash());
+        return Sammy(function () {
+            var app = this;
+
+            app._checkFormSubmission = ignoreFormSubmissions;
+
+            patternRoutes.forEach(function (route) {
+                app.get(route.pattern, function () {
+                    execute(route.controller, this.params.toHash());
                 });
             });
-        });
 
-        app.get(aliasRoute, function () {
-            execute(following ? siteController : aliasController, this.params.toHash());
+            [routes, moduleRouteTable(), siteRoutes].forEach(function (table) {
+                Object.keys(table).forEach(function (path) {
+                    app.get(path, function () {
+                        execute(table[path], this.params.toHash());
+                    });
+                });
+            });
+
+            app.get(aliasRoute, function () {
+                execute(following ? siteController : aliasController, this.params.toHash());
+            });
         });
-    });
+    };
+
+    var router = null;
 
     var applyColorScheme = function () {
         var query = window.matchMedia("(prefers-color-scheme: dark)");
@@ -189,8 +209,9 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
                 document.title = title;
             });
 
-            return branding.load()
+            return Promise.all([branding.load(), modules.load()])
                 .then(function () {
+                    router = createRouter();
                     i18n.useDefault(branding.locale());
 
                     return Promise.all([syncUserSettings(), syncRestriction()]);

@@ -26,7 +26,7 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using (var seed = _factory.CreateContext())
         {
-            await seed.EnsureBuiltInRolesAsync();
+            await seed.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         }
 
         await using var ctx = _factory.CreateContext();
@@ -42,7 +42,7 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using (var seed = _factory.CreateContext())
         {
-            await seed.EnsureBuiltInRolesAsync();
+            await seed.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         }
 
         await using var ctx = _factory.CreateContext();
@@ -69,7 +69,7 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using (var seed = _factory.CreateContext())
         {
-            await seed.EnsureBuiltInRolesAsync();
+            await seed.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         }
 
         await using var ctx = _factory.CreateContext();
@@ -86,7 +86,7 @@ public sealed class BuiltInRolesTests : IDisposable
     public async Task EnsureBuiltInRoles_KeepsGrantEditsMadeToABuiltInRole()
     {
         await using var ctx = _factory.CreateContext();
-        await ctx.EnsureBuiltInRolesAsync();
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         var configurationRead = BuiltInAccess.Grants.Single(grant => grant.Grant.Name == "Configuration.Read");
         var userRead = BuiltInAccess.Grants.Single(grant => grant.Grant.Name == "User.Read");
         var roleGrants = ctx.Set<Dictionary<string, object>>("RoleGrants");
@@ -101,7 +101,7 @@ public sealed class BuiltInRolesTests : IDisposable
             .ToListAsync());
         await ctx.SaveChangesAsync();
 
-        await ctx.EnsureBuiltInRolesAsync();
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
 
         var users = Found(await new RoleQueries(ctx).GetRoleByName(DomainConstants.UsersRole));
         Assert.Contains("Configuration.Read", GrantNames(users.Role));
@@ -113,7 +113,7 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using (var seed = _factory.CreateContext())
         {
-            await seed.EnsureBuiltInRolesAsync();
+            await seed.EnsureBuiltInRolesAsync(AccessCatalog.Core);
             var sessionRead = BuiltInAccess.Grants.Single(grant => grant.Grant.Name == "Session.Read");
             await seed.Grants
                 .Where(grant => EF.Property<Guid>(grant, "Id") == sessionRead.Id)
@@ -121,7 +121,7 @@ public sealed class BuiltInRolesTests : IDisposable
         }
 
         await using var ctx = _factory.CreateContext();
-        await ctx.EnsureBuiltInRolesAsync();
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
 
         var users = Found(await new RoleQueries(ctx).GetRoleByName(DomainConstants.UsersRole));
         Assert.Equal(ExpectedGrantNames(BuiltInAccess.Users), GrantNames(users.Role));
@@ -132,8 +132,8 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
 
-        await ctx.EnsureBuiltInRolesAsync();
-        await ctx.EnsureBuiltInRolesAsync();
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
 
         var names = await ctx.Restrictions.Select(restriction => restriction.Name).ToListAsync();
         Assert.Equal(BuiltInAccess.GrantNames.Order().ToList(), names.Order().ToList());
@@ -144,8 +144,8 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
 
-        await ctx.EnsureBuiltInRolesAsync();
-        await ctx.EnsureBuiltInRolesAsync();
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
 
         Assert.Equal(3, await ctx.Roles.CountAsync());
         Assert.Equal(54, await ctx.Grants.CountAsync());
@@ -158,9 +158,9 @@ public sealed class BuiltInRolesTests : IDisposable
         Guid userId;
         await using (var seed = _factory.CreateContext())
         {
-            await seed.EnsureBuiltInRolesAsync();
+            await seed.EnsureBuiltInRolesAsync(AccessCatalog.Core);
             userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "elevated@test.com");
-            await new RoleCommands(seed).AssignBuiltIn(userId, BuiltInAccess.Administrators);
+            await new RoleCommands(seed, AccessCatalog.Core).AssignBuiltIn(userId, BuiltInAccess.Administrators);
         }
 
         await using var ctx = _factory.CreateContext();
@@ -175,9 +175,9 @@ public sealed class BuiltInRolesTests : IDisposable
     public async Task AssignBuiltIn_CalledTwice_AssignsOnce()
     {
         await using var ctx = _factory.CreateContext();
-        await ctx.EnsureBuiltInRolesAsync();
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         var userId = await DatabaseSeedHelper.SeedHumanUserAsync(ctx, "twice@test.com");
-        var commands = new RoleCommands(ctx);
+        var commands = new RoleCommands(ctx, AccessCatalog.Core);
 
         await commands.AssignBuiltIn(userId, BuiltInAccess.Administrators);
         await commands.AssignBuiltIn(userId, BuiltInAccess.Administrators);
@@ -190,7 +190,7 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
         var userId = await DatabaseSeedHelper.SeedHumanUserAsync(ctx, "unseeded@test.com");
-        var commands = new RoleCommands(ctx);
+        var commands = new RoleCommands(ctx, AccessCatalog.Core);
 
         await commands.AssignBuiltIn(userId, BuiltInAccess.Administrators);
 
@@ -203,10 +203,10 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
         await ctx.EnsureBuiltInUsersAsync();
-        await ctx.EnsureBuiltInRolesAsync();
+        await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         var first = await DatabaseSeedHelper.SeedHumanUserAsync(ctx, "first@test.com");
         var second = await DatabaseSeedHelper.SeedHumanUserAsync(ctx, "second@test.com");
-        await new RoleCommands(ctx).AssignBuiltIn(second, BuiltInAccess.Users);
+        await new RoleCommands(ctx, AccessCatalog.Core).AssignBuiltIn(second, BuiltInAccess.Users);
 
         await ctx.EnsureUsersHaveUsersRoleAsync();
         await ctx.EnsureUsersHaveUsersRoleAsync();
@@ -222,7 +222,7 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using (var seed = _factory.CreateContext())
         {
-            await seed.EnsureBuiltInRolesAsync();
+            await seed.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         }
 
         await using var ctx = _factory.CreateContext();
@@ -238,14 +238,14 @@ public sealed class BuiltInRolesTests : IDisposable
     {
         await using (var seed = _factory.CreateContext())
         {
-            await seed.EnsureBuiltInRolesAsync();
-            await new RoleCommands(seed).SetDeveloper(BuiltInAccess.Administrators.Id, true);
-            await new RoleCommands(seed).SetDeveloper(BuiltInAccess.Developers.Id, false);
+            await seed.EnsureBuiltInRolesAsync(AccessCatalog.Core);
+            await new RoleCommands(seed, AccessCatalog.Core).SetDeveloper(BuiltInAccess.Administrators.Id, true);
+            await new RoleCommands(seed, AccessCatalog.Core).SetDeveloper(BuiltInAccess.Developers.Id, false);
         }
 
         await using (var repair = _factory.CreateContext())
         {
-            await repair.EnsureBuiltInRolesAsync();
+            await repair.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         }
 
         await using var ctx = _factory.CreateContext();

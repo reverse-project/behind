@@ -1,4 +1,5 @@
 using Behind.Common;
+using Behind.Common.Modules;
 using Behind.Core.Database.Commands;
 using Behind.Core.Domain;
 using static Behind.Common.FunctionalExtensions;
@@ -9,12 +10,12 @@ public static class BuiltInMenusExtensions
 {
     extension(AbstractCoreContext context)
     {
-        public async Task EnsureBuiltInMenusAsync(CancellationToken cancellationToken = default)
+        public async Task EnsureBuiltInMenusAsync(ModuleCatalog modules, CancellationToken cancellationToken = default)
         {
             var menus = new MenuCommands(context);
             var items = new MenuItemCommands(context);
 
-            foreach (var menu in BuiltInMenus.All)
+            foreach (var menu in BuiltInMenus.For(modules))
             {
                 await menus.Ensure(menu.Id, new IMenuCommands.MenuDraft(menu.Name, menu.Title), cancellationToken);
 

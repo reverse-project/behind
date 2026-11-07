@@ -26,7 +26,7 @@ public sealed class UserManagementQueriesTests : IDisposable
     private async Task AssignAsync(Guid userId, BuiltInRole role)
     {
         await using var ctx = _factory.CreateContext();
-        await new RoleCommands(ctx).AssignBuiltIn(userId, role);
+        await new RoleCommands(ctx, AccessCatalog.Core).AssignBuiltIn(userId, role);
     }
 
     private async Task<PagedResult<IUserManagementQueries.ManagedUser>> ListAsync(

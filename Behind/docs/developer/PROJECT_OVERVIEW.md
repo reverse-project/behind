@@ -171,6 +171,25 @@ Test projects using xUnit.
   - Test helpers and fixtures
   - Mocking utilities
 
+## Modules
+
+Behind is a Core module plus any number of optional modules. The host project (`src/Web/Behind.Web`) loads the modules next to Core: `AddCore()` is required and a module adds itself with `services.AddModule(descriptor)`, whatever the order, and `UseCore()` serves the frontend files of every module.
+
+A module describes everything the application needs to integrate it in one immutable `ModuleDescriptor` (`Behind.Common/Modules`):
+
+| Contribution | Descriptor member | Effect in Core |
+|---|---|---|
+| Grants | `GrantAreas` (`ModuleGrantArea(area, audience, actions)`) | grants, restrictions and authorization policies are created for every action, the built-in roles receive them by audience (Everyone: Administrators all actions, Users `Read`; Administration: Administrators only; Developer: Developers `Read`/`Manage`), and they are listed on the Roles and Users pages |
+| Default menu items | `MenuItems` | ensured in the main menu by the migrator (`Link` or `User` kind, visible to everybody, to the administration roles or to developers) |
+| Administration items | `AdministrationPages` (name key, icon, `#/` href, grant) | shown on the Administration page for the users who hold the grant |
+| Pages | `Routes` (`#/` path, controller, `Open`) | registered by the frontend router before the route alias fallback |
+| Frontend files and styles | `Frontend` | embedded `Frontend/` files merged into the Core static files, namespaced under `modules/<key>/` |
+| Database | `Database` | entity configurations, soft delete and read-only raw tables of the flattened DbContext |
+
+`GET /modules` (open, like `/about`) publishes the routes, administration pages and styles to the frontend, and `ModuleCatalog.Create` validates the contributions at startup (key and area patterns, duplicate grant areas, routes and menu item ids, controllers and styles under `modules/<key>/`); `AccessCatalog.From` additionally rejects areas and menu item ids already used by Core and administration pages that need an unknown grant.
+
+See `.github/skills/add-module/SKILL.md` for the full checklist and `DATABASE_ARCHITECTURE.md` for the flattened database and the migrations.
+
 ## Architecture Layers
 
 ### 1. Common Layer (/src/Common)

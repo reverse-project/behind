@@ -106,11 +106,11 @@ public class UserAccessTests
     [Fact]
     public void IsValid_RequiresKnownGrantsAndNoOverlap()
     {
-        Assert.True(new AccessSelection(["User.Read"], ["User.Manage"]).IsValid);
-        Assert.True(AccessSelection.Empty.IsValid);
-        Assert.False(new AccessSelection(["Nope.Read"], []).IsValid);
-        Assert.False(new AccessSelection([], ["Nope.Read"]).IsValid);
-        Assert.False(new AccessSelection(["User.Read"], ["User.Read"]).IsValid);
+        Assert.True(AccessCatalog.Core.IsValid(new AccessSelection(["User.Read"], ["User.Manage"])));
+        Assert.True(AccessCatalog.Core.IsValid(AccessSelection.Empty));
+        Assert.False(AccessCatalog.Core.IsValid(new AccessSelection(["Nope.Read"], [])));
+        Assert.False(AccessCatalog.Core.IsValid(new AccessSelection([], ["Nope.Read"])));
+        Assert.False(AccessCatalog.Core.IsValid(new AccessSelection(["User.Read"], ["User.Read"])));
     }
 
     [Fact]
@@ -143,11 +143,11 @@ public class UserAccessTests
     [Fact]
     public void GrantsDeveloperAccess_DetectsDeveloperGrantsOfRolesAndSelections()
     {
-        Assert.True(RoleOf("r", ["Configuration.Read"], []).GrantsDeveloperAccess);
-        Assert.True(RoleOf("r", ["RawDatabase.Manage"], []).GrantsDeveloperAccess);
-        Assert.False(RoleOf("r", ["User.Read"], ["Configuration.Read"]).GrantsDeveloperAccess);
-        Assert.True(new AccessSelection(["Configuration.Manage"], []).GrantsDeveloperAccess);
-        Assert.False(new AccessSelection(["User.Read"], ["Configuration.Manage"]).GrantsDeveloperAccess);
+        Assert.True(AccessCatalog.Core.GrantsDeveloperAccess(RoleOf("r", ["Configuration.Read"], [])));
+        Assert.True(AccessCatalog.Core.GrantsDeveloperAccess(RoleOf("r", ["RawDatabase.Manage"], [])));
+        Assert.False(AccessCatalog.Core.GrantsDeveloperAccess(RoleOf("r", ["User.Read"], ["Configuration.Read"])));
+        Assert.True(AccessCatalog.Core.GrantsDeveloperAccess(new AccessSelection(["Configuration.Manage"], [])));
+        Assert.False(AccessCatalog.Core.GrantsDeveloperAccess(new AccessSelection(["User.Read"], ["Configuration.Manage"])));
     }
 
     [Fact]

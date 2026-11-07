@@ -33,7 +33,7 @@ public class AccessEndpointsTests
     public AccessEndpointsTests()
     {
         _gate = new UserManagementGate(
-            _sessions, _access, _users, new FixedTimeProvider(Now), NullLogger<UserManagementGate>.Instance);
+            _sessions, _access, _users, AccessCatalog.Core, new FixedTimeProvider(Now), NullLogger<UserManagementGate>.Instance);
 
         _sessions.TryFindByIdWithUserId(SessionId, Arg.Any<CancellationToken>())
             .Returns(Some<(Session, Guid)>((

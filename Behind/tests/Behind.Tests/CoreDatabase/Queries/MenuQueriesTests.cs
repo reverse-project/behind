@@ -228,7 +228,7 @@ public sealed class MenuQueriesTests : IDisposable
         var editor = await _bed.SeedUserWithRolesAsync("editor@test.com", editors);
         await using (var ctx = _bed.Write())
         {
-            await new Behind.Core.Database.Commands.RoleCommands(ctx).Delete(editors);
+            await new Behind.Core.Database.Commands.RoleCommands(ctx, AccessCatalog.Core).Delete(editors);
         }
 
         Assert.Empty(TitlesOf(await _bed.ResolveMenusAsync(editor, "footer")));

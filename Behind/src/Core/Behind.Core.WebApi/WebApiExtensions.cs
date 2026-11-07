@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Behind.Common.Configuration;
 using Behind.Common.Converters;
 using Behind.Common.Logging;
+using Behind.Common.Modules;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Handlers;
@@ -253,6 +254,7 @@ public static class WebApiExtensions
             builder.Services.AddScoped<ITwoFactorCommands, TwoFactorCommands>();
             builder.Services.AddScoped<IAuditActorProvider, HttpAuditActorProvider>();
             builder.Services.TryAddSingleton(TimeProvider.System);
+            builder.Services.AddAccessCatalog();
 
             return builder;
         }
@@ -294,7 +296,9 @@ public static class WebApiExtensions
             application.UseCorrelationId();
             application.UseRequestLogging();
             application.UseExceptionHandler(_ => { });
-            application.UseStaticFrontend(EmbeddedFrontend.CreateFileProvider(application.Environment.WebRootPath));
+            application.UseStaticFrontend(EmbeddedFrontend.CreateFileProvider(
+                application.Environment.WebRootPath,
+                application.Services.GetRequiredService<ModuleCatalog>()));
             application.UseETag();
             application.MapOpenApi();
 
@@ -405,6 +409,9 @@ public static class WebApiExtensions
 
             application.MapGet("/about", AboutEndpoints.Get)
                 .Produces<AboutResponse>();
+
+            application.MapGet(ModuleEndpoints.Route, ModuleEndpoints.Get)
+                .Produces<ModulesResponse>();
 
             application.MapGet("/generator/qrcode/{data}", QrCodeGeneratorEndpoints.Get)
                 .RequireAuthorization()

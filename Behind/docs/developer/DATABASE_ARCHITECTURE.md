@@ -812,6 +812,40 @@ Developers (`RawDatabase.Manage`) can edit the rows of every table as they are s
 - Soft delete is not applied: raw reads see every row and a raw delete removes the row for good.
 - `RawDatabaseCatalogTests` fails when an entity type of the model is not covered by the editor, which is how a new entity is checked (see the `add-raw-database-editor` skill).
 
+## Modules and the flattened database
+
+Behind can host more modules next to the required Core module. A module never references another module (nor Core): it only references the `Behind.Common*` projects and describes itself with a `ModuleDescriptor` (`Behind.Common.Modules`), including its `ModuleDatabase`:
+
+- `ConfigurationAssembly`: the assembly holding the module `IEntityTypeConfiguration<T>` classes.
+- `SoftDeletedEntities`: the root entities that get the soft delete query filter.
+- `ReadOnlyEntities`: the entity names the raw database editor must not write.
+
+The database is flattened in the project: one database and one DbContext per provider. The project context derives from `AbstractCoreContext` (the Core context, which is required and always loaded), implements the context interfaces of every module (`INotesContext` with its `DbSet`s) and receives the `ModuleCatalog` in its constructor (`AbstractCoreContext(options, modules)`), so `OnModelCreating` applies the entity configurations and the soft delete of every module. A module context is only ever exposed as an interface: a module registers `services.AddModuleContext<INotesContext>()`, which resolves the project context through `IUnitOfWork` and fails fast when the project context does not implement the interface.
+
+Registration (the Core defaults stay `RegisterSqlite(builder)`/`RegisterPostgres(builder)`):
+
+```csharp
+database.RegisterSqlite<WebContextSqlite>(builder);
+database.RegisterPostgres<WebContextPostgres>(builder);
+```
+
+registers the project context as `AbstractCoreContext`/`IUnitOfWork`, keeps the Core migrator working through the plain `CoreContextSqlite`/`CoreContextPostgres` and registers the `AccessCatalog` (Core plus module grants).
+
+### Migrations of modules
+
+The Core keeps its own migration chain (`CoreContextSqlite`, history table `__EFMigrationsHistory`). Every module owns its migration chain too, with its own history table (`ModuleDescriptor.MigrationsHistoryTable`, `__<key>MigrationsHistory`), so the chains are independent and a module can be added to or removed from a project without touching the Core migrations:
+
+1. The module provider project (`Behind.<Module>.Database.Sqlite`/`.Postgres`) holds a design-time only context (`<Module>ContextSqlite : DbContext`) that applies only the module model (`modelBuilder.ApplyModuleConfigurations(...)`), the migrations and a design-time factory that uses `module.MigrationsHistoryTable`.
+2. The project migrator project registers it: `database.RegisterSqliteModule<BlogContextSqlite>(builder, BlogModule.Descriptor)` (`RegisterPostgresModule` for PostgreSQL). That registers an `IModuleMigrator` (`ContextModuleMigrator<TContext>`) per module.
+3. `MigratorService` applies the Core migrations, then every `IModuleMigrator`, then the versioning migrations and finally the seeds: built-in users, built-in roles (`EnsureBuiltInRolesAsync(accessCatalog)` adds the grants of the modules to the built-in roles and keeps the edits of the administrators), built-in menus (`EnsureBuiltInMenusAsync(moduleCatalog)` adds the default menu items of the modules) and every `IModuleSeed` of the modules for their own default data.
+
+Module tables never have foreign keys to Core tables; they refer to users and other Core records by id only.
+
+### Audit labels and the raw database editor of modules
+
+- A module registers an `IAuditLabelSource` (`LabelsAsync(ids)` returning `AuditLabel(id, label)`) so the audit log shows human readable names for its entities; `AuditLogEntryQueries` merges the labels of every source with the Core ones.
+- Every table of the flattened model is editable in the raw database editor automatically. Mark sensitive properties with `[Sensible]` and list read-only tables in `ModuleDatabase.ReadOnlyEntities`.
+
 ## Migrations
 
 ### Creating Migrations

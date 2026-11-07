@@ -31,3 +31,6 @@ Add `tests/Behind.Tests/CoreWebApi/<Name>FrontendTests.cs` (see `DownloadsFronte
 - Changelog entry via `update-changelog`.
 - User manual page in `Behind/docs/user-manual/managing-<name>.md` and links in its `README.md` / `administration.md`.
 - If a frontend library, css or webfont is added or upgraded, use `update-licenses`.
+
+## Pages of modules
+A module adds its pages under `Frontend/modules/<key>/` (RequireJS ids `modules/<key>/controllers/...`) and declares them in its `ModuleDescriptor`: `Routes` and `AdministrationPages` (name locale key, icon, `#/` href, required grant). Locale keys go to `Frontend/modules/<key>/locales/<code>.json`. See `add-module`.

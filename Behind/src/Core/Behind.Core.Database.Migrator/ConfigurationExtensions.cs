@@ -9,10 +9,15 @@ public static class ConfigurationExtensions
 {
     extension(DatabaseConfiguration database)
     {
-        public HostApplicationBuilder Register(HostApplicationBuilder builder)
+        public HostApplicationBuilder Register(HostApplicationBuilder builder) =>
+            database.Register<CoreContextSqlite, CoreContextPostgres>(builder);
+
+        public HostApplicationBuilder Register<TSqlite, TPostgres>(HostApplicationBuilder builder)
+            where TSqlite : AbstractCoreContext
+            where TPostgres : AbstractCoreContext
         {
-            database.RegisterSqlite(builder);
-            database.RegisterPostgres(builder);
+            database.RegisterSqlite<TSqlite>(builder);
+            database.RegisterPostgres<TPostgres>(builder);
 
             return builder;
         }

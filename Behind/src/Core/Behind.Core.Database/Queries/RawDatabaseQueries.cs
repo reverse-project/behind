@@ -14,7 +14,7 @@ public sealed class RawDatabaseQueries(AbstractCoreContext context) : IRawDataba
         foreach (var table in context.RawTables)
         {
             var rows = await context.CountRawRowsAsync(table, None, cancellationToken);
-            listings.Add(new IRawDatabaseQueries.RawTableListing(table, rows, table.IsReadOnly));
+            listings.Add(new IRawDatabaseQueries.RawTableListing(table, rows, context.IsReadOnly(table)));
         }
 
         return listings;

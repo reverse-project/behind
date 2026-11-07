@@ -1,3 +1,5 @@
+using Behind.Common.Modules;
+
 namespace Behind.Core.Domain;
 
 public sealed record BuiltInMenuItem(
@@ -38,6 +40,11 @@ public static class BuiltInMenus
         ]);
 
     public static readonly IReadOnlyList<BuiltInMenu> All = [Main];
+
+    public static IReadOnlyList<BuiltInMenu> For(ModuleCatalog modules) =>
+    [
+        Main with { Items = [..Main.Items, ..modules.MenuItems.Select(item => item.ToBuiltIn())] }
+    ];
 
     public static bool IsBuiltIn(Guid menuId) => All.Any(menu => menu.Id == menuId);
 

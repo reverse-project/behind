@@ -13,6 +13,7 @@ public sealed class UserManagementGate(
     ISessionQueries sessionQueries,
     IAccessQueries accessQueries,
     IUserManagementQueries userQueries,
+    AccessCatalog catalog,
     TimeProvider timeProvider,
     ILogger<UserManagementGate> logger)
 {
@@ -42,6 +43,7 @@ public sealed class UserManagementGate(
                     access.IsDeveloper,
                     access.Holds(GrantName.Of(GrantArea.User, GrantAction.Delete)),
                     access,
+                    catalog,
                     session.IsImpersonated));
             });
     }

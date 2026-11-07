@@ -1,12 +1,14 @@
 using Behind.Common;
 using Behind.Common.Database;
+using Behind.Common.Database.Modules;
 using Behind.Core.Domain;
 using static Behind.Common.FunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Core.Database.Queries;
 
-public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLogEntryQueries
+public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerable<IAuditLabelSource> labelSources)
+    : IAuditLogEntryQueries
 {
     public async Task<AuditLabels> ResolveLabels(
         IReadOnlyCollection<Guid> ids,
@@ -19,7 +21,7 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context) : IAuditLo
 
         using var attribution = context.SoftDelete.IncludeDeleted();
 
-        return await context.ResolveAuditLabelsAsync(ids, cancellationToken);
+        return await context.ResolveAuditLabelsAsync(ids, labelSources, cancellationToken);
     }
 
     public async Task<Option<PagedResult<AuditLogEntry>>> GetAuditLog(IAuditLogEntryQueries.RequestAuditLog request,

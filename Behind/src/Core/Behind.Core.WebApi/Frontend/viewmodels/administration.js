@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/i18n"], function (ko, session, i18n) {
+define(["ko", "models/session", "models/i18n", "models/modules"], function (ko, session, i18n, modules) {
     var canManageUsers = function () {
         return session.hasGrant("User.Manage");
     };
@@ -51,7 +51,7 @@ define(["ko", "models/session", "models/i18n"], function (ko, session, i18n) {
         return session.hasGrant("Configuration.Read");
     };
 
-    var pages = [
+    var corePages = [
         { name: "administration.pages.users", icon: "fa-users", href: "#/users", allowed: canManageUsers },
         { name: "administration.pages.roles", icon: "fa-user-shield", href: "#/roles", allowed: canManageRoles },
         { name: "administration.pages.sites", icon: "fa-file-lines", href: "#/sites", allowed: canReadSites },
@@ -69,11 +69,24 @@ define(["ko", "models/session", "models/i18n"], function (ko, session, i18n) {
         { name: "administration.pages.settings", icon: "fa-sliders", href: "#/settings", allowed: canReadConfiguration }
     ];
 
+    var modulePages = function () {
+        return modules.administrationPages().map(function (page) {
+            return {
+                name: page.name,
+                icon: page.icon,
+                href: page.href,
+                allowed: function () {
+                    return session.hasGrant(page.grant);
+                }
+            };
+        });
+    };
+
     return function AdministrationViewModel() {
         var self = this;
 
         self.pages = ko.pureComputed(function () {
-            return pages
+            return corePages.concat(modulePages())
                 .filter(function (page) {
                     return page.allowed();
                 })

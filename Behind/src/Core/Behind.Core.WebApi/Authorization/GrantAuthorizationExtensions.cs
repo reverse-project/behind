@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Behind.Core.Database;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,17 +20,21 @@ public static class GrantAuthorizationExtensions
         {
             services.AddScoped<IAuthorizationHandler, GrantAuthorizationHandler>();
 
-            return services.AddAuthorization(options =>
-            {
-                foreach (var grant in BuiltInAccess.Grants)
+            services.AddAuthorization();
+            services.AddOptions<AuthorizationOptions>()
+                .Configure<AccessCatalog>((options, catalog) =>
                 {
-                    options.AddPolicy(
-                        grant.Grant.Name,
-                        policy => policy
-                            .RequireAuthenticatedUser()
-                            .AddRequirements(new GrantRequirement(grant.Grant.Name)));
-                }
-            });
+                    foreach (var grant in catalog.Grants)
+                    {
+                        options.AddPolicy(
+                            grant.Grant.Name,
+                            policy => policy
+                                .RequireAuthenticatedUser()
+                                .AddRequirements(new GrantRequirement(grant.Grant.Name)));
+                    }
+                });
+
+            return services.AddAccessCatalog();
         }
     }
 }

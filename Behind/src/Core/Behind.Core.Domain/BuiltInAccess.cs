@@ -32,9 +32,7 @@ public static class BuiltInAccess
 
     public static readonly IReadOnlyList<BuiltInRestriction> Restrictions =
     [
-        ..Grants.Select(grant => new BuiltInRestriction(
-            Guid.Parse($"70000000-{grant.Id.ToString()[9..]}"),
-            new Restriction(grant.Grant.Name)))
+        ..Grants.Select(RestrictionOf)
     ];
 
     public static readonly BuiltInRole Administrators = NewRole(
@@ -61,6 +59,9 @@ public static class BuiltInAccess
     [
         ..Grants.Where(grant => grant.IsDeveloperOnly || grant == RawDatabaseManage).Select(grant => grant.Grant.Name)
     ];
+
+    public static BuiltInRestriction RestrictionOf(BuiltInGrant grant) =>
+        new(Guid.Parse($"70000000-{grant.Id.ToString()[9..]}"), new Restriction(grant.Grant.Name));
 
     public static bool IsBuiltIn(Guid roleId) => Roles.Any(role => role.Id == roleId);
 

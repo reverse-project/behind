@@ -1,4 +1,4 @@
-define(["ko", "models/http"], function (ko, http) {
+define(["ko", "models/http", "models/modules"], function (ko, http, modules) {
     var fallbackLocale = "en-US";
     var locale = ko.observable(fallbackLocale);
     var messages = ko.observable({});
@@ -39,11 +39,28 @@ define(["ko", "models/http"], function (ko, http) {
         return value ? format(new Date(value), locale()) : "";
     };
 
-    var fetchMessages = function (code) {
-        return http.get("/locales/" + encodeURIComponent(code) + ".json").then(function (response) {
+    var fetchBundle = function (url) {
+        return http.get(url).then(function (response) {
             var data = response.data;
 
             return response.ok && data && typeof data.messages === "object" ? data.messages : null;
+        });
+    };
+
+    var fetchModuleMessages = function (code) {
+        return Promise.all(modules.localeUrls(code).map(fetchBundle)).then(function (bundles) {
+            return Object.assign.apply(null, [{}].concat(bundles.filter(function (bundle) {
+                return bundle !== null;
+            })));
+        });
+    };
+
+    var fetchMessages = function (code) {
+        return Promise.all([
+            fetchBundle("/locales/" + encodeURIComponent(code) + ".json"),
+            fetchModuleMessages(code)
+        ]).then(function (loaded) {
+            return loaded[0] === null ? null : Object.assign({}, loaded[1], loaded[0]);
         });
     };
 

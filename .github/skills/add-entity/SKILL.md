@@ -22,3 +22,6 @@ Load `csharp-code-standards` first. Reference implementations: `Site`, `News`, `
 12. **Changelog**: use `update-changelog`.
 13. **Docs**: update `Behind/docs/developer/DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `PROJECT_OVERVIEW.md`, `WEBAPI_CONVENTIONS.md` and a page in `docs/user-manual/` (plus its README/administration index) when relevant.
 14. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj` from `Behind/`.
+
+## Entities of modules
+Entities of a module (see `add-module`) do not edit `AuditLabelExtensions`: the module registers an `IAuditLabelSource` (`Behind.Common.Database.Modules`) that returns `AuditLabel(id, label)` for its entities and tests it. Soft deleted entities go to `ModuleDatabase.SoftDeletedEntities` of the module descriptor.

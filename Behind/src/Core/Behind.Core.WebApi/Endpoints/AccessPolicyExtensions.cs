@@ -11,7 +11,7 @@ public static class AccessPolicyExtensions
             var held = actor.Access.CalculatedGrants;
 
             return actor.IsDeveloper
-                   || grants.All(grant => held.Contains(grant) && !BuiltInAccess.IsDeveloperGrant(grant.Name));
+                   || grants.All(grant => held.Contains(grant) && !actor.Catalog.IsDeveloperGrant(grant.Name));
         }
 
         public bool CanEditRole(Role role) =>
@@ -37,13 +37,13 @@ public static class AccessPolicyExtensions
                 && actor.CanGrant(role.GrantsAddedBy(role.With(defaults))));
 
         public bool CanDeleteRole(Guid roleId, Role role) =>
-            !BuiltInAccess.IsBuiltIn(roleId) && actor.CanEditRole(role);
+            !actor.Catalog.IsBuiltIn(roleId) && actor.CanEditRole(role);
 
         public bool CanChangeAccess(UserAccess current, UserAccess proposed) =>
             actor.CanGrant(current.GrantsAddedBy(proposed))
             && (actor.IsDeveloper || current.DeveloperRolesAddedBy(proposed).Count == 0);
 
         public bool CanSetDeveloperFlag(Guid roleId) =>
-            actor.IsDeveloper && !BuiltInAccess.IsBuiltIn(roleId);
+            actor.IsDeveloper && !actor.Catalog.IsBuiltIn(roleId);
     }
 }

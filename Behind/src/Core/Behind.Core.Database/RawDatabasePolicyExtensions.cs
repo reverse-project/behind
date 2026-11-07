@@ -1,4 +1,5 @@
 using Behind.Common.Database.Raw;
+using Behind.Common.Modules;
 using Behind.Core.Domain;
 
 namespace Behind.Core.Database;
@@ -10,8 +11,9 @@ public static class RawDatabasePolicyExtensions
         nameof(AuditLogEntry)
     };
 
-    extension(RawTable table)
+    extension(AbstractCoreContext context)
     {
-        public bool IsReadOnly => ReadOnlyEntities.Contains(table.EntityName);
+        public bool IsReadOnly(RawTable table) =>
+            ReadOnlyEntities.Contains(table.EntityName) || context.Modules.ReadOnlyEntities.Contains(table.EntityName);
     }
 }

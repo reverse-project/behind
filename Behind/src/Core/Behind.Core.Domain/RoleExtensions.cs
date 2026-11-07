@@ -26,8 +26,6 @@ public static class RoleExtensions
 
         public bool IsDeveloperRole => role is UserRole { IsDeveloper: true };
 
-        public bool GrantsDeveloperAccess => role.GrantNames.Any(BuiltInAccess.IsDeveloperGrant);
-
         public bool Holds(string grantName) => role.EffectiveGrants.Contains(new Grant(grantName));
 
         public Role With(AccessSelection selection) =>

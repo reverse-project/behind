@@ -35,7 +35,7 @@ public class ImpersonationEndpointsTests
     public ImpersonationEndpointsTests()
     {
         _gate = new UserManagementGate(
-            _sessions, _access, _users, new FixedTimeProvider(Now), NullLogger<UserManagementGate>.Instance);
+            _sessions, _access, _users, AccessCatalog.Core, new FixedTimeProvider(Now), NullLogger<UserManagementGate>.Instance);
         SignedInAs(Administrator(), impersonated: false);
         TargetIs(Managed(TargetId));
         TargetHolds(BuiltInAccess.Users.Role);

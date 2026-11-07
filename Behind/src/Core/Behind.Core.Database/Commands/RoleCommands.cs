@@ -6,7 +6,7 @@ using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Database.Commands;
 
-public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
+public sealed class RoleCommands(AbstractCoreContext context, AccessCatalog catalog) : IRoleCommands
 {
     public async Task CreateWithId(Guid id, Role role, CancellationToken cancellationToken = default)
     {
@@ -110,7 +110,7 @@ public sealed class RoleCommands(AbstractCoreContext context) : IRoleCommands
 
     public async Task AssignBuiltIn(Guid userId, BuiltInRole role, CancellationToken cancellationToken = default)
     {
-        await context.EnsureBuiltInRolesAsync(cancellationToken);
+        await context.EnsureBuiltInRolesAsync(catalog, cancellationToken);
         await context.AssignRoleToUserAsync(userId, role.Id, cancellationToken);
     }
 

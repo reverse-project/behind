@@ -28,7 +28,7 @@ public sealed class AuditLogEntryQueriesDeletedUserTests : IDisposable
         }
 
         await using var ctx = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(ctx).GetAuditLog(
+        var result = await new AuditLogEntryQueries(ctx, []).GetAuditLog(
             new IAuditLogEntryQueries.RequestAuditLog(
                 DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)),
                 DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),

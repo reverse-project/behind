@@ -17,7 +17,7 @@ public sealed class AccessTests : IDisposable
     private async Task<Guid> SeedUserWithAsync(params BuiltInRole[] roles)
     {
         await using var seed = _factory.CreateContext();
-        await seed.EnsureBuiltInRolesAsync();
+        await seed.EnsureBuiltInRolesAsync(AccessCatalog.Core);
         var userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, Email);
 
         foreach (var role in roles)
@@ -192,7 +192,7 @@ public sealed class AccessTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
 
-        var created = await new RoleCommands(ctx).Create("Support");
+        var created = await new RoleCommands(ctx, AccessCatalog.Core).Create("Support");
 
         var id = created.Match(() => throw new InvalidOperationException(), value => value);
         await using var read = _factory.CreateContext();
@@ -206,7 +206,7 @@ public sealed class AccessTests : IDisposable
         await SeedUserWithAsync();
         await using var ctx = _factory.CreateContext();
 
-        Assert.Equal(None, await new RoleCommands(ctx).Create("administrators"));
+        Assert.Equal(None, await new RoleCommands(ctx, AccessCatalog.Core).Create("administrators"));
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public sealed class AccessTests : IDisposable
         Guid roleId;
         await using (var ctx = _factory.CreateContext())
         {
-            roleId = (await new RoleCommands(ctx).Create("Support")).Match(() => Guid.Empty, value => value);
+            roleId = (await new RoleCommands(ctx, AccessCatalog.Core).Create("Support")).Match(() => Guid.Empty, value => value);
             await new AccessCommands(ctx).SetRoleAccess(roleId, new AccessSelection(["Role.Manage"], []));
             await new AccessCommands(ctx).SetUserAccess(
                 userId,
@@ -228,7 +228,7 @@ public sealed class AccessTests : IDisposable
 
         await using (var ctx = _factory.CreateContext())
         {
-            await new RoleCommands(ctx).Delete(roleId);
+            await new RoleCommands(ctx, AccessCatalog.Core).Delete(roleId);
         }
 
         Assert.False(await HasGrantAsync("Role.Manage"));
@@ -259,7 +259,7 @@ public sealed class AccessTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
 
-        var id = (await new RoleCommands(ctx).Create("Ops", true)).Match(() => Guid.Empty, value => value);
+        var id = (await new RoleCommands(ctx, AccessCatalog.Core).Create("Ops", true)).Match(() => Guid.Empty, value => value);
 
         await using var read = _factory.CreateContext();
         var found = await new RoleQueries(read).GetRoleById(id);
@@ -272,13 +272,13 @@ public sealed class AccessTests : IDisposable
         Guid id;
         await using (var ctx = _factory.CreateContext())
         {
-            id = (await new RoleCommands(ctx).Create("Ops")).Match(() => Guid.Empty, value => value);
+            id = (await new RoleCommands(ctx, AccessCatalog.Core).Create("Ops")).Match(() => Guid.Empty, value => value);
         }
 
         await using (var ctx = _factory.CreateContext())
         {
-            Assert.True(await new RoleCommands(ctx).SetDeveloper(id, true));
-            Assert.False(await new RoleCommands(ctx).SetDeveloper(Guid.NewGuid(), true));
+            Assert.True(await new RoleCommands(ctx, AccessCatalog.Core).SetDeveloper(id, true));
+            Assert.False(await new RoleCommands(ctx, AccessCatalog.Core).SetDeveloper(Guid.NewGuid(), true));
         }
 
         await using (var read = _factory.CreateContext())
@@ -288,7 +288,7 @@ public sealed class AccessTests : IDisposable
 
         await using (var ctx = _factory.CreateContext())
         {
-            Assert.True(await new RoleCommands(ctx).SetDeveloper(id, false));
+            Assert.True(await new RoleCommands(ctx, AccessCatalog.Core).SetDeveloper(id, false));
         }
 
         await using var final = _factory.CreateContext();

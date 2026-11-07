@@ -86,8 +86,8 @@ public static class MenuTestBedExtensions
         public async Task EnsureBuiltInMenusAsync()
         {
             await using var ctx = bed.Write();
-            await ctx.EnsureBuiltInRolesAsync();
-            await ctx.EnsureBuiltInMenusAsync();
+            await ctx.EnsureBuiltInRolesAsync(AccessCatalog.Core);
+            await ctx.EnsureBuiltInMenusAsync(ModuleCatalog.Empty);
         }
 
         public async Task<IReadOnlyList<IMenuQueries.MenuView>> ResolveMenusAsync(

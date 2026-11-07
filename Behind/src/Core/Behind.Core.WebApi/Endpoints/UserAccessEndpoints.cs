@@ -34,7 +34,7 @@ public sealed class UserAccessEndpoints
                 var access = await accessQueries.GetUserAccess(target.Id, httpContext.RequestAborted);
                 var roles = await roleQueries.ListRoles(httpContext.RequestAborted);
 
-                return Results.Json(access.ToResponse(target.Id, actor.CanModerate(target), roles));
+                return Results.Json(access.ToResponse(target.Id, actor.CanModerate(target), roles, actor.Catalog));
             });
     }
 
@@ -59,7 +59,7 @@ public sealed class UserAccessEndpoints
                 var roles = await roleQueries.ListRoles(httpContext.RequestAborted);
                 var chosen = roles.Where(role => roleIds.Contains(role.Id)).ToList();
 
-                if (!selection.IsValid
+                if (!actor.Catalog.IsValid(selection)
                     || chosen.Count != roleIds.Count
                     || !roleIds.Contains(BuiltInAccess.Users.Id))
                 {

@@ -3,6 +3,11 @@
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [
+      { "type": "added", "text": "Optional modules can plug into Behind next to the Core module: a module describes its grants, default menu items, administration pages, pages, frontend files, translations and database in one module descriptor, and the application picks them up automatically." },
+      { "type": "added", "text": "The grants of the modules appear on the Roles and Users pages, are added to the built-in roles (Administrators, Users or Developers by the audience of the grant) without overwriting the edits made to those roles, and protect the module endpoints." },
+      { "type": "added", "text": "The Administration page lists the pages of the modules for the users who hold their grants, the default menu items of the modules are added to the main menu, and the module pages are routed before the route alias fallback." },
+      { "type": "added", "text": "A new open endpoint, /modules, publishes the routes, administration pages and styles of the installed modules to the frontend, and the translations of the modules are merged under the Core translations of the selected language." },
+      { "type": "added", "text": "The database migrator applies the migrations of every module into the same database after the Core migrations, each module keeping its own migration history table, and runs the module seeds; module tables are editable in the raw database editor (read-only tables can be declared) and the audit log shows the human readable names of module entities." },
       { "type": "added", "text": "Images can be uploaded into the message of the restriction page (the image button or dropping an image into the rich text editor of the Access settings page). They are served under /access/images/<id>, which stays reachable for restricted visitors so the restriction page can show them." },
       { "type": "added", "text": "The restriction page has a title, Restricted website by default, and its message is written in the rich text editor on the Access settings administration page; the message is sanitized on the server." },
       { "type": "added", "text": "A Roles button on every user of the Users page opens a dedicated roles panel where the roles of the user are ticked and saved with Save roles, so assigning a role no longer needs the Access panel." },

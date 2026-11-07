@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 using Behind.Common.Database;
+using Behind.Common.Database.Modules;
+using Behind.Common.Modules;
 using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -8,8 +10,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Behind.Core.Database;
 
-public partial class AbstractCoreContext(DbContextOptions options) : DbContext(options), IUnitOfWork, ISoftDeleteContext
+public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog modules)
+    : DbContext(options), IUnitOfWork, ISoftDeleteContext
 {
+    protected AbstractCoreContext(DbContextOptions options) : this(options, ModuleCatalog.Empty)
+    {
+    }
+
+    public ModuleCatalog Modules { get; } = modules;
+
     public SoftDeleteSwitch SoftDelete { get; } = new();
 
     public EntityMarkRegistry HardDeletes { get; } = new();
@@ -41,6 +50,7 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AbstractCoreContext).Assembly);
+        modelBuilder.ApplyModuleConfigurations(Modules.Databases);
         modelBuilder.ApplyConfiguration(new ActiveVersionConfiguration());
         modelBuilder.Entity<ActiveVersion>().ToTable("ActiveVersions", table => table.ExcludeFromMigrations());
         UserConfiguration.ApplyHumanUser(modelBuilder);
@@ -54,28 +64,33 @@ public partial class AbstractCoreContext(DbContextOptions options) : DbContext(o
         modelBuilder.ApplySoftDelete(
             this,
             DeletionRecorded,
-            typeof(User),
-            typeof(Email),
-            typeof(Role),
-            typeof(Grant),
-            typeof(Restriction),
-            typeof(Password),
-            typeof(WallOfShameEntry),
-            typeof(Site),
-            typeof(News),
-            typeof(NewsCategory),
-            typeof(NewsComment),
-            typeof(Article),
-            typeof(ArticleCategory),
-            typeof(Gallery),
-            typeof(Carousel),
-            typeof(DownloadFolder),
-            typeof(Download),
-            typeof(Menu),
-            typeof(MenuItem),
-            typeof(RouteAlias),
-            typeof(AccessSettings));
+            [..CoreSoftDeletedEntities, ..Modules.SoftDeletedEntities]);
     }
+
+    private static readonly Type[] CoreSoftDeletedEntities =
+    [
+        typeof(User),
+        typeof(Email),
+        typeof(Role),
+        typeof(Grant),
+        typeof(Restriction),
+        typeof(Password),
+        typeof(WallOfShameEntry),
+        typeof(Site),
+        typeof(News),
+        typeof(NewsCategory),
+        typeof(NewsComment),
+        typeof(Article),
+        typeof(ArticleCategory),
+        typeof(Gallery),
+        typeof(Carousel),
+        typeof(DownloadFolder),
+        typeof(Download),
+        typeof(Menu),
+        typeof(MenuItem),
+        typeof(RouteAlias),
+        typeof(AccessSettings)
+    ];
 
     public static readonly Expression<Func<AbstractCoreContext, string, string, bool>> DeletionRecorded =
         (context, entityName, entityKey) =>

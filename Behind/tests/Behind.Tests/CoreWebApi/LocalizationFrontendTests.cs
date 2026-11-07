@@ -46,7 +46,7 @@ public class LocalizationFrontendTests
         var engine = Read("models/i18n.js");
 
         Assert.Contains("var fallbackLocale = \"en-US\"", engine);
-        Assert.Contains("http.get(\"/locales/\" + encodeURIComponent(code) + \".json\")", engine);
+        Assert.Contains("fetchBundle(\"/locales/\" + encodeURIComponent(code) + \".json\")", engine);
         Assert.Contains("Object.assign({}, loaded[0], loaded[1])", engine);
         Assert.Contains("ko.bindingHandlers.t =", engine);
         Assert.Contains("ko.bindingHandlers.tAttr =", engine);

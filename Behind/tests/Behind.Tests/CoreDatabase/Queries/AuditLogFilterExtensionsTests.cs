@@ -16,7 +16,7 @@ public sealed class AuditLogFilterExtensionsTests : IDisposable
         await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, entityName: "User", entityKey: "beta-2");
 
         await using var context = _factory.CreateContext();
-        var result = await new AuditLogEntryQueries(context).GetAuditLog(
+        var result = await new AuditLogEntryQueries(context, []).GetAuditLog(
             new IAuditLogEntryQueries.RequestAuditLog(
                 DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)),
                 DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),

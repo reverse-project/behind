@@ -1,5 +1,6 @@
 using Behind.Common;
 using Behind.Common.Database;
+using Behind.Common.Database.Modules;
 using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -40,10 +41,27 @@ public static class AuditLabelExtensions
             string.IsNullOrWhiteSpace(description) ? fallback : description.Shortened(maxLength);
     }
 
+    extension(IEnumerable<IAuditLabelSource> sources)
+    {
+        private async Task<IReadOnlyList<Named>> NamedAsync(List<Guid> ids, CancellationToken cancellationToken)
+        {
+            var labels = new List<Named>();
+
+            foreach (var source in sources)
+            {
+                labels.AddRange(
+                    (await source.LabelsAsync(ids, cancellationToken)).Select(label => new Named(label.Id, label.Label)));
+            }
+
+            return labels;
+        }
+    }
+
     extension(AbstractCoreContext context)
     {
         public async Task<AuditLabels> ResolveAuditLabelsAsync(
             IReadOnlyCollection<Guid> ids,
+            IEnumerable<IAuditLabelSource> sources,
             CancellationToken cancellationToken = default
         )
         {
@@ -54,7 +72,9 @@ public static class AuditLabelExtensions
                 .Concat(BuiltInUsers)
                 .DistinctBy(item => item.Id)
                 .ToDictionary(item => item.Id, item => item.Label);
-            var named = await context.NamedAsync(wanted, cancellationToken);
+            var named = (await context.NamedAsync(wanted, cancellationToken))
+                .Concat(await sources.NamedAsync(wanted, cancellationToken))
+                .ToList();
 
             var ownedLabels = owned.Select(item => new Named(
                 item.Id,

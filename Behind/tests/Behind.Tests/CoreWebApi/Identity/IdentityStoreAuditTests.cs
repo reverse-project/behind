@@ -34,7 +34,7 @@ public sealed class IdentityStoreAuditTests : IDisposable
             new UserCommands(context),
             new UserApprovalQueries(context),
             new UserApprovalCommands(context),
-            new RoleCommands(context),
+            new RoleCommands(context, AccessCatalog.Core),
             NullLogger<IdentityStore>.Instance);
 
     private CoreContextSqlite Audited() => _factory.CreateAuditedContext(AuditActor.ForUser(_actorId));

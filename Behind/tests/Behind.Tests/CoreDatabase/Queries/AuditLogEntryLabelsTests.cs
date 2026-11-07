@@ -17,7 +17,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
 
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([]);
 
         Assert.Empty(labels.Values);
     }
@@ -38,7 +38,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         }
 
         await using var ctx = _factory.CreateContext();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([userId, emailId, roleId, grantId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([userId, emailId, roleId, grantId]);
 
         Assert.Equal("Test User", labels.Label(userId.ToString()));
         Assert.Equal("ada2@test.com", labels.Label(emailId.ToString()));
@@ -52,7 +52,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     {
         await using var ctx = _factory.CreateContext();
 
-        var labels = await new AuditLogEntryQueries(ctx)
+        var labels = await new AuditLogEntryQueries(ctx, [])
             .ResolveLabels([DomainConstants.SystemUserId, DomainConstants.GuestUserId]);
 
         Assert.Equal("System", labels.Label(DomainConstants.SystemUserId.ToString()));
@@ -71,7 +71,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         }
 
         await using var ctx = _factory.CreateContext();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([shameId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([shameId]);
 
         Assert.Equal("Wall of shame entry of Test User", labels.Label(shameId.ToString()));
     }
@@ -94,7 +94,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var passkeyId = await ctx.UserPasskeys.Select(passkey => EF.Property<Guid>(passkey, "Id")).SingleAsync();
         var codeId = await ctx.UserRecoveryCodes.Select(code => EF.Property<Guid>(code, "Id")).SingleAsync();
 
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([totpId, passkeyId, codeId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([totpId, passkeyId, codeId]);
 
         Assert.Equal("Authenticator app of Test User", labels.Label(totpId.ToString()));
         Assert.Equal("Passkey of Test User", labels.Label(passkeyId.ToString()));
@@ -119,7 +119,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         }
 
         await using var ctx = _factory.CreateContext();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([siteId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([siteId]);
 
         Assert.Equal("New title", labels.Label(siteId.ToString()));
         Assert.Equal("New title: 2", labels.LabelKey($"{siteId}:2"));
@@ -133,7 +133,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var imageId = await bed.AddImageAsync("logo.png");
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([imageId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([imageId]);
 
         Assert.Equal("logo.png", labels.Label(imageId.ToString()));
         Assert.Equal("VfsFile: logo.png", labels.LabelKey($"VfsFile:{imageId}"));
@@ -148,7 +148,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.SaveNewsAsync(first.Key, "Version 2 final", categoryId);
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([first.Key, categoryId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([first.Key, categoryId]);
 
         Assert.Equal("Version 2 final", labels.Label(first.Key.ToString()));
         Assert.Equal("Releases", labels.Label(categoryId.ToString()));
@@ -165,7 +165,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var commentId = await bed.AddCommentAsync(news, "Hi", bed.OtherAuthorId);
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([commentId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([commentId]);
 
         Assert.Equal("News comment of Test User", labels.Label(commentId.ToString()));
         Assert.Equal("News comment of Test User: 1", labels.LabelKey($"{commentId}:1"));
@@ -179,7 +179,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.WithNewsCommandsAsync(commands => commands.Delete(newsId));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([newsId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([newsId]);
 
         Assert.Equal("Gone", labels.Label(newsId.ToString()));
     }
@@ -193,7 +193,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.SaveArticleAsync(first.Key, "Setup final", categoryId);
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([first.Key, categoryId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([first.Key, categoryId]);
 
         Assert.Equal("Setup final", labels.Label(first.Key.ToString()));
         Assert.Equal("Tutorials", labels.Label(categoryId.ToString()));
@@ -210,7 +210,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.WithArticleCommandsAsync(commands => commands.Delete(articleId));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([articleId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([articleId]);
 
         Assert.Equal("Gone", labels.Label(articleId.ToString()));
     }
@@ -225,7 +225,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
 
         await using var ctx = bed.Read();
         var itemKey = await ctx.GalleryItems.Select(item => EF.Property<Guid>(item, VersionedColumns.Key)).FirstAsync();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([first.Key, itemKey]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([first.Key, itemKey]);
 
         Assert.Equal("Trip final", labels.Label(first.Key.ToString()));
         Assert.Equal("Sunset on the beach", labels.Label(itemKey.ToString()));
@@ -243,7 +243,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
 
         await using var ctx = bed.Read();
         var itemKey = await ctx.GalleryItems.Select(item => EF.Property<Guid>(item, VersionedColumns.Key)).FirstAsync();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([itemKey]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([itemKey]);
 
         Assert.Equal(80, labels.Label(itemKey.ToString()).Length);
         Assert.EndsWith("…", labels.Label(itemKey.ToString()));
@@ -256,7 +256,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var imageId = await bed.AddGalleryImageAsync("sunset.png");
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([imageId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([imageId]);
 
         Assert.Equal("sunset.png", labels.Label(imageId.ToString()));
         Assert.Equal("VfsFile: sunset.png", labels.LabelKey($"VfsFile:{imageId}"));
@@ -270,7 +270,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
 
         await using var ctx = bed.Read();
         var itemKey = await ctx.GalleryItems.Select(item => EF.Property<Guid>(item, VersionedColumns.Key)).FirstAsync();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([itemKey]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([itemKey]);
 
         Assert.Equal("Image", labels.Label(itemKey.ToString()));
     }
@@ -283,7 +283,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.WithGalleryCommandsAsync(commands => commands.Delete(galleryId));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([galleryId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([galleryId]);
 
         Assert.Equal("Gone", labels.Label(galleryId.ToString()));
     }
@@ -300,7 +300,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
             .OrderBy(slide => EF.Property<int>(slide, "Position"))
             .Select(slide => EF.Property<Guid>(slide, VersionedColumns.Key))
             .ToListAsync();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([siteId, .. slideKeys]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([siteId, .. slideKeys]);
 
         Assert.Equal("Landing", labels.Label(siteId.ToString()));
         Assert.Equal("Carousel: Landing", labels.LabelKey($"Carousel:{siteId}"));
@@ -321,7 +321,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var sections = await bed.SectionsOfAsync(site);
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels(sections.Select(section => section.Id).ToList());
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels(sections.Select(section => section.Id).ToList());
 
         Assert.Equal("Our story", labels.Label(sections[0].Id.ToString()));
         Assert.Equal("Section", labels.Label(sections[1].Id.ToString()));
@@ -339,7 +339,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.WithDownloadCommandsAsync(commands => commands.Rename(download, "Handbook"));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([folder, download]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([folder, download]);
 
         Assert.Equal("Guides", labels.Label(folder.ToString()));
         Assert.Equal("Handbook", labels.Label(download.ToString()));
@@ -358,7 +358,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.WithDownloadFolderCommandsAsync(commands => commands.Delete(folder));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([folder, download]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([folder, download]);
 
         Assert.Equal("Gone folder", labels.Label(folder.ToString()));
         Assert.Equal("Gone file", labels.Label(download.ToString()));
@@ -376,7 +376,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.SaveMenuItemAsync(first.Key, menuId, MenuTestBedExtensions.ItemDraft("Documentation"));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([menuId, first.Key]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([menuId, first.Key]);
 
         Assert.Equal("Page footer", labels.Label(menuId.ToString()));
         Assert.Equal("Documentation", labels.Label(first.Key.ToString()));
@@ -394,7 +394,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.WithMenuCommandsAsync(commands => commands.Delete(menuId));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([menuId, itemId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([menuId, itemId]);
 
         Assert.Equal("Footer", labels.Label(menuId.ToString()));
         Assert.Equal("Docs", labels.Label(itemId.ToString()));
@@ -412,7 +412,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.WithRouteAliasCommandsAsync(commands => commands.Delete(goneId));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([aliasId, goneId]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([aliasId, goneId]);
 
         Assert.Equal("handbooks", labels.Label(aliasId.ToString()));
         Assert.Equal("gone", labels.Label(goneId.ToString()));
@@ -427,7 +427,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await bed.SaveAccessSettingsAsync(AccessSettingsTestBedExtensions.AccessDraft(message: "Again"));
 
         await using var ctx = bed.Read();
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([saved.Id.Key]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([saved.Id.Key]);
 
         Assert.Equal("Access settings", labels.Label(saved.Id.Key.ToString()));
         Assert.Equal("Access settings: 2", labels.LabelKey($"{saved.Id.Key}:2"));
@@ -439,7 +439,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var unknown = Guid.NewGuid();
         await using var ctx = _factory.CreateContext();
 
-        var labels = await new AuditLogEntryQueries(ctx).ResolveLabels([unknown]);
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([unknown]);
 
         Assert.Equal(unknown.ToString(), labels.Label(unknown.ToString()));
         Assert.Equal("plain", labels.Label("plain"));

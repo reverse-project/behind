@@ -20,7 +20,7 @@ Load `csharp-code-standards` first. Reference implementations: `Site`, `News`, `
 10. **Raw database editor**: every entity must be editable in the raw database editor, use `add-raw-database-editor` (`[Sensible]` columns, read-only tables, column kinds, `RawDatabase*` tests).
 11. **Tests**: domain, commands, queries, endpoints, routes, frontend tests, audit labels; reuse/add a `Helpers/<Entity>TestBedExtensions.cs`.
 12. **Changelog**: use `update-changelog`.
-13. **Docs**: update `Behind/docs/developer/DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `PROJECT_OVERVIEW.md`, `WEBAPI_CONVENTIONS.md` and a page in `docs/user-manual/` (plus its README/administration index) when relevant.
+13. **Docs**: update `Behind/docs/en-US/developer/DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `PROJECT_OVERVIEW.md`, `WEBAPI_CONVENTIONS.md` and a page in `docs/en-US/user-manual/` (plus its README/administration index) when relevant.
 14. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj` from `Behind/`.
 
 ## Entities of modules

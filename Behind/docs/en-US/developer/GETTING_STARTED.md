@@ -123,7 +123,7 @@ dotnet test tests/Behind.Tests/Behind.Tests.csproj \
 dotnet test tests/Behind.Tests/Behind.Tests.csproj
 ```
 
-Coverage is collected by default via `coverlet.msbuild`, and generated code (EF Core migrations, Roslyn source-generator output under `obj/`, and types with `[GeneratedCode]`/`[CompilerGenerated]`) is automatically excluded. See [Behind.Tests.csproj](../../tests/Behind.Tests/Behind.Tests.csproj) for coverage configuration.
+Coverage is collected by default via `coverlet.msbuild`, and generated code (EF Core migrations, Roslyn source-generator output under `obj/`, and types with `[GeneratedCode]`/`[CompilerGenerated]`) is automatically excluded. See [Behind.Tests.csproj](../../../tests/Behind.Tests/Behind.Tests.csproj) for coverage configuration.
 
 **Note:** If Test Explorer's coverage view shows stale generated files, close and reopen VS Code or run `dotnet clean` to clear the build cache.
 
@@ -377,7 +377,7 @@ dotnet format Behind.slnx --verify-no-changes
 dotnet test tests/Behind.Tests/Behind.Tests.csproj
 ```
 
-Coverage is collected automatically via `coverlet.msbuild`. Generated code (EF Core migrations, compiler/source-generated files) is excluded via MSBuild properties in [Behind.Tests.csproj](../../tests/Behind.Tests/Behind.Tests.csproj). If Test Explorer shows stale coverage data, run `dotnet clean` and reopen VS Code.
+Coverage is collected automatically via `coverlet.msbuild`. Generated code (EF Core migrations, compiler/source-generated files) is excluded via MSBuild properties in [Behind.Tests.csproj](../../../tests/Behind.Tests/Behind.Tests.csproj). If Test Explorer shows stale coverage data, run `dotnet clean` and reopen VS Code.
 
 ### Code Review Checklist
 

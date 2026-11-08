@@ -29,7 +29,7 @@ Add `tests/Behind.Tests/CoreWebApi/<Name>FrontendTests.cs` (see `DownloadsFronte
 
 ## Finish
 - Changelog entry via `update-changelog`.
-- User manual page in `Behind/docs/user-manual/managing-<name>.md` and links in its `README.md` / `administration.md`.
+- User manual page in `Behind/docs/en-US/user-manual/managing-<name>.md` and links in its `README.md` / `administration.md`.
 - If a frontend library, css or webfont is added or upgraded, use `update-licenses`.
 
 ## Pages of modules

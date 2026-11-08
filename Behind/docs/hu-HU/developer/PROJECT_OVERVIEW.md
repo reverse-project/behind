@@ -1,0 +1,405 @@
+# Projekt áttekintés
+
+A Behind egy modern .NET 10 alkalmazás, amely a tiszta architektúra elveire, a funkcionális programozási paradigmákra, valamint a kódminőség és a karbantarthatóság hangsúlyozására épül.
+
+## A projekt célja
+
+A Behind egy skálázható, karbantartható háttérrendszernek készült, amely mikroszolgáltatás-architektúrát használ (a .NET Aspire segítségével), és a következőket nyújtja:
+- Erős domain-vezérelt tervezés
+- Funkcionális programozási minták
+- Típusbiztos hibakezelés
+- Átfogó API-dokumentáció
+- Éles üzemre kész megfigyelhetőség
+
+## Technológiai stack
+
+### Alapvető keretrendszer
+- **Futtatókörnyezet**: .NET 10
+- **Webes keretrendszer**: ASP.NET Core 10.0.8
+- **Nyelvi lehetőségek**: C# 12 (rekordok, bővítő típusok, felső szintű utasítások)
+
+### Adatelérés
+- **ORM**: Entity Framework Core 10.0.10
+- **Támogatott adatbázisok**:
+  - SQLite 3.53.3 (SQLitePCLRaw 2.1.12)
+  - PostgreSQL (Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3)
+- **Migráció**: EF Core kódalapú migrációk a Behind.Core.Database.Migrator segítségével
+
+### Biztonság és hitelesítés
+- **Hitelesítés**: JWT ******
+- **Jelszókivonatolás**: BCrypt.Net-Next 4.2.0
+- **Kétlépcsős hitelesítés**: Otp.NET 1.4.1 (TOTP támogatás)
+
+### Megfigyelhetőség és monitorozás
+- **Nyomkövetés és metrikák**: OpenTelemetry 1.16.0
+- **Műszerezés**: 
+  - ASP.NET Core
+  - HTTP-kliens
+  - Futtatókörnyezet
+- **Exportálás**: OTLP (OpenTelemetry Protocol) kompatibilis exporterek
+
+### API-dokumentáció
+- **OpenAPI**: Microsoft.AspNetCore.OpenApi 10.0.10
+- **Felhasználói felület**: Scalar.AspNetCore 2.14.11 (a Swagger helyettesítője)
+- **Biztonság**: ****** documentation
+
+### Tesztelés
+- **Keretrendszer**: xUnit 2.9.2
+- **Mockolás**: NSubstitute 5.3.0
+- **Lefedettség**: Coverlet 6.0.2
+
+### Segédeszközök
+- **CLI-eszközök**: System.CommandLine 2.0.7
+- **Dinamikus lekérdezések**: System.Linq.Dynamic.Core 1.7.3
+- **Szerializáció**: System.Text.Json TypeDescriptor gyárakkal
+
+### Orkesztráció
+- **Szolgáltatások üzemeltetése**: Aspire 13.4.6
+- **Konténerek**: Docker-támogatás az Aspire-on keresztül
+- **Adatszolgáltatások**: PostgreSQL, Valkey (a Redis alternatívája)
+
+## Projektstruktúra
+
+### /src/Aspire
+.NET Aspire orkesztrációs projekt a szolgáltatások összeállításához és a helyi fejlesztői környezet beállításához.
+
+**Fő projektek:**
+- `Behind.AppHost` - Szolgáltatás-orkesztráció és konfiguráció
+
+### /src/Common
+Újrafelhasználható könyvtárak, amelyeket az összes projekt megoszt.
+
+**Projektek:**
+- **Behind.Common** (alapvető építőkő)
+  - Funkcionális programozási segédeszközök (Option, Try, Exceptional, Validation)
+  - Bővítő metódusok és funkcionális kombinátorok
+  - Szűrő- és lekérdezés-absztrakciók
+  - JSON-szerializációs konverterek
+  - Konfigurációs bővítések
+  - Közös értékobjektumok és absztrakciók
+
+- **Behind.Common.Database** (adatréteg-absztrakciók)
+  - Repository minta interfészei (IRepository, IImmutableEntityRepository)
+  - Unit of Work minta
+  - DbContext bővítések
+  - Szűrők alkalmazása az IQueryable-re
+
+- **Behind.Common.WebApi** (API-réteg segédeszközei)
+  - WebApplication builder bővítések
+  - OpenAPI/OpenTelemetry konfiguráció
+  - Globális kivételkezelők
+  - API-szűrők és middleware-ek
+  - Konfiguráció-szerializáció
+
+### /src/Core
+Alapvető üzleti logika és domain-implementáció.
+
+**Projektek:**
+- **Behind.Core.Common**
+  - Core domain segédeszközök
+  - E-mail értékobjektum
+  - Jelszókivonatolási absztrakciók
+  - TOTP-konfiguráció
+  - Konverterek a domain típusokhoz
+
+- **Behind.Core.Domain** (domain modellek – DDD)
+  - Felhasználó aggregátum (HumanUser, SystemUser, GuestUser, BannedUser)
+  - Szerepkör aggregátum (UserRole, SystemRole)
+  - Hozzáférés (Grant) és jogosultság (Permission) modellek
+  - Munkamenet (Session) és token modellek
+  - E-mail értékobjektum
+  - Auditnapló-bejegyzések
+  - Szégyenfal-bejegyzések
+  - Oldalak (a `VersionedKey` és az `ActiveVersion` segítségével verziózva) és a virtuális fájlrendszer feltöltött fájljai
+  - Hírek kategóriákkal (fejléckép) és hozzászólásokkal
+  - Cikkek saját kategóriákkal (fejléckép), cím és tartalom szerint kereshetők
+  - Képgalériák opcionális leírásokkal, kiszolgálóoldali bélyegképekkel, piszkozatokkal és közzétételsel
+  - Letöltések: mappák fája (slug és megjelenítendő név) a virtuális fájlrendszer feltöltött fájljaival (megjelenítendő név, méret, feltöltés ideje és feltöltő)
+  - Menük menüelemekkel (almenük, cél, felhasználói menüelemek, láthatóság szerepkör szerint) és a beépített főmenü
+  - Útvonal-aliasok: rövid útvonalak (`#/manuals`), amelyek az alkalmazás egy hosszabb oldalát nyitják meg (`#/downloads/products/manuals`)
+  - Hozzáférési beállítások: korlátozó oldal, amely a weboldalt csak a kiválasztott szerepkörrel rendelkező felhasználóknak mutatja meg (egyéni üzenettel), valamint regisztrációmoderálás (az új fiókok jóváhagyásra várnak, mielőtt bejelentkezhetnének)
+
+- **Behind.Core.Database** (adatimplementáció)
+  - DbContext konfiguráció
+  - Entitástípus-konfigurációk
+  - Repository-implementációk
+  - Lekérdezési specifikációk
+
+- **Behind.Core.Database.Migrator**
+  - EF Core migrációs eszközök
+  - Adatbázis-inicializálás
+
+- **Behind.Core.Database.Sqlite**
+  - SQLite-specifikus konfigurációk
+
+- **Behind.Core.Database.Postgres**
+  - PostgreSQL-specifikus konfigurációk (`CoreContextPostgres`, `VersioningContextPostgres`)
+  - Saját migrációk, kontextusonként egyetlen `Initial` migrációval kezdve
+
+- **Behind.Core.WebApi** (API-végpontok)
+  - API-vezérlők
+  - Kérés/válasz modellek
+  - WebApi-specifikus konfigurációk
+
+- **Behind.Core.Tools**
+  - CLI-eszközök és segédprogramok
+  - `dataprotection create`: létrehozza az adatvédelmi tanúsítványt (véletlenszerű vagy bekért jelszóval) és egy `security.json` fájlt a `Security:DataProtection` szakasszal
+  - `startup create`: előállítja a `security.json` fájlt (adatvédelmi tanúsítvány és kulcsok elérési útja, TOTP titkos kulcs, JWT aláírókulcs, fejlesztői jogosultságemelés TOTP-kulcsa, magic link titok), a `database.json` fájlt (SQLite), valamint a `backend.json` és a `frontend.json` fájlt (oldalcím, alapértelmezett nyelv és oldalbeállítások, hogy a Beállítások oldal szerkeszthesse őket). Kapcsolók: `--data-directory` (alapértelmezés: `data`), `--config-directory` (alapértelmezés: `.`), `--issuer`, `--audience`, `--email-confirmation`, `--prompt`, `--force`, `--skip-existing`. Hiba esetén nullától eltérő kilépési kóddal tér vissza
+  - Konténerként is futtatható (a `tools/publish-core-tools-container.sh` a `reverse-project/behind/core-tools` képet publikálja); a konfigurációs fájlokba írt elérési utak abszolútak, ezért az adatkönyvtárat úgy csatolja, hogy a többi konténer is lássa:
+
+    ```bash
+    podman run --rm --user 0:0 \
+        -v ./data:/app/data:Z -v ./config:/app/config:Z \
+        git.prod.zwebnt.hu/reverse-project/behind/core-tools:latest \
+        startup create --data-directory /app/data --config-directory /app/config --skip-existing
+    ```
+
+    A generált hitelesítő URI-kat a program egyszer írja ki; a kép alapértelmezés szerint a `1654` felhasználóként fut, ezért vagy tegye a csatolt könyvtárakat írhatóvá számára, vagy adja meg a `--user` kapcsolót a fentiek szerint.
+
+### /src/Web
+Webalkalmazás (frontend vagy webspecifikus háttérfunkciók).
+
+**Projektek:**
+- `Behind.Web` - Webspecifikus funkcionalitás
+
+### /tests
+xUnit-ot használó tesztprojektek.
+
+**Projektek:**
+- **Behind.Tests**
+  - Egységtesztek az összes funkcionalitáshoz
+  - Teszt-segédeszközök és fixture-ök
+  - Mockolási segédeszközök
+
+## Modulok
+
+A Behind egy Core modulból és tetszőleges számú opcionális modulból áll. A gazdaprojekt (`src/Web/Behind.Web`) a Core mellett tölti be a modulokat: az `AddCore()` kötelező, a modul pedig a `services.AddModule(descriptor)` hívással regisztrálja magát, a sorrendtől függetlenül, a `UseCore()` pedig kiszolgálja az összes modul frontend-fájljait.
+
+A modul egyetlen megváltoztathatatlan `ModuleDescriptor` objektumban (`Behind.Common/Modules`) ír le mindent, amire az alkalmazásnak a beillesztéséhez szüksége van:
+
+| Hozzájárulás | Leíró tagja | Hatás a Core-ban |
+|---|---|---|
+| Hozzáférések | `GrantAreas` (`ModuleGrantArea(area, audience, actions)`) | minden művelethez létrejönnek a hozzáférések, korlátozások és engedélyezési szabályzatok, a beépített szerepkörök célközönség szerint megkapják őket (Everyone: az Administrators minden műveletet, a Users `Read` jogot; Administration: csak az Administrators; Developer: a Developers `Read`/`Manage` jogot), és megjelennek a Szerepkörök és a Felhasználók oldalon |
+| Alapértelmezett menüelemek | `MenuItems` | a migrátor biztosítja őket a főmenüben (`Link` vagy `User` típus, mindenki, az adminisztrációs szerepkörök vagy a fejlesztők számára látható) |
+| Adminisztrációs elemek | `AdministrationPages` (névkulcs, ikon, `#/` href, hozzáférés) | megjelennek az Adminisztráció oldalon azoknak a felhasználóknak, akik rendelkeznek a hozzáféréssel |
+| Oldalak | `Routes` (`#/` útvonal, vezérlő, `Open`) | a frontend útválasztó regisztrálja őket az útvonal-alias tartalék előtt |
+| Frontend-fájlok és stílusok | `Frontend` | beágyazott `Frontend/` fájlok, amelyek összeolvadnak a Core statikus fájljaival, a `modules/<key>/` alatti névtérben |
+| Adatbázis | `Database` | az egybeolvasztott DbContext entitáskonfigurációi, soft delete-je és csak olvasható nyers táblái |
+
+A `GET /modules` (nyílt, akárcsak az `/about`) közzéteszi az útvonalakat, az adminisztrációs oldalakat és a stílusokat a frontend számára, a `ModuleCatalog.Create` pedig indításkor ellenőrzi a hozzájárulásokat (kulcs- és területminták, ismétlődő hozzáférési területek, útvonalak és menüelem-azonosítók, a `modules/<key>/` alatti vezérlők és stílusok); az `AccessCatalog.From` emellett elutasítja a Core által már használt területeket és menüelem-azonosítókat, valamint az ismeretlen hozzáférést igénylő adminisztrációs oldalakat.
+
+A teljes ellenőrzőlistát a `.github/skills/add-module/SKILL.md` fájlban, az egybeolvasztott adatbázist és a migrációkat pedig a `DATABASE_ARCHITECTURE.md` fájlban találja.
+
+### Példamodul: Quotes
+
+A `src/Quotes` egy teljes, szándékosan kicsi példamodul (idézetek listája szerzővel), amely a modul-ellenőrzőlista minden részét bemutatja. A gazdaprojekt, a `src/Web/Behind.Web` tölti be a Core mellett:
+
+| Projekt | Tartalma |
+|---|---|
+| `Behind.Quotes.Domain` | a megváltoztathatatlan `Quote` rekord (`VersionedKey<Guid>` azonosító, szöveg, szerző) |
+| `Behind.Quotes.Common` | `QuotesModuleNames`: a modulkulcs, a hozzáférési terület, a hozzáférések nevei, az útvonalak és a menüelem azonosítója |
+| `Behind.Quotes.Database` | `IQuotesContext`, `QuoteConfiguration`, `IQuoteCommands`/`IQuoteQueries` és azok implementációi, `QuotesAuditLabelSource`, `QuotesSeed`, `AddQuotesDatabase()` |
+| `Behind.Quotes.Database.Sqlite`, `Behind.Quotes.Database.Postgres` | a csak tervezési időben használt migrációs kontextusok, azok tervezési idejű gyárai és a `CreateQuotes` migrációk |
+| `Behind.Quotes.WebApi` | `QuotesModule.Descriptor`, a `/quotes` végpontok, `AddQuotes()`/`UseQuotes()` és a `Frontend/modules/quotes/` alatti beágyazott frontend |
+
+A projektoldal a `src/Web` alatt található: a `Behind.Web.Database.Sqlite`/`.Postgres` tartalmazza szolgáltatónként az egyetlen DbContextet (`WebContextSqlite`, `WebContextPostgres`: `AbstractCoreContext` plusz `IQuotesContext`), a `Behind.Web.Database.Migrator` a projekt migrátora (a Core migrációk, majd a Quotes migrációk, végül a seedek), a `Behind.Web` pedig az `AddCore()`/`UseCore()` után hívja az `AddQuotes()`/`UseQuotes()` metódust.
+
+## Architektúra rétegei
+
+### 1. Common réteg (/src/Common)
+**Cél**: Újrafelhasználható, általános segédeszközök és absztrakciók biztosítása
+
+**Felelősségek**:
+- Funkcionális programozási minták (monádok)
+- Általános adatbázis-absztrakciók
+- Általános WebApi segédeszközök
+- Szerializációs konverterek
+- Szűrő-absztrakciók
+
+**Példák**: Option<T>, Try<T>, IRepository<T>
+
+### 2. Core réteg (/src/Core)
+**Cél**: A domainspecifikus üzleti logika megvalósítása
+
+**Felelősségek**:
+- Domain modellek és aggregátumok
+- Domain szabályok és validáció
+- Adatperzisztencia (DbContext, repository-k)
+- Core API vezérlők
+- Domainspecifikus segédeszközök
+
+**Példák**: User, Role, Grant aggregátumok; jogosultság-ellenőrzés
+
+### 3. Web réteg (/src/Web)
+**Cél**: A webspecifikus feladatok kezelése
+
+**Felelősségek**:
+- Webalkalmazás-funkciók
+- Webspecifikus middleware-ek
+- Webspecifikus vezérlők vagy végpontok
+
+## Fő tervezési minták
+
+### 1. Monadikus kompozíció
+Funkcionális monádokat használ a hibakezeléshez és az opcionális értékekhez:
+- `Option<T>` - A nullable helyettesítője Railway-Oriented Programming támogatással
+- `Try<T>` - Kivételkezelés kivétel-dobás nélkül
+- `Exceptional<T>` - Kivétel vagy sikeres eredmény típusa
+- `Validation<T>` - Hibákat gyűjtő validáció
+
+### 2. Railway-Oriented Programming
+A függvények kivételek dobása helyett eredménytípusokat adnak vissza, ami lehetővé teszi a kompozíciót:
+```csharp
+public Option<User> FindUser(Guid id)  // None if not found
+public Exceptional<Auth> Authenticate(Credentials)  // Exception or Auth
+public Validation<Command> ValidateCommand(Dto)  // Many errors or valid command
+```
+
+### 3. Bővítő metódusok (C# 12 `extension` szintaxis)
+Minden bővítő metódus modern C# szintaxist használ a `*Extensions.cs` fájlokban:
+```csharp
+extension(Type)
+{
+    public new method(...) { ... }
+}
+```
+
+### 4. Repository minta
+Az általános `IRepository<T>` és `IRepository<T, TKey>` interfészek a következőket nyújtják:
+- Keresés, hozzáadás, módosítás és törlés műveletek
+- Async/await támogatás CancellationToken-nel
+- Option<T> visszatérési típusok null helyett
+
+### 5. Szűrő/lekérdezés-specifikáció
+A `Filter<T>` rekordok a lekérdezési predikátumokat foglalják magukba az összeállítható szűréshez.
+
+### 6. Megváltoztathatatlan rekordok
+A domain objektumok `record` típusokat használnak a következőkért:
+- Értékszemantika
+- Alapértelmezett megváltoztathatatlanság
+- ToString implementáció
+- Strukturális egyenlőség
+
+## Technológiai döntések
+
+| Döntés | Indoklás |
+|----------|-----------|
+| Funkcionális programozás | Típusbiztos hibakezelés, összeállítható, tesztelhető |
+| Rekordok az osztályok helyett | Megváltoztathatatlanság, egyenlőség, tömörség |
+| Monádok (Option/Try/stb.) | A null értékek és a kivételalapú vezérlési folyam kiküszöbölése |
+| Bővítő metódusok | Nem invazív segédeszköz-bővítések, folyékony API-k |
+| EF Core | LINQ-támogatás, async/await, migrációk, adatbázis-független |
+| JWT-hitelesítés | Állapotmentes, elosztott rendszerbarát |
+| OpenTelemetry | Gyártófüggetlen, szabványalapú megfigyelhetőség |
+| xUnit + NSubstitute | Modern tesztelés, tiszta izoláció |
+
+## Fordítás és telepítés
+
+### Helyi fejlesztés
+- Dev container előre beállított .NET 10 SDK-val
+- Aspire-orkesztráció a szolgáltatások összehangolásához
+- SQLite (vagy PostgreSQL) a helyi adatbázishoz
+- Docker compose az Aspire-on keresztül
+
+### Fejlesztői környezet
+- Konfiguráció az `appsettings.json` és az `appsettings.Development.json` fájlon keresztül
+- Környezetenként beállított OpenTelemetry
+- Adatbázis-migrációk a `Behind.Core.Database.Migrator` segítségével
+
+### Éles telepítés
+- Aspire által orkesztrált Docker-konténerek
+- PostgreSQL a tartós adatokhoz
+- OTLP exporter a központosított megfigyelhetőséghez
+- JWT-hitelesítés kötelező
+
+## Függőségkezelés
+
+- **Központosított verziókezelés** a `Directory.Packages.props` fájlon keresztül
+- **Tranzitív rögzítés** engedélyezve a reprodukálható buildekhez
+- **Rendszeres frissítések** a függőségek naprakészen tartásához
+- **Biztonsági vizsgálat** a sebezhetőségek feltárására (lásd: LIMITATIONS_AND_ISSUES.md)
+
+## Minőségbiztosítás
+
+### Kódszabványok
+- **Nincsenek megjegyzések** - A kódnak önmagát kell dokumentálnia
+- **Clean Code** - Beszédes nevek, kis függvények, egyetlen felelősség
+- **SOLID elvek** - Különösen a függőségek megfordítása és az interfészek szétválasztása
+- **DRY** - Nincs kódduplikáció; a megosztott logika a Common-ban él
+
+### Tesztelés
+- **Egységtesztek kötelezők** - Minden nyilvános funkcionalitáshoz tesztek tartoznak
+- **Keretrendszer**: xUnit NSubstitute-tal
+- **Tesztek helye**: `/tests/Behind.Tests/`, modulok szerint rendezve
+
+### Dokumentáció
+- **Kódszintű dokumentáció** - Önmagát dokumentálja a beszédes nevek és típusok révén
+- **Architekturális dokumentáció** - Ez a mappa útmutatókat és mintákat tartalmaz
+- **API-dokumentáció** - OpenAPI/Swagger az alkalmazásban a Scalar segítségével
+
+## Teljesítmény és skálázhatóság
+
+### Async végig
+- Minden I/O-művelet async/await-et használ
+- CancellationToken-támogatás mindenhol
+- Szálbiztos minták
+
+### Skálázhatóság
+- Állapotmentes API-tervezés (JWT)
+- A repository minta megkönnyíti az adatforrás cseréjét
+- Az Aspire-orkesztráció támogatja a horizontális skálázást
+- OpenTelemetry az elosztott nyomkövetéshez
+
+## Biztonság
+
+### Beépített
+- JWT ******
+- BCrypt jelszókivonatolás
+- TOTP kétlépcsős hitelesítés
+- Szerepköralapú hozzáférés-vezérlés (RBAC)
+- Hozzáférésalapú (grant-based) jogosultságok
+- E-mail-megerősítés regisztrációkor: a `Security:EmailConfirmation` (alapértelmezés: `true`) megerősítő hivatkozást küld; `false` érték esetén az új e-mail-cím `ConfirmedAt` értéke a regisztráció időpontja lesz; a `POST /sign/up/confirm/resend` új hivatkozást küld (404, ha a megerősítés ki van kapcsolva, 204 attól függetlenül, hogy a fiók létezik-e, sebességkorlátozását a `ConfirmationEmailExtensions.ResendRateLimitPolicy` végzi)
+- Captcha a bejelentkezési és a regisztrációs oldalon: a `GET /captcha` (sebességkorlátozását a `CaptchaExtensions.RateLimitPolicy` végzi) egy `{ id, image }` objektumot ad vissza (a `Behind.Common` `CaptchaImageExtensions` osztálya által előállított PNG data URI); az `id` egy AES-GCM-mel lepecsételt jegy (lejárat és válasz), amelyet csak a kiszolgáló tud felnyitni, így semmilyen kihívás nem kerül tárolásra. A `POST /sign/in/password`, `/sign/in/magiclink`, `/sign/up/password` és `/sign/up/confirm/resend` a `RequireCaptcha<TRequest>()` révén `captcha: { id, answer }` mezőt igényel (a kérés megvalósítja az `ICaptchaRequest` interfészt); a `CaptchaService` egy kihívást csak egyszer fogad el, a lejáratáig (5 perc), az elutasítást pedig 400-as `{ code: "captchaInvalid" }` válasszal jelzi
+- Kétlépcsős hitelesítés (TOTP QR-kóddal, hozzáférési kulcsok, helyreállító kódok): felhasználónként opcionális, a `Security:TwoFactorRequired` (alapértelmezés: `false`, a `security.json` fájlban) beállítással mindenki számára kötelező. A szolgáltatások a `Behind.Core.WebApi/TwoFactor` alatt találhatók: a `TwoFactorGate` a jelszó vagy a magic link után (és az e-mail-megerősítés és a tiltás ellenőrzése után, még a munkamenet létrejötte előtt) dönti el, hogy a `SignInEndpoints.StartSession` a tokenek helyett `TwoFactorChallengeResponse` választ ad-e `{ ticket, methods, setupRequired, function }` tartalommal; a `TwoFactorTickets` az ASP.NET Core Data Protection segítségével pecsételi le a jegyet (felhasználó, Verify/Setup/Profile szakasz, 5 perces lejárat, opcionális WebAuthn-szertartás); a `TwoFactorVerification` ellenőrzi a hitelesítő kódokat (SHA-1, hat számjegy, egy 30 másodperces lépésnyi eltérés, egy lépést a `UserTotp.LastUsedStep` révén csak egyszer fogad el), a helyreállító kódokat (`RecoveryCodes`: 20 darab, egyenként 8 karakteres kód az `A-Z0-9` karakterekből, BCrypt-kivonatként tárolva, a felhasznált kód törlődik, az utolsó felhasználása új kódcsomagot generál) és a hozzáférési kulcsokat (a `PasskeyCeremonies` a `Fido2` csomagot burkolja; a relying party azonosítója és eredete a `Frontend:Url` értékből vagy a kérés címéből származik; az aláírásszámláló tárolásra kerül); a `TwoFactorEnrollment` elindítja és megerősíti a hitelesítő alkalmazást (`Totp.Generate`, `ToOtpUri`, `ToQrCodeSvg`), regisztrálja és eltávolítja a hozzáférési kulcsokat, és megtagadja az utolsó módszer eltávolítását, amíg a kétlépcsős hitelesítés kötelező; a `TwoFactorSignIn` fejezi be a munkamenetet. Végpontok: `TwoFactorSignInEndpoints` (`/sign/in/two-factor/...`, jegyalapú, sebességkorlátozását a `TwoFactorExtensions.RateLimitPolicy` végzi) és `TwoFactorProfileEndpoints` (`/profile/two-factor/...`, bejelentkezett felhasználóknak, megszemélyesítési munkamenetekhez nem). A hibás kódokra 403-as `{ code: "invalidCode" }`, a hibás vagy lejárt jegyre 401-es `{ code: "ticketInvalid" }` válasz érkezik; a `SignInResponse.RecoveryCodes` a frissen generált kódokat tartalmazza
+
+### Ajánlott gyakorlatok
+- Érzékeny mezők maszkolása a naplókban
+- Biztonságos konfigurációkezelés
+- Nincsenek beégetett titkok
+- Bemenet-ellenőrzés a Validation<T> segítségével
+
+## Megfigyelhetőség
+
+### Nyomkövetés
+- Elosztott nyomkövetés az OpenTelemetry-n keresztül
+- ASP.NET Core műszerezés
+- HTTP-kliens műszerezés
+- OTLP exporter támogatás
+
+### Metrikák
+- Futtatókörnyezeti metrikák
+- HTTP-kérések metrikái
+- ASP.NET Core metrikák
+
+### Naplózás
+- Strukturált naplózás az OpenTelemetry-vel
+- Érzékeny mezők maszkolása
+- Környezetspecifikus konfiguráció
+
+## Jelenlegi állapot
+
+### Legújabb verziók
+- .NET keretrendszer: 10.0.10 (ASP.NET Core, EF Core, Extensions)
+- OpenTelemetry: 1.16.0
+- JWT: 10.0.8
+
+### Ismert korlátozások
+- A függőségi sebezhetőségekkel kapcsolatban lásd a [LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md) fájlt
+- Egyes tranzitív függőségek javítatlan CVE-ket tartalmaznak
+
+---
+
+**Következő lépések**:
+- Tekintse át a [CODING_STANDARDS.md](./CODING_STANDARDS.md) fájlt a kötelező gyakorlatokért
+- Tanulmányozza a [FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md) fájlt a minták megértéséhez
+- Nézze meg a [DESIGN_PATTERNS.md](./DESIGN_PATTERNS.md) fájlt az architekturális döntésekért

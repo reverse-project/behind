@@ -18,7 +18,7 @@ Load `csharp-code-standards` first.
 3. Review the generated migration and snapshot. Data migrations must keep existing rows (e.g. existing rows become version 1, audit keys rewritten to `<id>:1` for versioned entities).
 4. Migrations are excluded from coverage; still test data migrations that contain custom logic (see `VfsLegacyMigrationTests`).
 5. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj`.
-6. Mention schema changes in `docs/developer/DATABASE_ARCHITECTURE.md` and the changelog (`update-changelog`).
+6. Mention schema changes in `docs/en-US/developer/DATABASE_ARCHITECTURE.md` and the changelog (`update-changelog`).
 
 ## Module migrations
 - A module owns its migration chain: the design-time only `<Module>ContextSqlite`/`<Module>ContextPostgres` of `Behind.<Module>.Database.Sqlite`/`.Postgres` (model = only the module entities, history table `descriptor.MigrationsHistoryTable`, no foreign keys to Core tables). Generate it with `dotnet ef migrations add "<Name>" --project src/<Module>/Behind.<Module>.Database.Sqlite --context <Module>ContextSqlite`.

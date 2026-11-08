@@ -34,7 +34,7 @@ Load `csharp-code-standards` first. Reference module: `Core` (`src/Core/Behind.C
 11. **Sites**: update every site (`src/Sites/*`) that should show or configure the module (css, html, configuration, skin).
 12. **Tests**: module tests in `tests/Behind.Tests` mirroring the module projects, reusing `Helpers/` test beds (`Helpers/NotesModule.cs` and `Helpers/NotesTestBed.cs` are a complete example of a module descriptor, a flattened context with a module interface, an audit label source and a migration context). Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj` from `Behind/`.
 13. **Changelog**: use the `update-changelog` skill.
-14. **Docs**: update `Behind/docs/developer/PROJECT_OVERVIEW.md`, `DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md` and `WEBAPI_CONVENTIONS.md`, and the user manual of every new page.
+14. **Docs**: update `Behind/docs/en-US/developer/PROJECT_OVERVIEW.md`, `DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md` and `WEBAPI_CONVENTIONS.md`, and the user manual of every new page.
 
 ## What a module contributes (`ModuleDescriptor`)
 | Member | What it does | Notes |

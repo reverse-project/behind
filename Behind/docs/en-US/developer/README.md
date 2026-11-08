@@ -52,8 +52,10 @@ Behind/
 │   └── Web/                 # Web application
 ├── tests/                   # Test projects
 └── docs/
-    ├── developer/           # This documentation
-    └── user-manual/         # End user manuals
+    ├── en-US/               # English documentation
+    │   ├── developer/       # This documentation
+    │   └── user-manual/     # End user manuals
+    └── hu-HU/               # Hungarian documentation (same structure)
 
 ```
 

@@ -21,7 +21,7 @@ Load `csharp-code-standards` first. Every persisted entity must be editable in t
 5. **Audit names**: the editor audits with the same entity name and key as the EF audit (`IReadOnlyEntityType.AuditEntityName`). Update `AuditLabelExtensions` and its tests as `add-entity` requires, so raw edits of the entity show readable labels.
 6. **Tests** (`tests/Behind.Tests`): `CoreDatabase/RawDatabaseCatalogTests` already fails when the model has an entity type outside the editor, when a table has no key and when a table cannot be listed, searched and sorted, run it. Add a `RawDatabaseCommandsTests` case when the entity has a rule of its own (sensitive column, composite key, generated key, read-only).
 7. **Frontend**: the page is generic, no per entity files. If the entity name needs a readable title in the audit log, `audit.entities.<Name>` in both locales as `add-entity` requires. User visible text of the editor changes go to every locale in `Frontend/locales`.
-8. **Docs and changelog**: mention the entity in `docs/developer/DOMAIN_MODEL.md` / `DATABASE_ARCHITECTURE.md` as `add-entity` requires; `update-changelog` for editor behavior changes; `docs/user-manual/managing-raw-database.md` when the editor itself changes.
+8. **Docs and changelog**: mention the entity in `docs/en-US/developer/DOMAIN_MODEL.md` / `DATABASE_ARCHITECTURE.md` as `add-entity` requires; `update-changelog` for editor behavior changes; `docs/en-US/user-manual/managing-raw-database.md` when the editor itself changes.
 9. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~RawDatabase"` from `Behind/`, then the full suite.
 
 ## Rules of the editor (keep them when changing it)

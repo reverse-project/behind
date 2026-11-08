@@ -367,6 +367,17 @@ A module web API project exposes `Add<Module>()`/`Use<Module>()`, like `AddCore(
 | `POST /quotes/{id}/delete` | `Quotes.Delete`; soft delete |
 | `POST /quotes/{id}/restore`, `POST /quotes/{id}/hard/delete` | `RawDatabase.Manage` |
 
+### Example: the Markdown Viewer endpoints
+
+`Behind.MarkdownViewer.WebApi` maps its endpoints with `UseMarkdownViewer()`. The directories come from `markdownviewer.json` (`IOptionsMonitor<MarkdownViewerConfiguration>`, resolved by `MarkdownWorkspaceProvider`):
+
+| Endpoint | Access |
+|---|---|
+| `GET /markdownviewer/documents?locale=` | open; `{ configured, title, defaultDocument, locales, locale, home, entries: [{ path, title }], sections: [{ title, path, entries }] }` (`sections` group the entries by top level folder, without the home document); `locale` is the language folder that was picked: the requested one, else the default one (`Frontend:Site:DefaultLocale`), else the first; `locales` is empty without language folders |
+| `GET /markdownviewer/documents/{**path}?locale=` | open; the sanitized HTML `{ path, title, html, locale }` of a document (falls back to the default, then the first language when it is missing in the requested one), `404` for anything that is not a listed Markdown file |
+| `GET /markdownviewer/files/{**path}?locale=` | open; an image of the source directory (`nosniff`, `no-cache`, vector images with a sandboxing `Content-Security-Policy`), `404` for anything else |
+| `POST /markdownviewer/generate` | `MarkdownViewer.Write`; `{ outputDirectory, pages, assets, removed }`, `400` `{ errors: [code] }` (`source-not-configured`, `source-missing`, `output-not-configured`, `output-overlaps-source`), `500` `{ errors: ["generation-failed"] }` |
+
 ## Controller Structure
 
 ### Base Pattern

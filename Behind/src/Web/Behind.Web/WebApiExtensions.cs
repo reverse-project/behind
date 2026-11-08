@@ -6,6 +6,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Sqlite;
 using Behind.Core.WebApi;
+using Behind.MarkdownViewer.WebApi;
 using Behind.Quotes.WebApi;
 using Behind.Web.Database.Postgres;
 using Behind.Web.Database.Sqlite;
@@ -23,7 +24,8 @@ public static class WebApiExtensions
             .AddOpenTelemetry()
             .AddCore()
             .AddWebDatabase()
-            .AddQuotes();
+            .AddQuotes()
+            .AddMarkdownViewer();
 
         WebApplicationBuilder AddWebDatabase()
         {
@@ -43,6 +45,7 @@ public static class WebApiExtensions
         {
             application.UseCore();
             application.UseQuotes();
+            application.UseMarkdownViewer();
             application.MapScalarApiReference();
             
             return application;

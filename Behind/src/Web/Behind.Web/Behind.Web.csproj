@@ -15,6 +15,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
+      <ProjectReference Include="..\..\MarkdownViewer\Behind.MarkdownViewer.WebApi\Behind.MarkdownViewer.WebApi.csproj" />
       <ProjectReference Include="..\..\Quotes\Behind.Quotes.WebApi\Behind.Quotes.WebApi.csproj" />
       <ProjectReference Include="..\Behind.Web.Database.Postgres\Behind.Web.Database.Postgres.csproj" />
       <ProjectReference Include="..\Behind.Web.Database.Sqlite\Behind.Web.Database.Sqlite.csproj" />
@@ -34,6 +35,12 @@
 
     <ItemGroup>
       <Content Update="email.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="markdownviewer.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
     </ItemGroup>

@@ -43,6 +43,32 @@ public class HtmlSanitizationExtensionsTests
     }
 }
 
+public class MarkdownSanitizationExtensionsTests
+{
+    [Theory]
+    [InlineData("<h2 id=\"title\">Title</h2>")]
+    [InlineData("<table><tbody><tr><td style=\"text-align: right\">a</td></tr></tbody></table>")]
+    [InlineData("<table><thead><tr><th>A</th></tr></thead><tbody><tr><td colspan=\"2\">1</td></tr></tbody></table>")]
+    [InlineData("<pre><code class=\"language-csharp\">var a = 1;</code></pre>")]
+    [InlineData("<ul><li><input disabled=\"disabled\" type=\"checkbox\" checked=\"checked\">done</li></ul>")]
+    [InlineData("<p><a href=\"#/docs/a.md\">link</a> <img src=\"/markdownviewer/files/a.png\" alt=\"a\"></p>")]
+    public void SanitizeMarkdown_KeepsTheDocumentMarkup(string html)
+    {
+        Assert.Equal(html, html.SanitizeMarkdown());
+    }
+
+    [Theory]
+    [InlineData("<p>a</p><script>alert(1)</script>", "<p>a</p>")]
+    [InlineData("<p onclick=\"alert(1)\">a</p>", "<p>a</p>")]
+    [InlineData("<a href=\"javascript:alert(1)\">a</a>", "<a>a</a>")]
+    [InlineData("<iframe src=\"https://example.com\"></iframe><p>a</p>", "<p>a</p>")]
+    [InlineData("<p style=\"position:fixed\">a</p>", "<p>a</p>")]
+    public void SanitizeMarkdown_RemovesUnsafeContent(string html, string expected)
+    {
+        Assert.Equal(expected, html.SanitizeMarkdown());
+    }
+}
+
 public class FormFileExtensionsTests
 {
     [Fact]

@@ -204,6 +204,18 @@ A `src/Quotes` egy teljes, szándékosan kicsi példamodul (idézetek listája s
 
 A projektoldal a `src/Web` alatt található: a `Behind.Web.Database.Sqlite`/`.Postgres` tartalmazza szolgáltatónként az egyetlen DbContextet (`WebContextSqlite`, `WebContextPostgres`: `AbstractCoreContext` plusz `IQuotesContext`), a `Behind.Web.Database.Migrator` a projekt migrátora (a Core migrációk, majd a Quotes migrációk, végül a seedek), a `Behind.Web` pedig az `AddCore()`/`UseCore()` után hívja az `AddQuotes()`/`UseQuotes()` metódust.
 
+### Adatbázis nélküli modul: Markdown Viewer
+
+A `src/MarkdownViewer` modulnak nincs szüksége adatbázistáblára, ezért nincsenek adatbázis-projektjei és `ModuleDescriptor.Database` értéke sem: a VFS helyett a kiszolgáló egy forrás- és egy kimeneti könyvtárával dolgozik. A `src/Web/Behind.Web` tölti be az `AddMarkdownViewer()`/`UseMarkdownViewer()` hívással:
+
+| Projekt | Tartalma |
+|---|---|
+| `Behind.MarkdownViewer.Domain` | a megváltoztathatatlan `MarkdownEntry`, `MarkdownPage` és `GeneratedSite` rekordok |
+| `Behind.MarkdownViewer.Common` | `MarkdownViewerModuleNames`, `MarkdownViewerConfiguration` (a `markdownviewer.json` `MarkdownViewer` szakasza) és `MarkdownWorkspace`/`MarkdownGeneration`, az ellenőrzött könyvtárak (`ForViewing`/`ForGeneration`, `MarkdownWorkspaceErrors`) |
+| `Behind.MarkdownViewer.WebApi` | a `MarkdownViewerModule.Descriptor` (`ConfigurationFiles = ["markdownviewer.json"]`), a Markdig megjelenítés hivatkozás-átírással és `SanitizeMarkdown()`, a `StaticSite` generátor, a `/markdownviewer` végpontok és a beágyazott frontend a `Frontend/modules/markdownviewer/` alatt |
+
+A Beállítások oldal azért mutatja a `markdownviewer.json` fület, mert a modul a leírójában deklarálja a fájlt (`ConfigurationFileCatalog.For(root, moduleNames)`). Csak azok a forráskönyvtárbeli fájlok olvashatók, amelyeket a `MarkdownSourceExtensions` felsorol (nincs rejtett fájl, nincs szimbolikus hivatkozás, `.md` és képtípusok rögzített listája), így egy útvonal soha nem hagyhatja el a forráskönyvtárat. A forráskönyvtárban közvetlenül lévő nyelvi mappák (`^[a-z]{2,3}-[A-Z]{2}$`) nyelvfüggővé teszik (`MarkdownLocaleExtensions`: `Locales`, `ForLocale`, `Candidates(kért, alapértelmezett)`: a kért, majd a `Frontend:Site:DefaultLocale`, majd az első nyelv); a frontend elküldi az `i18n.locale()` értékét, és újratölt, ha a nyelvválasztó változik, a generátor pedig nyelvenként egy weboldalt készít. A generátor egy `.markdownviewer-generated` jegyzéket ír a kimeneti könyvtárba, és csak a benne felsorolt fájlokat törli.
+
 ## Architektúra rétegei
 
 ### 1. Common réteg (/src/Common)

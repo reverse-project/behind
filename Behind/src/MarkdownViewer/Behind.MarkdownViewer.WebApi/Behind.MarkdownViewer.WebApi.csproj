@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Common\Behind.Common.WebApi\Behind.Common.WebApi.csproj" />
+      <ProjectReference Include="..\Behind.MarkdownViewer.Common\Behind.MarkdownViewer.Common.csproj" />
+      <ProjectReference Include="..\Behind.MarkdownViewer.Domain\Behind.MarkdownViewer.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Markdig" />
+        <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Frontend\**\*" />
+    </ItemGroup>
+
+</Project>

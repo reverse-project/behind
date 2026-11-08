@@ -19,6 +19,11 @@ public static class ModuleCatalogExtensions
         RegexOptions.CultureInvariant | RegexOptions.Compiled,
         TimeSpan.FromSeconds(1));
 
+    private static readonly Regex ConfigurationFilePattern = new(
+        "^[a-z][a-z0-9]*\\.json$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled,
+        TimeSpan.FromSeconds(1));
+
     extension(ModuleCatalog)
     {
         public static Validation<ModuleCatalog> Create(IEnumerable<ModuleDescriptor> modules)
@@ -42,6 +47,9 @@ public static class ModuleCatalogExtensions
 
         public IReadOnlyList<ModuleAdministrationPage> AdministrationPages =>
             [..catalog.Modules.SelectMany(module => module.AdministrationPages)];
+
+        public IReadOnlyList<string> ConfigurationFiles =>
+            [..catalog.Modules.SelectMany(module => module.ConfigurationFiles)];
 
         public IReadOnlyList<ModuleFrontend> Frontends =>
             [..catalog.Modules.SelectMany(module => module.Frontend.AsEnumerable())];
@@ -71,6 +79,9 @@ public static class ModuleCatalogExtensions
             ..module.MenuItems.SelectMany(item => item.ProblemsIn(module)),
             ..module.AdministrationPages.SelectMany(page => page.ProblemsIn(module)),
             ..module.Routes.SelectMany(route => route.ProblemsIn(module)),
+            ..module.ConfigurationFiles.SelectMany(file => Require(
+                ConfigurationFilePattern.IsMatch(file),
+                $"Configuration file '{file}' of module '{module.Key}' must be a lowercase json file name")),
             ..module.Frontend.AsEnumerable().SelectMany(frontend => frontend.ProblemsIn(module))
         ];
     }
@@ -131,7 +142,8 @@ public static class ModuleCatalogExtensions
             ..modules.Duplicates(module => module.Key, "Module key"),
             ..modules.SelectMany(module => module.GrantAreas).Duplicates(area => area.Area, "Grant area"),
             ..modules.SelectMany(module => module.MenuItems).Duplicates(item => item.Id, "Menu item id"),
-            ..modules.SelectMany(module => module.Routes).Duplicates(route => route.Path, "Route")
+            ..modules.SelectMany(module => module.Routes).Duplicates(route => route.Path, "Route"),
+            ..modules.SelectMany(module => module.ConfigurationFiles).Duplicates(file => file, "Configuration file")
         ];
     }
 

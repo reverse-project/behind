@@ -44,6 +44,7 @@ Load `csharp-code-standards` first. Reference module: `Core` (`src/Core/Behind.C
 | `MenuItems` | `ModuleMenuItem(Id, Title, Url, Position[, Kind, Audience])` ensured in the main menu | stable explicit ids, not the Core ids |
 | `AdministrationPages` | `ModuleAdministrationPage(NameKey, Icon, "#/...", Grant)` on the Administration page | the grant must be a module or Core grant; the name is a locale key of the module |
 | `Routes` | `ModuleRoute("#/path", "modules/<key>/controllers/<name>"[, Open])` | `Open` routes stay reachable while access is restricted (like sign in) |
+| `ConfigurationFiles` | lowercase json file names (`^[a-z][a-z0-9]*\.json$`, unique across modules) such as `markdownviewer.json` | the Settings page shows a tab for every existing file (`ConfigurationFileCatalog.For(root, moduleNames)` is fed by the `ModuleCatalog`); the module loads the file in `Add<Module>()` with `builder.AddReloadableJsonFile(file, true)` and binds its section with `Configure<T>()`/`IOptionsMonitor<T>`, so a settings change applies without a restart; ship a default file in the host project (`Content Update` with `CopyToOutputDirectory`). A module without entities needs no Database projects and leaves `Database` unset (see `src/MarkdownViewer`) |
 | `Frontend` | `ModuleFrontend(assembly[, styles])` | embedded `Frontend/` root of the module assembly |
 | `Database` | `ModuleDatabase(configurationAssembly) { SoftDeletedEntities, ReadOnlyEntities }` | applied by the project context |
 

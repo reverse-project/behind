@@ -2,6 +2,7 @@ using Behind.Common.Modules;
 using Behind.Core.Database.Migrator;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Sqlite;
+using Behind.MarkdownViewer.WebApi;
 using Behind.Quotes.Database;
 using Behind.Quotes.Database.Postgres;
 using Behind.Quotes.Database.Sqlite;
@@ -20,6 +21,7 @@ public static class HostApplicationBuilderExtensions
         public HostApplicationBuilder AddWebMigrator()
         {
             builder.Services
+                .AddModule(MarkdownViewerModule.Descriptor)
                 .AddModule(QuotesModule.Descriptor)
                 .AddQuotesDatabase();
 

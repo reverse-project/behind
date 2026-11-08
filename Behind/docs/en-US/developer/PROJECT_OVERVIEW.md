@@ -204,6 +204,19 @@ See `.github/skills/add-module/SKILL.md` for the full checklist and `DATABASE_AR
 
 The project side lives in `src/Web`: `Behind.Web.Database.Sqlite`/`.Postgres` hold the one DbContext per provider (`WebContextSqlite`, `WebContextPostgres`: `AbstractCoreContext` plus `IQuotesContext`), `Behind.Web.Database.Migrator` is the migrator of the project (Core migrations, then the Quotes migrations, then the seeds), and `Behind.Web` calls `AddQuotes()`/`UseQuotes()` after `AddCore()`/`UseCore()`.
 
+### Module without a database: Markdown Viewer
+
+`src/MarkdownViewer` is a module that needs no database table, so it has no database projects and no `ModuleDescriptor.Database`: it works on a source directory and an output directory of the server instead of the VFS. It is loaded by `src/Web/Behind.Web` with `AddMarkdownViewer()`/`UseMarkdownViewer()`:
+
+| Project | Holds |
+|---|---|
+| `Behind.MarkdownViewer.Domain` | the immutable `MarkdownEntry`, `MarkdownPage` and `GeneratedSite` records |
+| `Behind.MarkdownViewer.Common` | `MarkdownViewerModuleNames`, `MarkdownViewerConfiguration` (the `MarkdownViewer` section of `markdownviewer.json`) and `MarkdownWorkspace`/`MarkdownGeneration`, the validated directories (`ForViewing`/`ForGeneration`, `MarkdownWorkspaceErrors`) |
+| `Behind.MarkdownViewer.WebApi` | `MarkdownViewerModule.Descriptor` (declares `ConfigurationFiles = ["markdownviewer.json"]`), the Markdig rendering with link rewriting and `SanitizeMarkdown()`, the `StaticSite` generator, the `/markdownviewer` endpoints and the embedded frontend under `Frontend/modules/markdownviewer/` |
+
+The Settings page shows the `markdownviewer.json` tab because the module declares the file in its descriptor (`ConfigurationFileCatalog.For(root, moduleNames)`). Only the files of the source directory that `MarkdownSourceExtensions` enumerates (no hidden files, no symbolic links, `.md` and a fixed list of image types) can be read, so a path can never leave the source directory. Language folders (`^[a-z]{2,3}-[A-Z]{2}$`) directly inside the source directory make it localized (`MarkdownLocaleExtensions`: `Locales`, `ForLocale`, `Candidates(requested, default)`: requested, then `Frontend:Site:DefaultLocale`, then the first language); the frontend sends `i18n.locale()` and reloads when the language selector changes, and the generator writes one site per language. The generator writes a `.markdownviewer-generated` manifest into the output directory and removes only the files listed in it.
+
+
 ## Architecture Layers
 
 ### 1. Common Layer (/src/Common)

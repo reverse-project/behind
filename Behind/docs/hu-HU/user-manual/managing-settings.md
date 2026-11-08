@@ -13,7 +13,7 @@ Mindkét engedély a `Developers` szerepkörhöz tartozik. Az adminisztrátorok 
 
 ## Fülek
 
-Minden, az alkalmazás mellett létező konfigurációs fájl kap egy fület: `appsettings.json`, `backend.json`, `database.json`, `email.json`, `frontend.json` és `security.json`. Az `email.json` és az `appsettings` fájlok kivételével, amelyeknek saját űrlapjuk van (lásd alább), a fül a fájl beállításait szakaszok szerint csoportosítva listázza, például `Security › Jwt`. A szöveges beállítások szövegmezők, a be- és kikapcsolós beállítások kapcsolók, a számok pedig számmezők.
+Minden, az alkalmazás mellett létező konfigurációs fájl kap egy fület: `appsettings.json`, `backend.json`, `database.json`, `email.json`, `frontend.json` és `security.json`, valamint minden olyan modul fájlja, amelynek van ilyen (például a [Dokumentáció](./managing-markdown-viewer.md) modul `markdownviewer.json` fájlja). Az `email.json` és az `appsettings` fájlok kivételével, amelyeknek saját űrlapjuk van (lásd alább), a fül a fájl beállításait szakaszok szerint csoportosítva listázza, például `Security › Jwt`. A szöveges beállítások szövegmezők, a be- és kikapcsolós beállítások kapcsolók, a számok pedig számmezők.
 
 Az oldalak képforgóinak korlátai a `frontend.json` számai (`Frontend › Carousels`): **MaxSlides** (képek száma képforgónként), **MinIntervalSeconds** és **MaxIntervalSeconds** (az engedélyezett másodpercek képenként), **IntervalSeconds** (ezzel az értékkel indul egy új képforgó), **MaxCaptionLength** és **MaxImageBytes**. Lásd az [Oldalak kezelése](./managing-sites.md) részt.
 

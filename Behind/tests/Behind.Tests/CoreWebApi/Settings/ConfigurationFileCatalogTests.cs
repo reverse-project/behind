@@ -43,6 +43,18 @@ public sealed class ConfigurationFileCatalogTests : IDisposable
     }
 
     [Fact]
+    public void For_WithModuleNames_ListsTheModuleFilesThatExist()
+    {
+        File.WriteAllText(Path.Combine(_directory, "backend.json"), "{}");
+        File.WriteAllText(Path.Combine(_directory, "notes.json"), "{}");
+
+        var catalog = ConfigurationFileCatalog.For(_directory, ["notes.json", "missing.json", "BACKEND.json"]);
+
+        Assert.Equal(["backend.json", "notes.json"], catalog.Files.Select(file => file.Name));
+        Assert.Equal(Some("notes.json"), catalog.Find("notes.json").Map(file => file.Name));
+    }
+
+    [Fact]
     public void DefaultNames_CoverEveryConfigurationFileOfTheApplication()
     {
         Assert.Equal(

@@ -20,6 +20,7 @@ Ez a kézikönyv azt ismerteti, hogy a Behind webalkalmazásban jelenleg mit teh
 - **[Letöltések](./managing-downloads.md)** - a mappafa böngészése, fájlok letöltése, mappák létrehozása és több fájl egyidejű feltöltése.
 - **[Menük](./managing-menus.md)** - a főmenü és más menük, azok elemei, almenüelemei, céljai, és az, hogy kik látják őket.
 - **[Idézetek](./managing-quotes.md)** - a példamodul: idézetek olvasása és kezelése átmeneti törléssel, visszaállítással és végleges törléssel.
+- **[Dokumentáció](./managing-markdown-viewer.md)** - a Markdown Viewer modul: Markdown dokumentumok olvasása és statikus dokumentációs weboldal előállítása egy könyvtárból.
 - **[Útvonal-álnevek](./managing-route-aliases.md)** - rövid útvonalak oldalakhoz, például `#/manuals` egy letöltési könyvtárhoz.
 - **[Hozzáférési beállítások](./managing-access-settings.md)** - egy korlátozó oldal, amely a weboldalt csak egy szerepkörrel rendelkező felhasználóknak mutatja, és az új fiókok jóváhagyása a bejelentkezésük előtt.
 - **[Megszemélyesítés](./impersonation.md)** - egy másik felhasználó nevében eljárni, hogy lássa, amit ő lát, és hogyan jelenik meg ez az auditnaplóban.

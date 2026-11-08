@@ -367,6 +367,17 @@ A `Behind.Quotes.WebApi` a végpontjait az `UseQuotes()` hívással képezi le; 
 | `POST /quotes/{id}/delete` | `Quotes.Delete`; soft delete |
 | `POST /quotes/{id}/restore`, `POST /quotes/{id}/hard/delete` | `RawDatabase.Manage` |
 
+### Példa: a Markdown Viewer végpontok
+
+A `Behind.MarkdownViewer.WebApi` az `UseMarkdownViewer()` hívással térképezi fel a végpontjait. A könyvtárak a `markdownviewer.json` fájlból jönnek (`IOptionsMonitor<MarkdownViewerConfiguration>`, a `MarkdownWorkspaceProvider` oldja fel):
+
+| Végpont | Hozzáférés |
+|---|---|
+| `GET /markdownviewer/documents?locale=` | nyilvános; `{ configured, title, defaultDocument, locales, locale, home, entries: [{ path, title }], sections: [{ title, path, entries }] }` (a `sections` a bejegyzéseket a legfelső szintű mappák szerint csoportosítja, a kezdődokumentum nélkül); a `locale` a kiválasztott nyelvi mappa: a kért, különben az alapértelmezett (`Frontend:Site:DefaultLocale`), különben az első; a `locales` nyelvi mappák nélkül üres |
+| `GET /markdownviewer/documents/{**path}?locale=` | nyilvános; egy dokumentum megtisztított HTML-je `{ path, title, html, locale }` (ha a kért nyelven hiányzik, az alapértelmezett, majd az első nyelvre vált), `404` mindenre, ami nem felsorolt Markdown fájl |
+| `GET /markdownviewer/files/{**path}?locale=` | nyilvános; a forráskönyvtár egy képe (`nosniff`, `no-cache`, a vektoros képek elszigetelő `Content-Security-Policy`-val), `404` minden másra |
+| `POST /markdownviewer/generate` | `MarkdownViewer.Write`; `{ outputDirectory, pages, assets, removed }`, `400` `{ errors: [kód] }` (`source-not-configured`, `source-missing`, `output-not-configured`, `output-overlaps-source`), `500` `{ errors: ["generation-failed"] }` |
+
 ## Controller felépítése
 
 ### Alapminta

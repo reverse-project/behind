@@ -249,6 +249,15 @@
     "text": "licenses/ISC.txt"
   },
   {
+    "name": "Markdig",
+    "version": "1.6.0",
+    "license": "BSD-2-Clause",
+    "copyright": "Copyright (c) Alexandre Mutel",
+    "url": "https://github.com/xoofx/markdig",
+    "scope": "server",
+    "text": "licenses/BSD-2-Clause.txt"
+  },
+  {
     "name": "MessagePack",
     "version": "3.1.9",
     "license": "MIT",

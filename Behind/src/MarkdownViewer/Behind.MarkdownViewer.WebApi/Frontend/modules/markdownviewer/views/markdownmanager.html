@@ -1,0 +1,20 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'markdownviewer.manage.title'">Documentation generator</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'markdownviewer.back'">Back to administration</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'markdownviewer.signInToManage'">to generate the documentation.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'markdownviewer.denied'">You need documentation access to generate the static pages.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
+    <div data-bind="visible: canRead">
+        <p data-bind="t: 'markdownviewer.manage.intro'">Generates a static website from the Markdown files of the source directory into the output directory. Both directories are set in the markdownviewer.json tab of the settings.
+        <p class="alert alert-warning" data-bind="visible: !configured(), t: 'markdownviewer.manage.notConfigured'">The source directory is not set or does not exist.</p>
+        <p data-bind="visible: configured"><span data-bind="t: 'markdownviewer.manage.documents'">Documents found:</span> <strong data-bind="text: documents"></strong></p>
+        <p data-bind="visible: hasLocales"><span data-bind="t: 'markdownviewer.manage.languages'">Languages:</span> <strong data-bind="text: locales"></strong></p>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" data-bind="enable: canGenerate, click: generate, visible: canWrite, t: 'markdownviewer.generate'">Generate static pages</button>
+            <a class="btn btn-outline-secondary" href="#/settings" data-bind="t: 'markdownviewer.manage.settings'">Open settings</a>
+            <a class="btn btn-outline-secondary" href="#/docs" data-bind="t: 'markdownviewer.manage.open'">Open the documentation</a>
+        </div>
+    </div>
+</section>

@@ -17,6 +17,11 @@
     <Project Path="src/Core/Behind.Core.Tools/Behind.Core.Tools.csproj" />
     <Project Path="src/Core/Behind.Core.WebApi/Behind.Core.WebApi.csproj" />
   </Folder>
+  <Folder Name="/src/MarkdownViewer/">
+    <Project Path="src/MarkdownViewer/Behind.MarkdownViewer.Common/Behind.MarkdownViewer.Common.csproj" />
+    <Project Path="src/MarkdownViewer/Behind.MarkdownViewer.Domain/Behind.MarkdownViewer.Domain.csproj" />
+    <Project Path="src/MarkdownViewer/Behind.MarkdownViewer.WebApi/Behind.MarkdownViewer.WebApi.csproj" />
+  </Folder>
   <Folder Name="/src/Quotes/">
     <Project Path="src/Quotes/Behind.Quotes.Common/Behind.Quotes.Common.csproj" />
     <Project Path="src/Quotes/Behind.Quotes.Database.Postgres/Behind.Quotes.Database.Postgres.csproj" />

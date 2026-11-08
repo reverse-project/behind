@@ -13,7 +13,7 @@ Both grants belong to the `Developers` role. Administrators never have these gra
 
 ## Tabs
 
-Every configuration file that exists next to the application gets a tab: `appsettings.json`, `backend.json`, `database.json`, `email.json`, `frontend.json` and `security.json`. Except for `email.json` and the `appsettings` files, which have their own forms (see below), a tab lists the settings of the file grouped by section, for example `Security › Jwt`. Text settings are text boxes, on and off settings are switches and numbers are number boxes.
+Every configuration file that exists next to the application gets a tab: `appsettings.json`, `backend.json`, `database.json`, `email.json`, `frontend.json` and `security.json`, plus the file of every module that has one (for example `markdownviewer.json` of the [Documentation](./managing-markdown-viewer.md) module). Except for `email.json` and the `appsettings` files, which have their own forms (see below), a tab lists the settings of the file grouped by section, for example `Security › Jwt`. Text settings are text boxes, on and off settings are switches and numbers are number boxes.
 
 The limits of the site image carousels are the numbers of `frontend.json` (`Frontend › Carousels`): **MaxSlides** (images per carousel), **MinIntervalSeconds** and **MaxIntervalSeconds** (the allowed seconds per image), **IntervalSeconds** (what a new carousel starts with), **MaxCaptionLength** and **MaxImageBytes**. See [Managing sites](./managing-sites.md).
 

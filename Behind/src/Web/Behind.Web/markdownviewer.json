@@ -1,0 +1,8 @@
+{
+  "MarkdownViewer": {
+    "SourceDirectory": "../../../docs",
+    "OutputDirectory": "../../../../Data/docs-site",
+    "Title": "Behind Documentation",
+    "DefaultDocument": "README.md"
+  }
+}

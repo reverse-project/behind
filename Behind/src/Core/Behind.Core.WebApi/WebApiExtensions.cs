@@ -122,7 +122,9 @@ public static class WebApiExtensions
             builder.Services.AddCaptcha();
             builder.Services.AddTwoFactor();
 
-            builder.Services.AddSingleton(ConfigurationFileCatalog.For(builder.Environment.ContentRootPath));
+            builder.Services.AddSingleton(services => ConfigurationFileCatalog.For(
+                builder.Environment.ContentRootPath,
+                services.GetRequiredService<ModuleCatalog>().ConfigurationFiles));
             builder.Services.AddMagicLink(
                 new FileInfo(Path.Combine(builder.Environment.ContentRootPath, "security.json"))
             );

@@ -28,7 +28,10 @@ public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<
             [AppSettingsFile] = LoggingEditor
         };
 
-    public static ConfigurationFileCatalog For(string root) => new(new DirectoryInfo(root), DefaultNames);
+    public static ConfigurationFileCatalog For(string root) => For(root, []);
+
+    public static ConfigurationFileCatalog For(string root, IEnumerable<string> moduleNames) =>
+        new(new DirectoryInfo(root), [..DefaultNames.Concat(moduleNames).Distinct(StringComparer.OrdinalIgnoreCase)]);
 
     public IReadOnlyList<FileInfo> Files =>
     [

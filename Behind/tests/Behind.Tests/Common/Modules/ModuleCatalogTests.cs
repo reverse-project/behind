@@ -144,6 +144,40 @@ public class ModuleCatalogTests
         Assert.Empty(catalog.Frontends);
     }
 
+    [Theory]
+    [InlineData("Settings.json")]
+    [InlineData("settings")]
+    [InlineData("1settings.json")]
+    [InlineData("a/b.json")]
+    public void Create_RejectsInvalidConfigurationFiles(string file)
+    {
+        var problems = Problems(Module() with { ConfigurationFiles = [file] });
+
+        Assert.Contains(problems, problem => problem.Contains($"Configuration file '{file}'"));
+    }
+
+    [Fact]
+    public void Create_RejectsDuplicateConfigurationFiles()
+    {
+        var problems = Problems(
+            Module("one") with { ConfigurationFiles = ["shared.json"] },
+            Module("two") with { ConfigurationFiles = ["shared.json"] });
+
+        Assert.Contains(problems, problem => problem.Contains("Configuration file 'shared.json' is declared more than once"));
+    }
+
+    [Fact]
+    public void Catalog_AggregatesTheConfigurationFilesOfEveryModule()
+    {
+        var catalog = ModuleCatalog.Create(
+        [
+            Module("one") with { ConfigurationFiles = ["one.json"] },
+            Module("two") with { ConfigurationFiles = ["two.json", "three.json"] }
+        ]).GetOrElse(ModuleCatalog.Empty);
+
+        Assert.Equal(["one.json", "two.json", "three.json"], catalog.ConfigurationFiles);
+    }
+
     [Fact]
     public void FrontendPath_IsNamespacedByTheModuleKey()
     {

@@ -1,0 +1,35 @@
+<section class="behind-wide">
+    <h1 data-bind="t: 'sport.seasons.title'">Seasons</h1>
+    <div data-bind="with: list">
+        <form class="input-group mb-3" data-bind="submit: find">
+            <input class="form-control" type="search" maxlength="200" placeholder="Search by name" aria-label="Search seasons" data-bind="value: search, tAttr: { placeholder: 'sport.seasons.searchPlaceholder', 'aria-label': 'sport.seasons.searchLabel' }">
+            <button type="submit" class="btn btn-primary" data-bind="enable: !loading(), t: 'common.search'">Search</button>
+        </form>
+        <div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
+        <p class="text-body-secondary" data-bind="visible: isEmpty, t: 'sport.seasons.empty'">No seasons found.</p>
+        <div class="table-responsive mb-3" data-bind="visible: hasItems">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col" data-bind="t: 'sport.field.season'">Season</th>
+                        <th scope="col" data-bind="t: 'sport.field.discipline'">Sport</th>
+                        <th scope="col" data-bind="t: 'sport.season.period'">Period</th>
+                        <th scope="col" data-bind="t: 'sport.season.results'">Results</th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: items">
+                    <tr>
+                        <td><sport-link params="kind: 'season', id: id, text: name"></sport-link></td>
+                        <td><sport-link params="kind: 'discipline', id: disciplineId, text: disciplineName"></sport-link></td>
+                        <td data-bind="text: $root.format.period($data)"></td>
+                        <td>
+                            <a data-bind="attr: { href: $root.links.leaderboards(id) }, t: 'sport.leaderboards.title'">Leaderboards</a>
+                            <a class="ms-2" data-bind="attr: { href: $root.links.stats(id) }, t: 'sport.stats.title'">Statistics</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <pager class="d-block" params="pager: pager"></pager>
+    </div>
+</section>

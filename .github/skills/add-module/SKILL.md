@@ -36,6 +36,13 @@ Load `csharp-code-standards` first. Reference module: `Core` (`src/Core/Behind.C
 13. **Changelog**: use the `update-changelog` skill.
 14. **Docs**: update `Behind/docs/en-US/developer/PROJECT_OVERVIEW.md`, `DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md` and `WEBAPI_CONVENTIONS.md`, and the user manual of every new page.
 
+## Reusable module building blocks
+- `IVersionedCommands<TDraft>` + `VersionedCommands<TEntity, TDraft>` + `VersionedSaveResult` (`Behind.Common.Database`): versioned create/update, soft delete, restore, hard delete (refused through `IsReferenced`) and `Ensure` for seeds. A module entity command only implements `Build`, and optionally `Validate` (returns the rejection reason), `IsReferenced` and `Saved` (see `src/Sport/Behind.Sport.Database/Commands`).
+- `Keyed<TEntity>` and `KeyedEntityExtensions` (`ToKeyedAsync`, `Latest`) read the `Key`/`Version` shadow columns together with the entity; `QueryableOptionExtensions.Narrowed` applies an optional filter.
+- `IModuleFiles` (`Behind.Common.Database/Modules`, implemented by `ModuleFiles` in Core and registered by `AddVfsContentStore`): VFS uploads for a module with its own VFS type, parent attach, existence check and open. Pair it with `ImageUploadExtensions.StoreImage`/`ServeImage` (`Behind.Common.WebApi`) and a URL of its own per kind of file. Follow `add-vfs-upload`.
+- `VersionedSaveResultExtensions.ToResult()` (`Behind.Common.WebApi`) answers `{ id, version }`, `404` or `409 { reason }`.
+- Reference implementation with many entities: `Sport` (`src/Sport/Behind.Sport.*`).
+
 ## What a module contributes (`ModuleDescriptor`)
 | Member | What it does | Notes |
 |---|---|---|

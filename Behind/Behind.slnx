@@ -30,6 +30,14 @@
     <Project Path="src/Quotes/Behind.Quotes.Domain/Behind.Quotes.Domain.csproj" />
     <Project Path="src/Quotes/Behind.Quotes.WebApi/Behind.Quotes.WebApi.csproj" />
   </Folder>
+  <Folder Name="/src/Sport/">
+    <Project Path="src/Sport/Behind.Sport.Common/Behind.Sport.Common.csproj" />
+    <Project Path="src/Sport/Behind.Sport.Database.Postgres/Behind.Sport.Database.Postgres.csproj" />
+    <Project Path="src/Sport/Behind.Sport.Database.Sqlite/Behind.Sport.Database.Sqlite.csproj" />
+    <Project Path="src/Sport/Behind.Sport.Database/Behind.Sport.Database.csproj" />
+    <Project Path="src/Sport/Behind.Sport.Domain/Behind.Sport.Domain.csproj" />
+    <Project Path="src/Sport/Behind.Sport.WebApi/Behind.Sport.WebApi.csproj" />
+  </Folder>
   <Folder Name="/DevContainer/">
     <File Path="..\.devcontainer\devcontainer.json" />
     <File Path="..\.devcontainer\Dockerfile" />
@@ -45,6 +53,9 @@
     <Project Path="tests/Behind.Tests/Behind.Tests.csproj" />
   </Folder>
   <Folder Name="/src/Sites/">
+    <Project Path="src/Sites/Behind.Sites.FSE.Database.Migrator/Behind.Sites.FSE.Database.Migrator.csproj" />
+    <Project Path="src/Sites/Behind.Sites.FSE.Database.Postgres/Behind.Sites.FSE.Database.Postgres.csproj" />
+    <Project Path="src/Sites/Behind.Sites.FSE.Database.Sqlite/Behind.Sites.FSE.Database.Sqlite.csproj" />
     <Project Path="src/Sites/Behind.Sites.FSE/Behind.Sites.FSE.csproj" />
     <Project Path="src/Sites/Behind.Sites.RPDotHu/Behind.Sites.RPDotHu.csproj" />
   </Folder>

@@ -166,6 +166,36 @@ public class FseSiteTests
         var solution = File.ReadAllText(Path.Combine(SolutionDirectory().FullName, "Behind.slnx"));
 
         Assert.Contains("src/Sites/Behind.Sites.FSE/Behind.Sites.FSE.csproj", solution);
+        Assert.Contains("src/Sites/Behind.Sites.FSE.Database.Sqlite/Behind.Sites.FSE.Database.Sqlite.csproj", solution);
+        Assert.Contains("src/Sites/Behind.Sites.FSE.Database.Postgres/Behind.Sites.FSE.Database.Postgres.csproj", solution);
+        Assert.Contains("src/Sites/Behind.Sites.FSE.Database.Migrator/Behind.Sites.FSE.Database.Migrator.csproj", solution);
+    }
+
+    [Fact]
+    public void Project_LoadsTheSportModule()
+    {
+        var project = XDocument.Parse(Read("Behind.Sites.FSE.csproj"));
+        var references = project.Descendants("ProjectReference").Select(item => (string?)item.Attribute("Include")).ToList();
+        var extensions = Read("WebApiExtensions.cs");
+
+        Assert.Contains(references, reference => reference!.EndsWith("Behind.Sport.WebApi.csproj"));
+        Assert.Contains("AddSport()", extensions);
+        Assert.Contains("UseSport()", extensions);
+    }
+
+    [Fact]
+    public void Migrator_UsesTheDatabaseAndDataDirectoryOfTheSite()
+    {
+        var directory = Path.Combine(SolutionDirectory().FullName, "src", "Sites", "Behind.Sites.FSE.Database.Migrator");
+        using var database = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "database.json")));
+        using var backend = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "backend.json")));
+
+        Assert.Equal(
+            ReadJson("database.json").GetProperty("ConnectionStrings").GetProperty("DefaultConnection").GetString(),
+            database.RootElement.GetProperty("ConnectionStrings").GetProperty("DefaultConnection").GetString());
+        Assert.Equal(
+            ReadJson("backend.json").GetProperty("Backend").GetProperty("DataDirectory").GetString(),
+            backend.RootElement.GetProperty("Backend").GetProperty("DataDirectory").GetString());
     }
 
     [Fact]

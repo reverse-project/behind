@@ -367,6 +367,22 @@ A module web API project exposes `Add<Module>()`/`Use<Module>()`, like `AddCore(
 | `POST /quotes/{id}/delete` | `Quotes.Delete`; soft delete |
 | `POST /quotes/{id}/restore`, `POST /quotes/{id}/hard/delete` | `RawDatabase.Manage` |
 
+### Example: the Sport endpoints
+
+`Behind.Sport.WebApi` maps one set of generic endpoints (`ResourceEndpoints`) for each resource: `disciplines`, `positions`, `stat-types`, `seasons`, `teams`, `players`, `player-seasons` and `stats`.
+
+| Endpoint | Access |
+|---|---|
+| `GET /sport/<resource>` | open; the active rows, paged, filtered with `discipline`, `season`, `team`, `player`, `position`, `statType`, `scope`, `search` and `letter` |
+| `GET /sport/<resource>/manage` | `Sport.Read` (`deleted=true` needs `RawDatabase.Manage`) |
+| `POST /sport/<resource>`, `POST /sport/<resource>/{id}` | `Sport.Write`; answers `{ id, version }`, `409` `{ reason }` with `version-conflict`, `unknown-reference`, `mismatch` (another sport), `duplicate`, `unknown-image` or `invalid-range` |
+| `POST /sport/<resource>/{id}/delete` | `Sport.Delete`; soft delete |
+| `POST /sport/<resource>/{id}/restore`, `POST /sport/<resource>/{id}/hard/delete` | `RawDatabase.Manage`; a hard delete answers `409` while the row is referenced |
+| `GET /sport/disciplines/{id}`, `/sport/teams/{id}`, `/sport/players/{id}`, `/sport/seasons/{id}` | open; the entity with its related entities, per season |
+| `GET /sport/leaderboards/{seasonId}[/{statTypeId}]` | open; the boards of a season (`limit`, 10 by default, 100 at most) or the ranking of one stat type |
+| `POST /sport/teams/images`, `POST /sport/players/images` | `Sport.Write`; multipart `file`, answers `{ id, url }`, `413`, `415` |
+| `GET /sport/teams/images/{id}`, `GET /sport/players/images/{id}` | open; immutable cached images, every kind under its own URL |
+
 ### Example: the Markdown Viewer endpoints
 
 `Behind.MarkdownViewer.WebApi` maps its endpoints with `UseMarkdownViewer()`. The directories come from `markdownviewer.json` (`IOptionsMonitor<MarkdownViewerConfiguration>`, resolved by `MarkdownWorkspaceProvider`):

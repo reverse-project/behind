@@ -204,6 +204,12 @@ A `src/Quotes` egy teljes, szándékosan kicsi példamodul (idézetek listája s
 
 A projektoldal a `src/Web` alatt található: a `Behind.Web.Database.Sqlite`/`.Postgres` tartalmazza szolgáltatónként az egyetlen DbContextet (`WebContextSqlite`, `WebContextPostgres`: `AbstractCoreContext` plusz `IQuotesContext`), a `Behind.Web.Database.Migrator` a projekt migrátora (a Core migrációk, majd a Quotes migrációk, végül a seedek), a `Behind.Web` pedig az `AddCore()`/`UseCore()` után hívja az `AddQuotes()`/`UseQuotes()` metódust.
 
+### Modul: Sport
+
+A `src/Sport` a sportok (elsőként a foci) modulja sportágakkal, pozíciókkal, statisztikatípusokkal, szezonokkal, csapatokkal, játékosokkal, szezontagságokkal és statisztikákkal. A Quotes szerkezetét követi (`Behind.Sport.Domain`, `.Common`, `.Database`, `.Database.Sqlite`, `.Database.Postgres`, `.WebApi`), általános részeit pedig a Common projektek adják minden modulnak: `VersionedCommands<TEntity, TDraft>`/`IVersionedCommands<TDraft>`/`VersionedSaveResult` (verziózott létrehozás, módosítás, logikai törlés, visszaállítás, végleges törlés, ensure), `Keyed<TEntity>`, `IModuleFiles` (VFS-feltöltések modulok számára), `ImageUploadExtensions` (képfeltöltő és -kiszolgáló végpontsegédek) és `VersionedSaveResultExtensions`. A projektkontextusok az `ISportContext`-et is megvalósítják, a `Behind.Web.Database.Migrator` pedig a Quotes után alkalmazza a Sport migrációit. A frontend a `Frontend/modules/sport/` alatt található a nyilvános oldalakkal (`#/sport`, csapatok, játékosok, szezonok, ranglisták, statisztikák, minden entitás mindenhol hivatkozva) és egy általános kezelőoldallal (`#/manage/sport/<erőforrás>`).
+
+Az FSE oldal (`src/Sites/Behind.Sites.FSE`) betölti a Sport modult: a `Behind.Sites.FSE.Database.Sqlite`/`.Postgres` tartalmazza szolgáltatónként az egyetlen DbContextet (`FseContextSqlite`, `FseContextPostgres`: `AbstractCoreContext` plusz `ISportContext`), a `Behind.Sites.FSE.Database.Migrator` a migrátora (a Core migrációk, majd a Sport migrációk, végül a seedek), az `AddFse()`/`UseFse()` pedig az `AddCore()`/`UseCore()` után hívja az `AddSport()`/`UseSport()` metódust.
+
 ### Adatbázis nélküli modul: Markdown Viewer
 
 A `src/MarkdownViewer` modulnak nincs szüksége adatbázistáblára, ezért nincsenek adatbázis-projektjei és `ModuleDescriptor.Database` értéke sem: a VFS helyett a kiszolgáló egy forrás- és egy kimeneti könyvtárával dolgozik. A `src/Web/Behind.Web` tölti be az `AddMarkdownViewer()`/`UseMarkdownViewer()` hívással:

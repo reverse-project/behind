@@ -1,0 +1,123 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: titleKey">Manage sport</h1>
+        <a class="btn btn-outline-secondary ms-auto" data-bind="visible: !isHub, attr: { href: links.manage }, t: 'sport.manage.backToHub'">Back to sport management</a>
+        <a class="btn btn-outline-secondary" href="#/administration" data-bind="visible: isHub, t: 'sport.manage.backToAdministration'">Back to administration</a>
+        <a class="btn btn-outline-primary" data-bind="attr: { href: publicHref }, t: 'sport.manage.viewPublic'">View public page</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'sport.signInToManage'">to manage sport.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'sport.denied'">You need sport access to manage sport.</div>
+    <!-- ko if: isHub -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3" data-bind="foreach: sections">
+        <div class="col">
+            <a class="card h-100 text-decoration-none" data-bind="attr: { href: href }">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <i class="fa-solid fs-3" aria-hidden="true" data-bind="css: icon"></i>
+                    <span class="h5 mb-0" data-bind="t: titleKey"></span>
+                </div>
+            </a>
+        </div>
+    </div>
+    <!-- /ko -->
+    <!-- ko ifnot: isHub -->
+    <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
+    <div data-bind="visible: canRead">
+        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
+            <h2 class="h5" data-bind="text: heading"></h2>
+            <!-- ko foreach: form.fields -->
+            <div class="mb-3">
+                <!-- ko if: type === 'checkbox' -->
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" data-bind="attr: { id: id }, checked: value">
+                    <label class="form-check-label" data-bind="attr: { 'for': id }, t: labelKey"></label>
+                </div>
+                <!-- /ko -->
+                <!-- ko ifnot: type === 'checkbox' -->
+                <label class="form-label" data-bind="attr: { 'for': id }, css: { 'fw-semibold': required }, t: labelKey"></label>
+                <!-- /ko -->
+                <!-- ko if: type === 'text' -->
+                <input class="form-control" type="text" data-bind="attr: { id: id, maxlength: maxLength, pattern: pattern }, value: value, valueUpdate: 'input'">
+                <!-- /ko -->
+                <!-- ko if: type === 'textarea' -->
+                <textarea class="form-control" rows="4" data-bind="attr: { id: id, maxlength: maxLength }, value: value, valueUpdate: 'input'"></textarea>
+                <!-- /ko -->
+                <!-- ko if: type === 'number' -->
+                <input class="form-control" type="number" data-bind="attr: { id: id, min: min, max: max, step: step }, value: value, valueUpdate: 'input'">
+                <!-- /ko -->
+                <!-- ko if: type === 'date' -->
+                <input class="form-control" type="date" data-bind="attr: { id: id }, value: value">
+                <!-- /ko -->
+                <!-- ko if: type === 'enum' -->
+                <select class="form-select" data-bind="attr: { id: id }, options: choices, optionsText: 'label', optionsValue: 'value', optionsCaption: caption, value: value, valueAllowUnset: true"></select>
+                <!-- /ko -->
+                <!-- ko if: type === 'reference' -->
+                <input class="form-control mb-1" type="search" maxlength="100" placeholder="Search" aria-label="Search" data-bind="value: query, valueUpdate: 'input', event: { keydown: keydown }, enable: ready, tAttr: { placeholder: 'sport.manage.referenceSearch', 'aria-label': 'sport.manage.referenceSearch' }">
+                <select class="form-select" data-bind="attr: { id: id }, options: options, optionsText: 'label', optionsValue: 'id', optionsCaption: $root.chooseLabel(), value: value, valueAllowUnset: true, enable: ready"></select>
+                <div class="form-text" data-bind="visible: !ready(), t: 'sport.manage.referenceNotReady'">Choose the related fields first.</div>
+                <!-- /ko -->
+                <!-- ko if: type === 'image' -->
+                <input class="form-control" type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-bind="attr: { id: id }, event: { change: upload }, enable: !$root.busy() && !uploading()">
+                <div class="form-text text-danger" data-bind="visible: message() !== '', text: message"></div>
+                <div class="mt-2 d-flex align-items-center gap-2" data-bind="visible: hasImage">
+                    <sport-thumbnail params="url: url, kind: kind, size: 6"></sport-thumbnail>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: remove, t: 'sport.manage.removeImage'">Remove image</button>
+                </div>
+                <!-- /ko -->
+                <!-- ko if: hintKey -->
+                <div class="form-text" data-bind="t: hintKey"></div>
+                <!-- /ko -->
+            </div>
+            <!-- /ko -->
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isEditing, click: reset, t: 'common.cancel'">Cancel</button>
+            </div>
+        </form>
+        <div data-bind="with: list">
+            <form class="input-group mb-3" data-bind="submit: find">
+                <input class="form-control" type="search" maxlength="200" placeholder="Search by name" aria-label="Search records" data-bind="value: search, tAttr: { placeholder: 'sport.manage.searchPlaceholder', 'aria-label': 'sport.manage.searchLabel' }">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
+            </form>
+            <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+                <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'sport.manage.showDeleted'">Show deleted records</span></label>
+            </div>
+            <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
+            <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'sport.manage.empty'">No records found.</p>
+            <div class="table-responsive mb-3" data-bind="visible: hasItems">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <!-- ko foreach: $root.columns -->
+                            <th scope="col" data-bind="t: labelKey"></th>
+                            <!-- /ko -->
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: items">
+                        <tr data-bind="css: { 'table-secondary': isDeleted }">
+                            <!-- ko foreach: cells -->
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <!-- ko if: hasImage -->
+                                    <sport-thumbnail params="url: image, kind: imageKind, alt: text"></sport-thumbnail>
+                                    <!-- /ko -->
+                                    <sport-link params="kind: kind, id: id, season: season, text: text"></sport-link>
+                                </div>
+                            </td>
+                            <!-- /ko -->
+                            <td class="text-end text-nowrap">
+                                <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
+                                <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>
+                                <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete, t: 'common.deletePermanently'">Delete permanently</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <pager class="d-block" params="pager: pager"></pager>
+        </div>
+    </div>
+    <!-- /ko -->
+</section>

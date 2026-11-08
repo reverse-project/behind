@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:10.0-noble</ContainerBaseImage>
+      <PublishSingleFile>true</PublishSingleFile>
+      <SelfContained>true</SelfContained>
+      <ContainerRepository>reverse-project/behind/sites/fse-database-migrator</ContainerRepository>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Behind.Core.Database.Migrator\Behind.Core.Database.Migrator.csproj" />
+      <ProjectReference Include="..\..\Sport\Behind.Sport.Database.Postgres\Behind.Sport.Database.Postgres.csproj" />
+      <ProjectReference Include="..\..\Sport\Behind.Sport.Database.Sqlite\Behind.Sport.Database.Sqlite.csproj" />
+      <ProjectReference Include="..\..\Sport\Behind.Sport.WebApi\Behind.Sport.WebApi.csproj" />
+      <ProjectReference Include="..\Behind.Sites.FSE.Database.Postgres\Behind.Sites.FSE.Database.Postgres.csproj" />
+      <ProjectReference Include="..\Behind.Sites.FSE.Database.Sqlite\Behind.Sites.FSE.Database.Sqlite.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Microsoft.Extensions.Hosting" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="database.json">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
+      <Content Update="backend.json">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
+      <None Remove="database.json" />
+      <None Remove="backend.json" />
+      <Content Include="backend.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="database.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+</Project>

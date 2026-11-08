@@ -61,7 +61,9 @@ public static class VfsTypes
                     ? CarouselImages
                     : type == AccessSettings
                         ? AccessImages
-                        : AllSiteImages;
+                        : AllSiteImages.Contains(type)
+                            ? AllSiteImages
+                            : [type];
 
     public static string ImageUrlOf(string type) =>
         NewsImages.Contains(type)

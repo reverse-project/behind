@@ -54,40 +54,21 @@ public sealed class SiteImageEndpoints
         IOptionsSnapshot<SitesConfiguration> configuration) =>
         Store(VfsTypes.AccessSettings, file, httpContext, commands, configuration.Value.ImageLimit);
 
-    private static async Task<IResult> Store(
+    private static Task<IResult> Store(
         string type,
         IFormFile? file,
         HttpContext httpContext,
         IVfsCommands commands,
-        long limit)
-    {
-        if (file is null || file.Length == 0)
-        {
-            return Results.BadRequest();
-        }
-
-        if (file.Length > limit)
-        {
-            return Results.Json(new SiteImageLimitResponse(limit), statusCode: StatusCodes.Status413PayloadTooLarge);
-        }
-
-        var content = await file.ReadAllBytesAsync(httpContext.RequestAborted);
-
-        return await content.DetectImageContentType().Match(
-            () => Task.FromResult<IResult>(Results.StatusCode(StatusCodes.Status415UnsupportedMediaType)),
-            async contentType =>
-            {
-                var id = await commands.Add(
-                    new IVfsCommands.Upload(
-                        type,
-                        file.FileName.ToVfsFileName("image"),
-                        contentType,
-                        content),
-                    httpContext.RequestAborted);
-
-                return Results.Json(new SiteImageResponse(id, $"{VfsTypes.ImageUrlOf(type)}/{id}"));
-            });
-    }
+        long limit) =>
+        httpContext.StoreImage(
+            file,
+            limit,
+            async upload => await commands.Add(
+                new IVfsCommands.Upload(upload.Type, upload.FileName, upload.ContentType, upload.Content),
+                httpContext.RequestAborted),
+            id => new SiteImageResponse(id, $"{VfsTypes.ImageUrlOf(type)}/{id}"),
+            maxBytes => new SiteImageLimitResponse(maxBytes),
+            type);
 
     [IgnoreETag]
     public static Task<IResult> Get(Guid id, HttpContext httpContext, IVfsQueries queries) =>

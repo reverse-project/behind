@@ -8,6 +8,7 @@ using Behind.Core.Database.Sqlite;
 using Behind.Core.WebApi;
 using Behind.MarkdownViewer.WebApi;
 using Behind.Quotes.WebApi;
+using Behind.Sport.WebApi;
 using Behind.Web.Database.Postgres;
 using Behind.Web.Database.Sqlite;
 using Scalar.AspNetCore;
@@ -25,6 +26,7 @@ public static class WebApiExtensions
             .AddCore()
             .AddWebDatabase()
             .AddQuotes()
+            .AddSport()
             .AddMarkdownViewer();
 
         WebApplicationBuilder AddWebDatabase()
@@ -45,6 +47,7 @@ public static class WebApiExtensions
         {
             application.UseCore();
             application.UseQuotes();
+            application.UseSport();
             application.UseMarkdownViewer();
             application.MapScalarApiReference();
             

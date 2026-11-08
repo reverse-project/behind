@@ -204,6 +204,12 @@ See `.github/skills/add-module/SKILL.md` for the full checklist and `DATABASE_AR
 
 The project side lives in `src/Web`: `Behind.Web.Database.Sqlite`/`.Postgres` hold the one DbContext per provider (`WebContextSqlite`, `WebContextPostgres`: `AbstractCoreContext` plus `IQuotesContext`), `Behind.Web.Database.Migrator` is the migrator of the project (Core migrations, then the Quotes migrations, then the seeds), and `Behind.Web` calls `AddQuotes()`/`UseQuotes()` after `AddCore()`/`UseCore()`.
 
+### Module: Sport
+
+`src/Sport` is a module for sports (soccer first) with sports, positions, stat types, seasons, teams, players, season memberships and statistics. It follows the Quotes structure (`Behind.Sport.Domain`, `.Common`, `.Database`, `.Database.Sqlite`, `.Database.Postgres`, `.WebApi`) and shares its generic parts with every module through the Common projects: `VersionedCommands<TEntity, TDraft>`/`IVersionedCommands<TDraft>`/`VersionedSaveResult` (versioned create, update, soft delete, restore, hard delete, ensure), `Keyed<TEntity>`, `IModuleFiles` (VFS uploads for modules), `ImageUploadExtensions` (image upload and serving endpoints helpers) and `VersionedSaveResultExtensions`. The project contexts implement `ISportContext` and `Behind.Web.Database.Migrator` applies the Sport migrations after the Quotes ones. The frontend lives under `Frontend/modules/sport/` with the public pages (`#/sport`, teams, players, seasons, leaderboards, stats, every entity linked everywhere) and one generic management page (`#/manage/sport/<resource>`).
+
+The FSE site (`src/Sites/Behind.Sites.FSE`) loads the Sport module: `Behind.Sites.FSE.Database.Sqlite`/`.Postgres` hold its one DbContext per provider (`FseContextSqlite`, `FseContextPostgres`: `AbstractCoreContext` plus `ISportContext`), `Behind.Sites.FSE.Database.Migrator` is its migrator (Core migrations, then the Sport migrations, then the seeds) and `AddFse()`/`UseFse()` call `AddSport()`/`UseSport()` after `AddCore()`/`UseCore()`.
+
 ### Module without a database: Markdown Viewer
 
 `src/MarkdownViewer` is a module that needs no database table, so it has no database projects and no `ModuleDescriptor.Database`: it works on a source directory and an output directory of the server instead of the VFS. It is loaded by `src/Web/Behind.Web` with `AddMarkdownViewer()`/`UseMarkdownViewer()`:

@@ -230,8 +230,6 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IGalleryCommands, GalleryCommands>();
             builder.Services.AddScoped<ICarouselQueries, CarouselQueries>();
             builder.Services.AddScoped<ICarouselCommands, CarouselCommands>();
-            builder.Services.AddScoped<IVfsQueries, VfsQueries>();
-            builder.Services.AddScoped<IVfsCommands, VfsCommands>();
             builder.Services.AddScoped<GalleryThumbnails>();
             builder.Services.AddScoped<IDownloadQueries, DownloadQueries>();
             builder.Services.AddScoped<IDownloadFolderCommands, DownloadFolderCommands>();

@@ -1,6 +1,6 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Data Source=/workspaces/behind/Data/rphu/rphu.db"
+    "DefaultConnection": "Data Source=/workspaces/behind/Data/web.db"
   },
   "Database": {
     "Provider": "Sqlite",

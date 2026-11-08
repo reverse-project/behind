@@ -1,0 +1,23 @@
+<div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+        <thead>
+            <tr>
+                <th scope="col" data-bind="visible: showSeason, t: 'sport.field.season'">Season</th>
+                <th scope="col" data-bind="t: 'sport.field.statType'">Stat type</th>
+                <th scope="col" data-bind="visible: showSubject, t: 'sport.field.subject'">Subject</th>
+                <th scope="col" class="text-end" data-bind="t: 'sport.field.value'">Value</th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: rows">
+            <tr>
+                <td data-bind="visible: $component.showSeason"><sport-link params="kind: 'season', id: seasonId, text: seasonName"></sport-link></td>
+                <td>
+                    <sport-link params="kind: 'statType', id: statTypeId, season: seasonId, text: statTypeName"></sport-link>
+                    <span class="text-body-secondary small" data-bind="text: abbreviation"></span>
+                </td>
+                <td data-bind="visible: $component.showSubject"><sport-link params="kind: subjectKind, id: subjectId, text: subjectName"></sport-link></td>
+                <td class="text-end" data-bind="text: $component.format.number(value)"></td>
+            </tr>
+        </tbody>
+    </table>
+</div>

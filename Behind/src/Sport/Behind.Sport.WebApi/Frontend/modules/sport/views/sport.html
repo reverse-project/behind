@@ -1,0 +1,29 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'sport.title'">Sport</h1>
+        <a class="btn btn-outline-secondary ms-auto" data-bind="visible: canManage, attr: { href: links.manage }, t: 'sport.manage.link'">Manage sport</a>
+    </div>
+    <div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
+    <nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Quick links" data-bind="tAttr: { 'aria-label': 'sport.quickLinks' }">
+        <a class="btn btn-outline-primary" data-bind="attr: { href: links.teams }"><i class="fa-solid fa-shirt me-1" aria-hidden="true"></i><span data-bind="t: 'sport.teams.title'">Teams</span></a>
+        <a class="btn btn-outline-primary" data-bind="attr: { href: links.players }"><i class="fa-solid fa-user me-1" aria-hidden="true"></i><span data-bind="t: 'sport.players.title'">Players</span></a>
+        <a class="btn btn-outline-primary" data-bind="attr: { href: links.seasons }"><i class="fa-solid fa-calendar me-1" aria-hidden="true"></i><span data-bind="t: 'sport.seasons.title'">Seasons</span></a>
+        <a class="btn btn-outline-primary" data-bind="attr: { href: links.leaderboards() }"><i class="fa-solid fa-ranking-star me-1" aria-hidden="true"></i><span data-bind="t: 'sport.leaderboards.title'">Leaderboards</span></a>
+        <a class="btn btn-outline-primary" data-bind="attr: { href: links.stats() }"><i class="fa-solid fa-chart-simple me-1" aria-hidden="true"></i><span data-bind="t: 'sport.stats.title'">Statistics</span></a>
+    </nav>
+    <h2 class="h4" data-bind="t: 'sport.overview.disciplines'">Sports</h2>
+    <p class="text-body-secondary" data-bind="visible: !hasDisciplines(), t: 'sport.overview.empty'">There are no sports yet.</p>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" data-bind="foreach: disciplines">
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h5 card-title"><sport-link params="kind: 'discipline', id: id, text: name"></sport-link></h3>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a data-bind="attr: { href: $root.links.teamsOf(id) }, t: 'sport.teams.title'">Teams</a>
+                        <a data-bind="attr: { href: $root.links.playersOf(id) }, t: 'sport.players.title'">Players</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

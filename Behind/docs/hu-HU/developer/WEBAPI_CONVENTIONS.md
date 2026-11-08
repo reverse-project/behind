@@ -367,6 +367,22 @@ A `Behind.Quotes.WebApi` a végpontjait az `UseQuotes()` hívással képezi le; 
 | `POST /quotes/{id}/delete` | `Quotes.Delete`; soft delete |
 | `POST /quotes/{id}/restore`, `POST /quotes/{id}/hard/delete` | `RawDatabase.Manage` |
 
+### Példa: a Sport végpontok
+
+A `Behind.Sport.WebApi` erőforrásonként egy általános végpontkészletet (`ResourceEndpoints`) képez le: `disciplines`, `positions`, `stat-types`, `seasons`, `teams`, `players`, `player-seasons` és `stats`.
+
+| Végpont | Hozzáférés |
+|---|---|
+| `GET /sport/<erőforrás>` | nyitott; az aktív sorok lapozva, szűrhetők a `discipline`, `season`, `team`, `player`, `position`, `statType`, `scope`, `search` és `letter` paraméterekkel |
+| `GET /sport/<erőforrás>/manage` | `Sport.Read` (a `deleted=true` a `RawDatabase.Manage` engedélyt igényli) |
+| `POST /sport/<erőforrás>`, `POST /sport/<erőforrás>/{id}` | `Sport.Write`; `{ id, version }` a válasz, `409` `{ reason }` a `version-conflict`, `unknown-reference`, `mismatch` (másik sportág), `duplicate`, `unknown-image` vagy `invalid-range` értékekkel |
+| `POST /sport/<erőforrás>/{id}/delete` | `Sport.Delete`; logikai törlés |
+| `POST /sport/<erőforrás>/{id}/restore`, `POST /sport/<erőforrás>/{id}/hard/delete` | `RawDatabase.Manage`; a végleges törlés `409`-et ad, amíg a sorra hivatkoznak |
+| `GET /sport/disciplines/{id}`, `/sport/teams/{id}`, `/sport/players/{id}`, `/sport/seasons/{id}` | nyitott; az entitás a kapcsolódó entitásaival, szezononként |
+| `GET /sport/leaderboards/{seasonId}[/{statTypeId}]` | nyitott; egy szezon ranglistái (`limit`, alapértelmezés 10, legfeljebb 100) vagy egy statisztikatípus teljes rangsora |
+| `POST /sport/teams/images`, `POST /sport/players/images` | `Sport.Write`; multipart `file`, `{ id, url }` a válasz, `413`, `415` |
+| `GET /sport/teams/images/{id}`, `GET /sport/players/images/{id}` | nyitott; megváltoztathatatlan, gyorsítótárazott képek, minden fajta a saját URL-je alatt |
+
 ### Példa: a Markdown Viewer végpontok
 
 A `Behind.MarkdownViewer.WebApi` az `UseMarkdownViewer()` hívással térképezi fel a végpontjait. A könyvtárak a `markdownviewer.json` fájlból jönnek (`IOptionsMonitor<MarkdownViewerConfiguration>`, a `MarkdownWorkspaceProvider` oldja fel):

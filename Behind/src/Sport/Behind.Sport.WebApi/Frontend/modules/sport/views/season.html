@@ -1,0 +1,29 @@
+<section class="behind-wide">
+    <p class="text-body-secondary" data-bind="visible: loading, t: 'sport.loading'">Loading...</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: missing, text: message"></div>
+    <div data-bind="visible: found">
+        <a class="d-inline-block mb-3" data-bind="attr: { href: links.seasons }, t: 'sport.seasons.back'">Back to seasons</a>
+        <h1 class="text-break" data-bind="text: name"></h1>
+        <div class="mb-3" data-bind="with: season">
+            <div><sport-link params="kind: 'discipline', id: disciplineId, text: disciplineName"></sport-link></div>
+            <div class="text-body-secondary" data-bind="text: $root.format.period($data)"></div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a class="btn btn-outline-primary" data-bind="attr: { href: links.leaderboards(seasonId) }"><i class="fa-solid fa-ranking-star me-1" aria-hidden="true"></i><span data-bind="t: 'sport.leaderboards.title'">Leaderboards</span></a>
+            <a class="btn btn-outline-primary" data-bind="attr: { href: links.stats(seasonId) }"><i class="fa-solid fa-chart-simple me-1" aria-hidden="true"></i><span data-bind="t: 'sport.stats.title'">Statistics</span></a>
+        </div>
+        <h2 class="h4" data-bind="t: 'sport.season.teams'">Teams</h2>
+        <p class="text-body-secondary" data-bind="visible: teams().length === 0, t: 'sport.season.noTeams'">No teams in this season yet.</p>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3" data-bind="foreach: teams">
+            <div class="col">
+                <div class="card h-100 text-center">
+                    <div class="card-body d-flex flex-column align-items-center gap-2">
+                        <a data-bind="attr: { href: $root.links.team(id) }"><sport-thumbnail params="url: logoUrl, kind: 'team', size: 6, alt: name"></sport-thumbnail></a>
+                        <h3 class="h6 mb-0"><sport-link params="kind: 'team', id: id, text: name"></sport-link></h3>
+                        <div class="small text-body-secondary" data-bind="t: { key: 'sport.season.playerCount', args: [playerCount] }"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

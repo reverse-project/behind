@@ -13,7 +13,8 @@ Load `csharp-code-standards` first. Code: `AbstractCoreContextVfs`, `IVfsCommand
 3. Content path: `vfs/<Type>/<parent item>/<item>`, where `<Type>` is the kind (`Sites`, `News`, `Articles`, `NewsCategories`, `ArticleCategories`, `Galleries`, `Downloads`, ...) and `<item>` is the file uuid. Example: `vfs/Articles/<article uuid>/<file uuid>`. While there is no parent yet: `vfs/<Type>/<item>`.
 4. **Set the parent as soon as it is known**, in every place that uses a file: insert a new version of the file and move the content under the parent. Every new place using uploads must do this.
 5. **Own URL per content kind**: `/sites/images/<id>`, `/news/images/<id>`, `/articles/images/<id>`, `/galleries/images/<id>`. The upload endpoint answers with that URL and content refers to it. Never serve through another kind's URL; a new kind gets its own route.
-6. Helpers shared by several kinds go to `Behind.Common.WebApi` (e.g. `FormFileExtensions`, `AttachmentResponseExtensions`).
+6. Modules use `IModuleFiles` (`Behind.Common.Database/Modules`) instead of Core `IVfsCommands`, with their own VFS type (for example `SportTeams`, `SportPlayers`) and own URLs (`/sport/teams/images/<id>`); `ImageUploadExtensions` in `Behind.Common.WebApi` provides the upload and serve helpers.
+7. Helpers shared by several kinds go to `Behind.Common.WebApi` (e.g. `FormFileExtensions`, `AttachmentResponseExtensions`).
 
 ## Tests
 Cover upload, parent assignment (file moved to the parent path), serving via the kind's own URL, and the legacy/migration paths when touched. Use `Helpers/VfsTestPaths.cs` and `TestImages.cs`.

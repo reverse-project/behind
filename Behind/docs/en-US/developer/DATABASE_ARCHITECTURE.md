@@ -859,6 +859,14 @@ dotnet ef migrations add "<Name>" --project src/Quotes/Behind.Quotes.Database.Po
 
 `QuotesAuditLabelSource` shows the text of a quote (latest version, deleted ones included) in the audit log, `QuotesSeed` adds one welcome quote once, and the `Quotes` table is editable in the raw database editor like every other table.
 
+### The Sport module
+
+The Sport module (`src/Sport`) stores eight versioned entities in its own tables, all with the composite primary key `Key` + `Version`, no timestamp columns (the audit log holds them) and no foreign keys (the references are plain `Guid` columns checked by the commands): `SportDisciplines` (`Name`, `Slug`; Soccer today, any other sport later), `SportPositions`, `SportStatTypes` (`Scope` is `Player` or `Team`, `HigherIsBetter` orders the leaderboards), `SportSeasons`, `SportTeams` (optional `LogoId`), `SportPlayers` (age is calculated from the optional `BirthDate`), `SportPlayerSeasons` (the membership of a player in a season: team, shirt number and the optional picture of that season) and `SportStats` (one value of a stat type for a player or a team in a season). Every entity is listed in `ModuleDatabase.SoftDeletedEntities`; a hard delete is refused while another row still references the entity. All references must belong to the same discipline, which is what makes the module usable for other sports.
+
+`ISportContext` extends `IModuleContext` and exposes the eight `DbSet`s; `WebContextSqlite`/`WebContextPostgres` implement it next to `IQuotesContext`. The migrations (`CreateSport`, history table `__sportMigrationsHistory`) are created like the Quotes ones with `--project src/Sport/Behind.Sport.Database.Sqlite|Postgres --startup-project src/Web/Behind.Web.Database.Migrator --context SportContextSqlite|SportContextPostgres`.
+
+Team logos and player pictures use the VFS through `IModuleFiles` (`Behind.Common.Database/Modules`, implemented by `ModuleFiles` in Core): the types are `SportTeams` and `SportPlayers`, the content is stored as `vfs/SportTeams/<team uuid>/<file uuid>` and `vfs/SportPlayers/<player uuid>/<file uuid>` and the parent is set as soon as the team or the season membership is saved. `SportAuditLabelSource` names every entity in the audit log and `SportSeed` adds Soccer with its positions and stat types once.
+
 ## Migrations
 
 ### Creating Migrations

@@ -1,0 +1,35 @@
+<section class="behind-wide">
+    <p class="text-body-secondary" data-bind="visible: loading, t: 'sport.loading'">Loading...</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: missing, text: message"></div>
+    <div data-bind="visible: found">
+        <a class="d-inline-block mb-3" data-bind="attr: { href: links.home }, t: 'sport.back'">Back to sport</a>
+        <h1 class="text-break" data-bind="text: name"></h1>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a class="btn btn-outline-primary" data-bind="attr: { href: links.teamsOf(disciplineId) }"><i class="fa-solid fa-shirt me-1" aria-hidden="true"></i><span data-bind="t: 'sport.teams.title'">Teams</span></a>
+            <a class="btn btn-outline-primary" data-bind="attr: { href: links.playersOf(disciplineId) }"><i class="fa-solid fa-user me-1" aria-hidden="true"></i><span data-bind="t: 'sport.players.title'">Players</span></a>
+        </div>
+        <div class="row g-4">
+            <div class="col-12 col-md-4">
+                <h2 class="h5" data-bind="t: 'sport.discipline.positions'">Positions</h2>
+                <p class="text-body-secondary" data-bind="visible: positions().length === 0, t: 'sport.discipline.noPositions'">No positions yet.</p>
+                <ul class="list-unstyled" data-bind="foreach: positions">
+                    <li><sport-link params="kind: 'position', id: id, text: name"></sport-link> <span class="text-body-secondary small" data-bind="text: abbreviation"></span></li>
+                </ul>
+            </div>
+            <div class="col-12 col-md-4">
+                <h2 class="h5" data-bind="t: 'sport.discipline.statTypes'">Stat types</h2>
+                <p class="text-body-secondary" data-bind="visible: statTypes().length === 0, t: 'sport.discipline.noStatTypes'">No stat types yet.</p>
+                <ul class="list-unstyled" data-bind="foreach: statTypes">
+                    <li><sport-link params="kind: 'statType', id: id, season: $parent.newestSeasonId(), text: name"></sport-link> <span class="text-body-secondary small" data-bind="text: abbreviation"></span></li>
+                </ul>
+            </div>
+            <div class="col-12 col-md-4">
+                <h2 class="h5" data-bind="t: 'sport.discipline.seasons'">Seasons</h2>
+                <p class="text-body-secondary" data-bind="visible: seasons().length === 0, t: 'sport.discipline.noSeasons'">No seasons yet.</p>
+                <ul class="list-unstyled" data-bind="foreach: seasons">
+                    <li><sport-link params="kind: 'season', id: id, text: name"></sport-link></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>

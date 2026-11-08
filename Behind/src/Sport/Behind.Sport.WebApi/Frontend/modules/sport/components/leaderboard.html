@@ -1,0 +1,25 @@
+<div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+        <thead>
+            <tr>
+                <th scope="col" data-bind="t: 'sport.leaderboard.rank'">#</th>
+                <th scope="col" data-bind="t: 'sport.leaderboard.subject'">Name</th>
+                <th scope="col" data-bind="t: 'sport.field.team'">Team</th>
+                <th scope="col" class="text-end" data-bind="t: 'sport.field.value'">Value</th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: rows">
+            <tr>
+                <td data-bind="text: rank"></td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <sport-thumbnail params="url: image, kind: kind, alt: subjectName"></sport-thumbnail>
+                        <sport-link params="kind: kind, id: subjectId, text: subjectName"></sport-link>
+                    </div>
+                </td>
+                <td><sport-link params="kind: 'team', id: teamId, text: teamName"></sport-link></td>
+                <td class="text-end" data-bind="text: $component.format.number(value)"></td>
+            </tr>
+        </tbody>
+    </table>
+</div>

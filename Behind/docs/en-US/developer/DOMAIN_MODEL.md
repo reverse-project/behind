@@ -429,6 +429,10 @@ public sealed record UserRecoveryCode([property: Sensible] string Hash);
 
 `Behind.Quotes.Domain.Quote(VersionedKey<Guid> Id, string Text, string Author)` is the entity of the example module (see `PROJECT_OVERVIEW.md`). `Text` is at most 1000 and `Author` at most 200 characters, both required. Like every versioned entity a save inserts the next version; created and updated times are read from the audit log, never stored on the quote. The module grant area is `Quotes` (`Quotes.Read`, `Quotes.Write`, `Quotes.Delete`, `Quotes.Manage`).
 
+## Sport module
+
+`Behind.Sport.Domain` holds the immutable records `Discipline`, `Position`, `StatType` (`StatScope`: `Player` or `Team`), `Season`, `Team` (optional `LogoId`), `Player` (position, birth date, nationality, height, weight, `Side` and biography), `PlayerSeason` (player, season, team, shirt number and the picture of that season) and `Stat` (season, stat type, subject and value), each with a `VersionedKey<Guid>` id. A player has one `PlayerSeason` per season, so different seasons can have different pictures and teams. The module grant area is `Sport` (`Sport.Read`, `Sport.Write`, `Sport.Delete`, `Sport.Manage`).
+
 ## Grants and the access catalog
 
 The Core grant areas (`GrantArea`, `GrantAction`) and built-in roles (`BuiltInAccess`) are the Core part of the access model. Modules add grant areas through their `ModuleDescriptor`; the `AccessCatalog` (`AccessCatalog.Core` or `AccessCatalog.From(moduleCatalog)`) is the complete, immutable view that every consumer uses: the grants, restrictions and built-in roles to seed (`catalog.Grants`/`Restrictions`/`Roles`), `IsKnownGrant`, `IsDeveloperGrant`, `GrantsDeveloperAccess`, `IsValid(selection)`, `IsBuiltIn(roleId)` and `FindRole(roleId)` (the reset defaults of a built-in role include the grants of the modules). Module grant ids are deterministic (`Guid.FromName("61000000", "<Area>.<Action>")`), so every installation seeds the same ids. Never read `BuiltInAccess.Grants`, `Roles` or `GrantNames` in production code: they only describe the Core.

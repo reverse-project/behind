@@ -1,0 +1,68 @@
+<section class="behind-wide">
+    <p class="text-body-secondary" data-bind="visible: loading, t: 'sport.loading'">Loading...</p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: missing, text: message"></div>
+    <div data-bind="visible: found, with: team">
+        <a class="d-inline-block mb-3" data-bind="attr: { href: $root.links.teams }, t: 'sport.teams.back'">Back to teams</a>
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+            <sport-thumbnail params="url: logoUrl, kind: 'team', size: 8, alt: name"></sport-thumbnail>
+            <div>
+                <h1 class="text-break mb-1" data-bind="text: name"></h1>
+                <div><sport-link params="kind: 'discipline', id: disciplineId, text: disciplineName"></sport-link></div>
+            </div>
+        </div>
+        <dl class="row mb-4">
+            <dt class="col-sm-3" data-bind="visible: $root.format.present(shortName), t: 'sport.field.shortName'">Short name</dt>
+            <dd class="col-sm-9" data-bind="visible: $root.format.present(shortName), text: shortName"></dd>
+            <dt class="col-sm-3" data-bind="visible: $root.origin() !== '', t: 'sport.team.origin'">Location</dt>
+            <dd class="col-sm-9" data-bind="visible: $root.origin() !== '', text: $root.origin()"></dd>
+            <dt class="col-sm-3" data-bind="visible: $root.format.present(foundedYear), t: 'sport.field.foundedYear'">Founded</dt>
+            <dd class="col-sm-9" data-bind="visible: $root.format.present(foundedYear), text: foundedYear"></dd>
+        </dl>
+        <div class="mb-4" data-bind="foreach: $root.description">
+            <p class="text-break" data-bind="text: $data"></p>
+        </div>
+    </div>
+    <div data-bind="visible: found">
+        <h2 class="h4" data-bind="t: 'sport.team.seasons'">Seasons</h2>
+        <p class="text-body-secondary" data-bind="visible: seasons().length === 0, t: 'sport.team.noSeasons'">This team has no seasons yet.</p>
+        <!-- ko foreach: seasons -->
+        <div class="card mb-4">
+            <div class="card-header d-flex flex-wrap align-items-baseline gap-2">
+                <h3 class="h5 mb-0"><sport-link params="kind: 'season', id: season.id, text: season.name"></sport-link></h3>
+                <span class="text-body-secondary small" data-bind="text: $root.format.period(season)"></span>
+            </div>
+            <div class="card-body">
+                <h4 class="h6" data-bind="visible: players.length > 0, t: 'sport.team.roster'">Roster</h4>
+                <div class="table-responsive" data-bind="visible: players.length > 0">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-bind="t: 'sport.field.shirtNumber'">Shirt</th>
+                                <th scope="col" data-bind="t: 'sport.field.player'">Player</th>
+                                <th scope="col" data-bind="t: 'sport.field.position'">Position</th>
+                            </tr>
+                        </thead>
+                        <tbody data-bind="foreach: players">
+                            <tr>
+                                <td data-bind="text: shirtNumber"></td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <sport-thumbnail params="url: pictureUrl, kind: 'player', alt: playerName"></sport-thumbnail>
+                                        <sport-link params="kind: 'player', id: playerId, text: playerName"></sport-link>
+                                    </div>
+                                </td>
+                                <td><sport-link params="kind: 'position', id: positionId, text: positionName"></sport-link></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h4 class="h6" data-bind="visible: stats.length > 0, t: 'sport.team.stats'">Team statistics</h4>
+                <div data-bind="visible: stats.length > 0">
+                    <sport-stats params="stats: stats"></sport-stats>
+                </div>
+                <p class="text-body-secondary mb-0" data-bind="visible: players.length === 0 && stats.length === 0, t: 'sport.team.seasonEmpty'">Nothing recorded for this season.</p>
+            </div>
+        </div>
+        <!-- /ko -->
+    </div>
+</section>

@@ -20,6 +20,9 @@
       <ProjectReference Include="..\..\Quotes\Behind.Quotes.Database.Postgres\Behind.Quotes.Database.Postgres.csproj" />
       <ProjectReference Include="..\..\Quotes\Behind.Quotes.Database.Sqlite\Behind.Quotes.Database.Sqlite.csproj" />
       <ProjectReference Include="..\..\Quotes\Behind.Quotes.WebApi\Behind.Quotes.WebApi.csproj" />
+      <ProjectReference Include="..\..\Sport\Behind.Sport.Database.Postgres\Behind.Sport.Database.Postgres.csproj" />
+      <ProjectReference Include="..\..\Sport\Behind.Sport.Database.Sqlite\Behind.Sport.Database.Sqlite.csproj" />
+      <ProjectReference Include="..\..\Sport\Behind.Sport.WebApi\Behind.Sport.WebApi.csproj" />
       <ProjectReference Include="..\Behind.Web.Database.Postgres\Behind.Web.Database.Postgres.csproj" />
       <ProjectReference Include="..\Behind.Web.Database.Sqlite\Behind.Web.Database.Sqlite.csproj" />
     </ItemGroup>

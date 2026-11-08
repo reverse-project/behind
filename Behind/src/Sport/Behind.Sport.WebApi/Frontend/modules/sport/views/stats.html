@@ -1,0 +1,15 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'sport.stats.title'">Statistics</h1>
+        <a class="btn btn-outline-primary ms-auto" data-bind="visible: hasSeason, attr: { href: leaderboardLink() }"><i class="fa-solid fa-ranking-star me-1" aria-hidden="true"></i><span data-bind="t: 'sport.leaderboards.title'">Leaderboards</span></a>
+    </div>
+    <sport-browser params="browser: browser"></sport-browser>
+    <div data-bind="with: list">
+        <div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
+        <p class="text-body-secondary" data-bind="visible: isEmpty, t: 'sport.stats.empty'">There are no statistics for this selection yet.</p>
+        <div class="mb-3" data-bind="visible: hasItems">
+            <sport-stats params="stats: items, showSubject: true"></sport-stats>
+        </div>
+        <pager class="d-block" params="pager: pager"></pager>
+    </div>
+</section>

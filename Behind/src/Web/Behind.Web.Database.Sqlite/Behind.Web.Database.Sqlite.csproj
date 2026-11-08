@@ -9,6 +9,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Core\Behind.Core.Database.Sqlite\Behind.Core.Database.Sqlite.csproj" />
       <ProjectReference Include="..\..\Quotes\Behind.Quotes.Database\Behind.Quotes.Database.csproj" />
+      <ProjectReference Include="..\..\Sport\Behind.Sport.Database\Behind.Sport.Database.csproj" />
     </ItemGroup>
 
 </Project>

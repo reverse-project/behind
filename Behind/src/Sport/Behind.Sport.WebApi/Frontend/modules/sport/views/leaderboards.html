@@ -1,0 +1,31 @@
+<section class="behind-wide">
+    <h1 data-bind="t: 'sport.leaderboards.title'">Leaderboards</h1>
+    <sport-browser params="browser: browser"></sport-browser>
+    <div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
+    <div data-bind="visible: !isSingle">
+        <p class="text-body-secondary" data-bind="visible: browser.season() !== null && !hasBoards() && message() === '', t: 'sport.leaderboards.empty'">There are no leaderboards for this season yet.</p>
+        <!-- ko foreach: boards -->
+        <div class="card mb-4">
+            <div class="card-header d-flex flex-wrap align-items-baseline gap-2">
+                <h2 class="h5 mb-0"><a data-bind="attr: { href: $root.links.leaderboards(season.id, statType.id) }, text: statType.name"></a></h2>
+                <span class="text-body-secondary small" data-bind="text: statType.abbreviation"></span>
+                <a class="ms-auto small" data-bind="attr: { href: $root.links.leaderboards(season.id, statType.id) }, t: 'sport.leaderboards.full'">Full leaderboard</a>
+            </div>
+            <div class="card-body">
+                <sport-leaderboard params="entries: entries"></sport-leaderboard>
+            </div>
+        </div>
+        <!-- /ko -->
+    </div>
+    <div data-bind="visible: isSingle, with: board">
+        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-3">
+            <h2 class="h4 mb-0" data-bind="text: statType.name"></h2>
+            <span class="text-body-secondary" data-bind="text: statType.abbreviation"></span>
+            <span class="text-body-secondary">–</span>
+            <sport-link params="kind: 'season', id: season.id, text: season.name"></sport-link>
+            <a class="ms-auto" data-bind="attr: { href: $root.links.leaderboards(season.id) }, t: 'sport.leaderboards.all'">All leaderboards</a>
+        </div>
+        <p class="text-body-secondary" data-bind="visible: entries.length === 0, t: 'sport.leaderboards.noEntries'">There are no entries for this stat type yet.</p>
+        <sport-leaderboard params="entries: entries"></sport-leaderboard>
+    </div>
+</section>

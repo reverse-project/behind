@@ -1,6 +1,9 @@
 using Behind.Common.Configuration;
+using Behind.Common.Database.Modules;
 using Behind.Common.Storage;
 using Behind.Core.Common.Configuration;
+using Behind.Core.Database.Commands;
+using Behind.Core.Database.Queries;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -29,6 +32,9 @@ public static class VfsServiceExtensions
             services.AddReloadableOptions(configuration, Bind);
             services.AddTransient<IContentStore>(provider =>
                 new DirectoryContentStore(provider.GetRequiredService<IOptions<BackendConfiguration>>().Value.VfsRoot));
+            services.AddScoped<IVfsQueries, VfsQueries>();
+            services.AddScoped<IVfsCommands, VfsCommands>();
+            services.AddScoped<IModuleFiles, ModuleFiles>();
 
             return services;
         }

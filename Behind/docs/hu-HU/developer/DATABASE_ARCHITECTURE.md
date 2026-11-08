@@ -859,6 +859,14 @@ dotnet ef migrations add "<Name>" --project src/Quotes/Behind.Quotes.Database.Po
 
 A `QuotesAuditLabelSource` az auditnaplóban egy idézet szövegét mutatja (a legújabb verzió, a töröltek is), a `QuotesSeed` egyszer hozzáad egy üdvözlő idézetet, a `Quotes` tábla pedig szerkeszthető a nyers adatbázis-szerkesztőben, mint bármely más tábla.
 
+### A Sport modul
+
+A Sport modul (`src/Sport`) nyolc verziózott entitást tárol saját táblákban, mindegyik `Key` + `Version` összetett elsődleges kulccsal, időbélyeg-oszlopok nélkül (azokat az auditnapló tartalmazza) és idegen kulcsok nélkül (a hivatkozások egyszerű `Guid` oszlopok, a parancsok ellenőrzik őket): `SportDisciplines` (`Name`, `Slug`; ma a foci, később bármely más sport), `SportPositions`, `SportStatTypes` (a `Scope` `Player` vagy `Team`, a `HigherIsBetter` rendezi a ranglistákat), `SportSeasons`, `SportTeams` (opcionális `LogoId`), `SportPlayers` (a kor az opcionális `BirthDate` alapján számolódik), `SportPlayerSeasons` (a játékos tagsága egy szezonban: csapat, mezszám és az adott szezon opcionális képe) és `SportStats` (egy statisztikatípus egy értéke egy játékosra vagy csapatra egy szezonban). Minden entitás szerepel a `ModuleDatabase.SoftDeletedEntities` listában; a végleges törlést elutasítja a rendszer, amíg másik sor hivatkozik az entitásra. Minden hivatkozásnak ugyanahhoz a sportághoz kell tartoznia, ettől használható a modul más sportokra is.
+
+Az `ISportContext` kiterjeszti az `IModuleContext`-et és a nyolc `DbSet`-et teszi elérhetővé; a `WebContextSqlite`/`WebContextPostgres` az `IQuotesContext` mellett ezt is megvalósítja. A migrációk (`CreateSport`, előzménytábla: `__sportMigrationsHistory`) a Quotes migrációkhoz hasonlóan készülnek: `--project src/Sport/Behind.Sport.Database.Sqlite|Postgres --startup-project src/Web/Behind.Web.Database.Migrator --context SportContextSqlite|SportContextPostgres`.
+
+A csapatlogók és a játékoskepek a VFS-t használják az `IModuleFiles`-on keresztül (`Behind.Common.Database/Modules`, megvalósítása a Core `ModuleFiles` osztálya): a típusok `SportTeams` és `SportPlayers`, a tartalom `vfs/SportTeams/<csapat uuid>/<fájl uuid>` és `vfs/SportPlayers/<játékos uuid>/<fájl uuid>` helyen tárolódik, a szülőt pedig a csapat vagy a szezontagság mentésekor azonnal beállítja a rendszer. A `SportAuditLabelSource` minden entitást megnevez az auditnaplóban, a `SportSeed` pedig egyszer létrehozza a focit a pozícióival és statisztikatípusaival.
+
 ## Migrációk
 
 ### Migrációk létrehozása

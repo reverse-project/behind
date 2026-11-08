@@ -13,6 +13,7 @@ Az **Adminisztráció** egy olyan oldal, amely az Ön által használható kezel
 | Letöltések | a `Download.Read` engedély (módosításhoz `Download.Write`) | [Letöltések](./managing-downloads.md) |
 | Menük | a `Menu.Read` engedély (módosításhoz `Menu.Write`) | [Menük](./managing-menus.md) |
 | Idézetek (modul) | a `Quotes.Read` engedély (módosításhoz `Quotes.Write`) | [Idézetek](./managing-quotes.md) |
+| Sport (modul) | a `Sport.Read` engedély (módosításhoz `Sport.Write`) | [Sport](./managing-sport.md) |
 | Dokumentáció (modul) | a `MarkdownViewer.Read` engedély (a statikus oldalak előállításához `MarkdownViewer.Write`) | [Dokumentáció](./managing-markdown-viewer.md) |
 | Útvonal-álnevek | a `RouteAlias.Read` engedély (módosításhoz `RouteAlias.Write`) | [Útvonal-álnevek](./managing-route-aliases.md) |
 | Hozzáférési beállítások | az `Access.Read` engedély (módosításhoz `Access.Write`) | [Hozzáférési beállítások](./managing-access-settings.md) |

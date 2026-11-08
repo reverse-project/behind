@@ -1,0 +1,97 @@
+using Behind.Common;
+using Behind.Common.Database;
+using Behind.Common.WebApi;
+using Behind.Common.WebApi.Middleware;
+using Behind.Sport.Database;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+
+namespace Behind.Sport.WebApi.Endpoints;
+
+public sealed record SportListResponse<TListing>(PageResponse<TListing> Page, IReadOnlyList<string> Letters);
+
+public static class ResourceEndpoints
+{
+    public const int DefaultPageSize = ManagedListExtensions.DefaultPageSize;
+    public const int MaxPageSize = ManagedListExtensions.MaxPageSize;
+
+    [IgnoreETag]
+    public static Task<IResult> List<TListing>(
+        HttpContext httpContext,
+        IListingQueries<TListing> queries,
+        IAuthorizationService authorization,
+        [AsParameters] SportListQuery query) =>
+        Page(httpContext, queries, authorization, query, false);
+
+    [IgnoreETag]
+    public static Task<IResult> Manage<TListing>(
+        HttpContext httpContext,
+        IListingQueries<TListing> queries,
+        IAuthorizationService authorization,
+        [AsParameters] SportListQuery query) =>
+        Page(httpContext, queries, authorization, query, query.Deleted);
+
+    [IgnoreETag]
+    public static async Task<IResult> Create<TDraft>(
+        TDraft draft,
+        HttpContext httpContext,
+        IVersionedCommands<TDraft> commands)
+        where TDraft : IDraft<TDraft> =>
+        (await commands.Create(draft.Normalized(), httpContext.RequestAborted)).ToResult();
+
+    [IgnoreETag]
+    public static async Task<IResult> Update<TDraft>(
+        Guid id,
+        TDraft draft,
+        HttpContext httpContext,
+        IVersionedCommands<TDraft> commands)
+        where TDraft : IDraft<TDraft> =>
+        (await commands.Update(id, draft.Normalized(), httpContext.RequestAborted)).ToResult();
+
+    [IgnoreETag]
+    public static async Task<IResult> Delete<TDraft>(
+        Guid id,
+        HttpContext httpContext,
+        IVersionedCommands<TDraft> commands) =>
+        (await commands.Delete(id, httpContext.RequestAborted)).ToNoContentResult();
+
+    [IgnoreETag]
+    public static async Task<IResult> Restore<TDraft>(
+        Guid id,
+        HttpContext httpContext,
+        IVersionedCommands<TDraft> commands) =>
+        (await commands.Restore(id, httpContext.RequestAborted)).ToNoContentResult();
+
+    [IgnoreETag]
+    public static async Task<IResult> HardDelete<TDraft>(
+        Guid id,
+        HttpContext httpContext,
+        IVersionedCommands<TDraft> commands) =>
+        (await commands.HardDelete(id, httpContext.RequestAborted)).ToResult();
+
+    private static Task<IResult> Page<TListing>(
+        HttpContext httpContext,
+        IListingQueries<TListing> queries,
+        IAuthorizationService authorization,
+        SportListQuery query,
+        bool deleted) =>
+        httpContext.WithManagedList(
+            authorization,
+            query.Search,
+            query.Letter,
+            deleted,
+            async managed =>
+            {
+                var request = new ListRequest(
+                    Flipper.Create(query.Page, query.PageSize, DefaultPageSize, MaxPageSize),
+                    managed.Search,
+                    managed.Letter,
+                    managed.State,
+                    query.ToFilter());
+
+                var page = await queries.List(request, httpContext.RequestAborted);
+                var letters = await queries.GetLetters(request, httpContext.RequestAborted);
+
+                return Results.Json(new SportListResponse<TListing>(page.ToPageResponse(listing => listing), letters));
+            });
+}

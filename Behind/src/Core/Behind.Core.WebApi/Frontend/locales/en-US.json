@@ -989,6 +989,7 @@
     "menuitems.empty": "No menu items found.",
     "menuitems.userMenu": "User menu",
     "menuitems.subItemOf": "Sub item of {0}",
+    "menuitems.toggleSubItems": "Toggle {0} sub items",
     "menuitems.confirm.delete": "Delete the {0} menu item?",
     "menuitems.confirm.hardDelete": "Permanently delete the {0} menu item and its sub items? This cannot be undone.",
     "menuitems.target.currentPage": "Current page",

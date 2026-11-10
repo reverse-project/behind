@@ -491,3 +491,22 @@
     margin-left: auto;
     margin-right: auto;
 }
+
+.menu-parent {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+}
+
+.menu-parent > .menu-parent-link {
+    padding-right: 0.25rem;
+}
+
+.menu-parent > .menu-parent-toggle {
+    padding-left: 0.25rem;
+    padding-right: 0.5rem;
+}
+
+.menu-parent > .dropdown-menu {
+    flex: 0 0 100%;
+}

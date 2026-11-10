@@ -780,3 +780,32 @@ button:focus-visible,
         animation-iteration-count: 1 !important;
     }
 }
+
+#header-container .fse-menu .menu-parent-link {
+    padding-right: 0.25rem;
+}
+
+#header-container .fse-menu .menu-parent-toggle {
+    padding-left: 0.25rem;
+    padding-right: 0.6rem;
+}
+
+#header-container .fse-menu .nav-link.menu-parent-toggle::after,
+#header-container .fse-menu .nav-link.menu-parent-toggle:hover::after,
+#header-container .fse-menu .nav-link.menu-parent-toggle:focus-visible::after,
+#header-container .fse-menu .nav-link.menu-parent-toggle[aria-expanded="true"]::after {
+    content: "";
+    position: static;
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 0;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-bottom: 0;
+    border-left: 0.3em solid transparent;
+    border-radius: 0;
+    opacity: 1;
+    transform: none;
+    transition: none;
+}

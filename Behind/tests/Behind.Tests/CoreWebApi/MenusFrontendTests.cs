@@ -228,6 +228,7 @@ public class MenusFrontendTests
         Assert.Contains("attr: attributes", template);
         Assert.Contains("click: open", template);
         Assert.Contains("dropdown-toggle", template);
+        Assert.Contains("menu-parent-link\" data-bind=\"attr: attributes, text: title, click: open\"", template);
         Assert.Contains("$component.isDropdown", template);
         Assert.Contains("dropdown: { list: \"list-unstyled mb-0\", item: \"\", link: \"dropdown-item\" }", script);
         Assert.Contains("navbar: { list: \"navbar-nav mb-2 mb-md-0\"", script);

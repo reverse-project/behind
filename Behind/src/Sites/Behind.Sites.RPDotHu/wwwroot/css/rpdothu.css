@@ -804,3 +804,12 @@ button:focus-visible,
         animation-iteration-count: 1 !important;
     }
 }
+
+#header-container .rp-menu .menu-parent-link {
+    padding-right: 0.25rem;
+}
+
+#header-container .rp-menu .menu-parent-toggle {
+    padding-left: 0.25rem;
+    padding-right: 0.6rem;
+}

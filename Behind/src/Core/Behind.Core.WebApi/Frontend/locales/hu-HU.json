@@ -988,6 +988,7 @@
     "menuitems.showDeleted": "Törölt menüelemek megjelenítése",
     "menuitems.empty": "Nem található menüelem.",
     "menuitems.userMenu": "Felhasználói menü",
+    "menuitems.toggleSubItems": "{0} almenüjének átváltása",
     "menuitems.subItemOf": "{0} almenüeleme",
     "menuitems.confirm.delete": "Törli a(z) {0} menüelemet?",
     "menuitems.confirm.hardDelete": "Véglegesen törli a(z) {0} menüelemet és az almenüelemeit? Ez a művelet nem vonható vissza.",

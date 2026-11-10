@@ -2,8 +2,9 @@
     <li data-bind="visible: !hasChildren || $component.isDropdown, css: $component.itemClass">
         <a data-bind="attr: attributes, text: title, click: open, css: $component.linkClass"></a>
     </li>
-    <li class="nav-item dropdown" data-bind="visible: hasChildren && !$component.isDropdown">
-        <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: title"></button>
+    <li class="nav-item dropdown menu-parent" data-bind="visible: hasChildren && !$component.isDropdown">
+        <a class="nav-link menu-parent-link" data-bind="attr: attributes, text: title, click: open"></a>
+        <button type="button" class="nav-link dropdown-toggle dropdown-toggle-split menu-parent-toggle" data-bs-toggle="dropdown" data-bs-reference="parent" aria-expanded="false" data-bind="tAttr: { 'aria-label': { key: 'menuitems.toggleSubItems', args: [title] } }"></button>
         <ul class="dropdown-menu" data-bind="foreach: children">
             <li><a class="dropdown-item" data-bind="attr: attributes, text: title, click: open"></a></li>
         </ul>

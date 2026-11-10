@@ -177,6 +177,9 @@ public sealed class SmtpEmailSender : EmailSender
         };
         mailMessage.To.Add(email);
 
+        // System.Net.Mail does not generate a Message-ID, and some receiving servers reject messages without one.
+        mailMessage.Headers.Add("Message-ID", $"<{Guid.NewGuid():N}@{mailMessage.From.Host}>");
+
         _logger.LogDebug(
             "Sending email from {Sender} to {Email} with subject {Subject} through {SmtpServer}:{Port} (SSL: {SslEnabled})",
             () =>

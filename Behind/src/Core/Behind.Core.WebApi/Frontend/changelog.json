@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [
+      { "type": "added", "text": "The menu-items component can open the submenus of the main menu on hover (hover: true) on wide screens with a pointer, and closes them when an item is clicked or the pointer leaves." },
       { "type": "added", "text": "The Sport module (Sport in the main menu), mainly for soccer but built for any sport: everybody can browse the sports, teams, players, seasons, leaderboards and statistics, and every team, player, season, sport, position and stat type is linked on every page that shows it." },
       { "type": "added", "text": "Teams have an optional logo, players have details (position, age from the birth date, nationality, height, weight, dominant side, biography) and a different picture for every season together with their team, shirt number and statistics of that season; the leaderboards rank players or teams by any stat type of a season." },
       { "type": "added", "text": "Users holding the Sport grants manage the sports, positions, stat types, seasons, teams, players, season memberships (with the season pictures) and statistics under Administration > Sport, with search, letters, paging, versions, soft delete, restore (developers) and permanent delete (developers); a fresh installation starts with Soccer, its positions and its player and team stat types." },

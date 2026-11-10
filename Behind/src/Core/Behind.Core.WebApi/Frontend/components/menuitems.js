@@ -1,4 +1,4 @@
-define(["text!components/menuitems.html"], function (template) {
+define(["text!components/menuitems.html", "bindings/menuhover"], function (template) {
     var variants = {
         nav: { list: "nav", item: "nav-item", link: "nav-link link-secondary" },
         navbar: { list: "navbar-nav mb-2 mb-md-0", item: "nav-item", link: "nav-link" },
@@ -13,6 +13,7 @@ define(["text!components/menuitems.html"], function (template) {
                 return {
                     items: params.items,
                     isDropdown: params.variant === "dropdown",
+                    hover: params.hover === true,
                     listClass: variant.list,
                     itemClass: variant.item,
                     linkClass: variant.link

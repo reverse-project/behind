@@ -211,6 +211,15 @@ h4, .h4, h5, .h5, h6, .h6 {
     border-bottom: 1px solid #3e3e3e;
 }
 
+#header-container .fse-menu .menu-parent:has(> .menu-parent-toggle.show) > .nav-link {
+    color: var(--fse-yellow);
+}
+
+#header-container .fse-menu .menu-parent:has(> .menu-parent-toggle.show) > .menu-parent-link::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 #main-container {
     animation: fse-page-in 0.3s ease;
 }

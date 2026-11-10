@@ -105,6 +105,24 @@ public class MenusFrontendTests
     }
 
     [Fact]
+    public void MenuItems_OpenTheSubmenusOnHoverThroughTheBootstrapDropdownOnlyWhenAsked()
+    {
+        var component = Read("components/menuitems.js");
+        var template = Read("components/menuitems.html");
+        var binding = Read("bindings/menuhover.js");
+
+        Assert.Contains("\"bindings/menuhover\"", component);
+        Assert.Contains("hover: params.hover === true", component);
+        Assert.Contains("menuHover: $component.hover", template);
+        Assert.Contains("ko.bindingHandlers.menuHover", binding);
+        Assert.Contains("if (!ko.unwrap(valueAccessor()))", binding);
+        Assert.Contains("(min-width: 768px) and (hover: hover)", binding);
+        Assert.Contains("dropdownOf($parent).show()", binding);
+        Assert.Contains("dropdownOf($parent).hide()", binding);
+        Assert.Contains("$parent.off(namespace)", binding);
+    }
+
+    [Fact]
     public void MenusModel_CallsTheMenuEndpoints()
     {
         var model = Read("models/menus.js");

@@ -781,6 +781,22 @@ button:focus-visible,
     }
 }
 
+/* Keep the caret beside its link; the dropdown menu is absolutely positioned from md up. */
+@media (min-width: 768px) {
+    #header-container .fse-menu .menu-parent {
+        flex-wrap: nowrap;
+    }
+
+    #header-container .fse-menu .menu-parent-link {
+        flex: 1 1 auto;
+    }
+
+    #header-container .fse-menu .menu-parent-toggle {
+        flex: 0 0 auto;
+        align-self: center;
+    }
+}
+
 #header-container .fse-menu .menu-parent-link {
     padding-right: 0.25rem;
 }

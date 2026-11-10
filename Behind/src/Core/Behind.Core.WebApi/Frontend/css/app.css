@@ -510,3 +510,18 @@
 .menu-parent > .dropdown-menu {
     flex: 0 0 100%;
 }
+
+/* Keep the caret beside its link; the dropdown menu is absolutely positioned from md up. */
+@media (min-width: 768px) {
+    .menu-parent {
+        flex-wrap: nowrap;
+    }
+
+    .menu-parent > .menu-parent-link {
+        flex: 1 1 auto;
+    }
+
+    .menu-parent > .menu-parent-toggle {
+        flex: 0 0 auto;
+    }
+}

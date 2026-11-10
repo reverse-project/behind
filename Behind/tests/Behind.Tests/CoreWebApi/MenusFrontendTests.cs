@@ -116,7 +116,9 @@ public class MenusFrontendTests
         Assert.Contains("menuHover: $component.hover", template);
         Assert.Contains("ko.bindingHandlers.menuHover", binding);
         Assert.Contains("if (!ko.unwrap(valueAccessor()))", binding);
-        Assert.Contains("(min-width: 768px) and (hover: hover)", binding);
+        Assert.Contains("window.matchMedia(\"(hover: hover)\")", binding);
+        Assert.Contains("document.querySelector(\".navbar-toggler\")", binding);
+        Assert.Contains("hoverCapable.matches", binding);
         Assert.Contains("dropdownOf($parent).show()", binding);
         Assert.Contains("dropdownOf($parent).hide()", binding);
         Assert.Contains("$parent.off(namespace)", binding);

@@ -33,6 +33,8 @@ public sealed record LeaderboardEntry(
     int Rank,
     Guid SubjectId,
     string SubjectName,
+    string? SubjectFirstName,
+    string? SubjectLastName,
     StatScope Scope,
     Guid? TeamId,
     string? TeamName,

@@ -87,6 +87,7 @@
     "sport.field.logo": "Logo",
     "sport.field.firstName": "First name",
     "sport.field.lastName": "Last name",
+    "sport.personName": "{0} {1}",
     "sport.field.birthDate": "Birth date",
     "sport.field.age": "Age",
     "sport.field.nationality": "Nationality",

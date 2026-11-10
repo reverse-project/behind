@@ -3,6 +3,8 @@ using Behind.Sport.Domain;
 
 namespace Behind.Sport.Database;
 
+public sealed record SubjectLabel(string Name, string? FirstName, string? LastName);
+
 public sealed class SportLookups(ISportContext context)
 {
     public Task<IReadOnlyDictionary<Guid, Discipline>> Disciplines(
@@ -35,7 +37,7 @@ public sealed class SportLookups(ISportContext context)
         CancellationToken cancellationToken = default) =>
         Latest(context.Players, ids, cancellationToken);
 
-    public async Task<IReadOnlyDictionary<Guid, string>> SubjectNames(
+    public async Task<IReadOnlyDictionary<Guid, SubjectLabel>> SubjectNames(
         IEnumerable<(Guid Id, StatScope Scope)> subjects,
         CancellationToken cancellationToken = default)
     {
@@ -44,9 +46,11 @@ public sealed class SportLookups(ISportContext context)
         var teams = await Teams(listed.Where(subject => subject.Scope == StatScope.Team).Select(subject => subject.Id), cancellationToken);
 
         return players
-            .ToDictionary(player => player.Key, player => player.Value.FullName)
-            .Concat(teams.ToDictionary(team => team.Key, team => team.Value.Name))
-            .ToDictionary(name => name.Key, name => name.Value);
+            .ToDictionary(
+                player => player.Key,
+                player => new SubjectLabel(player.Value.FullName, player.Value.FirstName, player.Value.LastName))
+            .Concat(teams.ToDictionary(team => team.Key, team => new SubjectLabel(team.Value.Name, null, null)))
+            .ToDictionary(label => label.Key, label => label.Value);
     }
 
     public async Task<IReadOnlyDictionary<Guid, TEntity>> Latest<TEntity>(

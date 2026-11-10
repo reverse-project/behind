@@ -40,7 +40,8 @@ public sealed class PlayerSeasonQueries(ISportContext context) : ListingQueries<
                 term,
                 text => membership => players.Any(player =>
                     EF.Property<Guid>(player, VersionedColumns.Key) == membership.PlayerId
-                    && (player.FirstName + " " + player.LastName).ToLower().Contains(text)));
+                    && ((player.FirstName + " " + player.LastName).ToLower().Contains(text)
+                        || (player.LastName + " " + player.FirstName).ToLower().Contains(text))));
     }
 
     protected override async Task<IReadOnlyList<PlayerSeasonListing>> Present(
@@ -64,6 +65,8 @@ public sealed class PlayerSeasonQueries(ISportContext context) : ListingQueries<
                     row.Key,
                     row.Entity.PlayerId,
                     player?.FullName ?? string.Empty,
+                    player?.FirstName ?? string.Empty,
+                    player?.LastName ?? string.Empty,
                     player?.PositionId,
                     positions.Find(player?.PositionId)?.Name,
                     row.Entity.SeasonId,

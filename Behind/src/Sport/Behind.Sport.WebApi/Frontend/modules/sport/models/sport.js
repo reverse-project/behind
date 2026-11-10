@@ -1,4 +1,4 @@
-define(["models/http", "models/results", "modules/sport/models/components"], function (http, results) {
+define(["models/http", "models/results", "modules/sport/models/names", "modules/sport/models/components"], function (http, results, names) {
     var sessionExpired = results.sessionExpired;
     var root = "/sport/";
 
@@ -79,7 +79,9 @@ define(["models/http", "models/results", "modules/sport/models/components"], fun
 
     var read = function (path, failures) {
         return http.get(path).then(function (response) {
-            return loaded(response, failures);
+            var result = loaded(response, failures);
+
+            return result.ok ? Object.assign({}, result, { data: names.localize(result.data) }) : result;
         });
     };
 

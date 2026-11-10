@@ -36,6 +36,7 @@ public sealed class PlayerQueries(ISportContext context, TimeProvider time)
             .Narrowed(
                 term,
                 text => player => (player.FirstName + " " + player.LastName).ToLower().Contains(text)
+                                  || (player.LastName + " " + player.FirstName).ToLower().Contains(text)
                                   || (player.Nationality != null && player.Nationality.ToLower().Contains(text)));
     }
 

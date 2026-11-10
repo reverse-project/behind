@@ -184,6 +184,14 @@ public class SportFrontendTests
     }
 
     [Theory]
+    [InlineData("en-US", "{0} {1}")]
+    [InlineData("hu-HU", "{1} {0}")]
+    public void Locales_OrderThePartsOfAPersonName(string code, string template)
+    {
+        Assert.Equal(template, Locale(code)["sport.personName"]);
+    }
+
+    [Theory]
     [InlineData("en-US", "Sport")]
     [InlineData("hu-HU", "Sport")]
     public void Locales_TranslateTheMenuItemOfTheModule(string code, string title)

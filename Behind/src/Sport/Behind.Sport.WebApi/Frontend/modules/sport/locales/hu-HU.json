@@ -87,6 +87,7 @@
     "sport.field.logo": "Logó",
     "sport.field.firstName": "Keresztnév",
     "sport.field.lastName": "Vezetéknév",
+    "sport.personName": "{1} {0}",
     "sport.field.birthDate": "Születési dátum",
     "sport.field.age": "Kor",
     "sport.field.nationality": "Nemzetiség",

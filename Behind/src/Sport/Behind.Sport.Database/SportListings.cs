@@ -75,6 +75,8 @@ public sealed record PlayerSeasonListing(
     Guid Id,
     Guid PlayerId,
     string PlayerName,
+    string PlayerFirstName,
+    string PlayerLastName,
     Guid? PositionId,
     string? PositionName,
     Guid SeasonId,
@@ -98,5 +100,7 @@ public sealed record StatListing(
     StatScope Scope,
     Guid SubjectId,
     string SubjectName,
+    string? SubjectFirstName,
+    string? SubjectLastName,
     double Value,
     bool IsDeleted);

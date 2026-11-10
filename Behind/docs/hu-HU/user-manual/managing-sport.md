@@ -22,7 +22,7 @@ Az adminisztrátorok alapból minden engedéllyel rendelkeznek, a felhasználók
 - **Ranglisták**: egy szezon legjobb játékosai vagy csapatai minden statisztikatípusra (első 10), és egy statisztikatípus teljes rangsora. Az azonos értékek azonos helyezést kapnak, az olyan statisztikatípusokat, ahol a kevesebb a jobb (például kapott gólok), növekvő sorrendben rangsorolja a rendszer.
 - **Statisztikák**: egy szezon összes statisztikája, szükség esetén egy statisztikatípusra szűkítve.
 
-A csapatok, játékosok, szezonok, sportágak, pozíciók és statisztikatípusok mindenhol hivatkozások, ahol megjelennek.
+A csapatok, játékosok, szezonok, sportágak, pozíciók és statisztikatípusok mindenhol hivatkozások, ahol megjelennek. A játékosok neve az oldal nyelvét követi: angolul **keresztnév vezetéknév** (Ada Lovelace), magyarul **vezetéknév keresztnév** (Lovelace Ada) jelenik meg. A keresés mindkét névsorrenddel megtalálja a játékost.
 
 ## Kezelés
 

@@ -22,7 +22,7 @@ Administrators have all the grants by default, users can read.
 - **Leaderboards**: the best players or teams of a season for every stat type (top 10), and the full ranking of one stat type. Ties share a rank, and stat types where less is better (for example goals against) are ranked ascending.
 - **Statistics**: every statistic of a season, optionally of one stat type.
 
-Teams, players, seasons, sports, positions and stat types are links everywhere they appear.
+Teams, players, seasons, sports, positions and stat types are links everywhere they appear. Player names follow the language of the page: English shows **first name last name** (Ada Lovelace), Hungarian shows **last name first name** (Lovelace Ada). The search finds a player with the name in either order.
 
 ## Managing
 

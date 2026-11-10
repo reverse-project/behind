@@ -169,6 +169,8 @@ public sealed class SportDetailQueries(
                 scope == StatScope.Player
                     ? playersById.Find(row.Entity.SubjectId)?.FullName ?? string.Empty
                     : teamsById.Find(row.Entity.SubjectId)?.Name ?? string.Empty,
+                playersById.Find(row.Entity.SubjectId)?.FirstName,
+                playersById.Find(row.Entity.SubjectId)?.LastName,
                 scope,
                 roster.GetValueOrDefault(row.Entity.SubjectId)?.TeamId,
                 rosterTeams.Find(roster.GetValueOrDefault(row.Entity.SubjectId)?.TeamId)?.Name,

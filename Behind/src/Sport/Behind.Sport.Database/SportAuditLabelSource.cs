@@ -51,7 +51,7 @@ public sealed class SportAuditLabelSource(ISportContext context) : IAuditLabelSo
                 row.Key,
                 string.Join(
                     Separator,
-                    subjects.GetValueOrDefault(row.Value.SubjectId),
+                    subjects.GetValueOrDefault(row.Value.SubjectId)?.Name,
                     statStatTypes.Find(row.Value.StatTypeId)?.Name,
                     statSeasons.Find(row.Value.SeasonId)?.Name)))
         ];

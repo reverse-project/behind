@@ -96,6 +96,10 @@ public sealed class SportQueriesTests : IDisposable
         Assert.Equal(2, (await _bed.ListAsync<PlayerSeasonListing>(filter: SportFilter.Empty with { Player = world.Ada })).Count);
         Assert.Single(await _bed.ListAsync<PlayerSeasonListing>(filter: SportFilter.Empty with { Team = world.Rovers }));
         Assert.Single(await _bed.ListAsync<PlayerSeasonListing>(search: "bob"));
+        Assert.Single(await _bed.ListAsync<PlayerSeasonListing>(search: "zed bob"));
+        Assert.Equal(["Bob"], (await _bed.ListAsync<PlayerListing>(search: "zed bob")).Select(row => row.FirstName));
+        Assert.Equal(["Lovelace"], (await _bed.ListAsync<StatListing>(search: "lovelace ada")).Select(row => row.SubjectLastName).Distinct());
+        Assert.Equal(["Ada"], (await _bed.ListAsync<PlayerSeasonListing>(search: "lovelace ada")).Select(row => row.PlayerFirstName).Distinct());
         Assert.Equal(3, (await _bed.ListAsync<StatListing>(filter: SportFilter.Empty with { Season = world.Season })).Count);
         Assert.Equal(["Wins"], (await _bed.ListAsync<StatListing>(filter: SportFilter.Empty with { Scope = StatScope.Team })).Select(row => row.StatTypeName));
         Assert.Equal(2, (await _bed.ListAsync<StatListing>(filter: SportFilter.Empty with { Player = world.Ada })).Count);
@@ -154,6 +158,7 @@ public sealed class SportQueriesTests : IDisposable
         var season = Assert.Single(detail.Seasons);
         Assert.Equal(world.Season, season.Season.Id);
         Assert.Equal(["Ada Lovelace"], season.Players.Select(player => player.PlayerName));
+        Assert.Equal([("Ada", "Lovelace")], season.Players.Select(player => (player.PlayerFirstName, player.PlayerLastName)));
         Assert.Equal(["Wins"], season.Stats.Select(stat => stat.StatTypeName));
     }
 
@@ -191,6 +196,8 @@ public sealed class SportQueriesTests : IDisposable
 
         Assert.Equal([1, 1], board.Entries.Select(entry => entry.Rank));
         Assert.Equal(["Ada Lovelace", "Bob Zed"], board.Entries.Select(entry => entry.SubjectName).Order());
+        Assert.Equal(["Ada", "Bob"], board.Entries.Select(entry => entry.SubjectFirstName).Order());
+        Assert.Equal(["Lovelace", "Zed"], board.Entries.Select(entry => entry.SubjectLastName).Order());
         Assert.Equal(["Rovers", "United"], board.Entries.Select(entry => entry.TeamName).Order());
     }
 

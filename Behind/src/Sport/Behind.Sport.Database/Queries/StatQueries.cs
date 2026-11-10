@@ -39,7 +39,8 @@ public sealed class StatQueries(ISportContext context) : ListingQueries<Stat, St
                                     && statType.Name.ToLower().Contains(text))
                                 || players.Any(player =>
                                     EF.Property<Guid>(player, VersionedColumns.Key) == stat.SubjectId
-                                    && (player.FirstName + " " + player.LastName).ToLower().Contains(text))
+                                    && ((player.FirstName + " " + player.LastName).ToLower().Contains(text)
+                                        || (player.LastName + " " + player.FirstName).ToLower().Contains(text)))
                                 || teams.Any(team =>
                                     EF.Property<Guid>(team, VersionedColumns.Key) == stat.SubjectId
                                     && team.Name.ToLower().Contains(text)));
@@ -70,7 +71,9 @@ public sealed class StatQueries(ISportContext context) : ListingQueries<Stat, St
                     statType?.Abbreviation ?? string.Empty,
                     statType?.Scope ?? StatScope.Player,
                     row.Entity.SubjectId,
-                    subjects.GetValueOrDefault(row.Entity.SubjectId) ?? string.Empty,
+                    subjects.GetValueOrDefault(row.Entity.SubjectId)?.Name ?? string.Empty,
+                    subjects.GetValueOrDefault(row.Entity.SubjectId)?.FirstName,
+                    subjects.GetValueOrDefault(row.Entity.SubjectId)?.LastName,
                     row.Entity.Value,
                     state == DeletionState.Deleted);
             })

@@ -1,6 +1,17 @@
 define(["jquery", "ko", "bootstrap"], function ($, ko, bootstrap) {
     var namespace = ".menuhover";
-    var hoverCapable = window.matchMedia("(min-width: 768px) and (hover: hover)");
+    var hoverMedia = window.matchMedia("(hover: hover)");
+    var hoverCapable = {
+        // Hover menus only apply when the navbar is expanded, i.e. its toggler is hidden.
+        get matches() {
+            if (!hoverMedia.matches) {
+                return false;
+            }
+
+            var toggler = document.querySelector(".navbar-toggler");
+            return !toggler || toggler.offsetParent === null;
+        }
+    };
 
     var dropdownOf = function ($parent) {
         return bootstrap.Dropdown.getOrCreateInstance($parent.find(".menu-parent-toggle")[0]);

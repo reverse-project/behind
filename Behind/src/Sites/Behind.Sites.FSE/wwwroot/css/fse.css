@@ -790,8 +790,8 @@ button:focus-visible,
     }
 }
 
-/* Keep the caret beside its link; the dropdown menu is absolutely positioned from md up. */
-@media (min-width: 768px) {
+/* Keep the caret beside its link; the dropdown menu is absolutely positioned from xxl up (navbar-expand-xxl). */
+@media (min-width: 1400px) {
     #header-container .fse-menu .menu-parent {
         flex-wrap: nowrap;
     }

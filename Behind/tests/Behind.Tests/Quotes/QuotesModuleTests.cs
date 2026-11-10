@@ -165,7 +165,7 @@ public sealed class QuotesModuleTests : IDisposable
         Assert.Equal("Quote", table.EntityName);
         Assert.Equal(["Key", "Version"], table.KeyColumns.Select(column => column.Name));
         Assert.False(context.IsReadOnly(table));
-        Assert.Empty(table.Columns.Where(column => column.IsSensitive));
+        Assert.DoesNotContain(table.Columns, column => column.IsSensitive);
     }
 
     [Fact]

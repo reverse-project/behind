@@ -125,7 +125,7 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
             }
 
             return await (await unitOfWork.GetRepository<HumanUser, Guid>().TryFindAsync(id, cancellationToken))
-                .Match(
+                .Match<Task<ApplicationUser?>>(
                     none: () => Task.FromResult<ApplicationUser?>(null),
                     some: async user => await user.ToApplicationUser(id).WithApproval(approvalQueries, cancellationToken)
                 );
@@ -141,7 +141,7 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
     public async Task<ApplicationUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
     {
         return await (await userQueries.GetUserByEmail(normalizedUserName, cancellationToken))
-            .Match(
+            .Match<Task<ApplicationUser?>>(
                 none: () => Task.FromResult<ApplicationUser?>(null),
                 some: async user => await user.User.ToApplicationUser(user.Id)
                     .WithApproval(approvalQueries, cancellationToken)

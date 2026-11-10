@@ -56,4 +56,16 @@
       </Content>
     </ItemGroup>
 
+    <!-- The referenced Core migrator flows its own backend.json/database.json into publish output and collides with ours. -->
+    <Target Name="ExcludeCoreMigratorConfigFromPublish" AfterTargets="GetCopyToPublishDirectoryItems">
+      <PropertyGroup>
+        <CoreMigratorDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\Core\Behind.Core.Database.Migrator\'))</CoreMigratorDir>
+      </PropertyGroup>
+      <ItemGroup>
+        <_SourceItemsToCopyToPublishDirectory Remove="$(CoreMigratorDir)backend.json;$(CoreMigratorDir)database.json" />
+        <_SourceItemsToCopyToPublishDirectoryAlways Remove="$(CoreMigratorDir)backend.json;$(CoreMigratorDir)database.json" />
+        <_SourceItemsToCopyToPublishDirectoryIfDifferent Remove="$(CoreMigratorDir)backend.json;$(CoreMigratorDir)database.json" />
+      </ItemGroup>
+    </Target>
+
 </Project>

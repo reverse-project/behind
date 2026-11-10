@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <Version>1.0.0</Version>
+        <Version>1.0.1</Version>
         <Copyright>Copyright (c) 2026 Behind contributors</Copyright>
         <PackageLicenseExpression>GPL-2.0-or-later</PackageLicenseExpression>
     </PropertyGroup>

@@ -4,6 +4,7 @@ using Behind.Quotes.Database;
 using Behind.Quotes.Database.Commands;
 using Behind.Quotes.Database.Queries;
 using Behind.Quotes.WebApi;
+using Behind.Sport.WebApi;
 using Behind.Web.Database.Sqlite;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ public sealed class QuotesTestBed : IDisposable
     public static readonly DateTimeOffset Now = new(2026, 11, 7, 12, 0, 0, TimeSpan.Zero);
 
     private static readonly ModuleCatalog Catalog =
-        ModuleCatalog.Create([QuotesModule.Descriptor]).GetOrElse(ModuleCatalog.Empty);
+        ModuleCatalog.Create([QuotesModule.Descriptor, SportModule.Descriptor]).GetOrElse(ModuleCatalog.Empty);
 
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
 

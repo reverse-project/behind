@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
     <PropertyGroup>
-      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:10.0-noble</ContainerBaseImage>
+      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:11.0-resolute</ContainerBaseImage>
       <PublishSingleFile>true</PublishSingleFile>
       <SelfContained>true</SelfContained>
       <ContainerRepository>reverse-project/behind/sites/rpdothu</ContainerRepository>

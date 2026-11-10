@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.0.1",
+    "date": "2026-11-10",
+    "changes": [
+      { "type": "changed", "text": "Behind is upgraded to .NET 11: every project targets net11.0, the development container uses the .NET 11 SDK, and the Microsoft, Entity Framework Core and Npgsql packages are updated to their .NET 11 versions." }
+    ]
+  },
+  {
     "version": "1.0.0",
     "date": "2026-11-01",
     "changes": [

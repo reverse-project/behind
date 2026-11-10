@@ -2,13 +2,13 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <PropertyGroup>
-      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:10.0-noble</ContainerBaseImage>
+      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:11.0-resolute</ContainerBaseImage>
       <PublishSingleFile>true</PublishSingleFile>
       <SelfContained>true</SelfContained>
       <ContainerRepository>reverse-project/behind/sites/fse-database-migrator</ContainerRepository>

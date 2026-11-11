@@ -28,6 +28,11 @@ public static class ForumModule
             new ModuleRoute("#/forum", "modules/forum/controllers/forum"),
             new ModuleRoute("#/manage/forum", "modules/forum/controllers/forummanager")
         ],
+        Widgets =
+        [
+            new ModuleWidget("forum.posts", "widgets.forumPosts", "modules/forum/models/widgets"),
+            new ModuleWidget("forum.stats", "widgets.forumStats", "modules/forum/models/widgets")
+        ],
         ConfigurationFiles = ["forum.json"],
         Frontend = new ModuleFrontend(typeof(ForumModule).Assembly, ["modules/forum/css/forum.css"]),
         Database = new ModuleDatabase(typeof(ForumBoardConfiguration).Assembly)

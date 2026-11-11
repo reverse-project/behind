@@ -1,5 +1,13 @@
 # Project Overview
 
+## Layouts and widgets
+
+Core provides `#/manage/layouts` (Administration > Layouts), a grid editor with multiple layouts, section ordering, row/column spans, placement preview and exact/prefix route assignments. The built-in layout contains only `core.content`; the shell preserves existing page markup and bindings by moving the main container into that slot. Account and administration pages keep the simple layout. Both installation skins inherit the shared responsive layout styles.
+
+Modules contribute widgets through `ModuleDescriptor.Widgets` (`ModuleWidget` in Common), exposed by `GET /modules`. Keys are module-prefixed and frontend loaders belong to that module. Core supplies latest content, menus, custom rich text/HTML and chat; Forum contributes posts and statistics only when installed. Widget endpoints apply their normal access rules. `models/invalidation` refreshes subscribed regions without a browser reload; menu mutations invalidate mounted menus, and layout saves invalidate the shell without replacing the current content.
+
+Module frontend models export `load(type, limit)` returning `{items?, stats?, content?, messages?}`. Descriptor fields are `key`, locale-key `name` and AMD `model`. Chronological module feeds inject `IModuleCreationOrder.NewestFirst` from Common.Database; Core implements it using audit creation times, so modules never sort UUIDs or depend on Core.
+
 ## Forum and public profiles
 
 The main `Behind.Web` installation loads `Behind.Forum.*` beside Core, Quotes and Sport; the existing sites do not load Forum. Its Common, Domain, Database, SQLite, PostgreSQL and WebApi projects contribute through `ForumModule.Descriptor`. The frontend includes board/topic/reply browsing and forum administration with moderation. `forum.json` is reloadable and appears on Settings.

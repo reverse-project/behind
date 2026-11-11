@@ -1,0 +1,58 @@
+@baseUrl = http://localhost:5000
+@token = replace-with-access-token
+
+### Public active layouts
+GET {{baseUrl}}/layouts
+
+### Management configuration (Configuration.Read)
+GET {{baseUrl}}/layouts/manage
+Authorization: Bearer {{token}}
+
+### Save (Configuration.Manage); use the revision from the management response
+POST {{baseUrl}}/layouts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "revision": 0,
+  "defaultLayout": "default",
+  "layouts": [
+    {
+      "id": "default",
+      "name": "Default",
+      "sections": [
+        {
+          "rows": 1,
+          "columns": 1,
+          "widgets": [{ "id": "content", "type": "core.content" }]
+        }
+      ]
+    }
+  ],
+  "assignments": []
+}
+
+### Latest live news by audit creation time
+GET {{baseUrl}}/widgets/news
+
+### Latest visible downloads across folders
+GET {{baseUrl}}/widgets/downloads
+
+### Public chat messages
+GET {{baseUrl}}/widgets/chat
+
+### Post plain-text chat (authenticated)
+POST {{baseUrl}}/widgets/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"text": "Hello from the chat widget"}
+
+### Sanitize custom widget content
+POST {{baseUrl}}/widgets/sanitize
+Content-Type: application/json
+
+{"content": "<p>Custom widget <strong>content</strong></p>"}
+
+### Latest published forum messages (when Forum is installed)
+GET {{baseUrl}}/forum/widgets/posts?limit=5

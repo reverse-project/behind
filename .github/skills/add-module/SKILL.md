@@ -17,6 +17,10 @@ Load `csharp-code-standards` first. Reference module: `Core` (`src/Core/Behind.C
 - Module-independent code stays in `src/Common/Behind.Common`, `Behind.Common.Database` and `Behind.Common.WebApi`; only module-specific code goes into the module projects.
 
 ## Checklist
+Module widgets integrate through `ModuleDescriptor.Widgets` (`ModuleWidget` in `Behind.Common.Modules`). Use unique module-prefixed keys and frontend model paths below the module's `FrontendPath`. `GET /modules` exposes the descriptors; `models/modules` and `models/widgets` make installed widgets available to the layout editor and `site-widget`. Widget data endpoints must preserve the module's visibility/authorization rules. Loaders must dispose their invalidation subscriptions and timers. Never reference Core from a module. The `core.content` widget belongs to the shell and moves the existing main container without rebinding its page.
+
+For chronological feeds, inject `IModuleCreationOrder` (`Behind.Common.Database.Modules`): `IOrderedQueryable<TEntity> NewestFirst<TEntity>(IQueryable<TEntity> source) where TEntity : class`. Core registers `ModuleCreationOrder`, which orders by audit creation time without a Core reference in the module. Filter publication and deletion first, then order and page. Do not sort UUIDs or add module-owned creation timestamps.
+
 1. **Domain** (`src/<Module>/Behind.<Module>.Domain`): immutable records, `VersionedKey<Guid>` ids, no own created/updated columns (see `add-entity`).
 2. **Common** (`src/<Module>/Behind.<Module>.Common`): module-specific configuration and helpers, like `Behind.Core.Common`. Generic code goes to `Behind.Common` instead.
 3. **Descriptor** (`<Module>Module.Descriptor`, a `ModuleDescriptor` in `Behind.<Module>.Common` or `.WebApi`): the single description of what the module adds to the application (see "What a module contributes" below). `ModuleCatalog.Create` validates it at startup and fails fast.

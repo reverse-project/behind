@@ -105,6 +105,17 @@ public static class ForumEndpoints
     }
 
     [IgnoreETag]
+    public static async Task<IResult> LatestWidgetPosts(
+        HttpContext http, ForumQueries queries, IModuleUsers users, IModuleCreationOrder ordering,
+        [FromQuery] int? limit)
+    {
+        http.Response.Headers.CacheControl = ManagedListExtensions.NoStore;
+        var page = await queries.LatestPosts(ordering, Math.Clamp(limit ?? 5, 1, 50), http.RequestAborted);
+
+        return Results.Ok(await ToPage(page, users, http.RequestAborted));
+    }
+
+    [IgnoreETag]
     public static async Task<IResult> ManagePosts(
         HttpContext http, ForumQueries queries, IModuleUsers users, IAuthorizationService authorization,
         [FromQuery] int? page, [FromQuery] PublicationState? state, [FromQuery] bool deleted = false) =>

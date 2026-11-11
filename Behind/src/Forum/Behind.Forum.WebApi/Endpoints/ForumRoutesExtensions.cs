@@ -28,6 +28,9 @@ public static class ForumRoutesExtensions
             forum.MapGet("/posts", ForumEndpoints.Posts)
                 .WithSummary("List published topics or replies in an active board.")
                 .Produces<ForumEndpoints.PostPage>();
+            forum.MapGet("/widgets/posts", ForumEndpoints.LatestWidgetPosts)
+                .WithSummary("List the latest published forum posts.")
+                .Produces<ForumEndpoints.PostPage>();
             forum.MapGet("/posts/{id:guid}", ForumEndpoints.GetPost)
                 .WithSummary("Read a currently published forum message.")
                 .Produces<ForumEndpoints.PostResponse>().Produces(404);

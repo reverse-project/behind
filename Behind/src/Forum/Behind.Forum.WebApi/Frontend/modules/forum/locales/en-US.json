@@ -1,6 +1,11 @@
 {
   "name": "English (International)",
   "messages": {
+    "widgets.forumPosts": "Latest forum posts",
+    "widgets.forumStats": "Forum statistics",
+    "widgets.forumBoards": "Boards",
+    "widgets.forumTopics": "Topics",
+    "widgets.forumMessages": "Messages",
     "menu.item.forum": "Forum",
     "forum.title": "Forum",
     "forum.manage": "Manage forum",

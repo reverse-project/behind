@@ -292,6 +292,13 @@ public static class AuditLabelExtensions
                     NewsCommentKind,
                     EF.Property<Guid>(comment, NewsCommentConfiguration.AuthorIdProperty)))
                 .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.ChatMessages
+                .Where(message => ids.Contains(EF.Property<Guid>(message, VersionedColumns.Key)))
+                .OrderByDescending(message => EF.Property<long>(message, VersionedColumns.Version))
+                .Select(message => new Owned(
+                    EF.Property<Guid>(message, VersionedColumns.Key), "Chat message", message.AuthorId))
+                .AsNoTracking()
                 .ToListAsync(cancellationToken)
         ];
     }

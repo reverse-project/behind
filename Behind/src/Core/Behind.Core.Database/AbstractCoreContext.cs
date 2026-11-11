@@ -85,6 +85,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         typeof(News),
         typeof(NewsCategory),
         typeof(NewsComment),
+        typeof(ChatMessage),
         typeof(Article),
         typeof(ArticleCategory),
         typeof(Gallery),

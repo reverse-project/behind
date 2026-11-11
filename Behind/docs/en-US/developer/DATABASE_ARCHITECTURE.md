@@ -1,5 +1,13 @@
 # Database Architecture
 
+## Layout configuration persistence
+
+Layouts are configuration, not database entities: `<Backend:DataDirectory>/layouts.json` stores the configuration revision, default layout, layouts (including soft-deleted ones), and route assignments. No migration, entity audit label or raw database table is introduced. Back up this file alongside the database. A missing file uses the single-content default; malformed files produce an explicit error and are never silently overwritten. Writes use a singleton asynchronous gate, optimistic revision comparison and atomic file replacement. Run one writer application per data directory; do not share the file between independent writer processes. Restore and permanent deletion require `RawDatabase.Manage`; ordinary saves retain hidden deleted layouts.
+
+Chat history is stored in the shared database's `ChatMessages` table with a composite `(Key, Version)` primary key and indexes on `AuthorId` and `ReplyToId`. SQLite and PostgreSQL migrations add it to the Core chain, including flattened site databases. Edits insert versions; moderation soft deletes all versions through the audit log. Serializable write transactions protect reply validation and edits. The raw editor discovers the table automatically, and audit labels identify messages by author. History uses descending audit creation time and key as a deterministic cursor; it has no retention cap. The old `<Backend:DataDirectory>/widget-chat.json` file is not read, modified or imported: database chat starts fresh. Apply the database migrator before starting the updated host and include the database in backups.
+
+Module feeds reuse audit-derived creation ordering through Common.Database's `IModuleCreationOrder`, implemented by Core's `ModuleCreationOrder`; they do not introduce timestamp columns.
+
 ## Forum persistence and profile pictures
 
 Scheduled content with equal start times is ordered by audit creation time before the id; the ban list also uses audit creation timestamps rather than UUID order. Neither change adds entity timestamp columns.

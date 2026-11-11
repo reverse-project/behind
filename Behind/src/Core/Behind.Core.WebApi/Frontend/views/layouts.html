@@ -1,0 +1,81 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h1 class="me-auto" data-bind="t: 'layouts.title'">Layouts</h1>
+        <a class="btn btn-outline-secondary" href="#/administration" data-bind="t: 'menus.back'">Back to administration</a>
+        <button class="btn btn-primary" type="button" data-bind="click: save, enable: canWrite, t: 'common.save'">Save</button>
+    </div>
+    <p data-bind="t: 'layouts.help'">Arrange widgets in grid sections. Each layout must contain exactly one site content widget. Save applies all changes.</p>
+    <div class="alert alert-info" role="status" data-bind="visible: message, text: message"></div>
+    <div data-bind="if: canRead">
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <button class="btn btn-outline-primary" type="button" data-bind="click: addLayout, enable: canWrite, t: 'layouts.add'">Add layout</button>
+                <button class="btn btn-outline-primary" type="button" data-bind="click: cloneLayout, enable: selected() && canWrite(), t: 'layouts.clone'">Copy layout</button>
+                <label class="form-check-label ms-auto" data-bind="visible: canManageDeleted"><input type="checkbox" class="form-check-input" data-bind="checked: showDeleted"> <span data-bind="t: 'layouts.showDeleted'">Show deleted layouts</span></label>
+            </div>
+            <label class="form-label" for="layout-selection" data-bind="t: 'layouts.edit'">Edit layout</label>
+            <select id="layout-selection" class="form-select mb-3" data-bind="options: visibleLayouts, optionsText: label, value: selected"></select>
+        <fieldset data-bind="enable: canWrite">
+            <label class="form-label" for="layout-default" data-bind="t: 'layouts.default'">Default layout</label>
+            <select id="layout-default" class="form-select mb-4" data-bind="options: activeLayouts, optionsText: label, optionsValue: 'id', value: defaultLayout"></select>
+            <div data-bind="with: selected">
+                <label class="form-label" for="layout-name" data-bind="t: 'common.name'">Name</label>
+                <input id="layout-name" class="form-control mb-3" maxlength="200" data-bind="value: name">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button class="btn btn-outline-danger" type="button" data-bind="visible: !deleted(), click: $root.deleteLayout, t: 'common.delete'">Delete</button>
+                    <button class="btn btn-outline-success" type="button" data-bind="visible: deleted() && $root.canManageDeleted(), click: $root.restoreLayout, t: 'common.restore'">Restore</button>
+                    <button class="btn btn-danger" type="button" data-bind="visible: deleted() && $root.canManageDeleted(), click: $root.hardDeleteLayout, t: 'common.deletePermanently'">Delete permanently</button>
+                </div>
+                <h2 class="h5" data-bind="t: 'layouts.preview'">Layout preview</h2>
+                <div class="behind-layout-preview mb-4" data-bind="foreach: sections">
+                    <div class="behind-layout-section" data-bind="style: { gridTemplateColumns: 'repeat(' + Math.max(1, Math.min(12, Number(columns()))) + ', minmax(0, 1fr))', gridTemplateRows: 'repeat(' + Math.max(1, Math.min(12, Number(rows()))) + ', minmax(3rem, auto))' }, foreach: widgets">
+                        <div class="behind-layout-preview-cell" data-bind="style: { gridRow: row() + ' / span ' + rowSpan(), gridColumn: column() + ' / span ' + columnSpan() }, text: title() || $root.widgetName(type())"></div>
+                    </div>
+                </div>
+                <div data-bind="foreach: sections">
+                    <section class="card card-body mb-3">
+                        <div class="d-flex flex-wrap gap-2 mb-3 align-items-end">
+                            <label><span data-bind="t: 'layouts.rows'">Rows</span><input class="form-control" type="number" min="1" max="12" data-bind="value: rows"></label>
+                            <label><span data-bind="t: 'layouts.columns'">Columns</span><input class="form-control" type="number" min="1" max="12" data-bind="value: columns"></label>
+                            <button class="btn btn-outline-secondary" type="button" data-bind="click: function () { $root.moveSection($data, -1); }, t: 'layouts.up'">Move up</button>
+                            <button class="btn btn-outline-secondary" type="button" data-bind="click: function () { $root.moveSection($data, 1); }, t: 'layouts.down'">Move down</button>
+                            <button class="btn btn-outline-danger ms-auto" type="button" data-bind="click: $root.removeSection, t: 'layouts.removeSection'">Remove section</button>
+                        </div>
+                        <div data-bind="foreach: widgets">
+                            <div class="border rounded p-3 mb-3">
+                                <div class="row g-2 mb-2">
+                                    <label class="col-md-6"><span data-bind="t: 'layouts.widget'">Widget</span><select class="form-select" data-bind="options: $root.widgetTypes, optionsText: 'name', optionsValue: 'key', value: type, valueAllowUnset: true"></select></label>
+                                    <label class="col-md-6"><span data-bind="t: 'common.title'">Title</span><input class="form-control" maxlength="200" data-bind="value: title"></label>
+                                    <label class="col-6 col-md-3"><span data-bind="t: 'layouts.row'">Row</span><input class="form-control" type="number" min="1" max="12" data-bind="value: row"></label>
+                                    <label class="col-6 col-md-3"><span data-bind="t: 'layouts.column'">Column</span><input class="form-control" type="number" min="1" max="12" data-bind="value: column"></label>
+                                    <label class="col-6 col-md-3"><span data-bind="t: 'layouts.rowSpan'">Row span</span><input class="form-control" type="number" min="1" max="12" data-bind="value: rowSpan"></label>
+                                    <label class="col-6 col-md-3"><span data-bind="t: 'layouts.columnSpan'">Column span</span><input class="form-control" type="number" min="1" max="12" data-bind="value: columnSpan"></label>
+                                </div>
+                                <label class="d-block mb-2" data-bind="visible: type() === 'core.menu-horizontal' || type() === 'core.menu-vertical'"><span data-bind="t: 'layouts.menu'">Menu name</span><input class="form-control" maxlength="200" data-bind="value: menu"></label>
+                                <label class="d-block mb-2" data-bind="visible: ['core.news', 'core.articles', 'core.downloads', 'core.chat', 'forum.posts'].indexOf(type()) >= 0"><span data-bind="t: 'layouts.limit'">Item limit</span><input class="form-control" type="number" min="1" max="50" data-bind="value: limit"></label>
+                                <div data-bind="if: type() === 'core.custom'">
+                                    <label class="d-block mb-2"><span data-bind="t: 'layouts.editor'">Editor</span><select class="form-select" data-bind="value: editor"><option value="richtext" data-bind="t: 'layouts.richtext'">Rich text</option><option value="html" data-bind="t: 'layouts.htmlEditor'">HTML</option></select></label>
+                                    <div class="mb-3" data-bind="if: editor() === 'richtext'"><div data-bind="richEditor: { value: content, enabled: $root.canWrite }"></div></div>
+                                    <label class="d-block mb-3" data-bind="visible: editor() === 'html'"><span data-bind="t: 'layouts.htmlEditor'">HTML</span><textarea class="form-control font-monospace" rows="8" maxlength="100000" data-bind="value: content"></textarea></label>
+                                    <p class="form-text" data-bind="t: 'layouts.htmlHelp'">Scripts and unsafe HTML are removed when saving.</p>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" type="button" data-bind="click: function () { $parent.widgets.remove($data); }, t: 'layouts.removeWidget'">Remove widget</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-primary" type="button" data-bind="click: $root.addWidget, t: 'layouts.addWidget'">Add widget</button>
+                    </section>
+                </div>
+                <button class="btn btn-outline-primary mb-4" type="button" data-bind="click: $root.addSection, t: 'layouts.addSection'">Add section</button>
+            </div>
+            <h2 class="h4" data-bind="t: 'layouts.assignments'">Route assignments</h2>
+            <p class="form-text" data-bind="t: 'layouts.routeHelp'">Use an exact route such as #/news or a prefix ending with *, such as #/site/*. The most specific match wins. Administration and account pages always use the simple layout.</p>
+            <div data-bind="foreach: assignments">
+                <div class="row g-2 mb-2">
+                    <label class="col-md-6"><span data-bind="t: 'layouts.route'">Route</span><input class="form-control" maxlength="500" data-bind="value: route"></label>
+                    <label class="col-md-4"><span data-bind="t: 'layouts.title'">Layout</span><select class="form-select" data-bind="options: $root.activeLayouts, optionsText: $root.label, optionsValue: 'id', value: layout"></select></label>
+                    <div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-danger" type="button" data-bind="click: $root.removeAssignment, t: 'common.delete'">Delete</button></div>
+                </div>
+            </div>
+            <button class="btn btn-outline-primary" type="button" data-bind="click: addAssignment, t: 'layouts.addAssignment'">Add assignment</button>
+        </fieldset>
+    </div>
+</section>

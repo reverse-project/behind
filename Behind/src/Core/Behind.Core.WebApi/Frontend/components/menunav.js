@@ -3,11 +3,16 @@ define(["ko", "models/menus", "text!components/menunav.html"], function (ko, men
         viewModel: {
             createViewModel: function (params) {
                 var menu = menus.follow(params.name);
+                var items = ko.pureComputed(function () {
+                    return menu().items;
+                });
 
                 return {
-                    items: ko.pureComputed(function () {
-                        return menu().items;
-                    })
+                    items: items,
+                    dispose: function () {
+                        items.dispose();
+                        menu.dispose();
+                    }
                 };
             }
         },

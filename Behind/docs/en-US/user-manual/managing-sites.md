@@ -1,5 +1,25 @@
 # Managing sites
 
+## Page layouts and widgets
+
+Open **Administration > Layouts** (`#/manage/layouts`). Viewing requires `Configuration.Read`; saving requires `Configuration.Manage` and configuration must not be read-only. Add or copy a layout, choose the default, then arrange sections and widgets using rows, columns and spans. The preview shows placement; Save applies all edits together. Each layout needs exactly one **Site content** widget, which displays the currently routed page. The initial layout contains only that widget and preserves the existing appearance.
+
+Add latest news, articles or downloads, horizontal/vertical menus (by menu name), custom rich text or HTML, chat, or installed module widgets such as Forum posts/statistics. Unsafe HTML and scripts are removed; HTML editing is not a way to run JavaScript. Widget data respects the original content access rules. Small screens stack the widgets in their configured order.
+
+Widgets use Bootstrap cards by default, with list and statistics styling where applicable. Site themes can customize their colors; the site content itself keeps its existing appearance.
+
+Assign layouts to exact hash routes (`#/news`) or prefixes ending with `*` (`#/site/*`); the most specific match wins. Unassigned routes use the default. Account and administration pages always keep the simple layout so an incorrect layout cannot hide the editor. Choose another default before deleting the default layout. Deletion is soft; developers can show deleted layouts, restore or permanently delete them. Save after each lifecycle action to persist it. A conflict means another editor saved first: reload before retrying.
+
+Menu changes refresh mounted menus automatically without losing page content. Layout configuration is backed up as `layouts.json` in the configured data directory, separately from the database.
+
+### Chat
+
+Chat history is kept in the database without the former 200-message limit. Newest messages appear first; scroll down to load older messages automatically, or use **Load older messages**. Messages show the author's profile picture (or initial), creation time and last edit time. Sign in to send up to 1,000 characters or **Reply** to an existing message. **Edit** is available only on your own messages for five minutes after creation; editing does not restart this period. Concurrent edits are rejected instead of overwriting newer text.
+
+Messages appear immediately. Guests may read; signed-in users receive **Chat.Read** and **Chat.Write** by default. In role or user access management, restrict **Chat.Write** to stop posting, replying and editing, or restrict **Chat.Read** to hide the chat and block its API for that signed-in user. Restrictions override role grants. Because guest reading is enabled, a restricted user can still read public chat after signing out.
+
+**Chat.Delete** allows removal of one's own messages; grant **Chat.Manage** to moderators so they can **Remove** any message. Neither overrides the author-only five-minute edit window. Removal is audited and hides every version, including quoted reply previews. The old `widget-chat.json` file stays untouched and is not imported; the database chat starts fresh.
+
 **Sites** are content pages that administrators write in the browser and everyone can read. You find them under **Administration > Sites** (`#/sites`).
 
 | Action | You need |

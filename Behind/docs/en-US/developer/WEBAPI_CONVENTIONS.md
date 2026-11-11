@@ -1,5 +1,21 @@
 # WebApi Conventions
 
+## Layout endpoints and invalidation
+
+`GET /layouts` returns active layouts and assignments. `GET /layouts/manage` requires `Configuration.Read`, uses no-store and includes deleted layouts only for `RawDatabase.Manage`. `POST /layouts` requires `Configuration.Manage`, honors read-only configuration and accepts the entire configuration with its last-read revision. Success returns the saved configuration; stale revisions return 409, invalid grids/references return 400, unauthorized deleted-record changes return 403. Mark an active layout deleted to soft-delete; developers restore its flag or omit a previously deleted layout for permanent deletion. Active layouts cannot simply be omitted. Public reads never include deleted layouts. See `Layouts.http`.
+
+The frontend `models/invalidation` provides topic subscriptions with disposal and asynchronous invalidation. Use `menus`, `layouts` or `widgets` for the corresponding region; dispose subscriptions when their components unmount. Do not refresh the whole page to update a menu. Module widget descriptors are exposed by `/modules`, and their loaders must retain the module's own access filtering.
+
+`GET /widgets/news` returns live news by descending audit creation time rather than prioritizing highlighted news. `GET /widgets/downloads` aggregates visible folders and returns the newest downloads globally. `POST /widgets/sanitize` accepts `{content}` (up to 100,000 characters) and returns sanitized `{content}`. Forum provides `/forum/widgets/posts?limit=N` with published/nondeleted board/topic filtering and audit-based chronology; statistics include boards, topics and published messages.
+
+### Chat endpoints
+
+`GET /widgets/chat?limit=20&before=<message-id>` returns `{items, nextCursor, canWrite}`, ordered newest first by audit creation time with a key tie-breaker. Omit `before` for the latest page; `limit` must be 1–50. The cursor continues to work after moderation removes its message. `GET /widgets/chat/{id}` returns a visible message or 404. Reads are no-store; guests may read, while signed-in users must hold `Chat.Read`. Restricting that grant blocks both list and individual reads, but cannot prevent reading anonymously after signing out.
+
+`POST /widgets/chat` requires `Chat.Read` and `Chat.Write`, accepts `{text, replyToId?}`, trims and caps text at 1,000 characters, validates a visible reply parent, and derives the author from the session. Success returns 201 with the message resource URL. `PUT /widgets/chat/{id}` requires the same grants and `{text, version}`; only the author may edit, strictly before creation plus five minutes. Stale versions return 409; another author or an expired window returns 403. Moderators cannot bypass this edit rule. `DELETE /widgets/chat/{id}` requires `Chat.Read` plus either `Chat.Delete` for one's own message or `Chat.Manage` for any message. It soft deletes every version and returns 204 (404 if missing). Every grant has a matching restriction; restrictions override grants. The Users role receives `Chat.Read` and `Chat.Write`; Administrators receive all four Chat grants.
+
+Message responses include profile picture URL, audit-derived `createdAt`/`updatedAt`, `editableUntil`, server-calculated edit/delete flags and the latest visible reply preview. Removed parents produce a null preview, never historical text. Messages and previews render as text, not HTML. See `Chat.http`.
+
 ## Forum and profile endpoints
 
 `/forum/boards` and `/forum/posts?boardId=<id>&topicId=<id>` provide paged public browsing; omit `topicId` for topics. `GET /forum/posts/{id}` returns only a currently visible message. `POST /forum/posts` requires `Forum.Read` and a valid session, derives the author and moderation state server-side, and returns `201` with a resource URL. Moderation (`GET /forum/manage/posts?state=Pending` and `POST /forum/posts/{id}/review`) requires `ForumModeration.Manage`. Board and user-rule management requires `Forum.Manage`. Lifecycle suffixes `/delete`, `/restore`, `/hard/delete` follow existing module conventions; deleted listing, restore and permanent deletion require `RawDatabase.Manage`. Publication and moderation enums use string JSON values. `GET /forum/settings` reflects reloadable `forum.json`; the existing Settings API edits it under `Configuration.Manage`.

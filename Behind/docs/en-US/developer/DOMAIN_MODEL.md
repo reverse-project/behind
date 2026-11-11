@@ -1,5 +1,15 @@
 # Domain Model Design
 
+## Layout configuration model
+
+`LayoutConfiguration` contains a revision, default layout id, layouts and route assignments. `SiteLayout` contains named grid sections and a deletion flag; `LayoutSection` defines 1–12 rows and columns. Each `LayoutWidget` has a unique placement id, catalog type, title, 1-based position, row/column spans and type-specific settings (menu name, custom content/editor, item limit). Widgets must fit without overlapping and every layout must contain exactly one `core.content`. Exact routes beat equally specific prefix patterns; the longest matching route wins. Assignments may only reference active layouts. Custom HTML is sanitized on save and read.
+
+`ModuleWidget` descriptors are Common integration metadata, not domain entities. Only installed modules contribute widget choices; missing module widgets must not execute arbitrary frontend code. Layout configuration does not create versioned database entities.
+
+## Chat messages
+
+`ChatMessage(VersionedKey<Guid> Id, AuthorId, Text, ReplyToId?)` stores plain text (1–1,000 characters) as immutable versions. Creation and last edit times come from the audit log; no timestamp columns are stored. Authors can add versions only before creation plus five minutes, regardless of earlier edits. The expected version prevents lost updates. Messages appear immediately. Guests can read; signed-in users require `Chat.Read` and additionally `Chat.Write` to post, reply or edit. `Chat.Delete` removes one's own messages; `Chat.Manage` moderates any message. Removal is audited and soft deletes every version. Replies reference the logical message key and show the latest visible parent, or an unavailable placeholder after removal. Profile labels and pictures reuse `IModuleUsers`.
+
 ## Forum domain
 
 - `ForumBoard(Name, Description, Moderation?)`: an optional moderation override for a board.

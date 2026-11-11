@@ -97,6 +97,23 @@ public sealed class AccessTests : IDisposable
         Assert.True(await HasGrantAsync("User.Read"));
     }
 
+    [Theory]
+    [InlineData("Chat.Read")]
+    [InlineData("Chat.Write")]
+    public async Task ChatRestrictions_OverrideTheDefaultUsersRole(string restricted)
+    {
+        var userId = await SeedUserWithAsync(BuiltInAccess.Users);
+        Assert.True(await HasGrantAsync("Chat.Read"));
+        Assert.True(await HasGrantAsync("Chat.Write"));
+        Assert.False(await HasGrantAsync("Chat.Delete"));
+        Assert.False(await HasGrantAsync("Chat.Manage"));
+
+        await SetUserAccessAsync(userId, [BuiltInAccess.Users.Id], [], [restricted]);
+
+        Assert.False(await HasGrantAsync(restricted));
+        Assert.True(await HasGrantAsync(restricted == "Chat.Read" ? "Chat.Write" : "Chat.Read"));
+    }
+
     [Fact]
     public async Task HasGrant_RoleRestrictionRemovesAGrantGivenByAnotherRole()
     {

@@ -1,5 +1,15 @@
 # Tartományi modell tervezése
 
+## Elrendezéskonfiguráció modellje
+
+A `LayoutConfiguration` revíziót, alapelrendezés-azonosítót, elrendezéseket és útvonal-hozzárendeléseket tartalmaz. A `SiteLayout` elnevezett rácsos szakaszokat és törlésjelzőt ad; a `LayoutSection` 1–12 sort és oszlopot határoz meg. Minden `LayoutWidget` egyedi elhelyezésazonosítót, katalógustípust, címet, 1-től számozott pozíciót, sor-/oszlopátfogást és típusfüggő beállításokat (menünév, egyéni tartalom/szerkesztő, elemszám) tartalmaz. A widgetek nem fedhetik egymást és a rácson belül kell maradniuk; minden elrendezésben pontosan egy `core.content` lehet. Az azonos pontosságú előtagmintával szemben a pontos útvonal nyer; a leghosszabb illeszkedő útvonal érvényesül. Csak aktív elrendezés rendelhető hozzá. Az egyéni HTML mentéskor és olvasáskor tisztításon esik át.
+
+A `ModuleWidget` leíró Common-integrációs metaadat, nem tartományi entitás. Csak a telepített modulok kínálnak választható widgeteket; hiányzó modul widgetje nem hajthat végre tetszőleges felületi kódot. Az elrendezéskonfiguráció nem hoz létre verziózott adatbázis-entitásokat.
+
+## Csevegőüzenetek
+
+A `ChatMessage(VersionedKey<Guid> Id, AuthorId, Text, ReplyToId?)` egyszerű szöveget (1–1 000 karaktert) tárol változtathatatlan verziókban. A létrehozási és utolsó szerkesztési idő az auditnaplóból származik; nincs időbélyegoszlop. A szerző csak a létrehozást követő öt perc lejárta előtt hozhat létre új verziót, a korábbi szerkesztésektől függetlenül. Az elvárt verzió megakadályozza a módosítások elvesztését. Az üzenetek azonnal megjelennek. Vendégek olvashatnak; bejelentkezve `Chat.Read`, küldéshez, válaszhoz és szerkesztéshez ezen felül `Chat.Write` kell. A `Chat.Delete` saját üzenet eltávolítására, a `Chat.Manage` bármely üzenet moderálására jogosít. Az eltávolítás minden verzió auditált átmeneti törlése. A válasz a logikai üzenetkulcsra hivatkozik, és a legújabb látható szülőt vagy eltávolítás után helyettesítő szöveget mutat. A nyilvános nevekhez és képekhez az `IModuleUsers` használatos.
+
 ## A Fórum tartománya
 
 - `ForumBoard(Name, Description, Moderation?)`: a fórumtábla opcionális moderálási felülbírálása.

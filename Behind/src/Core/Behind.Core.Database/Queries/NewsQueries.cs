@@ -9,6 +9,16 @@ namespace Behind.Core.Database.Queries;
 
 public sealed class NewsQueries(AbstractCoreContext context) : INewsQueries
 {
+    public async Task<IReadOnlyList<INewsQueries.NewsListing>> Latest(
+        int limit, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        var rows = await context.OrderByCreation(Live(None, now), newestFirst: true)
+            .Take(Math.Clamp(limit, 1, 50)).ToRows().AsNoTracking().ToListAsync(cancellationToken);
+        var lookups = await context.LookupsAsync(rows, cancellationToken);
+
+        return rows.Select(row => ToListing(row, lookups)).ToArray();
+    }
+
     public async Task<PagedResult<INewsQueries.NewsListing>> List(
         Flipper flipper,
         Option<Guid> category,

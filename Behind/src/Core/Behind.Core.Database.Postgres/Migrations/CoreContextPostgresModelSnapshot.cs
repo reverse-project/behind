@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261111181039_AddProfilePicture";
+    public override string LastMigrationId => "20261111202906_AddChatMessages";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -245,6 +245,36 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasIndex("CarouselId", "Version");
 
                 b.ToTable("CarouselSlides");
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.ChatMessage", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<Guid>("AuthorId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid?>("ReplyToId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("Text")
+                    .IsRequired()
+                    .HasMaxLength(1000)
+                    .HasColumnType("character varying(1000)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("AuthorId");
+
+                b.HasIndex("ReplyToId");
+
+                b.ToTable("ChatMessages");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Download", b =>

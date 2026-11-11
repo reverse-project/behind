@@ -30,6 +30,7 @@ using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.MagicLinks;
 using Behind.Core.WebApi.Middleware;
 using Behind.Core.WebApi.Settings;
+using Behind.Core.WebApi.Layouts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -196,6 +197,8 @@ public static class WebApiExtensions
 
         WebApplicationBuilder AddServices()
         {
+            builder.Services.AddSingleton<ILayoutService, LayoutService>();
+            builder.Services.AddScoped<Behind.Common.Database.Modules.IModuleCreationOrder, ModuleCreationOrder>();
             builder.Services.AddScoped<IAuditLogEntryQueries, AuditLogEntryQueries>();
             builder.Services.AddScoped<IUserQueries, UserQueries>();
             builder.Services.AddScoped<IEmailQueries, EmailQueries>();
@@ -226,6 +229,7 @@ public static class WebApiExtensions
             builder.Services.AddScoped<INewsCategoryCommands, NewsCategoryCommands>();
             builder.Services.AddScoped<INewsCommentQueries, NewsCommentQueries>();
             builder.Services.AddScoped<INewsCommentCommands, NewsCommentCommands>();
+            builder.Services.AddScoped<IChatStore, ChatStore>();
             builder.Services.AddScoped<IArticleQueries, ArticleQueries>();
             builder.Services.AddScoped<IArticleCommands, ArticleCommands>();
             builder.Services.AddScoped<IArticleCategoryQueries, ArticleCategoryQueries>();
@@ -945,6 +949,8 @@ public static class WebApiExtensions
             application.MapTwoFactorEndpoints();
             application.MapDownloadEndpoints();
             application.MapMenuEndpoints();
+            application.MapLayoutEndpoints();
+            application.MapWidgetEndpoints();
             application.MapRouteAliasEndpoints();
             application.MapAccessEndpoints();
             application.MapRawDatabaseEndpoints();

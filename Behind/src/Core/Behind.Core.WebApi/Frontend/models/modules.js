@@ -41,6 +41,12 @@ define(["ko", "models/http"], function (ko, http) {
             });
         },
 
+        widgets: function () {
+            return collect(function (module) {
+                return module.widgets || [];
+            });
+        },
+
         localeUrls: function (code) {
             return modules().map(function (module) {
                 return "/" + module.path + "locales/" + encodeURIComponent(code) + ".json";

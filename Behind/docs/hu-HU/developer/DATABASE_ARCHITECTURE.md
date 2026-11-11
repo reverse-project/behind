@@ -1,5 +1,13 @@
 # Adatbázis-architektúra
 
+## Elrendezéskonfiguráció tárolása
+
+Az elrendezés konfiguráció, nem adatbázis-entitás: a `<Backend:DataDirectory>/layouts.json` tárolja a revíziót, az alapelrendezést, az elrendezéseket (az átmenetileg töröltekkel együtt) és az útvonal-hozzárendeléseket. Nem keletkezik migráció, entitás-auditfelirat vagy nyers adatbázistábla. Az adatbázissal együtt mentse ezt a fájlt is. Hiányzó fájlnál az egyetlen tartalomwidgetes alapérték érvényesül; sérült fájl esetén egyértelmű hiba keletkezik, nincs csendes felülírás. Az írást egyetlen példány aszinkron zárolása, optimista revízió-ellenőrzés és atomi fájlcsere védi. Adatkönyvtáranként egy író alkalmazást futtasson; független író folyamatok ne osszák meg a fájlt. Visszaállításhoz és végleges törléshez `RawDatabase.Manage` szükséges; a szokásos mentés megőrzi a rejtett törölt elrendezéseket.
+
+A csevegés a közös adatbázis `ChatMessages` táblájában tárolódik, összetett `(Key, Version)` elsődleges kulccsal és `AuthorId`, illetve `ReplyToId` indexekkel. Az SQLite- és PostgreSQL-migrációk a Core láncához adják, az egyesített webhely-adatbázisokban is. A szerkesztés új verziót szúr be; a moderálás az auditnaplóval az összes verziót átmenetileg törli. A válasz ellenőrzését és a szerkesztést sorosítható írási tranzakció védi. A nyers szerkesztő automatikusan felismeri a táblát, az auditfelirat a szerzővel azonosítja az üzenetet. Az előzmény csökkenő audit-létrehozási időt és kulcsot használ determinisztikus kurzorként; nincs megőrzési korlát. A régi `<Backend:DataDirectory>/widget-chat.json` fájl nem kerül beolvasásra, módosításra vagy importálásra: az adatbázisos csevegés üres előzménnyel indul. Az új gazdaalkalmazás indítása előtt futtassa az adatbázis-migrátort; az adatbázist mentse.
+
+A modul-adatfolyamok a Common.Database `IModuleCreationOrder` felületén használják az auditból származó létrehozási sorrendet, amelyet a Core `ModuleCreationOrder` típusa valósít meg; nem vezetnek be időbélyegoszlopokat.
+
 ## Fórumadatok és profilképek
 
 Az azonos kezdési idejű időzített tartalmak sorrendjét az azonosító előtt az audit létrehozási időpontja dönti el; a kitiltási lista is auditidőpontokat használ UUID-sorrend helyett. Egyik módosítás sem vezet be saját időbélyegoszlopot.

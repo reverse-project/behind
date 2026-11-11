@@ -12,6 +12,8 @@ public sealed record ModuleDescriptor(string Key, string Name)
 
     public IReadOnlyList<ModuleRoute> Routes { get; init; } = [];
 
+    public IReadOnlyList<ModuleWidget> Widgets { get; init; } = [];
+
     public IReadOnlyList<string> ConfigurationFiles { get; init; } = [];
 
     public Option<ModuleFrontend> Frontend { get; init; } = None;

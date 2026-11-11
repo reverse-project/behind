@@ -28,6 +28,7 @@ public sealed class RawDatabaseCatalogTests : IDisposable
         Assert.Contains("Users", exposed);
         Assert.Contains("Sites", exposed);
         Assert.Contains("UserRoles", exposed);
+        Assert.Contains("ChatMessages", exposed);
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using Behind.Common;
 using Behind.Common.Database;
+using Behind.Common.Database.Modules;
 using Behind.Forum.Common;
 using Behind.Forum.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -71,14 +72,7 @@ public sealed class ForumQueries(IForumContext context)
 
         if (!management)
         {
-            var boards = context.ForumBoards.LatestOf(context.ForumBoards);
-            var topics = context.ForumPosts.LatestOf(context.ForumPosts);
-            rows = rows.Where(post => post.State == PublicationState.Published
-                && boards.Any(board => EF.Property<Guid>(board, VersionedColumns.Key) == post.BoardId)
-                && (post.TopicId == null || topics.Any(topic =>
-                    EF.Property<Guid>(topic, VersionedColumns.Key) == post.TopicId
-                    && topic.TopicId == null && topic.State == PublicationState.Published)));
-            rows = rows.Where(post => post.TopicId == topicId);
+            rows = PublicPosts(rows).Where(post => post.TopicId == topicId);
         }
 
         if (boardId.HasValue)
@@ -96,6 +90,28 @@ public sealed class ForumQueries(IForumContext context)
         return new Page<ForumPost>(total, page.Index, page.PageCount(total),
             await page.Apply(rows.OrderBy(post => EF.Property<Guid>(post, VersionedColumns.Key)))
                 .ToKeyedAsync(cancellationToken));
+    }
+
+    public async Task<Page<ForumPost>> LatestPosts(
+        IModuleCreationOrder ordering, int limit, CancellationToken cancellationToken)
+    {
+        var rows = PublicPosts(context.ForumPosts.LatestOf(context.ForumPosts));
+        var total = await rows.LongCountAsync(cancellationToken);
+        var items = await ordering.NewestFirst(rows).Take(limit).ToKeyedAsync(cancellationToken);
+
+        return new Page<ForumPost>(total, 1, 1, items);
+    }
+
+    private IQueryable<ForumPost> PublicPosts(IQueryable<ForumPost> rows)
+    {
+        var boards = context.ForumBoards.LatestOf(context.ForumBoards);
+        var topics = context.ForumPosts.LatestOf(context.ForumPosts);
+
+        return rows.Where(post => post.State == PublicationState.Published
+            && boards.Any(board => EF.Property<Guid>(board, VersionedColumns.Key) == post.BoardId)
+            && (post.TopicId == null || topics.Any(topic =>
+                EF.Property<Guid>(topic, VersionedColumns.Key) == post.TopicId
+                && topic.TopicId == null && topic.State == PublicationState.Published)));
     }
 
     public async Task<ModerationMode?> UserMode(Guid userId, CancellationToken cancellationToken) =>

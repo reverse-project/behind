@@ -68,6 +68,11 @@ public interface INewsQueries
         DateTimeOffset now,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<NewsListing>> Latest(
+        int limit,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<string>> GetLiveLetters(
         Option<Guid> category,
         DateTimeOffset now,

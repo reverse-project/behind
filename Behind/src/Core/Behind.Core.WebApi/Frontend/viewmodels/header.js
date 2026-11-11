@@ -49,7 +49,17 @@ define(["ko", "models/auth", "models/session", "models/menus", "models/accounts"
             }
         };
 
-        needsIdentity.subscribe(identify);
+        var identitySubscription = needsIdentity.subscribe(identify);
+
+        self.dispose = function () {
+            identitySubscription.dispose();
+            needsIdentity.dispose();
+            self.links.dispose();
+            self.userItems.dispose();
+            self.label.dispose();
+            main.dispose();
+        };
+
         identify(session.isSignedIn());
     };
 });

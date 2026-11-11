@@ -1,5 +1,25 @@
 # Oldalak kezelése
 
+## Oldalelrendezések és widgetek
+
+### Csevegés
+
+A csevegési előzmény az adatbázisban tárolódik, a korábbi 200 üzenetes korlát nélkül. A legújabb üzenetek jelennek meg elöl; lefelé görgetve automatikusan betöltődnek a régebbiek, vagy használhatja a **Régebbi üzenetek betöltése** gombot. Az üzenet a szerző profilképét (vagy kezdőbetűjét), létrehozási és utolsó szerkesztési idejét mutatja. Bejelentkezve legfeljebb 1 000 karakteres üzenetet küldhet, vagy a **Válasz** gombbal válaszolhat. A **Szerkesztés** csak saját üzenetnél, a létrehozást követő öt percig érhető el; a módosítás nem indítja újra ezt az időt. Az egyidejű szerkesztés elutasításra kerül az újabb szöveg felülírása helyett.
+
+Az üzenetek azonnal megjelennek. Vendégek olvashatnak; bejelentkezett felhasználók alapértelmezésben **Chat.Read** és **Chat.Write** engedélyt kapnak. A szerepkör- vagy felhasználói hozzáféréskezelésben a **Chat.Write** korlátozása tiltja a küldést, választ és szerkesztést; a **Chat.Read** korlátozása elrejti a csevegést és tiltja az API-ját az adott bejelentkezett felhasználónak. A korlátozás felülírja a szerepkör engedélyeit. Mivel vendégek olvashatnak, a korlátozott felhasználó kijelentkezve továbbra is olvashatja a nyilvános csevegést.
+
+A **Chat.Delete** saját üzenet eltávolítására jogosít; a moderátornak **Chat.Manage** engedélyt adjon, amellyel bármely üzenetet eltávolíthat. Egyik sem írja felül a szerzőre vonatkozó ötperces szerkesztési korlátot. A törlés auditált, és minden verziót elrejt, a válaszok idézett előnézetében is. A régi `widget-chat.json` fájl érintetlen marad, nem kerül importálásra; az adatbázisos csevegés üres előzménnyel indul.
+
+Nyissa meg az **Adminisztráció > Elrendezések** oldalt (`#/manage/layouts`). Megtekintéshez `Configuration.Read`, mentéshez `Configuration.Manage` szükséges, és a konfiguráció nem lehet csak olvasható. Adjon hozzá vagy másoljon elrendezést, válassza ki az alapértéket, majd sorokkal, oszlopokkal és átfogásokkal rendezze el a szakaszokat és widgeteket. Az előnézet az elhelyezést mutatja; a Mentés az összes módosítást együtt alkalmazza. Minden elrendezéshez pontosan egy **Oldaltartalom** widget kell, amely az aktuális útvonal oldalát jeleníti meg. A kezdeti elrendezés csak ezt tartalmazza, megőrizve a korábbi megjelenést.
+
+Hozzáadhat friss híreket, cikkeket, letöltéseket, vízszintes/függőleges menüket (menünévvel), egyéni formázott szöveget vagy HTML-t, csevegést és telepített modulwidgeteket, például Fórumüzeneteket/statisztikát. A veszélyes HTML és parancsfájlok eltávolításra kerülnek; a HTML-szerkesztés nem JavaScript futtatására szolgál. Az adatok megtartják az eredeti tartalom hozzáférési szabályait. Kis képernyőn a widgetek a beállított sorrendben egymás alá kerülnek.
+
+A widgetek alapértelmezésben Bootstrap-kártyaként jelennek meg, ahol szükséges, formázott listákkal és statisztikákkal. A webhely témája testre szabhatja a színeket; az oldaltartalom megőrzi a korábbi megjelenését.
+
+Rendeljen elrendezést pontos hash-útvonalhoz (`#/news`) vagy `*` jellel végződő előtaghoz (`#/site/*`); a legpontosabb egyezés nyer. Egyéb útvonalaknál az alapelrendezés érvényesül. A fiók- és adminisztrációs oldalak egyszerűek maradnak, így hibás elrendezés sem rejti el a szerkesztőt. Az alapelrendezés törlése előtt válasszon másik alapértéket. A törlés átmeneti; fejlesztők megjeleníthetik a törölteket, visszaállíthatják vagy végleg törölhetik őket. Az életciklus-művelet után mentsen. Ütközésnél másik szerkesztő mentett előbb: újratöltés után próbálkozzon újra.
+
+A menümódosítások automatikusan, az oldaltartalom elvesztése nélkül frissítik a menüket. Az elrendezéskonfiguráció biztonsági másolata a beállított adatkönyvtár `layouts.json` fájlja, az adatbázistól külön.
+
 Az **Oldalak** olyan tartalmi oldalak, amelyeket az adminisztrátorok a böngészőben írnak, és mindenki elolvashat. Az **Adminisztráció > Oldalak** alatt találja őket (`#/sites`).
 
 | Művelet | Ehhez kell |

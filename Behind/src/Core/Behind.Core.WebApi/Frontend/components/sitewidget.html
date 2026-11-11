@@ -1,0 +1,105 @@
+<section class="site-widget behind-widget card">
+    <h2 class="card-header h5 mb-0" data-bind="visible: title, text: title"></h2>
+    <div class="card-body">
+        <p class="alert alert-danger" role="alert" data-bind="visible: error, text: error"></p>
+        <!-- ko if: type === 'core.menu-horizontal' || type === 'core.menu-vertical' -->
+        <menu-items params="items: menuItems, variant: type === 'core.menu-vertical' ? 'dropdown' : 'nav'"></menu-items>
+        <!-- /ko -->
+        <!-- ko if: type === 'core.custom' -->
+        <div data-bind="html: content"></div>
+        <!-- /ko -->
+        <ul class="list-group list-group-flush" data-bind="foreach: items, visible: items().length">
+            <li class="list-group-item"><a data-bind="attr: { href: href }, text: title"></a></li>
+        </ul>
+        <dl class="row mb-0" data-bind="foreach: stats, visible: stats().length">
+            <dt class="col-8" data-bind="text: $component.t(label)"></dt><dd class="col-4 text-end" data-bind="text: value"></dd>
+        </dl>
+        <!-- ko if: type === 'core.chat' -->
+        <!-- ko ifnot: chatReadable -->
+        <p data-bind="text: t('widgets.chatReadDenied')"></p>
+        <!-- /ko -->
+        <!-- ko if: chatReadable -->
+        <p class="small text-body-secondary" data-bind="text: t('widgets.chatHelp')"></p>
+        <div class="chat-history" tabindex="0" role="region" data-bind="event: { scroll: scrollChat }, attr: { 'aria-label': t('widgets.chat') }">
+            <ul class="chat-messages" data-bind="foreach: messages">
+                <li class="chat-message">
+                    <div class="chat-author">
+                        <!-- ko if: profilePictureUrl -->
+                        <img class="chat-avatar" alt="" data-bind="attr: { src: profilePictureUrl }">
+                        <!-- /ko -->
+                        <!-- ko ifnot: profilePictureUrl -->
+                        <span class="chat-avatar chat-avatar-placeholder" aria-hidden="true" data-bind="text: author.slice(0, 1)"></span>
+                        <!-- /ko -->
+                        <strong data-bind="text: author"></strong>
+                    </div>
+                    <div class="chat-times small text-body-secondary">
+                        <span data-bind="text: $component.t('widgets.chatCreated')"></span>
+                        <time data-bind="attr: { datetime: createdAt }, text: $component.formatTime(createdAt)"></time>
+                        <!-- ko if: updatedAt -->
+                        <span data-bind="text: $component.t('widgets.chatUpdated')"></span>
+                        <time data-bind="attr: { datetime: updatedAt }, text: $component.formatTime(updatedAt)"></time>
+                        <!-- /ko -->
+                    </div>
+                    <!-- ko if: replyToId -->
+                    <blockquote class="chat-reply">
+                        <!-- ko if: reply -->
+                        <strong data-bind="text: reply.author"></strong>: <span data-bind="text: reply.text"></span>
+                        <!-- /ko -->
+                        <!-- ko ifnot: reply -->
+                        <span data-bind="text: $component.t('widgets.chatRemoved')"></span>
+                        <!-- /ko -->
+                    </blockquote>
+                    <!-- /ko -->
+                    <p class="chat-text" data-bind="text: text"></p>
+                    <div class="chat-actions">
+                        <!-- ko if: $component.chatWritable -->
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bind="click: $component.reply, disable: $component.busy, text: $component.t('widgets.chatReply')"></button>
+                        <!-- /ko -->
+                        <!-- ko if: $component.canEdit($data) -->
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: $component.edit, disable: $component.busy, text: $component.t('widgets.chatEdit')"></button>
+                        <!-- /ko -->
+                        <!-- ko if: canDelete -->
+                        <button class="btn btn-sm btn-outline-danger" type="button" data-bind="click: $component.remove, disable: $component.busy, text: $component.t('widgets.chatRemove')"></button>
+                        <!-- /ko -->
+                    </div>
+                </li>
+            </ul>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="visible: hasOlder, click: loadOlder, disable: loadingOlder, text: t('widgets.chatOlder')"></button>
+        </div>
+        <!-- ko if: chatWritable -->
+        <!-- ko if: editing -->
+        <form class="chat-composer" data-bind="submit: saveEdit">
+            <label class="d-block">
+                <span data-bind="text: t('widgets.chatEdit')"></span>
+                <textarea class="form-control" maxlength="1000" required data-bind="value: editText, valueUpdate: 'input'"></textarea>
+            </label>
+            <button class="btn btn-primary btn-sm" type="submit" data-bind="disable: busy, text: t('widgets.chatSave')"></button>
+            <button class="btn btn-secondary btn-sm" type="button" data-bind="click: cancelEdit, disable: busy, text: t('widgets.chatCancel')"></button>
+        </form>
+        <!-- /ko -->
+        <!-- ko ifnot: editing -->
+        <form class="chat-composer" data-bind="submit: send">
+            <!-- ko if: replyingTo -->
+            <blockquote class="chat-reply">
+                <strong data-bind="text: replyingTo().author"></strong>: <span data-bind="text: replyingTo().text"></span>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: cancelReply, text: t('widgets.chatCancel')"></button>
+            </blockquote>
+            <!-- /ko -->
+            <label class="d-block">
+                <span data-bind="text: t('widgets.chatMessage')"></span>
+                <textarea class="form-control" maxlength="1000" required data-bind="value: text, valueUpdate: 'input'"></textarea>
+            </label>
+            <button class="btn btn-primary btn-sm" type="submit" data-bind="disable: busy, text: t('widgets.chatSend')"></button>
+        </form>
+        <!-- /ko -->
+        <!-- /ko -->
+        <!-- ko ifnot: signedIn -->
+        <p data-bind="text: t('widgets.chatSignIn')"></p>
+        <!-- /ko -->
+        <!-- ko if: signedIn() && !chatWritable() -->
+        <p data-bind="text: t('widgets.chatWriteDenied')"></p>
+        <!-- /ko -->
+        <!-- /ko -->
+        <!-- /ko -->
+    </div>
+</section>

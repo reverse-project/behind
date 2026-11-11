@@ -1,4 +1,6 @@
 MUST NOT made comments in the code, if a code need comment it's bad code
+MUST declare module layout widgets only through ModuleDescriptor.Widgets (Behind.Common.Modules.ModuleWidget), with unique module-prefixed keys and frontend model paths under the module's FrontendPath; GET /modules exposes these descriptors and the layout editor discovers only installed module widgets. Widget loaders must enforce the same visibility and authorization as their module's pages, render safe content, and dispose invalidation subscriptions and timers. Core renders core.content by moving the existing main container without rebinding its page.
+MUST order module widget feeds by audit creation time through IModuleCreationOrder.NewestFirst (Behind.Common.Database.Modules, implemented by Core's ModuleCreationOrder), never by UUID or a module-owned timestamp column; apply the module's publication and deletion filters before paging the ordered query.
 MUST use the new extension(...) C# feature for extension methods
 MUST use extension method files with the filename ending with Extensions
 MUST use records, immutable objects and async await, thread safe solutions

@@ -12,5 +12,7 @@ public partial class AbstractCoreContext
 
     public DbSet<NewsComment> NewsComments => Set<NewsComment>();
 
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+
     public DbSet<ActiveVersion> ActiveVersions => Set<ActiveVersion>();
 }

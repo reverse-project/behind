@@ -3,6 +3,12 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "added", "text": "Layout widgets use Bootstrap card, list, statistics and alert styles by default, with site-specific colors where configured." },
+      { "type": "fixed", "text": "The layout HTML editor label is localized and Forum widget captions are supplied by the Forum module's own translations." },
+      { "type": "added", "text": "Chat widgets now store unlimited history in the database with cursor-based infinite scrolling, profile pictures, audit-derived creation and edit times, replies and five-minute author-only editing. Chat.Read/Write control signed-in access (users get both by default; guests can read), Chat.Delete removes one's own messages and Chat.Manage moderates any message. Restrictions override grants. Existing widget-chat.json files are left untouched; database chat starts with fresh history." },
+      { "type": "added", "text": "Administration > Layouts edits multiple responsive page layouts with grid sections, row and column spanning, a live placement preview, route assignments and a single site content widget. Layouts are stored atomically in the data directory as layouts.json with revision conflict detection, soft deletion and developer restore/permanent deletion." },
+      { "type": "added", "text": "Layouts support module-provided widgets, latest news, articles and downloads, horizontal and vertical menus, safe custom HTML or rich text, chat, and Forum latest posts and statistics when the module is installed. The default layout preserves the existing single-content page." },
+      { "type": "added", "text": "Targeted page invalidation refreshes mounted menus after menu editor changes, and refreshes layouts and widgets without reloading the current page content." },
       { "type": "added", "text": "Forum managers can create and manage board categories, assign boards to categories, and users see boards grouped by category." },
       { "type": "changed", "text": "Links in forum messages, previews and moderation now ask for confirmation with the destination URL and open only in a new tab." },
       { "type": "fixed", "text": "Forum author labels now use the primary email address when the display name is blank, matching the Profile page and other user labels." },

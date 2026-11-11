@@ -16,7 +16,8 @@ public static class ModuleResponseExtensions
                     ..module.AdministrationPages.Select(page =>
                         new ModuleAdministrationPageResponse(page.Name, page.Icon, page.Href, page.Grant))
                 ],
-                [..module.Frontend.AsEnumerable().SelectMany(frontend => frontend.Styles)]);
+                [..module.Frontend.AsEnumerable().SelectMany(frontend => frontend.Styles)],
+                [..module.Widgets.Select(widget => new ModuleWidgetResponse(widget.Key, widget.Name, widget.Model))]);
     }
 
     extension(ModuleCatalog catalog)

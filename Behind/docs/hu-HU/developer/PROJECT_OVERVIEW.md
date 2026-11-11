@@ -1,5 +1,13 @@
 # Projekt áttekintés
 
+## Elrendezések és widgetek
+
+A Core `#/manage/layouts` oldala (Adminisztráció > Elrendezések) több elrendezést, szakaszsorrendet, sor- és oszlopátfogást, elhelyezési előnézetet és pontos/előtagos útvonal-hozzárendelést kezel. Az alapelrendezés csak a `core.content` widgetet tartalmazza; a keret a fő tartalomtárolót mozgatja a helyére, megőrizve a jelölést és kötéseket. A fiók- és adminisztrációs oldalak egyszerű elrendezésben maradnak. Mindkét telepítés témája örökli a közös reszponzív stílusokat.
+
+A modulok a `ModuleDescriptor.Widgets` mezőben adnak widgeteket (Common: `ModuleWidget`), amelyeket a `GET /modules` közzétesz. A kulcs modul-előtagos, a felületi betöltő a modulhoz tartozik. A Core friss tartalmakat, menüket, egyéni formázott szöveget/HTML-t és csevegést biztosít; a Fórum csak telepített állapotban ad üzenet- és statisztikawidgeteket. A végpontok megtartják a szokásos jogosultsági szabályokat. A `models/invalidation` böngésző-újratöltés nélkül frissíti a feliratkozott régiókat: a menümódosítások a menüket, az elrendezésmentés a keretet, a tartalom lecserélése nélkül.
+
+A modul felületi modellje `load(type, limit)` függvényt ad, `{items?, stats?, content?, messages?}` eredménnyel. A leíró mezői: `key`, fordításkulcsot tartalmazó `name` és AMD `model`. Az időrendi modul-adatfolyamok a Common.Database `IModuleCreationOrder.NewestFirst` felületét kérik; ezt a Core audit-létrehozási időpontokkal valósítja meg, így a modul nem UUID-t rendez és nem függ a Core-tól.
+
 ## Fórum és nyilvános profilok
 
 A fő `Behind.Web` telepítés a Core, Quotes és Sport mellett betölti a `Behind.Forum.*` modult; a meglévő webhelyek nem töltik be a Fórumot. A Common, Domain, Database, SQLite, PostgreSQL és WebApi projektek a `ForumModule.Descriptor` segítségével csatlakoznak. A felület fórumtáblák, témák és válaszok böngészését, valamint moderálással kiegészített adminisztrációt biztosít. A `forum.json` újratölthető, és megjelenik a Beállítások oldalon.

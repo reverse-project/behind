@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding, session, usersettings, restriction, i18n, modules) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules", "models/layoutshell"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding, session, usersettings, restriction, i18n, modules, layoutShell) {
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
@@ -37,6 +37,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/downloads": "controllers/downloads",
         "#/manage/downloads": "controllers/downloadmanager",
         "#/manage/menus": "controllers/menus",
+        "#/manage/layouts": "controllers/layouts",
         "#/manage/menus/:id": "controllers/menuitems",
         "#/manage/route-aliases": "controllers/routealiases",
         "#/manage/access-settings": "controllers/accesssettings",
@@ -84,6 +85,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     ko.components.register("menu-nav", { require: "components/menunav" });
     ko.components.register("carousel-editor", { require: "components/carouseleditor" });
     ko.components.register("site-sections-editor", { require: "components/sectionseditor" });
+    ko.components.register("site-widget", { require: "components/sitewidget" });
 
     var container = function () {
         return $("#main-container");
@@ -96,6 +98,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
             element.html(view);
             window.scrollTo(0, 0);
             ko.applyBindings(viewModel, element[0]);
+            layoutShell.route(window.location.hash || "#/");
         },
         navigate: function (hash) {
             window.location.hash = hash;
@@ -236,7 +239,9 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
 
                     ko.applyBindings(footer, $("#footer-container")[0]);
                     footer.activate();
-                    router.run("#/");
+                    return layoutShell.start().then(function () {
+                        router.run("#/");
+                    });
                 });
         }
     };

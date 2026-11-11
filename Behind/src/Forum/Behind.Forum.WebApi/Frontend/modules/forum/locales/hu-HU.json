@@ -1,6 +1,11 @@
 {
   "name": "Magyar",
   "messages": {
+    "widgets.forumPosts": "Legfrissebb fórumüzenetek",
+    "widgets.forumStats": "Fórumstatisztika",
+    "widgets.forumBoards": "Fórumtáblák",
+    "widgets.forumTopics": "Témák",
+    "widgets.forumMessages": "Üzenetek",
     "menu.item.forum": "Fórum",
     "forum.title": "Fórum",
     "forum.manage": "Fórum kezelése",

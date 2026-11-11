@@ -18,7 +18,7 @@ public class BuiltInAccessTests
     [Fact]
     public void Grants_CoverReadWriteDeleteAndManageForEveryAreaPlusRawDatabaseManage()
     {
-        Assert.Equal(54, BuiltInAccess.Grants.Count);
+        Assert.Equal(58, BuiltInAccess.Grants.Count);
         Assert.Equal(
             AreaGrantNames.Append(RawDatabaseManage).Order(),
             BuiltInAccess.Grants.Select(grant => grant.Grant.Name).Order());
@@ -49,6 +49,7 @@ public class BuiltInAccessTests
             GrantArea.All
                 .Where(area => area is not (GrantArea.Configuration or GrantArea.AuditLog or GrantArea.Impersonation or GrantArea.Site or GrantArea.News or GrantArea.Article or GrantArea.Menu or GrantArea.Gallery or GrantArea.Download or GrantArea.RouteAlias or GrantArea.Access))
                 .Select(area => GrantName.Of(area, GrantAction.Read))
+                .Append("Chat.Write")
                 .Order(),
             GrantNames(BuiltInAccess.Users));
     }
@@ -89,6 +90,18 @@ public class BuiltInAccessTests
         Assert.Equal(
             ["Impersonation.Manage"],
             BuiltInAccess.Grants.Select(grant => grant.Grant.Name).Where(name => name.StartsWith("Impersonation.")));
+    }
+
+    [Fact]
+    public void Chat_HasAllBasicGrantsAndUsersReceiveOnlyReadAndWrite()
+    {
+        Assert.Equal(GrantAction.All, GrantArea.ActionsOf(GrantArea.Chat));
+        Assert.Equal(["Chat.Read", "Chat.Write"],
+            BuiltInAccess.Users.Grants.Where(grant => grant.Area == GrantArea.Chat).Select(grant => grant.Grant.Name));
+        Assert.Equal(["Chat.Read", "Chat.Write", "Chat.Delete", "Chat.Manage"],
+            BuiltInAccess.Administrators.Grants.Where(grant => grant.Area == GrantArea.Chat).Select(grant => grant.Grant.Name));
+        Assert.All(BuiltInAccess.Grants.Where(grant => grant.Area == GrantArea.Chat),
+            grant => Assert.Contains(BuiltInAccess.Restrictions, restriction => restriction.Restriction.Name == grant.Grant.Name));
     }
 
     [Fact]

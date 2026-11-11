@@ -51,6 +51,11 @@ html {
     scrollbar-color: var(--fse-green) var(--fse-surface);
 }
 
+.site-widget .chat-history {
+    scrollbar-color: var(--fse-green) var(--fse-surface);
+    box-shadow: 0 1px 3px var(--fse-shadow);
+}
+
 body {
     overflow-x: clip;
     color: var(--fse-text);
@@ -222,6 +227,20 @@ h4, .h4, h5, .h5, h6, .h6 {
 
 #main-container {
     animation: fse-page-in 0.3s ease;
+}
+
+.behind-layout .behind-widget {
+    border-color: var(--fse-green);
+}
+
+.behind-layout .behind-widget h2 {
+    color: var(--fse-green);
+    background-color: var(--bs-primary-bg-subtle);
+    border-bottom-color: var(--fse-green);
+}
+
+.behind-layout:has(.behind-site-leading-carousel) {
+    margin-top: 0 !important;
 }
 
 @keyframes fse-page-in {

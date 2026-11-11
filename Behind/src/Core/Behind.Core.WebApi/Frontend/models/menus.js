@@ -1,4 +1,4 @@
-define(["ko", "models/http", "models/results", "models/paging", "models/session", "models/i18n"], function (ko, http, results, pagination, session, i18n) {
+define(["ko", "models/http", "models/results", "models/paging", "models/session", "models/i18n", "models/invalidation"], function (ko, http, results, pagination, session, i18n, invalidation) {
     var sessionExpired = results.sessionExpired;
 
     var outcome = results.create({
@@ -12,7 +12,17 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
     });
 
     var loaded = outcome.loaded;
-    var saved = outcome.saved;
+    var saved = function (response, message, failures) {
+        var result = outcome.saved(response, message, failures);
+
+        if (!result.ok) {
+            return result;
+        }
+
+        return invalidation.invalidate("menus").then(function () {
+            return result;
+        });
+    };
 
     var publicFailures = {
         400: "menus.error.chooseOne"
@@ -149,8 +159,14 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
     var follow = function (name) {
         var menu = ko.observable({ title: "", items: [] });
         var latest = 0;
+        var disposed = false;
+        menu.error = ko.observable("");
 
         var reload = function () {
+            if (disposed) {
+                return Promise.resolve({ ok: true });
+            }
+
             var ticket = ++latest;
 
             return load([name]).then(function (result) {
@@ -161,11 +177,45 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
                 if (ticket === latest && result.ok) {
                     menu(found ? { title: found.title, items: found.items.map(present) } : { title: "", items: [] });
                 }
+
+                if (ticket === latest) {
+                    menu.error(result.ok ? "" : result.message);
+                }
+
+                return result;
+            }).catch(function (error) {
+                if (ticket === latest) {
+                    menu.error(error.message);
+                }
+
+                return { ok: false, message: error.message };
             });
         };
 
-        session.isSignedIn.subscribe(reload);
-        session.grants.subscribe(reload);
+        var subscriptions = [
+            session.isSignedIn.subscribe(reload),
+            session.grants.subscribe(reload),
+            invalidation.subscribe("menus", function () {
+                return reload().then(function (result) {
+                    if (!result.ok) {
+                        throw new Error(result.message);
+                    }
+                });
+            })
+        ];
+
+        menu.dispose = function () {
+            if (disposed) {
+                return;
+            }
+
+            disposed = true;
+            latest++;
+            subscriptions.forEach(function (subscription) {
+                subscription.dispose();
+            });
+        };
+
         reload();
 
         return menu;

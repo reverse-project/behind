@@ -44,6 +44,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n"], f
         News: "audit.entities.News",
         NewsCategory: "audit.entities.NewsCategory",
         NewsComment: "audit.entities.NewsComment",
+        ChatMessage: "audit.entities.ChatMessage",
         Article: "audit.entities.Article",
         ArticleCategory: "audit.entities.ArticleCategory",
         Menu: "audit.entities.Menu",

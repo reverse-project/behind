@@ -24,6 +24,11 @@ public static class ModuleCatalogExtensions
         RegexOptions.CultureInvariant | RegexOptions.Compiled,
         TimeSpan.FromSeconds(1));
 
+    private static readonly Regex WidgetModelPattern = new(
+        "^[A-Za-z0-9/_-]+$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled,
+        TimeSpan.FromSeconds(1));
+
     extension(ModuleCatalog)
     {
         public static Validation<ModuleCatalog> Create(IEnumerable<ModuleDescriptor> modules)
@@ -47,6 +52,9 @@ public static class ModuleCatalogExtensions
 
         public IReadOnlyList<ModuleAdministrationPage> AdministrationPages =>
             [..catalog.Modules.SelectMany(module => module.AdministrationPages)];
+
+        public IReadOnlyList<ModuleWidget> Widgets =>
+            [..catalog.Modules.SelectMany(module => module.Widgets)];
 
         public IReadOnlyList<string> ConfigurationFiles =>
             [..catalog.Modules.SelectMany(module => module.ConfigurationFiles)];
@@ -79,10 +87,28 @@ public static class ModuleCatalogExtensions
             ..module.MenuItems.SelectMany(item => item.ProblemsIn(module)),
             ..module.AdministrationPages.SelectMany(page => page.ProblemsIn(module)),
             ..module.Routes.SelectMany(route => route.ProblemsIn(module)),
+            ..module.Widgets.SelectMany(widget => widget.ProblemsIn(module)),
             ..module.ConfigurationFiles.SelectMany(file => Require(
                 ConfigurationFilePattern.IsMatch(file),
                 $"Configuration file '{file}' of module '{module.Key}' must be a lowercase json file name")),
             ..module.Frontend.AsEnumerable().SelectMany(frontend => frontend.ProblemsIn(module))
+        ];
+    }
+
+    extension(ModuleWidget widget)
+    {
+        private IEnumerable<string> ProblemsIn(ModuleDescriptor module) =>
+        [
+            ..Require(widget.Key.StartsWith($"{module.Key}.", StringComparison.Ordinal)
+                && KeyPattern.IsMatch(widget.Key[(module.Key.Length + 1)..]),
+                $"Widget key '{widget.Key}' must start with '{module.Key}.' followed by a lowercase key"),
+            ..Require(!string.IsNullOrWhiteSpace(widget.Name), $"Widget '{widget.Key}' needs a name"),
+            ..Require(widget.Model.StartsWith(module.FrontendPath, StringComparison.Ordinal)
+                && widget.Model.Length > module.FrontendPath.Length
+                && WidgetModelPattern.IsMatch(widget.Model)
+                && !widget.Model.Contains("//", StringComparison.Ordinal)
+                && !widget.Model.EndsWith("/", StringComparison.Ordinal),
+                $"Widget '{widget.Key}' must use a model under {module.FrontendPath}")
         ];
     }
 
@@ -143,6 +169,7 @@ public static class ModuleCatalogExtensions
             ..modules.SelectMany(module => module.GrantAreas).Duplicates(area => area.Area, "Grant area"),
             ..modules.SelectMany(module => module.MenuItems).Duplicates(item => item.Id, "Menu item id"),
             ..modules.SelectMany(module => module.Routes).Duplicates(route => route.Path, "Route"),
+            ..modules.SelectMany(module => module.Widgets).Duplicates(widget => widget.Key, "Widget key"),
             ..modules.SelectMany(module => module.ConfigurationFiles).Duplicates(file => file, "Configuration file")
         ];
     }

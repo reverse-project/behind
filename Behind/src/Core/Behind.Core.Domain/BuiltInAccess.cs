@@ -44,7 +44,8 @@ public static class BuiltInAccess
     public static readonly BuiltInRole Users = NewRole(
         4,
         DomainConstants.UsersRole,
-        AreaGrants.Where(grant => grant.Action == GrantAction.Read && !grant.IsDeveloperOnly && !grant.IsAdministrationOnly).ToList(),
+        AreaGrants.Where(grant => (grant.Action == GrantAction.Read || grant.Area == GrantArea.Chat && grant.Action == GrantAction.Write)
+            && !grant.IsDeveloperOnly && !grant.IsAdministrationOnly).ToList(),
         false);
 
     public static readonly BuiltInRole Developers = NewRole(

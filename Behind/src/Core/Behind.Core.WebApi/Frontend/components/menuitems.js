@@ -1,4 +1,13 @@
-define(["text!components/menuitems.html", "bindings/menuhover"], function (template) {
+define(["jquery", "bootstrap", "text!components/menuitems.html", "bindings/menuhover"], function ($, bootstrap, template) {
+    // Collapse the responsive navbar after a menu item is chosen.
+    $(document).on("click.menuitems", "#navigation a, #navigation .dropdown-item", function () {
+        var navigation = document.getElementById("navigation");
+
+        if (navigation && navigation.classList.contains("show")) {
+            bootstrap.Collapse.getOrCreateInstance(navigation, { toggle: false }).hide();
+        }
+    });
+
     var variants = {
         nav: { list: "nav", item: "nav-item", link: "nav-link link-secondary" },
         navbar: { list: "navbar-nav mb-2 mb-md-0", item: "nav-item", link: "nav-link" },

@@ -170,6 +170,11 @@ h4, .h4, h5, .h5, h6, .h6 {
     background-color: rgba(20, 52, 127, 0.08);
 }
 
+#header-container .rp-menu .menu-parent:has(> .menu-parent-toggle.show) > .nav-link {
+    color: var(--rp-blue-dark);
+    background-color: rgba(20, 52, 127, 0.08);
+}
+
 #header-container .rp-menu .nav-link.active {
     color: var(--rp-blue-dark);
     background-color: rgba(20, 52, 127, 0.12);
@@ -805,8 +810,8 @@ button:focus-visible,
     }
 }
 
-/* Keep the caret beside its link; the dropdown menu is absolutely positioned from md up. */
-@media (min-width: 768px) {
+/* Keep the caret beside its link; the dropdown menu is absolutely positioned from lg up (navbar-expand-lg). */
+@media (min-width: 992px) {
     #header-container .rp-menu .menu-parent {
         flex-wrap: nowrap;
     }
@@ -818,6 +823,16 @@ button:focus-visible,
     #header-container .rp-menu .menu-parent-toggle {
         flex: 0 0 auto;
         align-self: center;
+    }
+
+    /* Bridge the gap between the item and its dropdown so the pointer can reach the submenu without closing it. */
+    #header-container .rp-menu .menu-parent > .dropdown-menu::before {
+        content: "";
+        position: absolute;
+        top: -0.75rem;
+        right: 0;
+        left: 0;
+        height: 0.75rem;
     }
 }
 

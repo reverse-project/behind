@@ -76,7 +76,7 @@ public class RpDotHuSiteTests
     [InlineData("libraries/require.min.js")]
     [InlineData("data-main=\"bootloader.js\"")]
     [InlineData("spinner-border")]
-    [InlineData("<menu-items params=\"items: links, variant: 'navbar'\">")]
+    [InlineData("<menu-items params=\"items: links, variant: 'navbar', hover: true\">")]
     [InlineData("<menu-nav params=\"name: 'footer'\">")]
     public void IndexHtml_KeepsTheEmbeddedShell(string marker)
     {

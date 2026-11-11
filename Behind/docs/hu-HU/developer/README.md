@@ -5,32 +5,38 @@
 ## 📚 Dokumentációs tartalomjegyzék
 
 ### Alapdokumentáció
-- **[PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)** - A projekt felépítése, a technológiai stack és az általános architektúra
-- **[DESIGN_PATTERNS.md](./DESIGN_PATTERNS.md)** - Architekturális minták és tervezési döntések
-- **[CODING_STANDARDS.md](./CODING_STANDARDS.md)** - Kötelező kódolási szabványok, konvenciók és ajánlott gyakorlatok
-- **[FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md)** - A kódbázisban használt funkcionális programozási minták és monádok
+- **[Projektáttekintés](./PROJECT_OVERVIEW.md)** - A projekt felépítése, a technológiai stack és az általános architektúra
+- **[Tervezési minták](./DESIGN_PATTERNS.md)** - Architekturális minták és tervezési döntések
+- **[Kódolási szabványok](./CODING_STANDARDS.md)** - Kötelező kódolási szabványok, konvenciók és ajánlott gyakorlatok
+- **[Funkcionális programozás](./FUNCTIONAL_PROGRAMMING.md)** - A kódbázisban használt funkcionális programozási minták és monádok
 
 ### Architektúra útmutatók
-- **[DATABASE_ARCHITECTURE.md](./DATABASE_ARCHITECTURE.md)** - Adatbázisréteg, Entity Framework minták és repository-tervezés
-- **[WEBAPI_CONVENTIONS.md](./WEBAPI_CONVENTIONS.md)** - Web API konfiguráció, middleware és OpenAPI dokumentáció
-- **[DOMAIN_MODEL.md](./DOMAIN_MODEL.md)** - Domain modellek, aggregátumok és entitástervezés
-- **[EMAIL_SENDER_IMPLEMENTATION.md](./EMAIL_SENDER_IMPLEMENTATION.md)** - Az e-mail-küldő konfigurációja, megvalósítási részletei és használati útmutatója
+- **[Adatbázis-architektúra](./DATABASE_ARCHITECTURE.md)** - Adatbázisréteg, Entity Framework minták és repository-tervezés
+- **[Web API-konvenciók](./WEBAPI_CONVENTIONS.md)** - Web API konfiguráció, middleware és OpenAPI dokumentáció
+- **[Domainmodell](./DOMAIN_MODEL.md)** - Domain modellek, aggregátumok és entitástervezés
+- **[E-mail-küldő megvalósítása](./EMAIL_SENDER_IMPLEMENTATION.md)** - Az e-mail-küldő konfigurációja, megvalósítási részletei és használati útmutatója
 
 ### Üzemeltetési útmutatók
-- **[LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md)** - Ismert korlátozások, aktuális hibák és függőségi sebezhetőségek
-- **[GETTING_STARTED.md](./GETTING_STARTED.md)** - Telepítés, fordítás, futtatás és fejlesztési munkafolyamat
+- **[Korlátozások és problémák](./LIMITATIONS_AND_ISSUES.md)** - Ismert korlátozások, aktuális hibák és függőségi sebezhetőségek
+- **[Első lépések](./GETTING_STARTED.md)** - Telepítés, fordítás, futtatás és fejlesztési munkafolyamat
+- **[Behind Core Tools](./tools/README.md)** - Indítási konfigurációhoz, TOTP titkokhoz és kiadási jegyzetekhez használható parancsok
+- **[Konténerközzétételi szkriptek](./tools/container-publishing.md)** - Az alkalmazás konténerképeinek elkészítése és közzététele
 
 ## 🎯 Gyors navigáció
 
-**Új a projektben?** Kezdje a [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) fájllal
+**Új a projektben?** Kezdje a [Projektáttekintéssel](./PROJECT_OVERVIEW.md)
 
-**Meg szeretné érteni a kódolási mintákat?** Olvassa el a [CODING_STANDARDS.md](./CODING_STANDARDS.md) és a [FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md) fájlt
+**Meg szeretné érteni a kódolási mintákat?** Olvassa el a [Kódolási szabványokat](./CODING_STANDARDS.md) és a [Funkcionális programozást](./FUNCTIONAL_PROGRAMMING.md)
 
-**Adatokkal kell dolgoznia?** Lásd a [DATABASE_ARCHITECTURE.md](./DATABASE_ARCHITECTURE.md) fájlt
+**Adatokkal kell dolgoznia?** Lásd az [Adatbázis-architektúrát](./DATABASE_ARCHITECTURE.md)
 
-**API-kat fejleszt?** Tekintse meg a [WEBAPI_CONVENTIONS.md](./WEBAPI_CONVENTIONS.md) fájlt
+**API-kat fejleszt?** Tekintse meg a [Web API-konvenciókat](./WEBAPI_CONVENTIONS.md)
 
-**Tisztában van az aktuális hibákkal?** Nézze át a [LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md) fájlt
+**Tisztában van az aktuális hibákkal?** Nézze át a [Korlátozásokat és problémákat](./LIMITATIONS_AND_ISSUES.md)
+
+**Parancssori konfigurációra vagy kiadási jegyzetekre van szüksége?** Lásd a [Behind Core Tools](./tools/README.md) útmutatót
+
+**Konténerképeket tesz közzé?** Lásd a [Konténerközzétételi szkriptek](./tools/container-publishing.md) útmutatót
 
 ## 🏗️ Projektstruktúra
 
@@ -83,10 +89,12 @@ A Behind kódbázis az alábbi alapelvekre épül:
 
 ## 🚀 Első lépések
 
-1. Tekintse át a [CODING_STANDARDS.md](./CODING_STANDARDS.md) fájlt a kötelező minták megismeréséhez
-2. Ismerkedjen meg a [FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md) fájllal a monadikus minták elsajátításához
-3. Nézze meg a [DESIGN_PATTERNS.md](./DESIGN_PATTERNS.md) fájlt az architekturális döntésekért
-4. A telepítési útmutatóért lásd a [GETTING_STARTED.md](./GETTING_STARTED.md) fájlt
+1. Tekintse át a [Kódolási szabványokat](./CODING_STANDARDS.md) a kötelező minták megismeréséhez
+2. Ismerkedjen meg a [Funkcionális programozással](./FUNCTIONAL_PROGRAMMING.md) a monadikus minták elsajátításához
+3. Nézze meg a [Tervezési mintákat](./DESIGN_PATTERNS.md) az architekturális döntésekért
+4. Az útmutatóért lásd az [Első lépéseket](./GETTING_STARTED.md)
+5. A konfigurációk, TOTP titkok vagy kiadási jegyzetek generálásához használja a [Behind Core Tools](./tools/README.md) eszközt
+6. A konténerképek közzétételéhez használja a [Konténerközzétételi szkripteket](./tools/container-publishing.md)
 
 ## ⚠️ Fontos megjegyzések
 
@@ -94,7 +102,7 @@ A Behind kódbázis az alábbi alapelvekre épül:
 - **Bővítő metódusok** - Használja a C# 12 `extension` szintaxisát, a fájlok neve pedig `Extensions` végződésű legyen
 - **Megváltoztathatatlanság** - Részesítse előnyben a rekordokat, a megváltoztathatatlan objektumokat és a funkcionális megközelítéseket
 - **Tesztek kötelezők** - Minden új funkcionalitáshoz egységteszteket kell mellékelni
-- **Ismert hibák** - A függőségi sebezhetőségekkel kapcsolatban lásd a [LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md) fájlt
+- **Ismert hibák** - A függőségi sebezhetőségekkel kapcsolatban lásd a [Korlátozások és problémák](./LIMITATIONS_AND_ISSUES.md) leírást
 
 ## 📖 Dokumentációs verziók
 

@@ -5,32 +5,38 @@ Comprehensive documentation for the Behind project - a modern, clean architectur
 ## 📚 Documentation Index
 
 ### Core Documentation
-- **[PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)** - Project structure, technology stack, and overall architecture
-- **[DESIGN_PATTERNS.md](./DESIGN_PATTERNS.md)** - Architectural patterns and design decisions
-- **[CODING_STANDARDS.md](./CODING_STANDARDS.md)** - Mandatory coding standards, conventions, and best practices
-- **[FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md)** - Functional programming patterns and monads used throughout the codebase
+- **[Project Overview](./PROJECT_OVERVIEW.md)** - Project structure, technology stack, and overall architecture
+- **[Design Patterns](./DESIGN_PATTERNS.md)** - Architectural patterns and design decisions
+- **[Coding Standards](./CODING_STANDARDS.md)** - Mandatory coding standards, conventions, and best practices
+- **[Functional Programming](./FUNCTIONAL_PROGRAMMING.md)** - Functional programming patterns and monads used throughout the codebase
 
 ### Architecture Guides
-- **[DATABASE_ARCHITECTURE.md](./DATABASE_ARCHITECTURE.md)** - Database layer, Entity Framework patterns, and repository design
-- **[WEBAPI_CONVENTIONS.md](./WEBAPI_CONVENTIONS.md)** - Web API configuration, middleware, and OpenAPI documentation
-- **[DOMAIN_MODEL.md](./DOMAIN_MODEL.md)** - Domain models, aggregates, and entity design
-- **[EMAIL_SENDER_IMPLEMENTATION.md](./EMAIL_SENDER_IMPLEMENTATION.md)** - Email sender configuration, implementation details, and usage guide
+- **[Database Architecture](./DATABASE_ARCHITECTURE.md)** - Database layer, Entity Framework patterns, and repository design
+- **[Web API Conventions](./WEBAPI_CONVENTIONS.md)** - Web API configuration, middleware, and OpenAPI documentation
+- **[Domain Model](./DOMAIN_MODEL.md)** - Domain models, aggregates, and entity design
+- **[Email Sender Implementation](./EMAIL_SENDER_IMPLEMENTATION.md)** - Email sender configuration, implementation details, and usage guide
 
 ### Operational Guides
-- **[LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md)** - Known limitations, current issues, and dependency vulnerabilities
-- **[GETTING_STARTED.md](./GETTING_STARTED.md)** - Setup, build, run, and development workflow
+- **[Limitations and Issues](./LIMITATIONS_AND_ISSUES.md)** - Known limitations, current issues, and dependency vulnerabilities
+- **[Getting Started](./GETTING_STARTED.md)** - Setup, build, run, and development workflow
+- **[Behind Core Tools](./tools/README.md)** - Commands for startup configuration, TOTP secrets, and release notes
+- **[Container Publishing Scripts](./tools/container-publishing.md)** - Build and publish the application's container images
 
 ## 🎯 Quick Navigation
 
-**New to the project?** Start with [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)
+**New to the project?** Start with [Project Overview](./PROJECT_OVERVIEW.md)
 
-**Want to understand the code patterns?** Read [CODING_STANDARDS.md](./CODING_STANDARDS.md) and [FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md)
+**Want to understand the code patterns?** Read [Coding Standards](./CODING_STANDARDS.md) and [Functional Programming](./FUNCTIONAL_PROGRAMMING.md)
 
-**Need to work with data?** See [DATABASE_ARCHITECTURE.md](./DATABASE_ARCHITECTURE.md)
+**Need to work with data?** See [Database Architecture](./DATABASE_ARCHITECTURE.md)
 
-**Building APIs?** Check [WEBAPI_CONVENTIONS.md](./WEBAPI_CONVENTIONS.md)
+**Building APIs?** Check [Web API Conventions](./WEBAPI_CONVENTIONS.md)
 
-**Aware of current issues?** Review [LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md)
+**Aware of current issues?** Review [Limitations and Issues](./LIMITATIONS_AND_ISSUES.md)
+
+**Need command-line setup or release notes?** See [Behind Core Tools](./tools/README.md)
+
+**Publishing container images?** See [Container Publishing Scripts](./tools/container-publishing.md)
 
 ## 🏗️ Project Structure
 
@@ -84,10 +90,12 @@ The Behind codebase is built on these fundamental principles:
 
 ## 🚀 Getting Started
 
-1. Review [CODING_STANDARDS.md](./CODING_STANDARDS.md) to understand mandatory patterns
-2. Explore [FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md) to learn the monadic patterns
-3. Check [DESIGN_PATTERNS.md](./DESIGN_PATTERNS.md) for architectural decisions
-4. See [GETTING_STARTED.md](./GETTING_STARTED.md) for setup instructions
+1. Review [Coding Standards](./CODING_STANDARDS.md) to understand mandatory patterns
+2. Explore [Functional Programming](./FUNCTIONAL_PROGRAMMING.md) to learn the monadic patterns
+3. Check [Design Patterns](./DESIGN_PATTERNS.md) for architectural decisions
+4. See [Getting Started](./GETTING_STARTED.md) for setup instructions
+5. Use [Behind Core Tools](./tools/README.md) to generate startup configuration, TOTP secrets, or release notes
+6. Use [Container Publishing Scripts](./tools/container-publishing.md) to publish container images
 
 ## ⚠️ Important Notes
 
@@ -95,7 +103,7 @@ The Behind codebase is built on these fundamental principles:
 - **Extension Methods** - Use C# 12 `extension` syntax with files ending in `Extensions`
 - **Immutability** - Favor records, immutable objects, and functional approaches
 - **Tests Required** - All new functionality must include unit tests
-- **Known Issues** - See [LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md) for dependency vulnerabilities
+- **Known Issues** - See [Limitations and Issues](./LIMITATIONS_AND_ISSUES.md) for dependency vulnerabilities
 
 ## 📖 Documentation Versions
 

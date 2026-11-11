@@ -398,6 +398,7 @@
     "licenses.scopes.development.title": "Development and test tools",
     "licenses.scopes.development.description": "Used to build, test and orchestrate Behind; not part of the running application.",
     "changelog.title": "Changelog",
+    "changelog.mirror": "Public mirror:",
     "changelog.failed": "The changelog could not be loaded.",
     "changelog.empty": "There are no releases yet.",
     "changelog.types.added": "Added",

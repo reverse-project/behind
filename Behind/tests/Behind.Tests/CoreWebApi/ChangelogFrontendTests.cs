@@ -87,6 +87,7 @@ public class ChangelogFrontendTests
         Assert.Contains("foreach: releases", view);
         Assert.Contains("foreach: changes", view);
         Assert.Contains("text: 'v' + version", view);
+        Assert.Contains("href=\"https://github.com/reverse-project/behind\"", view);
         Assert.DoesNotContain("<!-- ko", view);
     }
 

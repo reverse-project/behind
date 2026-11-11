@@ -398,6 +398,7 @@
     "licenses.scopes.development.title": "Fejlesztői és tesztelési eszközök",
     "licenses.scopes.development.description": "A Behind építéséhez, teszteléséhez és vezényléséhez használatosak; nem részei a futó alkalmazásnak.",
     "changelog.title": "Változásnapló",
+    "changelog.mirror": "Nyilvános tükör:",
     "changelog.failed": "A változásnaplót nem sikerült betölteni.",
     "changelog.empty": "Még nincs kiadás.",
     "changelog.types.added": "Új",

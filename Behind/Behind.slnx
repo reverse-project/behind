@@ -22,6 +22,14 @@
     <Project Path="src/MarkdownViewer/Behind.MarkdownViewer.Domain/Behind.MarkdownViewer.Domain.csproj" />
     <Project Path="src/MarkdownViewer/Behind.MarkdownViewer.WebApi/Behind.MarkdownViewer.WebApi.csproj" />
   </Folder>
+  <Folder Name="/src/Forum/">
+    <Project Path="src/Forum/Behind.Forum.Common/Behind.Forum.Common.csproj" />
+    <Project Path="src/Forum/Behind.Forum.Domain/Behind.Forum.Domain.csproj" />
+    <Project Path="src/Forum/Behind.Forum.Database/Behind.Forum.Database.csproj" />
+    <Project Path="src/Forum/Behind.Forum.Database.Sqlite/Behind.Forum.Database.Sqlite.csproj" />
+    <Project Path="src/Forum/Behind.Forum.Database.Postgres/Behind.Forum.Database.Postgres.csproj" />
+    <Project Path="src/Forum/Behind.Forum.WebApi/Behind.Forum.WebApi.csproj" />
+  </Folder>
   <Folder Name="/src/Quotes/">
     <Project Path="src/Quotes/Behind.Quotes.Common/Behind.Quotes.Common.csproj" />
     <Project Path="src/Quotes/Behind.Quotes.Database.Postgres/Behind.Quotes.Database.Postgres.csproj" />

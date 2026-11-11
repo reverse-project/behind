@@ -1,5 +1,14 @@
 # Tartományi modell tervezése
 
+## A Fórum tartománya
+
+- `ForumBoard(Name, Description, Moderation?)`: a fórumtábla opcionális moderálási felülbírálása.
+- `ForumPost(BoardId, TopicId?, AuthorId, Title, Body, State)`: null `TopicId` esetén téma, egyébként azonos táblában lévő közzétett témára adott válasz. A törzs egyszerű szöveg, szöveges kötéssel, nem HTML-ként jelenik meg.
+- `ForumUserModeration(UserId, Moderation)`: verziózott felhasználói szabály; kulcsa a felhasználó azonosítója, így személyenként egy szabály lehet.
+- `PublicationState`: `Published`, `Pending`, `Rejected`. A nyilvános lekérdezések a közzététel ellenőrzése előtt a legfrissebb verziót választják ki, és aktív táblát, valamint közzétett szülőtémát követelnek.
+- `ForumSettings`: alapértéke `Post`; az engedélyezett felhasználói felülbírálás elsőbbséget élvez az engedélyezett táblaszabállyal, majd a globális móddal szemben. Csak az új üzeneteket érinti; a meglévő függő üzenetekhez továbbra is jóváhagyás kell.
+- `HumanUser.ProfilePictureId`: opcionális Core VFS-képhivatkozás; az `IModuleUsers` a nyilvános feliratokat és képazonosítókat adja át. A felirat a környező szóközök nélküli megjelenítendő név, üres név esetén az elsődleges e-mail-cím (az e-mail Id szerinti sorrendben); más e-mail-címet nem ad át.
+
 Ez a dokumentum a Behind projektben használt tartományi modell szerkezetét, az entitások tervezési mintáit és a tartományvezérelt tervezés (domain-driven design) alapelveit ismerteti.
 
 ## Tartományvezérelt tervezés (Domain-Driven Design, DDD)
@@ -765,5 +774,3 @@ extension(Session)
 - A perzisztencia-leképezésről lásd a DATABASE_ARCHITECTURE.md fájlt
 - Az API-reprezentációról lásd a WEBAPI_CONVENTIONS.md fájlt
 - Az eredménykezelésről lásd a FUNCTIONAL_PROGRAMMING.md fájlt
-
-

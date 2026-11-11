@@ -1,0 +1,125 @@
+<section class="forum">
+    <header class="forum-header">
+        <div>
+            <h1 data-bind="t: 'forum.title'">Forum</h1>
+            <p class="text-body-secondary mb-0" data-bind="t: 'forum.welcome'">A place for conversations and ideas.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="#/manage/forum" data-bind="visible: canManage, t: 'forum.manage'">Manage forum</a>
+    </header>
+    <nav class="forum-breadcrumb" data-bind="attr: { 'aria-label': i18nLabel }">
+        <button class="btn btn-link" data-bind="click: home, enable: !busy(), t: 'forum.boards'">Boards</button>
+        <span data-bind="if: board">
+            <span aria-hidden="true">/</span>
+            <button class="btn btn-link" data-bind="text: board().entity.name, click: function () { openBoard(board()); }, enable: !busy()"></button>
+        </span>
+        <span data-bind="if: topic">
+            <span aria-hidden="true">/</span>
+            <span aria-current="page" data-bind="text: topic().title"></span>
+        </span>
+    </nav>
+    <p class="forum-status" role="status" data-bind="visible: message, text: message"></p>
+    <div data-bind="visible: !board()">
+        <div class="forum-panel">
+            <h2 class="forum-panel-heading" data-bind="t: 'forum.boards'">Boards</h2>
+            <div data-bind="foreach: boardGroups">
+                <h3 class="forum-panel-heading forum-category-heading" data-bind="text: name"></h3>
+                <ul class="forum-list" data-bind="foreach: boards">
+                    <li class="forum-row">
+                        <span class="forum-row-icon fa fa-comments" aria-hidden="true"></span>
+                        <div class="forum-row-content">
+                            <button class="forum-title btn btn-link" data-bind="text: entity.name, click: $root.openBoard, enable: !$root.busy()"></button>
+                            <p class="text-body-secondary mb-0" data-bind="text: entity.description"></p>
+                        </div>
+                        <span class="fa fa-chevron-right text-body-secondary" aria-hidden="true"></span>
+                    </li>
+                </ul>
+            </div>
+            <p class="forum-empty" data-bind="visible: !boards().length, t: 'forum.empty'">No items found.</p>
+        </div>
+        <pager params="pager: boardPager"></pager>
+    </div>
+    <div data-bind="if: board">
+        <div class="forum-section-header">
+            <div>
+                <h2 data-bind="text: board().entity.name"></h2>
+                <p class="text-body-secondary" data-bind="text: board().entity.description"></p>
+            </div>
+            <button class="btn btn-outline-secondary" data-bind="click: back, enable: !busy(), t: 'forum.back'">Back</button>
+        </div>
+        <div data-bind="visible: !topic()">
+            <div class="forum-panel">
+                <div class="forum-topic-heading">
+                    <h3 data-bind="t: 'forum.topics'">Topics</h3>
+                    <span data-bind="t: 'forum.author'">Author</span>
+                </div>
+                <ul class="forum-list" data-bind="foreach: topics">
+                    <li class="forum-row forum-topic-row">
+                        <span class="forum-row-icon fa fa-comment" aria-hidden="true"></span>
+                        <button class="forum-title btn btn-link" data-bind="text: title, click: $root.openTopic, enable: !$root.busy()"></button>
+                        <div class="forum-topic-author">
+                            <img class="forum-avatar forum-avatar-small" width="32" height="32" alt="" data-bind="visible: pictureUrl, attr: { src: pictureUrl }">
+                            <strong data-bind="text: author || $root.unknownAuthor"></strong>
+                        </div>
+                    </li>
+                </ul>
+                <p class="forum-empty" data-bind="visible: !topics().length, t: 'forum.empty'">No items found.</p>
+            </div>
+            <pager params="pager: topicPager"></pager>
+        </div>
+        <div data-bind="if: topic">
+            <h3 class="forum-topic-title" data-bind="text: topic().title"></h3>
+            <article class="forum-post" data-bind="with: topic">
+                <aside class="forum-post-author">
+                    <img class="forum-avatar" width="72" height="72" alt="" data-bind="visible: pictureUrl, attr: { src: pictureUrl }">
+                    <span class="forum-avatar-placeholder fa fa-user" aria-hidden="true" data-bind="visible: !pictureUrl"></span>
+                    <strong data-bind="text: author || $root.unknownAuthor"></strong>
+                    <span class="forum-author-label" data-bind="t: 'forum.topicStarter'">Topic starter</span>
+                </aside>
+                <div class="forum-post-content">
+                    <div class="forum-post-heading" data-bind="t: 'forum.message'">Message</div>
+                    <div class="forum-body" data-bind="bbcode: body"></div>
+                </div>
+            </article>
+            <h4 class="forum-replies-heading" data-bind="t: 'forum.replies'">Replies</h4>
+            <div data-bind="foreach: replies">
+                <article class="forum-post">
+                    <aside class="forum-post-author">
+                        <img class="forum-avatar" width="72" height="72" alt="" data-bind="visible: pictureUrl, attr: { src: pictureUrl }">
+                        <span class="forum-avatar-placeholder fa fa-user" aria-hidden="true" data-bind="visible: !pictureUrl"></span>
+                        <strong data-bind="text: author || $root.unknownAuthor"></strong>
+                    </aside>
+                    <div class="forum-post-content">
+                        <div class="forum-post-heading" data-bind="t: 'forum.reply'">Reply</div>
+                        <div class="forum-body" data-bind="bbcode: body"></div>
+                    </div>
+                </article>
+            </div>
+            <p class="forum-empty" data-bind="visible: !replies().length, t: 'forum.noReplies'">No replies yet. Start the conversation.</p>
+            <pager params="pager: replyPager"></pager>
+        </div>
+        <p class="forum-signin" data-bind="visible: !isSignedIn(), t: 'forum.signIn'">Sign in to post.</p>
+        <form class="forum-panel forum-composer" data-bind="visible: isSignedIn, submit: submit">
+            <h3 class="forum-panel-heading" data-bind="t: topic() ? 'forum.writeReply' : 'forum.newTopic'">Write a message</h3>
+            <div class="forum-composer-content">
+                <div class="mb-3" data-bind="visible: !topic()">
+                    <label for="forum-title" class="form-label" data-bind="t: 'forum.topicTitle'">Topic title</label>
+                    <input id="forum-title" class="form-control" maxlength="200" data-bind="textInput: title, enable: !busy(), attr: { required: !topic() }">
+                </div>
+                <label id="forum-body-label" for="forum-body" class="form-label" data-bind="t: 'forum.message'">Message</label>
+                <div class="forum-editor-modes btn-group mb-2" role="group" data-bind="attr: { 'aria-label': editorLabel }">
+                    <button type="button" class="btn btn-outline-secondary" data-bind="click: showVisual, css: { active: editorMode() === 'visual' }, attr: { 'aria-pressed': editorMode() === 'visual' }, t: 'forum.visual'">Visual editor</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bind="click: showSource, css: { active: editorMode() === 'source' }, attr: { 'aria-pressed': editorMode() === 'source' }, t: 'forum.bbcode'">BBCode</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bind="click: showPreview, css: { active: editorMode() === 'preview' }, attr: { 'aria-pressed': editorMode() === 'preview' }, t: 'forum.preview'">Preview</button>
+                </div>
+                <div data-bind="visible: editorMode() === 'visual'">
+                    <div data-bind="bbcodeEditor: { value: body, enabled: !busy(), labelId: 'forum-body-label' }"></div>
+                </div>
+                <textarea id="forum-body" class="form-control" rows="8" maxlength="20000" aria-describedby="forum-bbcode-help" data-bind="visible: editorMode() === 'source', textInput: body, enable: !busy()"></textarea>
+                <div class="forum-body forum-preview" role="region" aria-labelledby="forum-body-label" data-bind="visible: editorMode() === 'preview', bbcode: body"></div>
+                <p id="forum-bbcode-help" class="form-text" data-bind="t: 'forum.bbcodeHelp'">Use the toolbar or BBCode to format your message.</p>
+                <p class="text-danger" role="status" data-bind="visible: body().length > 20000, t: 'forum.tooLong'">The message must not exceed 20,000 characters.</p>
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSubmit, t: 'forum.post'">Post</button>
+            </div>
+        </form>
+    </div>
+</section>

@@ -1,5 +1,13 @@
 # Database Architecture
 
+## Forum persistence and profile pictures
+
+Scheduled content with equal start times is ordered by audit creation time before the id; the ban list also uses audit creation timestamps rather than UUID order. Neither change adds entity timestamp columns.
+
+`IForumContext` is implemented by the main SQLite/PostgreSQL project contexts, flattening `ForumBoards`, `ForumPosts` and `ForumUserModerations` into the same database as Core. Each table uses the composite `Key`/`Version` primary key, append-only updates, audit-derived timestamps, soft deletion, developer restore/permanent deletion and generic raw editing. The module migrations use `__forumMigrationsHistory` and are applied by the web project migrator after Core. Parent references have no cross-module foreign keys; commands validate active boards and published topics and refuse permanent deletion of referenced boards/topics.
+
+Core adds nullable `Users.ProfilePictureId`, migrated for both providers. Picture metadata uses the existing versioned VFS; content is stored below `Backend:DataDirectory` from `backend.json` as `vfs/Users/<user id>/<file id>`. Uploads are attached to the session user immediately. Replaced/removed images are no longer served by the profile endpoint; existing browser caches may retain previously downloaded bytes.
+
 This document covers the database layer design, Entity Framework Core patterns, repository implementation, and data access strategies.
 
 ## Overview

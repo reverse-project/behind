@@ -1,5 +1,13 @@
 # Project Overview
 
+## Forum and public profiles
+
+The main `Behind.Web` installation loads `Behind.Forum.*` beside Core, Quotes and Sport; the existing sites do not load Forum. Its Common, Domain, Database, SQLite, PostgreSQL and WebApi projects contribute through `ForumModule.Descriptor`. The frontend includes board/topic/reply browsing and forum administration with moderation. `forum.json` is reloadable and appears on Settings.
+
+Core exposes session identity through `IModuleIdentity` and public display labels/picture ids through `IModuleUsers`; labels use the trimmed display name or the primary email address when blank. Modules never reference Core. Core's Profile page uploads/removes pictures using the existing VFS and Bootstrap styling, shared by every installation.
+
+Run feature tests with `dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~Forum|FullyQualifiedName~ProfilePicture"` and the frontend runtime tests with `node --test tools/tests/forum-frontend.test.cjs` from `Behind/`. The Node tests use the bundled Knockout and production pager, without additional packages.
+
 Behind is a modern .NET 10 application built with clean architecture principles, functional programming paradigms, and emphasis on code quality and maintainability.
 
 ## Project Purpose

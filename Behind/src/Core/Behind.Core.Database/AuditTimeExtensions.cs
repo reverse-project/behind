@@ -65,7 +65,7 @@ public static class AuditTimeExtensions
             var creation = context.CreationTime(overriddenBy);
             var ordered = newestFirst ? source.OrderByDescending(creation) : source.OrderBy(creation);
 
-            return ordered.ThenByKey(newestFirst);
+            return context.CompleteCreationOrder(ordered, newestFirst, overriddenBy is not null);
         }
 
         public IOrderedQueryable<TEntity> ThenByCreation<TEntity>(
@@ -75,6 +75,23 @@ public static class AuditTimeExtensions
             where TEntity : class
         {
             var creation = context.CreationTime(overriddenBy);
+            var ordered = newestFirst ? source.ThenByDescending(creation) : source.ThenBy(creation);
+
+            return context.CompleteCreationOrder(ordered, newestFirst, overriddenBy is not null);
+        }
+
+        private IOrderedQueryable<TEntity> CompleteCreationOrder<TEntity>(
+            IOrderedQueryable<TEntity> source,
+            bool newestFirst,
+            bool hasOverride)
+            where TEntity : class
+        {
+            if (!hasOverride)
+            {
+                return source.ThenByKey(newestFirst);
+            }
+
+            var creation = context.CreationTime<TEntity>(null);
             var ordered = newestFirst ? source.ThenByDescending(creation) : source.ThenBy(creation);
 
             return ordered.ThenByKey(newestFirst);

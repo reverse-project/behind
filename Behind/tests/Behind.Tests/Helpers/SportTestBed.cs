@@ -18,7 +18,7 @@ public sealed class SportTestBed : IDisposable
     public static readonly DateTimeOffset Now = new(2026, 11, 7, 12, 0, 0, TimeSpan.Zero);
 
     private static readonly ModuleCatalog Catalog =
-        ModuleCatalog.Create([QuotesModule.Descriptor, SportModule.Descriptor]).GetOrElse(ModuleCatalog.Empty);
+        ModuleCatalog.Create([QuotesModule.Descriptor, SportModule.Descriptor, Behind.Forum.WebApi.ForumModule.Descriptor]).GetOrElse(ModuleCatalog.Empty);
 
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
 

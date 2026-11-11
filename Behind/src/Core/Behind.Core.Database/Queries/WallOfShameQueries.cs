@@ -12,10 +12,9 @@ public sealed class WallOfShameQueries(AbstractCoreContext context) : IWallOfSha
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
-        var rows = await context.WallOfShameEntries
+        var rows = await context.NewestBans(context.WallOfShameEntries
             .ActiveAt(now)
-            .ForUser(userId)
-            .OrderByDescending(entry => EF.Property<Guid>(entry, "Id"))
+            .ForUser(userId))
             .Select(entry => new BanRow(entry.Reason, EF.Property<DateTimeOffset?>(entry, "ExpiresAt")))
             .Take(1)
             .AsNoTracking()
@@ -33,10 +32,9 @@ public sealed class WallOfShameQueries(AbstractCoreContext context) : IWallOfSha
         var total = await active.LongCountAsync(cancellationToken);
 
         var rows = await flipper.Apply(
-                from entry in active
+                from entry in context.NewestBans(active)
                 join user in context.Users
                     on EF.Property<Guid>(entry, "UserId") equals EF.Property<Guid>(user, "Id")
-                orderby EF.Property<Guid>(entry, "Id") descending
                 select new ShamedRow(user.DisplayName, entry.Reason, EF.Property<DateTimeOffset?>(entry, "ExpiresAt")))
             .AsNoTracking()
             .ToListAsync(cancellationToken);

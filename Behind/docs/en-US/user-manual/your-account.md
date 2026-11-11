@@ -9,7 +9,11 @@ Use **Profile** to change your display name and your password. Password changes 
 1. Type a new name (up to 500 characters). Leave it empty to be shown by your primary email address.
 2. Choose **Save**.
 
-The line "Shown as ..." tells you how others will see you.
+The line "Shown as ..." tells you how others will see you. This also applies to public forum posts: leaving the name empty makes your primary email address public.
+
+### Profile picture
+
+Choose a PNG, JPEG, GIF or WebP image up to 2 MiB under **Profile picture**; it is saved immediately. **Remove** clears it. Pictures are public and appear beside forum messages. See [Forum](./managing-forum.md).
 
 ### Language
 

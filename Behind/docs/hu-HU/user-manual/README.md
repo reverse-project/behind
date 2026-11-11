@@ -4,6 +4,7 @@ Ez a kézikönyv azt ismerteti, hogy a Behind webalkalmazásban jelenleg mit teh
 
 ## Mindenkinek
 
+- **[Fórum](./managing-forum.md)** - fórumtáblák, témák, válaszok, profilképek és moderálási beállítások.
 - **[Első lépések](./getting-started.md)** - fiók létrehozása, bejelentkezés, kijelentkezés és a navigációs sáv.
 - **[Az Ön fiókja](./your-account.md)** - profil, megjelenítendő név, az aktuális munkamenet és az összes munkamenete.
 - **[Szégyenfal](./wall-of-shame.md)** - a letiltott fiókok nyilvános listája.

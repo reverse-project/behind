@@ -204,6 +204,10 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IEmailCommands, EmailCommands>();
             builder.Services.AddScoped<IPasswordCommands, PasswordCommands>();
             builder.Services.AddScoped<IUserCommands, UserCommands>();
+            builder.Services.AddScoped<UserProfiles>();
+            builder.Services.AddScoped<Behind.Common.Database.Modules.IModuleUsers>(
+                provider => provider.GetRequiredService<UserProfiles>());
+            builder.Services.AddScoped<IModuleIdentity, ModuleIdentity>();
             builder.Services.AddScoped<IUserSettingQueries, UserSettingQueries>();
             builder.Services.AddScoped<IUserSettingCommands, UserSettingCommands>();
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
@@ -944,6 +948,17 @@ public static class WebApiExtensions
             application.MapRouteAliasEndpoints();
             application.MapAccessEndpoints();
             application.MapRawDatabaseEndpoints();
+
+            application.MapGet("/profile/picture", ProfilePictureEndpoints.Get)
+                .WithSummary("Read your current profile picture reference.");
+            application.MapPost("/profile/picture", ProfilePictureEndpoints.Upload)
+                .WithSummary("Upload and attach a profile picture (PNG, JPEG, GIF or WebP; up to 2 MiB).")
+                .Produces<ImageUploadResponse>().Produces(400).Produces(401).Produces(413).Produces(415)
+                .DisableAntiforgery();
+            application.MapDelete("/profile/picture", ProfilePictureEndpoints.Remove)
+                .WithSummary("Remove your profile picture.").Produces(204).Produces(401);
+            application.MapGet("/profile/images/{id:guid}", ProfilePictureEndpoints.Image)
+                .WithSummary("Serve a currently referenced profile image.").Produces(200).Produces(404);
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEndpoints.DisplayNameRequest>>()

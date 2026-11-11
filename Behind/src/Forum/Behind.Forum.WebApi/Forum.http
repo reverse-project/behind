@@ -1,0 +1,130 @@
+@baseUrl = http://localhost:5000
+@token = replace-with-access-token
+@boardId = 11111111-1111-1111-1111-111111111111
+@postId = 22222222-2222-2222-2222-222222222222
+@userId = 33333333-3333-3333-3333-333333333333
+@pictureId = 44444444-4444-4444-4444-444444444444
+
+### Public boards
+GET {{baseUrl}}/forum/boards?page=1
+
+### Public topics
+GET {{baseUrl}}/forum/posts?boardId={{boardId}}&page=1
+
+### Public replies
+GET {{baseUrl}}/forum/posts?boardId={{boardId}}&topicId={{postId}}&page=1
+
+### Visible message or 404
+GET {{baseUrl}}/forum/posts/{{postId}}
+
+### New topic
+POST {{baseUrl}}/forum/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"boardId":"{{boardId}}","title":"Welcome","body":"Introduce yourself here."}
+
+### Reply
+POST {{baseUrl}}/forum/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"boardId":"{{boardId}}","topicId":"{{postId}}","body":"Hello everyone!"}
+
+### Live settings
+GET {{baseUrl}}/forum/settings
+
+### Create board
+POST {{baseUrl}}/forum/boards
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"name":"General","description":"General discussions","moderation":null}
+
+### Update board (overrides must be enabled for Pre)
+POST {{baseUrl}}/forum/boards/{{boardId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"name":"General","description":"General discussions","moderation":"Pre"}
+
+### Moderation queue
+GET {{baseUrl}}/forum/manage/posts?state=Pending
+Authorization: Bearer {{token}}
+
+### Publish; use Rejected to withdraw a message
+POST {{baseUrl}}/forum/posts/{{postId}}/review
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"state":"Published"}
+
+### User overrides
+GET {{baseUrl}}/forum/manage/users
+Authorization: Bearer {{token}}
+
+### Set user override (feature must be enabled)
+POST {{baseUrl}}/forum/manage/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"userId":"{{userId}}","moderation":"Pre"}
+
+### Soft-delete board
+POST {{baseUrl}}/forum/boards/{{boardId}}/delete
+Authorization: Bearer {{token}}
+
+### Restore board (developer)
+POST {{baseUrl}}/forum/boards/{{boardId}}/restore
+Authorization: Bearer {{token}}
+
+### Permanently delete board (developer, refuses referenced boards)
+POST {{baseUrl}}/forum/boards/{{boardId}}/hard/delete
+Authorization: Bearer {{token}}
+
+### Soft-delete message
+POST {{baseUrl}}/forum/posts/{{postId}}/delete
+Authorization: Bearer {{token}}
+
+### Restore message (developer)
+POST {{baseUrl}}/forum/posts/{{postId}}/restore
+Authorization: Bearer {{token}}
+
+### Permanently delete message (developer)
+POST {{baseUrl}}/forum/posts/{{postId}}/hard/delete
+Authorization: Bearer {{token}}
+
+### Soft-delete user rule
+POST {{baseUrl}}/forum/manage/users/{{userId}}/delete
+Authorization: Bearer {{token}}
+
+### Restore user rule (developer)
+POST {{baseUrl}}/forum/manage/users/{{userId}}/restore
+Authorization: Bearer {{token}}
+
+### Permanently delete user rule (developer)
+POST {{baseUrl}}/forum/manage/users/{{userId}}/hard/delete
+Authorization: Bearer {{token}}
+
+### Current profile picture
+GET {{baseUrl}}/profile/picture
+Authorization: Bearer {{token}}
+
+### Remove profile picture
+DELETE {{baseUrl}}/profile/picture
+Authorization: Bearer {{token}}
+
+### Upload profile picture (replace path with a local PNG)
+POST {{baseUrl}}/profile/picture
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=profile-boundary
+
+--profile-boundary
+Content-Disposition: form-data; name="file"; filename="avatar.png"
+Content-Type: image/png
+
+< ./avatar.png
+--profile-boundary--
+
+### Read current picture or 404
+GET {{baseUrl}}/profile/images/{{pictureId}}

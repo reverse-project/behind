@@ -4,6 +4,7 @@ This manual describes what you can do in the Behind web application today.
 
 ## For everyone
 
+- **[Forum](./managing-forum.md)** - boards, topics, replies, profile pictures and moderation settings.
 - **[Getting started](./getting-started.md)** - creating an account, signing in, signing out, and the navigation bar.
 - **[Your account](./your-account.md)** - profile, display name, current session, and all your sessions.
 - **[Wall of shame](./wall-of-shame.md)** - the public list of banned accounts.

@@ -9,7 +9,11 @@ A **Profil** segítségével módosíthatja a megjelenítendő nevét és a jels
 1. Írjon be egy új nevet (legfeljebb 500 karakter). Hagyja üresen, hogy az elsődleges e-mail-címe jelenjen meg.
 2. Válassza a **Mentés** gombot.
 
-A „Megjelenik mint: ..." sor megmondja, hogyan látnak Önt mások.
+A „Megjelenik mint: ..." sor megmondja, hogyan látnak Önt mások. Ez a nyilvános fórumüzenetekre is érvényes: üres név esetén az elsődleges e-mail-cím nyilvánossá válik.
+
+### Profilkép
+
+A **Profilkép** alatt válasszon legfeljebb 2 MiB méretű PNG, JPEG, GIF vagy WebP képet; a mentés azonnali. Az **Eltávolítás** megszünteti a hivatkozást. A kép nyilvános, és a fórumüzenetek mellett jelenik meg. Lásd: [Fórum](./managing-forum.md).
 
 ### Nyelv
 

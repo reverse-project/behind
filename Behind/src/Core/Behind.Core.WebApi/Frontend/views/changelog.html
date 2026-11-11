@@ -2,7 +2,7 @@
     <h1 class="mb-3" data-bind="t: 'changelog.title'">Changelog</h1>
     <p class="mb-3">
         <span data-bind="t: 'changelog.mirror'">Public mirror:</span>
-        <a href="https://github.com/reverse-project/behind" target="_blank" rel="noopener noreferrer">https://github.com/reverse-project/behind</a>
+        <a href="https://github.com/reverse-project/behind" target="_blank" rel="noopener noreferrer" data-bind="t: 'changelog.repository'">Source repository</a>
     </p>
     <div class="alert alert-danger" role="alert" data-bind="visible: failed, t: 'changelog.failed'">The changelog could not be loaded.</div>
     <p class="text-body-secondary" data-bind="visible: isEmpty, t: 'changelog.empty'">There are no releases yet.</p>

@@ -1,5 +1,13 @@
 # Adatbázis-architektúra
 
+## Fórumadatok és profilképek
+
+Az azonos kezdési idejű időzített tartalmak sorrendjét az azonosító előtt az audit létrehozási időpontja dönti el; a kitiltási lista is auditidőpontokat használ UUID-sorrend helyett. Egyik módosítás sem vezet be saját időbélyegoszlopot.
+
+Az `IForumContext` felületet a fő projekt SQLite/PostgreSQL kontextusai valósítják meg, így a `ForumBoards`, `ForumPosts` és `ForumUserModerations` táblák a Core-ral közös adatbázisba kerülnek. Mindegyik összetett `Key`/`Version` elsődleges kulcsot, új sorral történő módosítást, auditból származó időpontokat, átmeneti törlést, fejlesztői visszaállítást/végleges törlést és általános nyers szerkesztést használ. A modul migrációinak előzménye a `__forumMigrationsHistory`; a webprojekt migrátora a Core után alkalmazza őket. Nincs modulok közötti idegen kulcs; a parancsok ellenőrzik az aktív táblákat és közzétett témákat, és nem engedik a hivatkozott táblák/témák végleges törlését.
+
+A Core mindkét szolgáltatóhoz migrációval felveszi a nullázható `Users.ProfilePictureId` mezőt. A képek metaadatai a meglévő verziózott VFS-be kerülnek; a tartalom a `backend.json` fájl `Backend:DataDirectory` könyvtárában, `vfs/Users/<felhasználó>/<fájl>` alakban tárolódik. A feltöltés azonnal a munkamenet felhasználójához kapcsolódik. A lecserélt/eltávolított képeket a profilvégpont már nem szolgálja ki; a korábban letöltött bájtokat a böngésző gyorsítótára megőrizheti.
+
 Ez a dokumentum az adatbázisréteg felépítését, az Entity Framework Core mintáit, a repository megvalósítását és az adatelérési stratégiákat mutatja be.
 
 ## Áttekintés

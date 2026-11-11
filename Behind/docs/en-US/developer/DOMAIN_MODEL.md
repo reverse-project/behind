@@ -1,5 +1,14 @@
 # Domain Model Design
 
+## Forum domain
+
+- `ForumBoard(Name, Description, Moderation?)`: an optional moderation override for a board.
+- `ForumPost(BoardId, TopicId?, AuthorId, Title, Body, State)`: a topic when `TopicId` is null, otherwise a reply to a published topic in the same board. Bodies are plain text and are rendered with text bindings, never HTML.
+- `ForumUserModeration(UserId, Moderation)`: versioned user override, keyed by the user id to ensure one rule per user.
+- `PublicationState`: `Published`, `Pending`, `Rejected`. Public reads select the latest version before testing publication state and also require an active board and published parent topic.
+- `ForumSettings`: defaults to `Post`; optional enabled user override wins over optional enabled board override, then the global mode. Only new submissions are affected; existing pending messages still need review.
+- `HumanUser.ProfilePictureId`: optional Core VFS image reference; `IModuleUsers` shares public labels and picture ids. Labels use the trimmed display name, falling back to the primary email address (ordered by email Id) when blank; other email addresses are not shared.
+
 This document explains the domain model structure, entity design patterns, and domain-driven design principles used in the Behind project.
 
 ## Domain-Driven Design (DDD)

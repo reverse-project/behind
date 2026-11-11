@@ -3,6 +3,15 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "added", "text": "Forum managers can create and manage board categories, assign boards to categories, and users see boards grouped by category." },
+      { "type": "changed", "text": "Links in forum messages, previews and moderation now ask for confirmation with the destination URL and open only in a new tab." },
+      { "type": "fixed", "text": "Forum author labels now use the primary email address when the display name is blank, matching the Profile page and other user labels." },
+      { "type": "changed", "text": "Forum pages now use a responsive, simplified phpBB-style layout with public author names, profile pictures and breadcrumb navigation. Topics and replies support BBCode through a visual rich-text editor, source editing and preview; the moderation queue renders the same safe formatting." },
+      { "type": "fixed", "text": "Aspire AppHost and hosting dependencies are pinned to patched version 13.6.5 (GHSA-f7vh-h5g3-7jrh), with compatible OpenTelemetry packages." },
+      { "type": "fixed", "text": "Equal scheduled publication times and the ban list now use audit creation time before the id as a tie-breaker, the changelog repository link is localized, and System.Formats.Cbor is pinned to patched version 9.0.24 (CVE-2026-118747)." },
+      { "type": "added", "text": "The Forum module adds boards, topics and replies, a moderation queue with publish/reject actions, versioned management with soft delete, developer restore and permanent delete, audit labels, raw database editing, and English and Hungarian pages. It is enabled in the main web host." },
+      { "type": "added", "text": "Forum moderation defaults to post-moderation; forum.json switches to pre-moderation and optionally enables board and user overrides. Enabled user overrides take precedence over enabled board overrides, then the global mode. Changes apply to new messages and reload without restarting." },
+      { "type": "added", "text": "Users can upload or remove a profile picture on the Profile page (PNG, JPEG, GIF or WebP up to 2 MiB). Pictures use the user VFS and appear beside forum messages. Modules can read public user profiles and resolve the current session through shared interfaces without depending on Core." },
       { "type": "changed", "text": "Behind is upgraded to .NET 11: every project targets net11.0, the development container uses the .NET 11 SDK, and the Microsoft, Entity Framework Core and Npgsql packages are updated to their .NET 11 versions." }
     ]
   },

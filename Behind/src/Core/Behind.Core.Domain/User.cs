@@ -11,6 +11,8 @@ public sealed record HumanUser : User
     
     public string DisplayName { get; init; }
 
+    public Guid? ProfilePictureId { get; init; }
+
     public HumanUser() : base(None)
     {
         Emails = new List<Email>();

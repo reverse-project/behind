@@ -24,6 +24,9 @@ public abstract class VersionedCommands<TEntity, TDraft>(IModuleContext context)
     protected virtual Task<bool> IsReferenced(Guid key, CancellationToken cancellationToken) =>
         Task.FromResult(false);
 
+    protected virtual Task<bool> CanDelete(Guid key, CancellationToken cancellationToken) =>
+        Task.FromResult(true);
+
     protected virtual Task Saved(VersionedKey<Guid> id, TDraft draft, CancellationToken cancellationToken) =>
         Task.CompletedTask;
 
@@ -44,6 +47,11 @@ public abstract class VersionedCommands<TEntity, TDraft>(IModuleContext context)
 
     public async Task<bool> Delete(Guid key, CancellationToken cancellationToken = default)
     {
+        if (!await CanDelete(key, cancellationToken))
+        {
+            return false;
+        }
+
         var deleted = await Database.MarkSoftDeletedAsync(Rows.OfKey(key), cancellationToken);
 
         await Database.SaveChangesAsync(cancellationToken);

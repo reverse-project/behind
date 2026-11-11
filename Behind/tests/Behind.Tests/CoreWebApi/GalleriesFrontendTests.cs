@@ -232,12 +232,13 @@ public class GalleriesFrontendTests
     }
 
     [Fact]
-    public void Changelog_MentionsTheGalleriesUnderTheCurrentVersion()
+    public void Changelog_MentionsGalleriesInTheReleaseHistory()
     {
         using var changelog = JsonDocument.Parse(Read("changelog.json"));
 
-        var latest = changelog.RootElement[0];
-        var texts = latest.GetProperty("changes").EnumerateArray().Select(change => change.GetProperty("text").GetString());
+        var texts = changelog.RootElement.EnumerateArray()
+            .SelectMany(release => release.GetProperty("changes").EnumerateArray())
+            .Select(change => change.GetProperty("text").GetString());
 
         Assert.Contains(texts, text => text!.StartsWith("Galleries:", StringComparison.Ordinal));
     }

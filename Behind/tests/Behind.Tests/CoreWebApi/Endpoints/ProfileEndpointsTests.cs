@@ -12,6 +12,16 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public class ProfileEndpointsTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ModuleIdentity_ResolvesOnlyAValidCurrentSession(bool valid)
+    {
+        var identity = new ModuleIdentity(SessionQueries(valid));
+
+        Assert.Equal(valid ? (Guid?)UserId : null, await identity.UserId(SignedIn()));
+    }
+
     private static readonly Guid SessionId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 

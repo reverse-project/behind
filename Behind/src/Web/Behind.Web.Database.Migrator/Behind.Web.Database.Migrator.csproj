@@ -15,6 +15,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="../../Forum/Behind.Forum.WebApi/Behind.Forum.WebApi.csproj" />
+      <ProjectReference Include="../../Forum/Behind.Forum.Database.Sqlite/Behind.Forum.Database.Sqlite.csproj" />
+      <ProjectReference Include="../../Forum/Behind.Forum.Database.Postgres/Behind.Forum.Database.Postgres.csproj" />
       <ProjectReference Include="..\..\Core\Behind.Core.Database.Migrator\Behind.Core.Database.Migrator.csproj" />
       <ProjectReference Include="..\..\MarkdownViewer\Behind.MarkdownViewer.WebApi\Behind.MarkdownViewer.WebApi.csproj" />
       <ProjectReference Include="..\..\Quotes\Behind.Quotes.Database.Postgres\Behind.Quotes.Database.Postgres.csproj" />

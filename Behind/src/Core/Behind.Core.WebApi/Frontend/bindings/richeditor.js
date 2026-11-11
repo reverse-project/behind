@@ -92,9 +92,10 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
 
             var quill = new Quill(element, {
                 theme: "snow",
+                formats: options.formats,
                 modules: {
                     toolbar: {
-                        container: toolbarOf(withImages),
+                        container: options.toolbar || toolbarOf(withImages),
                         handlers: {
                             image: function () {
                                 pickImage(quill, upload);
@@ -113,7 +114,9 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
             });
 
             images.attach(quill);
-            links.attach(quill);
+            if (options.linkTargets !== false) {
+                links.attach(quill);
+            }
 
             var labels = ko.computed(function () {
                 labelToolbar(quill.getModule("toolbar").container);

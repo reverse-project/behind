@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/user", "models/about", "models/usersettings", "models/i18n"], function (ko, auth, session, user, about, usersettings, i18n) {
+define(["ko", "models/auth", "models/session", "models/user", "models/about", "models/usersettings", "models/i18n", "models/profilepicture"], function (ko, auth, session, user, about, usersettings, i18n, profilepicture) {
     return function ProfileViewModel() {
         var self = this;
 
@@ -11,6 +11,40 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
         self.locale = ko.observable("");
         self.settingNewPassword = ko.observable(false);
         self.passwordFocus = ko.observable(false);
+        self.pictureUrl = ko.observable(null);
+
+        var pictureAction = function (action) {
+            self.busy(true);
+
+            return action().then(function () {
+                self.message(i18n.t("profile.pictureSaved"));
+            }).catch(function (error) {
+                self.message(error.message);
+            }).finally(function () {
+                self.busy(false);
+            });
+        };
+        self.choosePicture = function (data, event) {
+            var file = event.target.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            return pictureAction(function () {
+                return profilepicture.upload(file).then(function (image) {
+                    self.pictureUrl(image.url);
+                    event.target.value = "";
+                });
+            });
+        };
+        self.removePicture = function () {
+            return pictureAction(function () {
+                return profilepicture.remove().then(function () {
+                    self.pictureUrl(null);
+                });
+            });
+        };
 
         self.hasMessage = ko.pureComputed(function () {
             return self.message() !== "";
@@ -106,7 +140,15 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
                     self.message(result.message);
                     self.passwordFocus(self.settingNewPassword());
 
-                    return loadLocales();
+                    return Promise.all([
+                        loadLocales(),
+                        profilepicture.get().then(function (picture) {
+                            self.pictureUrl(picture.url);
+                        })
+                    ]);
+                })
+                .catch(function (error) {
+                    self.message(error.message);
                 })
                 .finally(function () {
                     self.busy(false);

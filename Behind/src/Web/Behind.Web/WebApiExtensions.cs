@@ -6,6 +6,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Sqlite;
 using Behind.Core.WebApi;
+using Behind.Forum.WebApi;
 using Behind.MarkdownViewer.WebApi;
 using Behind.Quotes.WebApi;
 using Behind.Sport.WebApi;
@@ -27,6 +28,7 @@ public static class WebApiExtensions
             .AddWebDatabase()
             .AddQuotes()
             .AddSport()
+            .AddForum()
             .AddMarkdownViewer();
 
         WebApplicationBuilder AddWebDatabase()
@@ -48,6 +50,7 @@ public static class WebApiExtensions
             application.UseCore();
             application.UseQuotes();
             application.UseSport();
+            application.UseForum();
             application.UseMarkdownViewer();
             application.MapScalarApiReference();
             

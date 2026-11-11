@@ -1,0 +1,101 @@
+<section class="behind-wide">
+    <h1 data-bind="t: 'forum.manage'">Manage forum</h1>
+    <a class="btn btn-outline-secondary mb-3" href="#/forum" data-bind="t: 'forum.title'">Forum</a>
+    <a class="btn btn-outline-secondary mb-3" href="#/settings" data-bind="visible: canSettings, t: 'forum.globalSettings'">Global settings</a>
+    <p role="status" data-bind="text: message"></p>
+    <p data-bind="visible: !canManage() &amp;&amp; !canModerate(), t: 'forum.denied'">Access denied.</p>
+    <p data-bind="t: 'forum.overrideHelp'">Enable optional board and user overrides in forum.json on the Settings page. User overrides take precedence over board overrides.</p>
+    <form class="mb-3" data-bind="submit: refresh">
+        <label data-bind="visible: canViewDeleted"><input type="checkbox" data-bind="checked: deleted, enable: !busy()"> <span data-bind="t: 'forum.deleted'">Show deleted</span></label>
+        <button class="btn btn-outline-primary" type="submit" data-bind="enable: !busy(), t: 'forum.refresh'">Refresh</button>
+    </form>
+    <div data-bind="if: canManage">
+        <h2 data-bind="t: 'forum.boards'">Boards</h2>
+        <form class="card card-body mb-3" data-bind="submit: saveBoard, visible: !deleted()">
+            <label for="forum-board-name" data-bind="t: 'forum.boardName'">Name</label>
+            <input id="forum-board-name" class="form-control mb-2" required maxlength="200" data-bind="value: boardName">
+            <label for="forum-board-description" data-bind="t: 'forum.description'">Description</label>
+            <textarea id="forum-board-description" class="form-control mb-2" maxlength="2000" data-bind="value: description"></textarea>
+            <label for="forum-board-category" data-bind="t: 'forum.category'">Category</label>
+            <select id="forum-board-category" class="form-select mb-2" data-bind="options: categoryOptions, optionsValue: 'value', optionsText: 'label', value: boardCategoryId"></select>
+            <div data-bind="visible: settings().allowBoardOverrides">
+                <label for="forum-board-mode" data-bind="t: 'forum.mode'">Moderation</label>
+                <select id="forum-board-mode" class="form-select mb-2" data-bind="options: modes, optionsValue: 'value', optionsText: 'label', value: boardMode"></select>
+            </div>
+            <div>
+                <button class="btn btn-primary" type="submit" data-bind="enable: !busy(), t: 'common.save'">Save</button>
+                <button class="btn btn-outline-secondary" type="button" data-bind="click: reset, t: 'common.cancel'">Cancel</button>
+            </div>
+        </form>
+        <ul class="list-group mb-3" data-bind="foreach: boards.items">
+            <li class="list-group-item d-flex flex-wrap gap-2">
+                <span class="me-auto" data-bind="text: entity.name + ' - ' + $root.categoryName(entity.categoryId)"></span>
+                <button class="btn btn-sm btn-outline-primary" data-bind="visible: !$root.deleted(), click: edit, enable: !$root.busy(), t: 'common.edit'">Edit</button>
+                <button class="btn btn-sm btn-outline-danger" data-bind="visible: !$root.deleted(), click: remove, enable: !$root.busy(), t: 'common.delete'">Delete</button>
+                <button class="btn btn-sm btn-outline-success" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: restore, enable: !$root.busy(), t: 'common.restore'">Restore</button>
+                <button class="btn btn-sm btn-danger" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: hardDelete, enable: !$root.busy(), t: 'common.deletePermanently'">Delete permanently</button>
+            </li>
+        </ul>
+        <pager params="pager: boards.pager"></pager>
+        <h2 class="mt-4" data-bind="t: 'forum.categories'">Board categories</h2>
+        <form class="card card-body mb-3" data-bind="submit: saveCategory, visible: !deleted()">
+            <label for="forum-category-name" data-bind="t: 'forum.categoryName'">Category name</label>
+            <input id="forum-category-name" class="form-control mb-2" required maxlength="200" data-bind="value: categoryNameInput">
+            <div>
+                <button class="btn btn-primary" type="submit" data-bind="enable: !busy(), t: 'common.save'">Save</button>
+                <button class="btn btn-outline-secondary" type="button" data-bind="click: resetCategory, t: 'common.cancel'">Cancel</button>
+            </div>
+        </form>
+        <ul class="list-group mb-3" data-bind="foreach: categories.items">
+            <li class="list-group-item d-flex flex-wrap gap-2">
+                <span class="me-auto" data-bind="text: entity.name"></span>
+                <button class="btn btn-sm btn-outline-primary" data-bind="visible: !$root.deleted(), click: edit, enable: !$root.busy(), t: 'common.edit'">Edit</button>
+                <button class="btn btn-sm btn-outline-danger" data-bind="visible: !$root.deleted(), click: remove, enable: !$root.busy(), t: 'common.delete'">Delete</button>
+                <button class="btn btn-sm btn-outline-success" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: restore, enable: !$root.busy(), t: 'common.restore'">Restore</button>
+                <button class="btn btn-sm btn-danger" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: hardDelete, enable: !$root.busy(), t: 'common.deletePermanently'">Delete permanently</button>
+            </li>
+        </ul>
+        <pager params="pager: categories.pager"></pager>
+    </div>
+    <div class="mt-4" data-bind="if: canModerate">
+        <h2 data-bind="t: 'forum.moderation'">Moderation</h2>
+        <label for="forum-state" data-bind="t: 'forum.state'">State</label>
+        <select id="forum-state" class="form-select mb-3" data-bind="options: states, optionsValue: 'value', optionsText: 'label', value: reviewState, enable: !busy()"></select>
+        <p data-bind="t: 'forum.refreshHelp'">Choose a state and press Refresh.</p>
+        <div data-bind="foreach: posts.items">
+            <article class="card card-body mb-3">
+                <h3 class="h5" data-bind="text: title"></h3>
+                <p><strong data-bind="text: author || $root.unknownAuthor"></strong> <span class="badge text-bg-secondary" data-bind="text: stateLabel"></span></p>
+                <div class="forum-body" data-bind="bbcode: body"></div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-sm btn-success" data-bind="visible: !$root.deleted(), click: approve, enable: !$root.busy(), t: 'forum.approve'">Publish</button>
+                    <button class="btn btn-sm btn-warning" data-bind="visible: !$root.deleted(), click: reject, enable: !$root.busy(), t: 'forum.reject'">Reject</button>
+                    <button class="btn btn-sm btn-outline-danger" data-bind="visible: !$root.deleted(), click: remove, enable: !$root.busy(), t: 'common.delete'">Delete</button>
+                    <button class="btn btn-sm btn-outline-success" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: restore, enable: !$root.busy(), t: 'common.restore'">Restore</button>
+                    <button class="btn btn-sm btn-danger" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: hardDelete, enable: !$root.busy(), t: 'common.deletePermanently'">Delete permanently</button>
+                </div>
+            </article>
+        </div>
+        <pager params="pager: posts.pager"></pager>
+    </div>
+    <div class="mt-4" data-bind="if: canManage">
+        <h2 data-bind="t: 'forum.userRules'">User moderation overrides</h2>
+        <form class="card card-body mb-3" data-bind="submit: saveUser, visible: settings().allowUserOverrides &amp;&amp; !deleted()">
+            <label for="forum-user" data-bind="t: 'forum.userId'">User ID</label>
+            <input id="forum-user" class="form-control mb-2" required data-bind="value: userId">
+            <label for="forum-user-mode" data-bind="t: 'forum.mode'">Moderation</label>
+            <select id="forum-user-mode" class="form-select mb-2" data-bind="options: userModes, optionsValue: 'value', optionsText: 'label', value: userMode"></select>
+            <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.save'">Save</button>
+        </form>
+        <ul class="list-group mb-3" data-bind="foreach: rules.items">
+            <li class="list-group-item d-flex flex-wrap gap-2">
+                <span class="me-auto" data-bind="text: label"></span>
+                <button class="btn btn-sm btn-outline-primary" data-bind="visible: !$root.deleted() &amp;&amp; $root.settings().allowUserOverrides, click: edit, enable: !$root.busy(), t: 'common.edit'">Edit</button>
+                <button class="btn btn-sm btn-outline-danger" data-bind="visible: !$root.deleted(), click: remove, enable: !$root.busy(), t: 'common.delete'">Delete</button>
+                <button class="btn btn-sm btn-outline-success" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: restore, enable: !$root.busy(), t: 'common.restore'">Restore</button>
+                <button class="btn btn-sm btn-danger" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: hardDelete, enable: !$root.busy(), t: 'common.deletePermanently'">Delete permanently</button>
+            </li>
+        </ul>
+        <pager params="pager: rules.pager"></pager>
+    </div>
+</section>

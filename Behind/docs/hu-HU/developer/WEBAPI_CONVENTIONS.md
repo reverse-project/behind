@@ -1,5 +1,11 @@
 # WebApi konvenciók
 
+## Fórum- és profilvégpontok
+
+A `/forum/boards` és `/forum/posts?boardId=<id>&topicId=<id>` lapozott nyilvános böngészést ad; témákhoz a `topicId` elhagyandó. A `GET /forum/posts/{id}` csak jelenleg látható üzenetet ad vissza. A `POST /forum/posts` `Forum.Read` engedélyt és érvényes munkamenetet követel, a szerzőt és moderálási állapotot a szerver számítja, és `201` választ ad erőforrás-URL-lel. A moderáláshoz (`GET /forum/manage/posts?state=Pending`, `POST /forum/posts/{id}/review`) `ForumModeration.Manage` kell. A táblák és felhasználói szabályok kezeléséhez `Forum.Manage` szükséges. A `/delete`, `/restore`, `/hard/delete` utótagok a meglévő modulmintát követik; a töröltek listázásához, visszaállításhoz és végleges törléshez `RawDatabase.Manage` kell. Az állapot- és moderálási enumok JSON-ban szövegesek. A `GET /forum/settings` az újratölthető `forum.json` tartalmát adja; a meglévő Beállítások API `Configuration.Manage` engedéllyel szerkeszti.
+
+A Core hitelesített `GET/POST/DELETE /profile/picture` végpontokat biztosít; a POST multipart `file` mezőt fogad, ellenőrzi a felismert kép-MIME-t és a 2 MiB mérethatárt, és a munkamenet felhasználójához kapcsolja a feltöltést. A `GET /profile/images/{id}` csak aktuális profilképet szolgál ki változatlan tartalomhoz való gyorsítótárazással és `nosniff` fejléccel. Az `IModuleIdentity` és az `IModuleUsers` a közös integrációs pontok; a modulok szerzőadatokért sem függhetnek a Core-tól.
+
 Ez a dokumentum a Behind projektben a REST API-k építésének konvencióit, mintáit és legjobb gyakorlatait ismerteti.
 
 ## Áttekintés

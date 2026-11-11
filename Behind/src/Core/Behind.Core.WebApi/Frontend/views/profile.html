@@ -1,11 +1,18 @@
 <section>
     <h1 class="mb-3" data-bind="t: 'profile.title'">Profile</h1>
     <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'profile.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'profile.signInToChange'">to change your display name.</span></p>
+    <div class="mb-4" data-bind="visible: isSignedIn">
+        <label for="profile-picture" class="form-label" data-bind="t: 'profile.picture'">Profile picture</label>
+        <div class="mb-2"><img class="img-thumbnail" width="96" height="96" alt="" data-bind="visible: pictureUrl, attr: { src: pictureUrl }"></div>
+        <input id="profile-picture" class="form-control mb-2" type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-bind="event: { change: choosePicture }, enable: !busy()">
+        <p class="form-text" data-bind="t: 'profile.pictureHelp'">PNG, JPEG, GIF or WebP, up to 2 MiB. Visible to other users.</p>
+        <button type="button" class="btn btn-outline-danger" data-bind="visible: pictureUrl, click: removePicture, enable: !busy(), t: 'common.remove'">Remove</button>
+    </div>
     <form data-bind="visible: isSignedIn, submit: submit">
         <div class="mb-3">
             <label class="form-label" for="profile-display-name" data-bind="t: 'profile.displayName'">Display name</label>
             <input id="profile-display-name" class="form-control" type="text" maxlength="500" autocomplete="nickname" data-bind="value: displayName, attr: { placeholder: emails()[0] }">
-            <div class="form-text" data-bind="t: { key: 'profile.shownAs', args: [shownAs] }">Shown as <strong data-bind="text: shownAs"></strong>. Leave empty to use your primary email address.</div>
+            <div class="form-text" data-bind="t: { key: 'profile.shownAs', args: [shownAs] }">Shown as <strong data-bind="text: shownAs"></strong>. Leave empty to use your primary email address, including on public forum posts.</div>
         </div>
         <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.save'">Save</button>
     </form>

@@ -1,5 +1,11 @@
 # WebApi Conventions
 
+## Forum and profile endpoints
+
+`/forum/boards` and `/forum/posts?boardId=<id>&topicId=<id>` provide paged public browsing; omit `topicId` for topics. `GET /forum/posts/{id}` returns only a currently visible message. `POST /forum/posts` requires `Forum.Read` and a valid session, derives the author and moderation state server-side, and returns `201` with a resource URL. Moderation (`GET /forum/manage/posts?state=Pending` and `POST /forum/posts/{id}/review`) requires `ForumModeration.Manage`. Board and user-rule management requires `Forum.Manage`. Lifecycle suffixes `/delete`, `/restore`, `/hard/delete` follow existing module conventions; deleted listing, restore and permanent deletion require `RawDatabase.Manage`. Publication and moderation enums use string JSON values. `GET /forum/settings` reflects reloadable `forum.json`; the existing Settings API edits it under `Configuration.Manage`.
+
+Core provides authenticated `GET/POST/DELETE /profile/picture`; POST accepts multipart `file`, checks detected image MIME and a 2 MiB size limit, and attaches the upload to the session user. `GET /profile/images/{id}` serves only a current picture with immutable caching and `nosniff`. `IModuleIdentity` and `IModuleUsers` are the shared identity/profile integration points; no module may depend on Core to obtain authors.
+
 This document outlines the conventions, patterns, and best practices for building REST APIs in the Behind project.
 
 ## Overview

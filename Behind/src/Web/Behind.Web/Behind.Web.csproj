@@ -14,6 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="../../Forum/Behind.Forum.WebApi/Behind.Forum.WebApi.csproj" />
       <ProjectReference Include="..\..\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
       <ProjectReference Include="..\..\MarkdownViewer\Behind.MarkdownViewer.WebApi\Behind.MarkdownViewer.WebApi.csproj" />
       <ProjectReference Include="..\..\Quotes\Behind.Quotes.WebApi\Behind.Quotes.WebApi.csproj" />
@@ -23,6 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Update="forum.json" CopyToOutputDirectory="Always" />
       <Content Update="database.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

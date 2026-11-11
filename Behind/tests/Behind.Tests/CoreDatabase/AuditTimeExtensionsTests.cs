@@ -1,5 +1,6 @@
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
+using Behind.Core.Database.Aggregates;
 using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Tests.CoreDatabase;
@@ -89,5 +90,37 @@ public sealed class AuditTimeExtensionsTests : IDisposable
         Assert.Equal(["Newest", "Middle", "Oldest edited"], descending);
         Assert.Equal(["Oldest edited", "Middle", "Newest"], ascending);
         Assert.NotEqual(middle, oldest);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CreationOrdering_EqualOverridesUseAuditCreationBeforeKey(bool newestFirst)
+    {
+        async Task Add(Guid key, string title, DateTimeOffset at)
+        {
+            await using var context = _bed.Write(at);
+            var news = new News(title, "", "", false);
+            await context.NewsEntries.AddAsync(news);
+            context.Entry(news).StampVersionedKey(key, 1);
+            context.Entry(news).Property<Guid>(NewsConfiguration.AuthorIdProperty).CurrentValue = _bed.AuthorId;
+            context.Entry(news).Property<DateTimeOffset?>(NewsConfiguration.StartAtProperty).CurrentValue = NewsTestBed.Now;
+            await context.SaveChangesAsync();
+        }
+
+        await Add(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Newer", NewsTestBed.Now.AddHours(1));
+        await Add(Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff"), "Older", NewsTestBed.Now);
+        await using var read = _bed.Read();
+        var rows = read.NewsEntries;
+        var expected = newestFirst ? new[] { "Newer", "Older" } : ["Older", "Newer"];
+        var ordered = await read.OrderByCreation(rows, newestFirst,
+                news => EF.Property<DateTimeOffset?>(news, NewsConfiguration.StartAtProperty))
+            .Select(news => news.Title).ToListAsync();
+        var thenOrdered = await read.ThenByCreation(rows.OrderBy(news => news.Highlighted), newestFirst,
+                news => EF.Property<DateTimeOffset?>(news, NewsConfiguration.StartAtProperty))
+            .Select(news => news.Title).ToListAsync();
+
+        Assert.Equal(expected, ordered);
+        Assert.Equal(expected, thenOrdered);
     }
 }

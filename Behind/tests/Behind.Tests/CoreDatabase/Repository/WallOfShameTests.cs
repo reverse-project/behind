@@ -141,4 +141,31 @@ public sealed class WallOfShameTests : IDisposable
         Assert.Equal(0, page.Total);
         Assert.Equal(None, page.Results);
     }
+
+    [Fact]
+    public async Task GetActive_UsesAuditCreationBeforeIdForOrdering()
+    {
+        var admin = await SeedUserAsync("admin@test.com");
+        var older = await SeedUserAsync("older@test.com");
+        var newer = await SeedUserAsync("newer@test.com");
+
+        async Task Add(Guid id, Guid userId, string reason, DateTimeOffset at)
+        {
+            await using var context = _factory.CreateAuditedContext(
+                AuditActor.ForUser(admin), new FixedTimeProvider(at));
+            var entry = new WallOfShameEntry(new Reason(reason));
+            await context.WallOfShameEntries.AddAsync(entry);
+            context.Entry(entry).Property<Guid>("Id").CurrentValue = id;
+            context.Entry(entry).Property<Guid>("UserId").CurrentValue = userId;
+            context.Entry(entry).Property<Guid>("GivenById").CurrentValue = admin;
+            await context.SaveChangesAsync();
+        }
+
+        await Add(Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff"), older, "older", Now);
+        await Add(Guid.Parse("11111111-1111-1111-1111-111111111111"), newer, "newer", Now.AddMinutes(1));
+        await using var read = _factory.CreateContext();
+        var page = await new WallOfShameQueries(read).GetActive(new Flipper(1, 1), Now.AddMinutes(2));
+
+        Assert.Equal(["newer"], page.Results.Match(() => [], rows => rows.Select(row => row.Reason).ToList()));
+    }
 }

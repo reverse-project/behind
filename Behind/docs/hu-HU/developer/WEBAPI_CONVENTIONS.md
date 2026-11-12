@@ -51,8 +51,8 @@ Ez a dokumentum a Behind projektben a REST API-k építésének konvencióit, mi
 ## Áttekintés
 
 A Behind WebApi réteg az alábbiakra épül:
-- **ASP.NET Core 10.0.8**
-- **OpenAPI 10.0.10** Scalar felülettel
+- **ASP.NET Core 11.0.0**
+- **Microsoft.AspNetCore.OpenApi 11.0.0** Scalar.AspNetCore 2.14.11 felülettel
 - **JWT ******
 - **Strukturált hibakezelés**
 - **Railway-Oriented Programming** (monadikus visszatérési értékek)

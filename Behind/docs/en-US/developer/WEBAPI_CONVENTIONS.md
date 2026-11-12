@@ -51,8 +51,8 @@ This document outlines the conventions, patterns, and best practices for buildin
 ## Overview
 
 The Behind WebApi layer is built on:
-- **ASP.NET Core 10.0.8**
-- **OpenAPI 10.0.10** with Scalar UI
+- **ASP.NET Core 11.0.0**
+- **Microsoft.AspNetCore.OpenApi 11.0.0** with Scalar.AspNetCore 2.14.11 UI
 - **JWT Bearer Authentication**
 - **Structured Error Handling**
 - **Railway-Oriented Programming** (monadic returns)

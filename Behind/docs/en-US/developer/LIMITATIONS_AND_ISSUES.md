@@ -4,15 +4,16 @@ This document outlines known limitations, issues, and dependency vulnerabilities
 
 ## Known Dependency Vulnerabilities
 
-As of the latest update, all known transitive dependency vulnerabilities have been resolved via explicit version overrides in `Directory.Packages.props`. `dotnet list package --vulnerable --include-transitive` reports no vulnerable packages across the solution.
+As of 2026-11-12, `dotnet list package --vulnerable --include-transitive` reports no vulnerable packages across the solution.
 
 ### Current Status
 
 **Framework Versions**:
-- .NET: 10.0.10 (latest)
-- ASP.NET Core: 10.0.8
-- Entity Framework Core: 10.0.10 (latest)
-- OpenTelemetry: 1.16.0 (latest)
+- .NET SDK: 11.0.100
+- ASP.NET Core: 11.0.0
+- Entity Framework Core: 11.0.0-rc.3.26522.148
+- Npgsql.EntityFrameworkCore.PostgreSQL: 11.0.0-rc.3
+- OpenTelemetry: 1.17.0
 
 ### Unfixable Vulnerabilities
 
@@ -20,13 +21,13 @@ None currently known.
 
 ### Fixed Vulnerabilities
 
-✅ **SQLitePCLRaw.lib.e_sqlite3**: Fixed by updating to 2.1.12
+✅ **SQLitePCLRaw.lib.e_sqlite3**: Updated to 3.53.3
 
-✅ **Entity Framework Core packages**: Updated to 10.0.10 (latest)
+✅ **Entity Framework Core packages**: Updated to 11.0.0-rc.3.26522.148
 
-✅ **Microsoft.OpenApi (GHSA-v5pm-xwqc-g5wc)**: Transitive dependency pulled in via Scalar.AspNetCore 2.14.11. Fixed by pinning `Microsoft.OpenApi` to version 2.11.0 in `Directory.Packages.props` (patched in 2.7.5+ for the 2.X line).
+✅ **Microsoft.OpenApi (GHSA-v5pm-xwqc-g5wc)**: Transitive dependency pulled in via Scalar.AspNetCore 2.14.11. Fixed by pinning `Microsoft.OpenApi` to version 3.11.0 in `Directory.Packages.props`.
 
-✅ **MessagePack**: Transitive dependency pulled in via StreamJsonRpc (required by Aspire.Hosting). Fixed by pinning `MessagePack` to version 3.1.8 in `Directory.Packages.props`.
+✅ **MessagePack**: Transitive dependency pulled in via StreamJsonRpc (required by Aspire.Hosting). Fixed by pinning `MessagePack` to version 3.1.9 in `Directory.Packages.props`.
 
 ## Architectural Limitations
 

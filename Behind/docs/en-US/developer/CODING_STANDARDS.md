@@ -54,8 +54,8 @@ if (session is null)
 }
 ```
 
-### 2. USE EXTENSION METHODS WITH C# 12 SYNTAX
-**Rule**: Use the new `extension(Type)` C# 12 feature for all extension methods.
+### 2. USE EXTENSION MEMBERS WITH C# 14+ SYNTAX
+**Rule**: Use the `extension(Type)` syntax for extension members.
 
 **File Naming**: All extension files must end with `Extensions` (e.g., `StringExtensions.cs`, `DbContextExtensions.cs`)
 
@@ -84,7 +84,7 @@ extension(IConfiguration)
 }
 ```
 
-**Why**: Modern C# 12 syntax is cleaner, more expressive, and marks extensions clearly.
+**Why**: Extension members keep extension declarations explicit and close to their receiver type.
 
 ### 3. USE RECORDS, IMMUTABLE OBJECTS, AND ASYNC/AWAIT
 **Rule**: Favor immutability and async patterns for all I/O and data structures.
@@ -680,7 +680,7 @@ Arguments are passed as a `Func<object?[]>` through the `LoggingExtensions` over
 | Requirement | How | Example |
 |-------------|-----|---------|
 | Self-documenting code | Clear names, small functions | `TryFindUserAsync` instead of `Get` |
-| Extension methods | C# 12 `extension(Type)` syntax | `extension(IQueryable<T>)` |
+| Extension members | C# 14+ `extension(Type)` syntax | `extension(IQueryable<T>)` |
 | Immutability | Use `record` and `init` | `public record Email(string Value);` |
 | Async I/O | `async/await`, `CancellationToken` | `await repository.FindAsync(..., cancellationToken)` |
 | Error handling | Monads (Option, Try, Exceptional, Validation) | `Option<User>` instead of `null` |

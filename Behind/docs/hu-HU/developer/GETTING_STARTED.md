@@ -7,7 +7,7 @@ Gyorsindítási útmutató a Behind projekt beállításához és az azon végze
 ### Rendszerkövetelmények
 - **Operációs rendszer**: Windows 10+, Ubuntu 20.04+, macOS 11+ (csak fejlesztéshez)
 - **RAM**: legalább 8 GB, 16 GB ajánlott
-- **.NET SDK**: 10.0 (telepítse dev containerrel vagy manuálisan)
+- **.NET SDK**: 11.0 (telepítse dev containerrel vagy manuálisan)
 - **Git**: 2.25+
 - **Docker**: 20.10+ (opcionális, konténerizált fejlesztéshez)
 
@@ -27,7 +27,7 @@ cd behind
 ```
 
 **A dev container tartalma**:
-- Előre telepített .NET 10 SDK
+- Előre telepített .NET 11 SDK
 - Node.js és npm
 - ESLint
 - Git, curl, wget, gpg
@@ -36,11 +36,11 @@ cd behind
 #### 2. lehetőség: Helyi telepítés
 
 ```bash
-# Install .NET 10 SDK
-# https://dotnet.microsoft.com/download/dotnet/10.0
+# Install .NET 11 SDK
+# https://dotnet.microsoft.com/download/dotnet/11.0
 
 # Verify installation
-dotnet --version  # Should show 10.0.x
+dotnet --version  # Should show 11.0.x
 
 # Restore dependencies
 cd Behind
@@ -298,7 +298,7 @@ dotnet run
             "name": ".NET Core Launch (web)",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/Behind/bin/Debug/net10.0/Behind.Core.WebApi.dll",
+            "program": "${workspaceFolder}/Behind/bin/Debug/net11.0/Behind.Core.WebApi.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Behind",
             "stopAtEntry": false,
@@ -383,7 +383,7 @@ A lefedettséget a `coverlet.msbuild` automatikusan gyűjti. A generált kódot 
 
 - [ ] Megfelel a CODING_STANDARDS.md fájlnak
 - [ ] Nincsenek megjegyzések (a kód önmagát dokumentálja)
-- [ ] Bővítő metódusokat használ (C# 12 szintaxis)
+- [ ] Bővítő tagokat használ (`extension(Type)`, C# 14+ szintaxis)
 - [ ] Megváltoztathatatlan rekordok/objektumok
 - [ ] Async/await az I/O-hoz
 - [ ] Funkcionális minták (Option, Try, Validation)
@@ -591,7 +591,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '11.0.x'
       - run: dotnet restore
       - run: dotnet build Behind.slnx
       - run: dotnet test tests/Behind.Tests/Behind.Tests.csproj

@@ -30,9 +30,9 @@ Ez a dokumentum az adatbázisréteg felépítését, az Entity Framework Core mi
 
 ## Áttekintés
 
-A Behind az **Entity Framework Core 10.0.10** keretrendszert használja ORM-ként, több adatbázis-háttér támogatásával:
+A Behind az **Entity Framework Core 11.0.0-rc.3.26522.148** keretrendszert használja ORM-ként, több adatbázis-háttér támogatásával:
 
-- **SQLite 3.53.3** - Alapértelmezett a fejlesztéshez (SQLitePCLRaw 2.1.12)
+- **SQLite 3.53.3** - Alapértelmezett a fejlesztéshez (`SQLitePCLRaw.lib.e_sqlite3` 3.53.3)
 - **PostgreSQL** - Aspire-vezénylésen keresztül, haladó telepítésekhez
 - **Egyéb adatbázisok** - EF Core szolgáltatókon keresztül potenciálisan támogatottak
 

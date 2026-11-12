@@ -24,7 +24,7 @@ Core exposes session identity through `IModuleIdentity` and public display label
 
 Run feature tests with `dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~Forum|FullyQualifiedName~ProfilePicture"` and the frontend runtime tests with `node --test tools/tests/forum-frontend.test.cjs` from `Behind/`. The Node tests use the bundled Knockout and production pager, without additional packages.
 
-Behind is a modern .NET 10 application built with clean architecture principles, functional programming paradigms, and emphasis on code quality and maintainability.
+Behind is a modern .NET 11 application built with clean architecture principles, functional programming paradigms, and emphasis on code quality and maintainability.
 
 ## Project Purpose
 
@@ -38,15 +38,15 @@ Behind is designed as a scalable, maintainable backend system using microservice
 ## Technology Stack
 
 ### Core Framework
-- **Runtime**: .NET 10
-- **Web Framework**: ASP.NET Core 10.0.8
-- **Language Features**: C# 12 (records, extension types, top-level statements)
+- **Runtime**: .NET 11
+- **Web Framework**: ASP.NET Core 11.0.0
+- **Language Features**: C# 15 (records, extension members, top-level statements)
 
 ### Data Access
-- **ORM**: Entity Framework Core 10.0.10
+- **ORM**: Entity Framework Core 11.0.0-rc.3.26522.148
 - **Database Support**:
-  - SQLite 3.53.3 (SQLitePCLRaw 2.1.12)
-  - PostgreSQL (Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3)
+  - SQLite 3.53.3 (`SQLitePCLRaw.lib.e_sqlite3` 3.53.3)
+  - PostgreSQL (Npgsql.EntityFrameworkCore.PostgreSQL 11.0.0-rc.3)
 - **Migration**: EF Core Code Migrations via Behind.Core.Database.Migrator
 
 ### Security & Authentication
@@ -55,7 +55,7 @@ Behind is designed as a scalable, maintainable backend system using microservice
 - **Two-Factor Authentication**: Otp.NET 1.4.1 (TOTP support)
 
 ### Observability & Monitoring
-- **Tracing & Metrics**: OpenTelemetry 1.16.0
+- **Tracing & Metrics**: OpenTelemetry 1.17.0
 - **Instrumentation**: 
   - ASP.NET Core
   - HTTP Client
@@ -63,7 +63,7 @@ Behind is designed as a scalable, maintainable backend system using microservice
 - **Export**: OTLP (OpenTelemetry Protocol) compatible exporters
 
 ### API Documentation
-- **OpenAPI**: Microsoft.AspNetCore.OpenApi 10.0.10
+- **OpenAPI**: Microsoft.AspNetCore.OpenApi 11.0.0
 - **UI**: Scalar.AspNetCore 2.14.11 (replaces Swagger)
 - **Security**: Bearer token documentation
 
@@ -78,7 +78,7 @@ Behind is designed as a scalable, maintainable backend system using microservice
 - **Serialization**: System.Text.Json with TypeDescriptor factories
 
 ### Orchestration
-- **Service Hosting**: Aspire 13.4.6
+- **Service Hosting**: Aspire 13.6.5
 - **Containers**: Docker support via Aspire
 - **Data Services**: PostgreSQL, Valkey (Redis alternative)
 
@@ -298,7 +298,7 @@ public Exceptional<Auth> Authenticate(Credentials)  // Exception or Auth
 public Validation<Command> ValidateCommand(Dto)  // Many errors or valid command
 ```
 
-### 3. Extension Methods (C# 12 `extension` syntax)
+### 3. Extension Members (C# 14+ `extension(Type)` syntax)
 All extension methods use modern C# syntax in `*Extensions.cs` files:
 ```csharp
 extension(Type)
@@ -339,7 +339,7 @@ Domain objects use `record` types for:
 ## Build & Deployment
 
 ### Local Development
-- Dev container with .NET 10 SDK pre-configured
+- Dev container with .NET 11 SDK pre-configured
 - Aspire orchestration for service coordination
 - SQLite (or PostgreSQL) for the local database
 - Docker compose via Aspire
@@ -431,14 +431,16 @@ Domain objects use `record` types for:
 
 ## Current Status
 
-### Latest Versions
-- .NET Framework: 10.0.10 (ASP.NET Core, EF Core, Extensions)
-- OpenTelemetry: 1.16.0
-- JWT: 10.0.8
+### Versions in Use
+- .NET SDK: 11.0.100
+- ASP.NET Core and Microsoft.Extensions: 11.0.0
+- Entity Framework Core: 11.0.0-rc.3.26522.148
+- OpenTelemetry: 1.17.0
+- Microsoft.AspNetCore.Authentication.JwtBearer: 11.0.0
 
 ### Known Limitations
 - See [LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md) for dependency vulnerabilities
-- Some transitive dependencies have unpatched CVEs
+- `dotnet list package --vulnerable --include-transitive` reports no vulnerable packages (verified 2026-11-12)
 
 ---
 

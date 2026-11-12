@@ -7,7 +7,7 @@ Quick start guide for setting up and developing in the Behind project.
 ### System Requirements
 - **OS**: Windows 10+, Ubuntu 20.04+, macOS 11+ (development only)
 - **RAM**: 8GB minimum, 16GB recommended
-- **.NET SDK**: 10.0 (install via dev container or manually)
+- **.NET SDK**: 11.0 (install via dev container or manually)
 - **Git**: 2.25+
 - **Docker**: 20.10+ (optional, for containerized development)
 
@@ -27,7 +27,7 @@ cd behind
 ```
 
 **Dev Container Includes**:
-- .NET 10 SDK pre-installed
+- .NET 11 SDK pre-installed
 - Node.js and npm
 - ESLint
 - Git, curl, wget, gpg
@@ -36,11 +36,11 @@ cd behind
 #### Option 2: Local Installation
 
 ```bash
-# Install .NET 10 SDK
-# https://dotnet.microsoft.com/download/dotnet/10.0
+# Install .NET 11 SDK
+# https://dotnet.microsoft.com/download/dotnet/11.0
 
 # Verify installation
-dotnet --version  # Should show 10.0.x
+dotnet --version  # Should show 11.0.x
 
 # Restore dependencies
 cd Behind
@@ -383,7 +383,7 @@ Coverage is collected automatically via `coverlet.msbuild`. Generated code (EF C
 
 - [ ] Follows CODING_STANDARDS.md
 - [ ] No comments (code is self-documenting)
-- [ ] Uses extension methods (C# 12 syntax)
+- [ ] Uses extension members (`extension(Type)`, C# 14+ syntax)
 - [ ] Immutable records/objects
 - [ ] Async/await for I/O
 - [ ] Functional patterns (Option, Try, Validation)

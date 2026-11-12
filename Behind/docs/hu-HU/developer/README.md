@@ -79,13 +79,13 @@ A Behind kódbázis az alábbi alapelvekre épül:
 
 ## 📦 Technológiai stack
 
-- **Keretrendszer**: .NET 10 ASP.NET Core-ral
-- **Adatbázis**: Entity Framework Core 10.0.10 SQLite és PostgreSQL támogatással
+- **Keretrendszer**: .NET 11 ASP.NET Core 11.0.0-val
+- **Adatbázis**: Entity Framework Core 11.0.0-rc.3.26522.148 SQLite- és PostgreSQL-támogatással
 - **Hitelesítés**: JWT ****** **Biztonság**: BCrypt a jelszavak kivonatolásához, TOTP támogatás
-- **Megfigyelhetőség**: OpenTelemetry a nyomkövetéshez, a metrikákhoz és a naplózáshoz
+- **Megfigyelhetőség**: OpenTelemetry 1.17.0 a nyomkövetéshez, a metrikákhoz és a naplózáshoz
 - **API-dokumentáció**: OpenAPI Scalar felhasználói felülettel
 - **Tesztelés**: xUnit NSubstitute-tal a mockoláshoz
-- **Orkesztráció**: .NET Aspire mikroszolgáltatásokhoz
+- **Orkesztráció**: .NET Aspire 13.6.5 a szolgáltatások orkesztrálásához
 
 ## 🚀 Első lépések
 
@@ -99,7 +99,7 @@ A Behind kódbázis az alábbi alapelvekre épül:
 ## ⚠️ Fontos megjegyzések
 
 - **Nincsenek megjegyzések a kódban** - Ha a kódhoz megjegyzés kell, az rossz kód. A kódnak önmagát kell dokumentálnia.
-- **Bővítő metódusok** - Használja a C# 12 `extension` szintaxisát, a fájlok neve pedig `Extensions` végződésű legyen
+- **Bővítő metódusok** - Használja a C# 14+ `extension(Type)` szintaxisát, a fájlok neve pedig `Extensions` végződésű legyen
 - **Megváltoztathatatlanság** - Részesítse előnyben a rekordokat, a megváltoztathatatlan objektumokat és a funkcionális megközelítéseket
 - **Tesztek kötelezők** - Minden új funkcionalitáshoz egységteszteket kell mellékelni
 - **Ismert hibák** - A függőségi sebezhetőségekkel kapcsolatban lásd a [Korlátozások és problémák](./LIMITATIONS_AND_ISSUES.md) leírást
@@ -110,6 +110,6 @@ Ez a dokumentáció a kódbázis aktuális állapotát tükrözi a legutóbbi co
 
 ---
 
-**Utolsó frissítés**: 2026-09-13  
-**Keretrendszer verziója**: .NET 10  
+**Utolsó frissítés**: 2026-11-12
+**Keretrendszer verziója**: .NET 11
 **Dokumentáció felépítése**: Tiszta, moduláris Markdown fájlok

@@ -30,9 +30,9 @@ This document covers the database layer design, Entity Framework Core patterns, 
 
 ## Overview
 
-Behind uses **Entity Framework Core 10.0.10** as the ORM with support for multiple database backends:
+Behind uses **Entity Framework Core 11.0.0-rc.3.26522.148** as the ORM with support for multiple database backends:
 
-- **SQLite 3.53.3** - Default for development (SQLitePCLRaw 2.1.12)
+- **SQLite 3.53.3** - Default for development (`SQLitePCLRaw.lib.e_sqlite3` 3.53.3)
 - **PostgreSQL** - Via Aspire orchestration for advanced deployments
 - **Other databases** - Potentially supported through EF Core providers
 

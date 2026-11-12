@@ -54,8 +54,8 @@ if (session is null)
 }
 ```
 
-### 2. BŐVÍTŐ METÓDUSOK C# 12 SZINTAXISSAL
-**Szabály**: Minden bővítő metódushoz az új `extension(Type)` C# 12 szolgáltatást használja.
+### 2. BŐVÍTŐ TAGOK C# 14+ SZINTAXISSAL
+**Szabály**: A bővítő tagokat az `extension(Type)` szintaxissal kell megadni.
 
 **Fájlelnevezés**: Minden bővítőfájl nevének `Extensions` végződésűnek kell lennie (pl. `StringExtensions.cs`, `DbContextExtensions.cs`)
 
@@ -84,7 +84,7 @@ extension(IConfiguration)
 }
 ```
 
-**Miért**: A modern C# 12 szintaxis tisztább, kifejezőbb, és egyértelműen jelöli a bővítéseket.
+**Miért**: A bővítő tagok egyértelműen jelölik a kiterjesztéseket, és a fogadó típus közelében tartják a deklarációjukat.
 
 ### 3. REKORDOK, VÁLTOZTATHATATLAN OBJEKTUMOK ÉS ASYNC/AWAIT HASZNÁLATA
 **Szabály**: Minden I/O-művelethez és adatszerkezethez részesítse előnyben a változtathatatlanságot és az aszinkron mintákat.
@@ -680,7 +680,7 @@ Az argumentumokat `Func<object?[]>` formában kell átadni a `Behind.Common.Logg
 | Követelmény | Hogyan | Példa |
 |-------------|-----|---------|
 | Önmagát dokumentáló kód | Világos nevek, kis függvények | `TryFindUserAsync` a `Get` helyett |
-| Bővítő metódusok | C# 12 `extension(Type)` szintaxis | `extension(IQueryable<T>)` |
+| Bővítő tagok | C# 14+ `extension(Type)` szintaxis | `extension(IQueryable<T>)` |
 | Változtathatatlanság | `record` és `init` használata | `public record Email(string Value);` |
 | Aszinkron I/O | `async/await`, `CancellationToken` | `await repository.FindAsync(..., cancellationToken)` |
 | Hibakezelés | Monádok (Option, Try, Exceptional, Validation) | `Option<User>` a `null` helyett |
@@ -696,4 +696,3 @@ Az argumentumokat `Func<object?[]>` formában kell átadni a `Behind.Common.Logg
 **Ne feledje**: Úgy írja a kódot, mintha a karbantartója egy erőszakos pszichopata lenne, aki tudja, hol lakik. 😉
 
 Következetesen kövesse ezeket a szabványokat egy professzionális, karbantartható kódbázis fenntartásához.
-

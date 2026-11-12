@@ -79,14 +79,14 @@ The Behind codebase is built on these fundamental principles:
 
 ## 📦 Technology Stack
 
-- **Framework**: .NET 10 with ASP.NET Core
-- **Database**: Entity Framework Core 10.0.10 with SQLite and PostgreSQL support
+- **Framework**: .NET 11 with ASP.NET Core 11.0.0
+- **Database**: Entity Framework Core 11.0.0-rc.3.26522.148 with SQLite and PostgreSQL support
 - **Authentication**: JWT Bearer
 - **Security**: BCrypt for password hashing, TOTP support
-- **Observability**: OpenTelemetry for tracing, metrics, and logging
+- **Observability**: OpenTelemetry 1.17.0 for tracing, metrics, and logging
 - **API Documentation**: OpenAPI with Scalar UI
 - **Testing**: xUnit with NSubstitute for mocking
-- **Orchestration**: .NET Aspire for microservices
+- **Orchestration**: .NET Aspire 13.6.5 for service orchestration
 
 ## 🚀 Getting Started
 
@@ -100,7 +100,7 @@ The Behind codebase is built on these fundamental principles:
 ## ⚠️ Important Notes
 
 - **No Comments in Code** - If code needs comments, it's bad code. Code should be self-documenting.
-- **Extension Methods** - Use C# 12 `extension` syntax with files ending in `Extensions`
+- **Extension Methods** - Use C# 14+ `extension(Type)` syntax with files ending in `Extensions`
 - **Immutability** - Favor records, immutable objects, and functional approaches
 - **Tests Required** - All new functionality must include unit tests
 - **Known Issues** - See [Limitations and Issues](./LIMITATIONS_AND_ISSUES.md) for dependency vulnerabilities
@@ -111,6 +111,6 @@ This documentation reflects the current state of the codebase as of the latest c
 
 ---
 
-**Last Updated**: 2026-09-13  
-**Framework Version**: .NET 10  
+**Last Updated**: 2026-11-12
+**Framework Version**: .NET 11
 **Documentation Structure**: Clean, modular markdown files

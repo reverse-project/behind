@@ -4,15 +4,16 @@ Ez a dokumentum a Behind projekt ismert korlátozásait, hibáit és függőség
 
 ## Ismert függőségi sebezhetőségek
 
-A legutóbbi frissítés óta az összes ismert tranzitív függőségi sebezhetőséget megszüntettük a `Directory.Packages.props` fájlban megadott explicit verziófelülbírálásokkal. A `dotnet list package --vulnerable --include-transitive` parancs a teljes megoldásban nem jelez sebezhető csomagot.
+A `dotnet list package --vulnerable --include-transitive` parancs 2026-11-12-én nem jelzett sebezhető csomagot a teljes megoldásban.
 
 ### Jelenlegi állapot
 
 **Keretrendszer-verziók**:
-- .NET: 10.0.10 (legújabb)
-- ASP.NET Core: 10.0.8
-- Entity Framework Core: 10.0.10 (legújabb)
-- OpenTelemetry: 1.16.0 (legújabb)
+- .NET SDK: 11.0.100
+- ASP.NET Core: 11.0.0
+- Entity Framework Core: 11.0.0-rc.3.26522.148
+- Npgsql.EntityFrameworkCore.PostgreSQL: 11.0.0-rc.3
+- OpenTelemetry: 1.17.0
 
 ### Nem javítható sebezhetőségek
 
@@ -20,13 +21,13 @@ Jelenleg nem ismert ilyen.
 
 ### Javított sebezhetőségek
 
-✅ **SQLitePCLRaw.lib.e_sqlite3**: Javítva a 2.1.12-es verzióra frissítéssel
+✅ **SQLitePCLRaw.lib.e_sqlite3**: Frissítve a 3.53.3-as verzióra
 
-✅ **Entity Framework Core csomagok**: Frissítve a 10.0.10-es (legújabb) verzióra
+✅ **Entity Framework Core csomagok**: Frissítve a 11.0.0-rc.3.26522.148-as verzióra
 
-✅ **Microsoft.OpenApi (GHSA-v5pm-xwqc-g5wc)**: Tranzitív függőség, amelyet a Scalar.AspNetCore 2.14.11 húz be. Javítva a `Microsoft.OpenApi` 2.11.0 verzióra rögzítésével a `Directory.Packages.props` fájlban (a 2.X ágon a 2.7.5-ös és újabb verziókban javították).
+✅ **Microsoft.OpenApi (GHSA-v5pm-xwqc-g5wc)**: Tranzitív függőség, amelyet a Scalar.AspNetCore 2.14.11 húz be. Javítva a `Microsoft.OpenApi` 3.11.0 verzióra rögzítésével a `Directory.Packages.props` fájlban.
 
-✅ **MessagePack**: Tranzitív függőség, amelyet a StreamJsonRpc húz be (az Aspire.Hosting igényli). Javítva a `MessagePack` 3.1.8 verzióra rögzítésével a `Directory.Packages.props` fájlban.
+✅ **MessagePack**: Tranzitív függőség, amelyet a StreamJsonRpc húz be (az Aspire.Hosting igényli). Javítva a `MessagePack` 3.1.9 verzióra rögzítésével a `Directory.Packages.props` fájlban.
 
 ## Architekturális korlátozások
 

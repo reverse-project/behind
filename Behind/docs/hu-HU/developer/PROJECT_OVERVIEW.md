@@ -24,7 +24,7 @@ A Core az `IModuleIdentity` felületen adja át a munkamenet felhasználóját, 
 
 A funkció tesztjei a `Behind/` könyvtárból a `dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~Forum|FullyQualifiedName~ProfilePicture"` paranccsal futnak; a felület futásidejű tesztjeihez a `node --test tools/tests/forum-frontend.test.cjs` használható. A Node-tesztek a mellékelt Knockoutot és az alkalmazás lapozóját használják, további csomagok nélkül.
 
-A Behind egy modern .NET 10 alkalmazás, amely a tiszta architektúra elveire, a funkcionális programozási paradigmákra, valamint a kódminőség és a karbantarthatóság hangsúlyozására épül.
+A Behind egy modern .NET 11 alkalmazás, amely a tiszta architektúra elveire, a funkcionális programozási paradigmákra, valamint a kódminőség és a karbantarthatóság hangsúlyozására épül.
 
 ## A projekt célja
 
@@ -38,15 +38,15 @@ A Behind egy skálázható, karbantartható háttérrendszernek készült, amely
 ## Technológiai stack
 
 ### Alapvető keretrendszer
-- **Futtatókörnyezet**: .NET 10
-- **Webes keretrendszer**: ASP.NET Core 10.0.8
-- **Nyelvi lehetőségek**: C# 12 (rekordok, bővítő típusok, felső szintű utasítások)
+- **Futtatókörnyezet**: .NET 11
+- **Webes keretrendszer**: ASP.NET Core 11.0.0
+- **Nyelvi lehetőségek**: C# 15 (rekordok, bővítő tagok, felső szintű utasítások)
 
 ### Adatelérés
-- **ORM**: Entity Framework Core 10.0.10
+- **ORM**: Entity Framework Core 11.0.0-rc.3.26522.148
 - **Támogatott adatbázisok**:
-  - SQLite 3.53.3 (SQLitePCLRaw 2.1.12)
-  - PostgreSQL (Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3)
+  - SQLite 3.53.3 (`SQLitePCLRaw.lib.e_sqlite3` 3.53.3)
+  - PostgreSQL (Npgsql.EntityFrameworkCore.PostgreSQL 11.0.0-rc.3)
 - **Migráció**: EF Core kódalapú migrációk a Behind.Core.Database.Migrator segítségével
 
 ### Biztonság és hitelesítés
@@ -55,7 +55,7 @@ A Behind egy skálázható, karbantartható háttérrendszernek készült, amely
 - **Kétlépcsős hitelesítés**: Otp.NET 1.4.1 (TOTP támogatás)
 
 ### Megfigyelhetőség és monitorozás
-- **Nyomkövetés és metrikák**: OpenTelemetry 1.16.0
+- **Nyomkövetés és metrikák**: OpenTelemetry 1.17.0
 - **Műszerezés**: 
   - ASP.NET Core
   - HTTP-kliens
@@ -63,7 +63,7 @@ A Behind egy skálázható, karbantartható háttérrendszernek készült, amely
 - **Exportálás**: OTLP (OpenTelemetry Protocol) kompatibilis exporterek
 
 ### API-dokumentáció
-- **OpenAPI**: Microsoft.AspNetCore.OpenApi 10.0.10
+- **OpenAPI**: Microsoft.AspNetCore.OpenApi 11.0.0
 - **Felhasználói felület**: Scalar.AspNetCore 2.14.11 (a Swagger helyettesítője)
 - **Biztonság**: ****** documentation
 
@@ -78,7 +78,7 @@ A Behind egy skálázható, karbantartható háttérrendszernek készült, amely
 - **Szerializáció**: System.Text.Json TypeDescriptor gyárakkal
 
 ### Orkesztráció
-- **Szolgáltatások üzemeltetése**: Aspire 13.4.6
+- **Szolgáltatások üzemeltetése**: Aspire 13.6.5
 - **Konténerek**: Docker-támogatás az Aspire-on keresztül
 - **Adatszolgáltatások**: PostgreSQL, Valkey (a Redis alternatívája)
 
@@ -297,7 +297,7 @@ public Exceptional<Auth> Authenticate(Credentials)  // Exception or Auth
 public Validation<Command> ValidateCommand(Dto)  // Many errors or valid command
 ```
 
-### 3. Bővítő metódusok (C# 12 `extension` szintaxis)
+### 3. Bővítő tagok (C# 14+ `extension(Type)` szintaxis)
 Minden bővítő metódus modern C# szintaxist használ a `*Extensions.cs` fájlokban:
 ```csharp
 extension(Type)
@@ -338,7 +338,7 @@ A domain objektumok `record` típusokat használnak a következőkért:
 ## Fordítás és telepítés
 
 ### Helyi fejlesztés
-- Dev container előre beállított .NET 10 SDK-val
+- Dev container előre beállított .NET 11 SDK-val
 - Aspire-orkesztráció a szolgáltatások összehangolásához
 - SQLite (vagy PostgreSQL) a helyi adatbázishoz
 - Docker compose az Aspire-on keresztül
@@ -430,14 +430,16 @@ A domain objektumok `record` típusokat használnak a következőkért:
 
 ## Jelenlegi állapot
 
-### Legújabb verziók
-- .NET keretrendszer: 10.0.10 (ASP.NET Core, EF Core, Extensions)
-- OpenTelemetry: 1.16.0
-- JWT: 10.0.8
+### Használt verziók
+- .NET SDK: 11.0.100
+- ASP.NET Core és Microsoft.Extensions: 11.0.0
+- Entity Framework Core: 11.0.0-rc.3.26522.148
+- OpenTelemetry: 1.17.0
+- Microsoft.AspNetCore.Authentication.JwtBearer: 11.0.0
 
 ### Ismert korlátozások
 - A függőségi sebezhetőségekkel kapcsolatban lásd a [LIMITATIONS_AND_ISSUES.md](./LIMITATIONS_AND_ISSUES.md) fájlt
-- Egyes tranzitív függőségek javítatlan CVE-ket tartalmaznak
+- A `dotnet list package --vulnerable --include-transitive` nem jelez sebezhető csomagot (ellenőrizve: 2026-11-12)
 
 ---
 

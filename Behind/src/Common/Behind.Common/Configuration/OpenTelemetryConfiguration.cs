@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using Behind.Common.Converters;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 
@@ -30,6 +32,7 @@ public sealed record OpenTelemetryConfiguration(
         bool? ParseStateValues
     );
 
+    [TypeConverter(typeof(OpenTelemetryInstrumentationTypeConverter))]
     public abstract record Instrumentation
     {
         public static readonly Instrumentation AspNetCoreInstrumentation =

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Instrumentation = Behind.Common.Configuration.OpenTelemetryConfiguration.Instrumentation;
 
@@ -26,10 +27,13 @@ public static class WebApplicationBuilderExtensions
         
         public WebApplicationBuilder AddOpenTelemetry()
         {
+            var openTelemetryBuilder = builder.Services.AddOpenTelemetry();
             builder.Configuration.GetSection(OpenTelemetryConfiguration.SectionName)
-                .Get<OpenTelemetryConfiguration>()
+                .Get<OpenTelemetryConfiguration>(options => options.ErrorOnUnknownConfiguration = true)
                 .ApplyIfEnabled((configuration, openTelemetry) =>
-                        configuration.ApplyTraces((exporter, instrumentation) =>
+                {
+                    openTelemetry.ConfigureResource(resource => resource.AddService(configuration.ServiceName));
+                    configuration.ApplyTraces((exporter, instrumentation) =>
                                 exporter.Apply(_ => openTelemetry.WithTracing(tracing =>
                                 {
                                     tracing.AddProcessor<CorrelationIdActivityProcessor>();
@@ -110,7 +114,9 @@ public static class WebApplicationBuilderExtensions
                                         .Apply(
                                             loggingConfiguration.ParseStateValues,
                                             v => logging.ParseStateValues = v.IsTrue()
-                                        )))), builder.Services.AddOpenTelemetry()
+                                        ))));
+                },
+                openTelemetryBuilder
                 );
 
             return builder;

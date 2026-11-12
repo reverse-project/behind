@@ -59,6 +59,25 @@ extension(WebApplicationBuilder builder)
 }
 ```
 
+### OpenTelemetry troubleshooting
+
+The `OpenTelemetry` section is bound once at startup. `Instruments` accepts `AspNetCoreInstrumentation`, `HttpClientInstrumentation`, `RuntimeInstrumentation` (metrics) and `OtlpExporter`, converted through a `TypeConverter`. Include `OtlpExporter` for each signal to export it. Unknown names, invalid values and unknown properties fail startup instead of silently skipping instruments.
+
+With `HttpProtobuf`, each `Endpoint` is the complete OTLP ingestion URL; `AddOtlpExporter` does not append `/v1/traces`, `/v1/metrics` or `/v1/logs` to the explicitly configured URL. Custom proxy routes are valid only when they forward to the corresponding OTLP receiver. Grafana's UI, Tempo query API and Prometheus scrape endpoints are not OTLP receivers.
+
+To see SDK/exporter errors (not ordinary application logs), put `OTEL_DIAGNOSTICS.json` in the process working directory or application directory:
+
+```json
+{
+  "LogDirectory": "/tmp",
+  "FileSize": 1024,
+  "LogLevel": "Verbose",
+  "FormatMessage": true
+}
+```
+
+The process user must be able to write to `LogDirectory`. In a container, mount the configuration next to the application and inspect the generated `<ExecutableName>.<ProcessId>.log` inside the container (or mount its log directory). The SDK rereads diagnostics configuration about every 10 seconds. Generate a request and an application log, then allow at least 60 seconds for the default metrics interval. Look for DNS/TLS failures and HTTP status codes: `401`/`403` indicate authentication/authorization, `404` a wrong route, `405` a wrong method/route, and `415` an incompatible receiver/content type. A redirect or HTML response often means the exporter reached a UI or login page. Increasing Serilog verbosity alone does not capture these SDK diagnostics. Remove the diagnostics configuration after troubleshooting; diagnostic output can contain sensitive details.
+
 ### Live Configuration
 
 Every JSON configuration file is loaded with `IHostApplicationBuilder.AddReloadableJsonFile(path, optional)` (`Behind.Common.Configuration`), a JSON source that watches the file. When a file becomes invalid JSON after it loaded once, the last good values are kept and the failure is reported through `ConfigurationReloadFailures` (logged by `ConfigurationReloadFailureLogger`).

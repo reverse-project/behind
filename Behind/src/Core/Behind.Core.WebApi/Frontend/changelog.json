@@ -3,6 +3,7 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "fixed", "text": "OpenTelemetry instrumentation names now bind correctly from configuration, enabling OTLP exporters for traces, metrics and logs. Invalid names or configuration values fail explicitly at startup instead of silently disabling instrumentation." },
       { "type": "added", "text": "Layout widgets use Bootstrap card, list, statistics and alert styles by default, with site-specific colors where configured." },
       { "type": "fixed", "text": "The layout HTML editor label is localized and Forum widget captions are supplied by the Forum module's own translations." },
       { "type": "added", "text": "Chat widgets now store unlimited history in the database with cursor-based infinite scrolling, profile pictures, audit-derived creation and edit times, replies and five-minute author-only editing. Chat.Read/Write control signed-in access (users get both by default; guests can read), Chat.Delete removes one's own messages and Chat.Manage moderates any message. Restrictions override grants. Existing widget-chat.json files are left untouched; database chat starts with fresh history." },

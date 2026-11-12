@@ -59,6 +59,25 @@ extension(WebApplicationBuilder builder)
 }
 ```
 
+### OpenTelemetry hibakeresés
+
+Az `OpenTelemetry` szakasz egyszer, induláskor kötődik be. Az `Instruments` elfogadott értékei: `AspNetCoreInstrumentation`, `HttpClientInstrumentation`, `RuntimeInstrumentation` (metrikák) és `OtlpExporter`; az átalakítást `TypeConverter` végzi. Minden exportálandó jelnél szerepeljen az `OtlpExporter`. Az ismeretlen nevek, érvénytelen értékek és ismeretlen tulajdonságok indítási hibát okoznak a műszerek csendes kihagyása helyett.
+
+`HttpProtobuf` esetén minden `Endpoint` a teljes OTLP adatfogadó URL; az `AddOtlpExporter` nem fűzi hozzá a `/v1/traces`, `/v1/metrics` vagy `/v1/logs` útvonalat az explicit beállított URL-hez. Egyedi proxyútvonal csak akkor használható, ha a megfelelő OTLP fogadóhoz továbbít. A Grafana felülete, a Tempo lekérdezési API és a Prometheus scrape végpont nem OTLP fogadó.
+
+Az SDK és az exporterek hibáinak megjelenítéséhez (nem az alkalmazás szokásos naplóihoz) helyezz el egy `OTEL_DIAGNOSTICS.json` fájlt a folyamat munkakönyvtárában vagy az alkalmazás könyvtárában:
+
+```json
+{
+  "LogDirectory": "/tmp",
+  "FileSize": 1024,
+  "LogLevel": "Verbose",
+  "FormatMessage": true
+}
+```
+
+A folyamat felhasználójának írási joggal kell rendelkeznie a `LogDirectory` könyvtárhoz. Konténerben csatold a konfigurációt az alkalmazás mellé, és a létrejövő `<ExecutableName>.<ProcessId>.log` fájlt a konténerben vizsgáld (vagy csatold ki a naplókönyvtárat). Az SDK körülbelül 10 másodpercenként újraolvassa a diagnosztikai konfigurációt. Generálj egy kérést és egy alkalmazásnaplót, majd várj legalább 60 másodpercet az alapértelmezett metrikaexportálási időköz miatt. Keresd a DNS/TLS hibákat és a HTTP állapotkódokat: a `401`/`403` hitelesítési/jogosultsági hibát, a `404` rossz útvonalat, a `405` rossz metódust/útvonalat, a `415` inkompatibilis fogadót/tartalomtípust jelez. Az átirányítás vagy HTML-válasz gyakran azt jelenti, hogy az exporter felületet vagy bejelentkezési oldalt ért el. A Serilog részletességének növelése önmagában nem rögzíti ezeket az SDK-diagnosztikákat. Hibakeresés után távolítsd el a diagnosztikai konfigurációt; a kimenet érzékeny részleteket tartalmazhat.
+
 ### Élő konfiguráció
 
 Minden JSON konfigurációs fájl az `IHostApplicationBuilder.AddReloadableJsonFile(path, optional)` (`Behind.Common.Configuration`) segítségével töltődik be, amely egy JSON-forrás, és figyeli a fájlt. Ha egy fájl a betöltés után érvénytelen JSON-né válik, az utolsó jó értékek megmaradnak, a hibát pedig a `ConfigurationReloadFailures` jelzi (a `ConfigurationReloadFailureLogger` naplózza).

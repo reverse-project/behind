@@ -1,4 +1,8 @@
 using System.Text.Json;
+using Behind.Common.Configuration;
+using Microsoft.Extensions.Configuration;
+using OpenTelemetry.Exporter;
+using Instrumentation = Behind.Common.Configuration.OpenTelemetryConfiguration.Instrumentation;
 
 namespace Behind.Tests.Sites;
 
@@ -32,6 +36,35 @@ public class RpDotHuSiteTests
     {
         using var document = JsonDocument.Parse(Read(name));
         return document.RootElement.Clone();
+    }
+
+    [Fact]
+    public void OpenTelemetry_BindsAllConfiguredInstruments()
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(SiteFile("appsettings.json"));
+        var telemetry = configuration.GetSection(OpenTelemetryConfiguration.SectionName)
+            .Get<OpenTelemetryConfiguration>(options => options.ErrorOnUnknownConfiguration = true);
+
+        Assert.NotNull(telemetry);
+        Assert.True(telemetry.IsEnabled);
+        Assert.Equal("rpdothu", telemetry.ServiceName);
+        Assert.NotNull(telemetry.Traces);
+        Assert.NotNull(telemetry.Metrics);
+        Assert.NotNull(telemetry.Logging);
+        Assert.True(telemetry.Traces.IsEnabled);
+        Assert.True(telemetry.Metrics.IsEnabled);
+        Assert.True(telemetry.Logging.IsEnabled);
+        Assert.Equal(OtlpExportProtocol.HttpProtobuf, telemetry.Traces.Protocol);
+        Assert.Equal(OtlpExportProtocol.HttpProtobuf, telemetry.Metrics.Protocol);
+        Assert.Equal(OtlpExportProtocol.HttpProtobuf, telemetry.Logging.Protocol);
+        Assert.Equal(
+            [Instrumentation.AspNetCoreInstrumentation, Instrumentation.HttpClientInstrumentation, Instrumentation.OtlpExporter],
+            telemetry.Traces.Instruments);
+        Assert.Equal(
+            [Instrumentation.AspNetCoreInstrumentation, Instrumentation.HttpClientInstrumentation, Instrumentation.RuntimeInstrumentation, Instrumentation.OtlpExporter],
+            telemetry.Metrics.Instruments);
+        Assert.Equal([Instrumentation.OtlpExporter], telemetry.Logging.Instruments);
     }
 
     [Theory]

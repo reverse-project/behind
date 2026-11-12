@@ -97,7 +97,8 @@
                 <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
             </div>
         </form>
-        <form data-bind="with: logging, submit: saveLogging, visible: isLoggingSelected">
+        <form data-bind="submit: saveAppSettings, visible: isLoggingSelected">
+            <div data-bind="with: logging">
             <fieldset class="mb-4">
                 <legend class="h6 text-body-secondary" data-bind="t: 'settings.logging.minimum'">Minimum log level</legend>
                 <div class="row mb-2 align-items-center">
@@ -130,8 +131,149 @@
                 <button type="button" class="btn btn-outline-secondary" data-bind="click: add, enable: $root.canEdit, t: 'settings.logging.add'">Add source</button>
                 <div class="form-text text-danger" data-bind="visible: !isValid(), t: 'settings.logging.duplicate'">Every source needs a different name.</div>
             </fieldset>
-            <div class="d-flex gap-2" data-bind="visible: $root.canManage">
-                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
+            </div>
+            <div data-bind="with: openTelemetry">
+            <fieldset class="mb-4">
+                <legend class="h6 text-body-secondary" data-bind="t: 'settings.opentelemetry.general'">OpenTelemetry</legend>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-service-name" data-bind="t: 'settings.opentelemetry.serviceName'">Service name</label>
+                    <div class="col-md-8">
+                        <input id="otel-service-name" type="text" class="form-control" data-bind="value: serviceName, enable: $root.canEdit">
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-enabled" data-bind="t: 'settings.opentelemetry.enabled'">Enabled</label>
+                    <div class="col-md-8">
+                        <div class="form-check form-switch">
+                            <input id="otel-enabled" type="checkbox" class="form-check-input" role="switch" data-bind="checked: isEnabled, enable: $root.canEdit">
+                        </div>
+                    </div>
+                </div>
+                <p class="form-text" data-bind="t: 'settings.opentelemetry.restartHelp'">OpenTelemetry settings take effect after the application restarts.</p>
+            </fieldset>
+            <fieldset class="mb-4" data-bind="with: traces">
+                <legend class="h6 text-body-secondary" data-bind="t: 'settings.opentelemetry.traces'">Traces</legend>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-traces-enabled" data-bind="t: 'settings.opentelemetry.exporterEnabled'">Exporter enabled</label>
+                    <div class="col-md-8">
+                        <div class="form-check form-switch">
+                            <input id="otel-traces-enabled" type="checkbox" class="form-check-input" role="switch" data-bind="checked: isEnabled, enable: $root.canEdit">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-traces-endpoint" data-bind="t: 'settings.opentelemetry.endpoint'">OTLP endpoint</label>
+                    <div class="col-md-8">
+                        <input id="otel-traces-endpoint" type="text" class="form-control font-monospace" data-bind="value: endpoint, enable: $root.canEdit, css: { 'is-invalid': !isValid() }">
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-traces-protocol" data-bind="t: 'settings.opentelemetry.protocol'">Protocol</label>
+                    <div class="col-md-8">
+                        <select id="otel-traces-protocol" class="form-select" data-bind="options: $parent.protocols, optionsCaption: $root.text('settings.opentelemetry.protocolDefault'), value: protocol, enable: $root.canEdit"></select>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 col-form-label" data-bind="t: 'settings.opentelemetry.instruments'">Instruments</div>
+                    <div class="col-md-8" data-bind="foreach: instruments">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" data-bind="checked: selected, enable: $root.canEdit, attr: { id: 'otel-traces-' + name }">
+                            <label class="form-check-label" data-bind="text: $root.text(label), attr: { for: 'otel-traces-' + name }"></label>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="mb-4" data-bind="with: metrics">
+                <legend class="h6 text-body-secondary" data-bind="t: 'settings.opentelemetry.metrics'">Metrics</legend>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-metrics-enabled" data-bind="t: 'settings.opentelemetry.exporterEnabled'">Exporter enabled</label>
+                    <div class="col-md-8">
+                        <div class="form-check form-switch">
+                            <input id="otel-metrics-enabled" type="checkbox" class="form-check-input" role="switch" data-bind="checked: isEnabled, enable: $root.canEdit">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-metrics-endpoint" data-bind="t: 'settings.opentelemetry.endpoint'">OTLP endpoint</label>
+                    <div class="col-md-8">
+                        <input id="otel-metrics-endpoint" type="text" class="form-control font-monospace" data-bind="value: endpoint, enable: $root.canEdit, css: { 'is-invalid': !isValid() }">
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-metrics-protocol" data-bind="t: 'settings.opentelemetry.protocol'">Protocol</label>
+                    <div class="col-md-8">
+                        <select id="otel-metrics-protocol" class="form-select" data-bind="options: $parent.protocols, optionsCaption: $root.text('settings.opentelemetry.protocolDefault'), value: protocol, enable: $root.canEdit"></select>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 col-form-label" data-bind="t: 'settings.opentelemetry.instruments'">Instruments</div>
+                    <div class="col-md-8" data-bind="foreach: instruments">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" data-bind="checked: selected, enable: $root.canEdit, attr: { id: 'otel-metrics-' + name }">
+                            <label class="form-check-label" data-bind="text: $root.text(label), attr: { for: 'otel-metrics-' + name }"></label>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="mb-4" data-bind="with: logging">
+                <legend class="h6 text-body-secondary" data-bind="t: 'settings.opentelemetry.logs'">Logs</legend>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-logs-enabled" data-bind="t: 'settings.opentelemetry.exporterEnabled'">Exporter enabled</label>
+                    <div class="col-md-8">
+                        <div class="form-check form-switch">
+                            <input id="otel-logs-enabled" type="checkbox" class="form-check-input" role="switch" data-bind="checked: isEnabled, enable: $root.canEdit">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-logs-endpoint" data-bind="t: 'settings.opentelemetry.endpoint'">OTLP endpoint</label>
+                    <div class="col-md-8">
+                        <input id="otel-logs-endpoint" type="text" class="form-control font-monospace" data-bind="value: endpoint, enable: $root.canEdit, css: { 'is-invalid': !isValid() }">
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-logs-protocol" data-bind="t: 'settings.opentelemetry.protocol'">Protocol</label>
+                    <div class="col-md-8">
+                        <select id="otel-logs-protocol" class="form-select" data-bind="options: $parent.protocols, optionsCaption: $root.text('settings.opentelemetry.protocolDefault'), value: protocol, enable: $root.canEdit"></select>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 col-form-label" data-bind="t: 'settings.opentelemetry.instruments'">Instruments</div>
+                    <div class="col-md-8" data-bind="foreach: instruments">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" data-bind="checked: selected, enable: $root.canEdit, attr: { id: 'otel-logs-' + name }">
+                            <label class="form-check-label" data-bind="text: $root.text(label), attr: { for: 'otel-logs-' + name }"></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-formatted-message" data-bind="t: 'settings.opentelemetry.includeFormattedMessage'">Include formatted message</label>
+                    <div class="col-md-8">
+                        <div class="form-check form-switch">
+                            <input id="otel-formatted-message" type="checkbox" class="form-check-input" role="switch" data-bind="checked: includeFormattedMessage, enable: $root.canEdit">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-include-scopes" data-bind="t: 'settings.opentelemetry.includeScopes'">Include scopes</label>
+                    <div class="col-md-8">
+                        <div class="form-check form-switch">
+                            <input id="otel-include-scopes" type="checkbox" class="form-check-input" role="switch" data-bind="checked: includeScopes, enable: $root.canEdit">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-md-4 col-form-label" for="otel-parse-state-values" data-bind="t: 'settings.opentelemetry.parseStateValues'">Parse state values</label>
+                    <div class="col-md-8">
+                        <div class="form-check form-switch">
+                            <input id="otel-parse-state-values" type="checkbox" class="form-check-input" role="switch" data-bind="checked: parseStateValues, enable: $root.canEdit">
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+            </div>
+            <div class="d-flex gap-2 mb-4" data-bind="visible: $root.canManage">
+                <button type="submit" class="btn btn-primary" data-bind="enable: $root.canSaveAppSettings, t: 'common.save'">Save</button>
             </div>
         </form>
         <form data-bind="with: selected, submit: save, visible: isFieldTabSelected">

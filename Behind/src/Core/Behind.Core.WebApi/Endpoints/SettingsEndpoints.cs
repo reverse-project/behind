@@ -36,32 +36,82 @@ public sealed class SettingsEndpoints
         LocaleCatalog locales,
         IOptions<SecurityConfiguration> security,
         ILogger<SettingsEndpoints> logger,
-        CancellationToken cancellationToken) =>
-        Modify(
-            catalog.Find(file),
+        CancellationToken cancellationToken)
+    {
+        var target = catalog.Find(file);
+        if (target == None)
+        {
+            return catalog.FindWithEditor(file, ConfigurationFileCatalog.LoggingEditor).Match(
+                () => Task.FromResult<IResult>(Results.NotFound()),
+                appSettings => Modify(
+                    Some(appSettings),
+                    security,
+                    targetFile => UpdateAppSettings(targetFile, request, logger, cancellationToken)));
+        }
+
+        if (request.Logging is not null || request.OpenTelemetry is not null)
+        {
+            return Task.FromResult<IResult>(Results.BadRequest());
+        }
+
+        return Modify(
+            target,
             security,
-            async target =>
+            async configurationFile =>
             {
-                var changes = (await target.ReadJsonAsync(cancellationToken)).PlanChanges(target.Name, request.Values);
+                var changes = (await configurationFile.ReadJsonAsync(cancellationToken))
+                    .PlanChanges(configurationFile.Name, request.Values);
 
                 return await changes.Match(
                     () => Task.FromResult<IResult>(Results.BadRequest()),
                     async planned =>
                     {
-                        if (!await planned.HasKnownLocale(target.Name, locales, cancellationToken))
+                        if (!await planned.HasKnownLocale(configurationFile.Name, locales, cancellationToken))
                         {
                             return Results.BadRequest();
                         }
 
-                        await target.SetJsonNodesAsync(planned, cancellationToken);
+                        await configurationFile.SetJsonNodesAsync(planned, cancellationToken);
 
                         logger.LogInformation(
                             "Settings of {File} changed: {Paths}",
-                            () => [target.Name, string.Join(", ", planned.Keys)]);
+                            () => [configurationFile.Name, string.Join(", ", planned.Keys)]);
 
                         return Results.NoContent();
                     });
             });
+    }
+
+    private static async Task<IResult> UpdateAppSettings(
+        FileInfo target,
+        SettingsUpdateRequest request,
+        ILogger<SettingsEndpoints> logger,
+        CancellationToken cancellationToken)
+    {
+        if (request.Values is null
+            || request.Values.Count != 0
+            || request.Logging is null
+            || request.OpenTelemetry is null)
+        {
+            return Results.BadRequest();
+        }
+
+        var logging = request.Logging.ToConfiguration();
+        var openTelemetry = request.OpenTelemetry.ToNormalizedRequest();
+
+        return await logging.Match(
+            () => Task.FromResult<IResult>(Results.BadRequest()),
+            async minimumLevel => await openTelemetry.Match(
+                () => Task.FromResult<IResult>(Results.BadRequest()),
+                async configuration =>
+                {
+                    await target.WriteAppSettingsAsync(minimumLevel, configuration, cancellationToken);
+
+                    logger.LogInformation("App settings of {File} changed", () => [target.Name]);
+
+                    return Results.NoContent();
+                }));
+    }
 
     public static Task<IResult> Generate(
         string file,
@@ -145,26 +195,13 @@ public sealed class SettingsEndpoints
             () => Task.FromResult<IResult>(Results.NotFound()),
             async target => Results.Json((await target.ReadMinimumLevelAsync(cancellationToken)).ToSettings()));
 
-    public static Task<IResult> UpdateLogging(
+    public static async Task<IResult> GetOpenTelemetry(
         string file,
-        LoggingSettingsRequest request,
         ConfigurationFileCatalog catalog,
-        IOptions<SecurityConfiguration> security,
-        ILogger<SettingsEndpoints> logger,
         CancellationToken cancellationToken) =>
-        Modify(
-            catalog.FindWithEditor(file, ConfigurationFileCatalog.LoggingEditor),
-            security,
-            target => request.ToConfiguration().Match(
-                () => Task.FromResult<IResult>(Results.BadRequest()),
-                async configuration =>
-                {
-                    await target.WriteMinimumLevelAsync(configuration, cancellationToken);
-
-                    logger.LogInformation("Log levels of {File} changed", () => [target.Name]);
-
-                    return Results.NoContent();
-                }));
+        await catalog.FindWithEditor(file, ConfigurationFileCatalog.LoggingEditor).Match(
+            () => Task.FromResult<IResult>(Results.NotFound()),
+            async target => Results.Json(await target.ReadOpenTelemetrySettingsAsync(cancellationToken)));
 
     private static async Task<IResult> GenerateSecret(
         FileInfo target,

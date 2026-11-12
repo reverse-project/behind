@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Text.Json;
 using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Settings;
@@ -35,8 +36,22 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
     private JsonNode Levels(string file) =>
         JsonNode.Parse(File.ReadAllText(PathOf(file)))!["Serilog"]!["MinimumLevel"]!;
 
-    private Task<IResult> Update(string file, LoggingSettingsRequest request, bool readOnly = false) =>
-        SettingsEndpoints.UpdateLogging(file, request, Catalog, Security(readOnly), _logger, CancellationToken.None);
+    private static readonly OpenTelemetrySettingsRequest DisabledOpenTelemetry = new(
+        string.Empty,
+        false,
+        new OpenTelemetryExporterSettingsRequest(false, null, null, []),
+        new OpenTelemetryExporterSettingsRequest(false, null, null, []),
+        new OpenTelemetryLoggingSettingsRequest(false, null, null, [], null, null, null));
+
+    private Task<IResult> Update(string file, LoggingSettingsRequest logging, bool readOnly = false) =>
+        SettingsEndpoints.Update(
+            file,
+            new SettingsUpdateRequest(new Dictionary<string, JsonElement>(), logging, DisabledOpenTelemetry),
+            Catalog,
+            TestLocales.Embedded,
+            Security(readOnly),
+            _logger,
+            CancellationToken.None);
 
     [Fact]
     public async Task Get_ListsTheAppSettingsFileWithTheLoggingEditorAndNoRawFields()
@@ -98,7 +113,18 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
     [Fact]
     public async Task Update_OtherFile_IsNotFound()
     {
-        Assert.IsType<NotFound>(await Update("backend.json", new LoggingSettingsRequest("Debug", [])));
+        var request = new SettingsUpdateRequest(new Dictionary<string, JsonElement>());
+
+        var result = await SettingsEndpoints.Update(
+            "backend.json",
+            request,
+            Catalog,
+            TestLocales.Embedded,
+            Security(),
+            _logger,
+            CancellationToken.None);
+
+        Assert.IsType<NotFound>(result);
     }
 
     [Fact]
@@ -118,13 +144,13 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
     public async Task GenericUpdate_RefusesTheAppSettingsFiles()
     {
         var request = new SettingsUpdateRequest(
-            new Dictionary<string, System.Text.Json.JsonElement>
+            new Dictionary<string, JsonElement>
             {
-                ["AllowedHosts"] = System.Text.Json.JsonDocument.Parse("\"x\"").RootElement.Clone()
+                ["AllowedHosts"] = JsonDocument.Parse("\"x\"").RootElement.Clone()
             });
 
         var result = await SettingsEndpoints.Update("appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None);
 
-        Assert.IsType<NotFound>(result);
+        Assert.IsType<BadRequest>(result);
     }
 }

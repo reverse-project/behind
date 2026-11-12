@@ -18,7 +18,10 @@ public sealed record SettingsFileResponse(string Name, IReadOnlyList<SettingsFie
 
 public sealed record SettingsResponse(bool ReadOnly, IReadOnlyList<SettingsFileResponse> Files);
 
-public sealed record SettingsUpdateRequest([property: Required] IReadOnlyDictionary<string, JsonElement> Values);
+public sealed record SettingsUpdateRequest(
+    [property: Required] IReadOnlyDictionary<string, JsonElement> Values,
+    LoggingSettingsRequest? Logging = null,
+    OpenTelemetrySettingsRequest? OpenTelemetry = null);
 
 public sealed record SettingsActionRequest([property: Required, MinLength(1)] string Path);
 

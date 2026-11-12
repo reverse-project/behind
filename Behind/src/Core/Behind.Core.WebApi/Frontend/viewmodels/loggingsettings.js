@@ -66,8 +66,5 @@ define(["ko", "models/settings"], function (ko, settings) {
             };
         };
 
-        self.save = function (file) {
-            return settings.saveLogging(file, self.request());
-        };
     };
 });

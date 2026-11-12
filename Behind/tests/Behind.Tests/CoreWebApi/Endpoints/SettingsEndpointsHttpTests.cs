@@ -49,8 +49,7 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
         _application = builder.Build();
         _application.MapGet("/settings", SettingsEndpoints.Get);
         _application.MapGet("/settings/{file}/logging", SettingsEndpoints.GetLogging);
-        _application.MapPut("/settings/{file}/logging", SettingsEndpoints.UpdateLogging)
-            .AddEndpointFilter<DataAnnotationValidationFilter<LoggingSettingsRequest>>();
+        _application.MapGet("/settings/{file}/opentelemetry", SettingsEndpoints.GetOpenTelemetry);
         _application.MapGet("/settings/email", SettingsEndpoints.GetEmail);
         _application.MapPut("/settings/email", SettingsEndpoints.UpdateEmail)
             .AddEndpointFilter<DataAnnotationValidationFilter<EmailSettingsRequest>>();
@@ -190,35 +189,88 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("/settings/appsettings.json/logging")]
+    [InlineData("/settings/appsettings.json/opentelemetry")]
+    public async Task PutAppSettings_UsesOneUpdateEndpoint(string oldEndpoint)
+    {
+        var response = await _client.PutAsJsonAsync(oldEndpoint, new { });
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+    }
+
     [Fact]
-    public async Task PutLogging_BindsTheRequestAndGetLoggingReadsItBack()
+    public async Task PutAppSettings_UpdatesLoggingAndOpenTelemetryTogether()
     {
         var response = await _client.PutAsJsonAsync(
-            "/settings/appsettings.json/logging",
-            new { @default = "Warning", overrides = new[] { new { source = "Behind", level = "Debug" } } });
+            "/settings/appsettings.json",
+            new
+            {
+                values = new { },
+                logging = new
+                {
+                    @default = "Warning",
+                    overrides = new[] { new { source = "Behind", level = "Debug" } }
+                },
+                openTelemetry = new
+                {
+                    serviceName = "test-service",
+                    isEnabled = true,
+                    traces = new
+                    {
+                        isEnabled = true,
+                        endpoint = "https://otel.example/traces",
+                        protocol = "HttpProtobuf",
+                        instruments = new[] { "AspNetCoreInstrumentation", "OtlpExporter" }
+                    },
+                    metrics = new { isEnabled = false, endpoint = (string?)null, protocol = (string?)null, instruments = Array.Empty<string>() },
+                    logging = new
+                    {
+                        isEnabled = false,
+                        endpoint = (string?)null,
+                        protocol = (string?)null,
+                        instruments = Array.Empty<string>(),
+                        includeFormattedMessage = (bool?)null,
+                        includeScopes = (bool?)null,
+                        parseStateValues = (bool?)null
+                    }
+                }
+            });
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        var settings = await _client.GetFromJsonAsync<JsonNode>("/settings/appsettings.json/logging");
-        Assert.Equal("Warning", (string)settings!["default"]!);
-        Assert.Equal("Debug", (string)settings["overrides"]![0]!["level"]!);
-        Assert.Equal("Debug", (string)Read("appsettings.json")["Serilog"]!["MinimumLevel"]!["Override"]!["Behind"]!);
+        var settings = await _client.GetFromJsonAsync<JsonNode>("/settings/appsettings.json/opentelemetry");
+        Assert.Equal("test-service", (string)settings!["serviceName"]!);
+        Assert.Equal("HttpProtobuf", (string)settings["traces"]!["protocol"]!);
+        Assert.Equal("OtlpExporter", (string)settings["traces"]!["instruments"]![1]!);
+        Assert.Null(settings["logging"]!["includeScopes"]);
+
+        var appSettings = Read("appsettings.json");
+        Assert.Equal("test-service", (string)appSettings["OpenTelemetry"]!["ServiceName"]!);
+        Assert.Equal("Warning", (string)appSettings["Serilog"]!["MinimumLevel"]!["Default"]!);
+        Assert.Equal("Debug", (string)appSettings["Serilog"]!["MinimumLevel"]!["Override"]!["Behind"]!);
     }
 
     [Fact]
-    public async Task PutLogging_WithoutOverrides_IsABadRequest()
+    public async Task PutAppSettings_WithMissingExporterEndpointDoesNotSaveEitherSection()
     {
-        var response = await _client.PutAsJsonAsync("/settings/appsettings.json/logging", new { @default = "Warning" });
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task PutLogging_WithAnUnknownLevel_IsABadRequest()
-    {
+        var before = File.ReadAllText(Path.Combine(_directory, "appsettings.json"));
         var response = await _client.PutAsJsonAsync(
-            "/settings/appsettings.json/logging",
-            new { @default = "Loud", overrides = Array.Empty<object>() });
+            "/settings/appsettings.json",
+            new
+            {
+                values = new { },
+                logging = new { @default = "Warning", overrides = Array.Empty<object>() },
+                openTelemetry = new
+                {
+                    serviceName = "test-service",
+                    isEnabled = true,
+                    traces = new { isEnabled = true, endpoint = (string?)null, protocol = "HttpProtobuf", instruments = new[] { "OtlpExporter" } },
+                    metrics = new { isEnabled = false, endpoint = (string?)null, protocol = (string?)null, instruments = Array.Empty<string>() },
+                    logging = new { isEnabled = false, endpoint = (string?)null, protocol = (string?)null, instruments = Array.Empty<string>() }
+                }
+            });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(before, File.ReadAllText(Path.Combine(_directory, "appsettings.json")));
     }
 }

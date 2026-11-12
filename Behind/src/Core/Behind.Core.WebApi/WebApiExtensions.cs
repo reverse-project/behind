@@ -348,13 +348,11 @@ public static class WebApiExtensions
                 .Produces(404)
                 .Produces(500);
 
-            application.MapPut("/settings/{file}/logging", SettingsEndpoints.UpdateLogging)
-                .RequireAuthorization(configurationManage)
-                .AddEndpointFilter<DataAnnotationValidationFilter<LoggingSettingsRequest>>()
-                .Produces(204)
-                .Produces(400)
+            application.MapGet("/settings/{file}/opentelemetry", SettingsEndpoints.GetOpenTelemetry)
+                .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read))
+                .Produces<OpenTelemetrySettingsResponse>()
                 .Produces(401)
-                .Produces<ConfigurationForbiddenResponse>(403)
+                .Produces(403)
                 .Produces(404)
                 .Produces(500);
 

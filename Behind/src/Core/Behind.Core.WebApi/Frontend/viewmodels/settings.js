@@ -1,4 +1,4 @@
-define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor) {
+define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings", "viewmodels/opentelemetrysettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor, OpenTelemetrySettingsEditor) {
     var emailEditor = "email";
     var loggingEditor = "logging";
 
@@ -100,6 +100,10 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
 
         self.email = new EmailSettingsEditor(self.canEdit);
         self.logging = new LoggingSettingsEditor(self.canEdit);
+        self.openTelemetry = new OpenTelemetrySettingsEditor(self.canEdit);
+        self.canSaveAppSettings = ko.pureComputed(function () {
+            return self.logging.canSave() && self.openTelemetry.canSave();
+        });
 
         var presentEditor = function (file) {
             return {
@@ -176,7 +180,16 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
         var loadEditor = function () {
             var loading = self.isEmailSelected()
                 ? self.email.load()
-                : self.isLoggingSelected() ? self.logging.load(self.selected().name) : Promise.resolve({ ok: true });
+                : self.isLoggingSelected()
+                    ? Promise.all([
+                        self.logging.load(self.selected().name),
+                        self.openTelemetry.load(self.selected().name)
+                    ]).then(function (results) {
+                        return results.filter(function (result) {
+                            return !result.ok;
+                        })[0] || { ok: true };
+                    })
+                    : Promise.resolve({ ok: true });
 
             return loading.then(function (result) {
                 if (!result.ok) {
@@ -250,11 +263,15 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
             return perform(self.email.save);
         };
 
-        self.saveLogging = function () {
+        self.saveAppSettings = function () {
             var name = self.selected().name;
 
             return perform(function () {
-                return self.logging.save(name);
+                return settings.saveAppSettings(name, {
+                    values: {},
+                    logging: self.logging.request(),
+                    openTelemetry: self.openTelemetry.request()
+                });
             });
         };
 

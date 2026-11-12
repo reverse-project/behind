@@ -23,6 +23,7 @@ public class SettingsFrontendTests
     [InlineData("viewmodels/settings.js")]
     [InlineData("viewmodels/emailsettings.js")]
     [InlineData("viewmodels/loggingsettings.js")]
+    [InlineData("viewmodels/opentelemetrysettings.js")]
     [InlineData("views/settings.html")]
     public void Provider_ContainsFile(string path)
     {
@@ -151,7 +152,7 @@ public class SettingsFrontendTests
         var model = Read("models/settings.js");
 
         Assert.Contains("http.get(filePath(file, \"logging\"))", model);
-        Assert.Contains("http.put(filePath(file, \"logging\"), request)", model);
+        Assert.Contains("http.put(filePath(file), request)", model);
     }
 
     [Fact]
@@ -161,7 +162,7 @@ public class SettingsFrontendTests
 
         Assert.Contains("viewmodels/loggingsettings", viewModel);
         Assert.Contains("self.isLoggingSelected", viewModel);
-        Assert.Contains("self.saveLogging", viewModel);
+        Assert.Contains("self.saveAppSettings", viewModel);
         Assert.Contains("self.logging.load(self.selected().name)", viewModel);
     }
 
@@ -171,7 +172,7 @@ public class SettingsFrontendTests
         var editor = Read("viewmodels/loggingsettings.js");
 
         Assert.Contains("settings.loadLogging(file)", editor);
-        Assert.Contains("settings.saveLogging(file, self.request())", editor);
+        Assert.Contains("self.request = function", editor);
         Assert.Contains("self.add = function", editor);
         Assert.Contains("self.remove = function", editor);
         Assert.Contains("self.isValid", editor);
@@ -185,11 +186,51 @@ public class SettingsFrontendTests
         Assert.All(
             new[]
             {
-                "with: logging, submit: saveLogging, visible: isLoggingSelected",
+                "with: logging",
                 "options: levels, optionsCaption: $root.text('settings.logging.notSet'), value: defaultLevel",
                 "foreach: overrides", "value: source", "options: $parent.levels, value: level",
                 "click: $parent.remove", "click: add", "foreach: sources"
             },
             binding => Assert.Contains(binding, view));
+    }
+
+    [Fact]
+    public void Model_CallsTheOpenTelemetryEndpoints()
+    {
+        var model = Read("models/settings.js");
+
+        Assert.Contains("http.get(filePath(file, \"opentelemetry\"))", model);
+        Assert.Contains("saveAppSettings: function (file, request)", model);
+    }
+
+    [Fact]
+    public void OpenTelemetryEditor_ValidatesExporterSettings()
+    {
+        var editor = Read("viewmodels/opentelemetrysettings.js");
+
+        Assert.Contains("settings.loadOpenTelemetry(file)", editor);
+        Assert.Contains("self.request = function", editor);
+        Assert.Contains("self.protocols(data.protocols)", editor);
+        Assert.Contains("self.isValid", editor);
+        Assert.Contains("OtlpExporter", editor);
+    }
+
+    [Fact]
+    public void View_OffersTheOpenTelemetryConfigurationFields()
+    {
+        var view = Read("views/settings.html");
+
+        Assert.All(
+            new[]
+            {
+                "submit: saveAppSettings, visible: isLoggingSelected", "with: openTelemetry",
+                "value: serviceName", "with: traces", "with: metrics", "with: logging",
+                "options: $parent.protocols", "foreach: instruments", "checked: selected",
+                "checked: includeFormattedMessage", "checked: includeScopes", "checked: parseStateValues"
+            },
+            binding => Assert.Contains(binding, view));
+
+        var editor = view[view.IndexOf("submit: saveAppSettings", StringComparison.Ordinal)..view.IndexOf("with: selected", StringComparison.Ordinal)];
+        Assert.Equal(1, editor.Split("type=\"submit\"", StringSplitOptions.None).Length - 1);
     }
 }

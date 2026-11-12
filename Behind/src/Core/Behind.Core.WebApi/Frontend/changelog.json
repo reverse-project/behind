@@ -3,6 +3,7 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "added", "text": "Administration > Settings provides an OpenTelemetry editor for service name, traces, metrics, log exporters, OTLP endpoints and protocols, instrumentation, and log record options in appsettings.json. Logging and OpenTelemetry changes save together through one appsettings endpoint; OpenTelemetry changes require an application restart." },
       { "type": "fixed", "text": "OpenTelemetry instrumentation names now bind correctly from configuration, enabling OTLP exporters for traces, metrics and logs. Invalid names or configuration values fail explicitly at startup instead of silently disabling instrumentation." },
       { "type": "added", "text": "Layout widgets use Bootstrap card, list, statistics and alert styles by default, with site-specific colors where configured." },
       { "type": "fixed", "text": "The layout HTML editor label is localized and Forum widget captions are supplied by the Forum module's own translations." },

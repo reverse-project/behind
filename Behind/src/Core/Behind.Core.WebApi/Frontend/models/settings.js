@@ -83,10 +83,16 @@ define(["models/http", "models/i18n"], function (http, i18n) {
             });
         },
 
-        saveLogging: function (file, request) {
-            return http.put(filePath(file, "logging"), request).then(function (response) {
+        loadOpenTelemetry: function (file) {
+            return http.get(filePath(file, "opentelemetry")).then(function (response) {
+                return response.ok ? success("", response.data) : failure(response);
+            });
+        },
+
+        saveAppSettings: function (file, request) {
+            return http.put(filePath(file), request).then(function (response) {
                 return response.ok
-                    ? success(i18n.t("settings.loggingSaved"))
+                    ? success(i18n.t("settings.appSettingsSaved"))
                     : failure(response);
             });
         },

@@ -1,0 +1,138 @@
+using System;
+using Behind.Forum.Database.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
+#nullable disable
+
+namespace Behind.Forum.Database.Sqlite.Migrations;
+
+[DbContext(typeof(ForumContextSqlite))]
+[Migration("20261112082850_AnonymousForumPosts")]
+partial class _20261112082850_AnonymousForumPosts
+{
+    protected override void BuildTargetModel(ModelBuilder modelBuilder)
+    {
+#pragma warning disable 612, 618
+        modelBuilder.HasAnnotation("ProductVersion", "11.0.0-rc.3.26522.148");
+
+        modelBuilder.Entity("Behind.Forum.Domain.ForumBoard", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<Guid?>("CategoryId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Description")
+                    .IsRequired()
+                    .HasMaxLength(2000)
+                    .HasColumnType("TEXT");
+
+                b.Property<int?>("Moderation")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("CategoryId");
+
+                b.ToTable("ForumBoards");
+            });
+
+        modelBuilder.Entity("Behind.Forum.Domain.ForumBoardCategory", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.ToTable("ForumBoardCategories");
+            });
+
+        modelBuilder.Entity("Behind.Forum.Domain.ForumPost", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<Guid>("AuthorId")
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid>("BoardId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Body")
+                    .IsRequired()
+                    .HasMaxLength(20000)
+                    .HasColumnType("TEXT");
+
+                b.Property<bool>("IsAnonymous")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER")
+                    .HasDefaultValue(false);
+
+                b.Property<int>("State")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid?>("TopicId")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("BoardId");
+
+                b.HasIndex("State");
+
+                b.HasIndex("TopicId");
+
+                b.ToTable("ForumPosts");
+            });
+
+        modelBuilder.Entity("Behind.Forum.Domain.ForumUserModeration", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int>("Moderation")
+                    .HasColumnType("INTEGER");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("UserId");
+
+                b.ToTable("ForumUserModerations");
+            });
+#pragma warning restore 612, 618
+    }
+}

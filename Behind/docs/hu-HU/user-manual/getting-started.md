@@ -9,13 +9,13 @@
 | Bejelentkezés, Regisztráció | kijelentkezett állapotban | a bejelentkezési és a regisztrációs oldalra |
 | Az Ön neve (menü) | bejelentkezett állapotban | Profil, Munkamenet, Munkamenetek, Adminisztráció (csak ha használhatja) és Kijelentkezés |
 
-Ha nincs megjelenítendő neve, a menüben az e-mail-címe jelenik meg.
+A nevéhez állandó rövid fiókazonosító tartozik. Ha nincs megjelenítendő neve, `user#azonosító` jelenik meg, sohasem az e-mail-címe.
 
 ## Fiók létrehozása
 
 1. Válassza a **Regisztráció** lehetőséget.
 2. Adja meg az **e-mail-címét** és egy **jelszót**.
-3. Igény szerint adjon meg egy **megjelenítendő nevet**. Ha üresen hagyja, helyette az e-mail-címe jelenik meg.
+3. Igény szerint adjon meg egy **megjelenítendő nevet**. Állandó fiókazonosító egészíti ki; üres névnél `user#azonosító` jelenik meg.
 4. Írja be a captcha képen látható karaktereket. Ha nehezen olvashatók, válassza az **Új kép** gombot.
 5. Válassza a **Fiók létrehozása** gombot.
 

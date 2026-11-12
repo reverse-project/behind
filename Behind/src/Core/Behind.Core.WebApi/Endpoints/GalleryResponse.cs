@@ -11,7 +11,10 @@ public sealed record GalleryListItem(
     DateTimeOffset? CreatedAt,
     DateTimeOffset? UpdatedAt,
     string? ThumbnailUrl,
-    int ItemCount);
+    int ItemCount)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record ManagedGalleryItem(
     Guid Id,
@@ -25,7 +28,10 @@ public sealed record ManagedGalleryItem(
     int ItemCount,
     bool IsDeleted,
     string Status,
-    bool HasNewerDraft);
+    bool HasNewerDraft)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record PublicGalleryListResponse(PageResponse<GalleryListItem> Galleries);
 
@@ -51,7 +57,10 @@ public sealed record GalleryDetailResponse(
     Guid? ThumbnailImageId,
     string? ThumbnailUrl,
     bool ThumbnailGenerated,
-    IReadOnlyList<GalleryImageItem> Items);
+    IReadOnlyList<GalleryImageItem> Items)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record GalleryVersionItem(
     long Version,

@@ -4,6 +4,7 @@ define(["ko", "models/session", "models/carousels", "models/i18n"], function (ko
     return function CarouselEditorViewModel(params) {
         var self = this;
         var siteId = ko.unwrap(params.siteId);
+        self.siteId = siteId;
 
         self.settings = ko.observable(null);
         self.ready = ko.pureComputed(function () {

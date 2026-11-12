@@ -13,6 +13,7 @@ public sealed class ChatMessageConfiguration : IEntityTypeConfiguration<ChatMess
         builder.HasVersionedKey();
         builder.Property(message => message.AuthorId).IsRequired();
         builder.Property(message => message.Text).HasMaxLength(ChatMessage.MaxTextLength).IsRequired();
+        builder.Property(message => message.IsAnonymous).HasDefaultValue(false);
         builder.HasIndex(message => message.AuthorId);
         builder.HasIndex(message => message.ReplyToId);
     }

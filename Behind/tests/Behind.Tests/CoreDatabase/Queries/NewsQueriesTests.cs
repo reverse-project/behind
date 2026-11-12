@@ -145,7 +145,8 @@ public sealed class NewsQueriesTests : IDisposable
         var item = Assert.Single(Items(await ListAsync()));
 
         Assert.Equal(second, item.Id);
-        Assert.Equal(("Launch 2", "<p>newer</p>", "Test User"), (item.Title, item.Summary, item.Author));
+        Assert.Equal(("Launch 2", "<p>newer</p>", _bed.OtherAuthorId.ToUserLabel("Test User")), (item.Title, item.Summary, item.Author));
+        Assert.Equal(_bed.OtherAuthorId, item.AuthorId);
         Assert.Equal((Some(NewsTestBed.Now), Some(NewsTestBed.Now.AddHours(1))), (item.CreatedAt, item.UpdatedAt));
         Assert.Equal((2L, true), (item.CommentCount, item.IsHighlighted));
         Assert.Equal((NewsTestBed.Now, Some(NewsTestBed.Now.AddDays(20))), (item.StartAt, item.EndAt));
@@ -394,7 +395,8 @@ public sealed class NewsQueriesTests : IDisposable
 
         var found = (await new NewsQueries(ctx).Find(first.Key, Clock)).Match(() => throw new InvalidOperationException(), news => news);
 
-        Assert.Equal((first, "Launch", "<p>s</p>", "<p>c</p>", "Test User"), (found.Id, found.Title, found.Summary, found.Content, found.Author));
+        Assert.Equal((first, "Launch", "<p>s</p>", "<p>c</p>", _bed.AuthorId.ToUserLabel("Test User")), (found.Id, found.Title, found.Summary, found.Content, found.Author));
+        Assert.Equal(_bed.AuthorId, found.AuthorId);
         Assert.Equal((Some(NewsTestBed.Now), None), (found.CreatedAt, found.UpdatedAt));
         Assert.Equal("Releases", found.Category.Match(() => string.Empty, info => info.Name));
     }

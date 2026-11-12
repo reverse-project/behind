@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/user", "models/about", "models/usersettings", "models/i18n", "models/profilepicture"], function (ko, auth, session, user, about, usersettings, i18n, profilepicture) {
+define(["ko", "models/auth", "models/session", "models/user", "models/about", "models/usersettings", "models/i18n", "models/profilepicture", "models/profiles"], function (ko, auth, session, user, about, usersettings, i18n, profilepicture, profiles) {
     return function ProfileViewModel() {
         var self = this;
 
@@ -6,9 +6,17 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
         self.busy = ko.observable(false);
         self.message = ko.observable("");
         self.displayName = ko.observable("");
+        self.userId = ko.observable("");
+        self.birthday = ko.observable("");
+        self.hideEmail = ko.observable(true);
+        self.detailsLoaded = ko.observable(false);
+        self.publicHref = ko.pureComputed(function () {
+            return user.href(self.userId());
+        });
         self.emails = ko.observableArray([]);
         self.locales = ko.observableArray([]);
         self.locale = ko.observable("");
+        var savedLocale = "";
         self.settingNewPassword = ko.observable(false);
         self.passwordFocus = ko.observable(false);
         self.pictureUrl = ko.observable(null);
@@ -51,13 +59,14 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
         });
 
         self.shownAs = ko.pureComputed(function () {
-            return user.label({ displayName: self.displayName(), emails: self.emails() });
+            return user.label({ id: self.userId(), displayName: self.displayName() });
         });
 
         var load = function () {
             return auth.loadSession().then(function (result) {
                 if (result.ok) {
                     self.displayName(result.data.user.displayName);
+                    self.userId(result.data.user.id);
                     self.emails(result.data.user.emails);
                 }
 
@@ -66,17 +75,34 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
         };
 
         self.submit = function () {
+            if (!self.detailsLoaded()) {
+                self.message(i18n.t("common.error.generic"));
+                return Promise.resolve();
+            }
+
             self.busy(true);
 
-            return auth.changeDisplayName(self.displayName())
-                .then(function (result) {
-                    return (result.ok ? load() : Promise.resolve()).then(function () {
-                        self.message(result.message);
-                    });
-                })
-                .finally(function () {
-                    self.busy(false);
+            return Promise.all([
+                auth.changeDisplayName(self.displayName()),
+                profiles.save(self.birthday(), self.hideEmail())
+            ]).then(function (results) {
+                var failure = results.find(function (result) {
+                    return !result.ok;
                 });
+
+                if (failure) {
+                    self.message(failure.message);
+                    return;
+                }
+
+                return load().then(function () {
+                    self.message(i18n.t("profile.saved"));
+                });
+            }).catch(function (error) {
+                self.message(error.message);
+            }).finally(function () {
+                self.busy(false);
+            });
         };
 
         self.newPassword = ko.observable("");
@@ -103,25 +129,38 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
 
                 self.locales([siteDefault].concat(result.items));
                 self.locale(session.isSignedIn() ? usersettings.locale() : i18n.remembered());
+                savedLocale = self.locale();
             });
         };
 
-        self.submitLocale = function () {
+        self.changeLocale = function () {
             var code = self.locale();
+            var saved = false;
 
             self.busy(true);
 
             return (session.isSignedIn() ? usersettings.saveLocale(code) : Promise.resolve({ ok: true }))
                 .then(function (result) {
                     if (!result.ok) {
+                        self.locale(savedLocale);
                         self.message(result.message);
 
                         return;
                     }
 
+                    saved = true;
+
                     return i18n.choose(code).then(function () {
+                        savedLocale = code;
                         self.message(i18n.t("profile.localeSaved"));
                     });
+                })
+                .catch(function (error) {
+                    if (!saved) {
+                        self.locale(savedLocale);
+                    }
+
+                    self.message(error.message);
                 })
                 .finally(function () {
                     self.busy(false);
@@ -142,6 +181,16 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
 
                     return Promise.all([
                         loadLocales(),
+                        profiles.details().then(function (details) {
+                            if (!details.ok) {
+                                self.message(details.message);
+                                return;
+                            }
+
+                            self.birthday(details.data.birthday || "");
+                            self.hideEmail(details.data.hideEmail);
+                            self.detailsLoaded(true);
+                        }),
                         profilepicture.get().then(function (picture) {
                             self.pictureUrl(picture.url);
                         })

@@ -95,7 +95,7 @@ public class NewsFrontendTests
         Assert.Contains("http.post(\"/news/categories/\" + id + \"/hard/delete\")", model);
         Assert.Contains("http.postForm(\"/news/images\", form)", model);
         Assert.Contains("http.get(\"/news/\" + id + \"/comments?\" + paging(query))", model);
-        Assert.Contains("http.post(\"/news/\" + id + \"/comments\", { content: content })", model);
+        Assert.Contains("http.post(\"/news/\" + id + \"/comments\", { content: content, isAnonymous: !!isAnonymous })", model);
         Assert.Contains("http.post(\"/news/comments/\" + commentId + \"/delete\")", model);
         Assert.Contains("name-taken", model);
     }
@@ -207,9 +207,9 @@ public class NewsFrontendTests
                 "visible: isEdited, text: editedAt"
             },
             binding => Assert.Contains(binding, view));
-        Assert.Contains("news.editComment(row.id, row.draft().trim())", viewModel);
+        Assert.Contains("news.editComment(row.id, row.draft().trim(), row.draftAnonymous())", viewModel);
         Assert.Contains("canEdit: item.canEdit", viewModel);
-        Assert.Contains("http.post(\"/news/comments/\" + commentId, { content: content })", Read("models/news.js"));
+        Assert.Contains("http.post(\"/news/comments/\" + commentId, { content: content, isAnonymous: isAnonymous })", Read("models/news.js"));
     }
 
     [Fact]

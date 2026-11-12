@@ -17,7 +17,8 @@
 - `ForumUserModeration(UserId, Moderation)`: versioned user override, keyed by the user id to ensure one rule per user.
 - `PublicationState`: `Published`, `Pending`, `Rejected`. Public reads select the latest version before testing publication state and also require an active board and published parent topic.
 - `ForumSettings`: defaults to `Post`; optional enabled user override wins over optional enabled board override, then the global mode. Only new submissions are affected; existing pending messages still need review.
-- `HumanUser.ProfilePictureId`: optional Core VFS image reference; `IModuleUsers` shares public labels and picture ids. Labels use the trimmed display name, falling back to the primary email address (ordered by email Id) when blank; other email addresses are not shared.
+- `HumanUser.ProfilePictureId`: optional Core VFS image reference; `IModuleUsers` shares public labels and picture ids. Labels use the trimmed display name plus a stable short UUID-derived tag, or `user#tag` when blank; email addresses are never label fallbacks.
+- `HumanUser.Birthday` is optional and private; missing birthdays deny access to age-restricted content when global enforcement is enabled (disabled by default). `HideEmail` defaults to true; only an explicit opt-in shares the primary email on the public profile.
 
 This document explains the domain model structure, entity design patterns, and domain-driven design principles used in the Behind project.
 

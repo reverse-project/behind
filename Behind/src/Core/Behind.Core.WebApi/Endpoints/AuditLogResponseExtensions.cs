@@ -1,4 +1,5 @@
 using System.Globalization;
+using Behind.Common;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 
@@ -11,13 +12,13 @@ public static class AuditLogResponseExtensions
 
     extension(User user)
     {
-        public AuditLogActor ToActor() =>
+        public AuditLogActor ToActor(Guid? id = null) =>
             user switch
             {
                 HumanUser human => new AuditLogActor(
                     nameof(HumanUser),
-                    human.DisplayName,
-                    human.Emails.Select(email => email.Value).ToList()),
+                    id.HasValue ? id.Value.ToUserLabel(human.DisplayName) : human.DisplayName,
+                    human.Emails.Select(email => email.Value).ToList()) { Id = id },
                 SystemUser => new AuditLogActor(nameof(SystemUser), "System", []),
                 GuestUser => new AuditLogActor(nameof(GuestUser), "Guest", []),
                 UnknownUser unknown => new AuditLogActor(nameof(UnknownUser), $"Unknown user {unknown.Id}", []),
@@ -69,7 +70,7 @@ public static class AuditLogResponseExtensions
                 labels.LabelKey(entry.EntityKey),
                 entry.Action.GetType().Name,
                 entry.Action.ToChanges().Select(change => change.Labeled(labels)).ToList(),
-                entry.User.ToActor(),
-                entry.BehalfOf.Match<AuditLogActor?>(() => null, behalfOf => behalfOf.ToActor()));
+                entry.User.ToActor(entry.ActorId),
+                entry.BehalfOf.Match<AuditLogActor?>(() => null, behalfOf => behalfOf.ToActor(entry.BehalfOfActorId)));
     }
 }

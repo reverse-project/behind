@@ -10,6 +10,8 @@ Nyissa meg az **Adminisztráció > Felhasználók** oldalt. Ehhez a `User.Manage
 
 Minden felhasználó mutatja a nevét, e-mail-címeit, szerepkör-jelvényeit és az esetleges kitiltási üzenetet. A jelvények a következőket jelölik: **Ön**, **Az e-mail-cím nincs megerősítve**, **Kitiltva** és **Törölve** felhasználók.
 
+A felhasználó nevére kattintva megnyithatja nyilvános profilját. A profilon a **Kitiltás**, **Kitiltás feloldása** és **Megszemélyesítés** is elérhető, ha a szerver engedélyezi. Az e-mail elrejtése a nyilvános profilra vonatkozik, nem erre a jogosultsággal védett kezelőoldalra.
+
 A gombok csak akkor jelennek meg vagy működnek, ha használhatja őket. Önmagát soha nem moderálhatja, és más fejlesztőket csak a fejlesztők moderálhatnak.
 
 ## Szerepkör-gyorsparancsok

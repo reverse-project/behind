@@ -56,12 +56,12 @@ public sealed record NewsCategory(VersionedKey<Guid> Id, string Name)
     }
 }
 
-public sealed record NewsComment(VersionedKey<Guid> Id, string Content)
+public sealed record NewsComment(VersionedKey<Guid> Id, string Content, bool IsAnonymous = false)
 {
     public const string EntityType = nameof(NewsComment);
     public const int MaxContentLength = 2_000;
 
-    public NewsComment(string content) : this(new VersionedKey<Guid>(Guid.Empty), content)
+    public NewsComment(string content, bool isAnonymous = false) : this(new VersionedKey<Guid>(Guid.Empty), content, isAnonymous)
     {
     }
 }

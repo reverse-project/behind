@@ -10,7 +10,8 @@ public interface INewsCommentQueries
         string Author,
         string Content,
         Option<DateTimeOffset> CreatedAt,
-        Option<DateTimeOffset> UpdatedAt = default);
+        Option<DateTimeOffset> UpdatedAt = default,
+        bool IsAnonymous = false);
 
     Task<PagedResult<NewsCommentListing>> List(
         Guid newsId,

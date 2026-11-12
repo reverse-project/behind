@@ -11,7 +11,10 @@ public sealed record DownloadFileItem(
     long Length,
     string UploadedBy,
     DateTimeOffset? UploadedAt,
-    string Url);
+    string Url)
+{
+    public Guid UploadedById { get; init; }
+}
 
 public sealed record DownloadFoldersResponse(long MaxFileBytes, IReadOnlyList<DownloadFolderItem> Folders);
 

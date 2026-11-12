@@ -10,9 +10,11 @@ Module frontend models export `load(type, limit)` returning `{items?, stats?, co
 
 ## Forum and public profiles
 
+Global age enforcement is controlled by reloadable `Backend.ContentRestrictions.Enabled` (false by default). Versioned per-item rules use the shared filtered context, including transitive parent references, media, feeds and counts. Module descriptors declare `ModuleDatabase.ContentRestrictedEntities` and `ContentRestrictionParentProperties`, avoiding dependencies on Core.
+
 The main `Behind.Web` installation loads `Behind.Forum.*` beside Core, Quotes and Sport; the existing sites do not load Forum. Its Common, Domain, Database, SQLite, PostgreSQL and WebApi projects contribute through `ForumModule.Descriptor`. The frontend includes board/topic/reply browsing and forum administration with moderation. `forum.json` is reloadable and appears on Settings.
 
-Core exposes session identity through `IModuleIdentity` and public display labels/picture ids through `IModuleUsers`; labels use the trimmed display name or the primary email address when blank. Modules never reference Core. Core's Profile page uploads/removes pictures using the existing VFS and Bootstrap styling, shared by every installation.
+Core exposes session identity through `IModuleIdentity` and public display labels/picture ids through `IModuleUsers`; labels use a trimmed name plus a stable UUID-derived tag, or `user#tag` when blank, never an email address. Modules never reference Core. Core's Profile page uploads/removes pictures using the existing VFS and Bootstrap styling, shared by every installation. Public author links target `#/user/<id>`, with permission-checked administrator moderation and impersonation. Birthday is optional/private and email sharing is opt-in.
 
 Run feature tests with `dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~Forum|FullyQualifiedName~ProfilePicture"` and the frontend runtime tests with `node --test tools/tests/forum-frontend.test.cjs` from `Behind/`. The Node tests use the bundled Knockout and production pager, without additional packages.
 

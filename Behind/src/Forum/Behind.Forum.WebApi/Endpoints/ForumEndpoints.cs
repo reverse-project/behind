@@ -28,15 +28,17 @@ public static class ForumEndpoints
         Guid BoardId,
         Guid? TopicId,
         [property: MaxLength(200)] string? Title,
-        [property: Required, MaxLength(20000)] string Body);
+        [property: Required, MaxLength(20000)] string Body,
+        bool? IsAnonymous = null);
 
     public sealed record ReviewRequest(PublicationState State);
 
     public sealed record UserRuleRequest(Guid UserId, ModerationMode Moderation);
 
     public sealed record PostResponse(
-        Guid Id, long Version, Guid BoardId, Guid? TopicId, Guid AuthorId,
-        string Author, string? PictureUrl, string Title, string Body, PublicationState State);
+        Guid Id, long Version, Guid BoardId, Guid? TopicId, Guid? AuthorId,
+        string Author, string? PictureUrl, string Title, string Body, PublicationState State,
+        bool IsAnonymous = false, bool CanEdit = false, bool CanDelete = false);
 
     public sealed record PostPage(long Total, int Index, long PageCount, IReadOnlyList<PostResponse> Items);
 
@@ -95,24 +97,27 @@ public static class ForumEndpoints
     [IgnoreETag]
     public static async Task<IResult> Posts(
         HttpContext http, ForumQueries queries, IModuleUsers users,
-        [FromQuery] Guid? boardId, [FromQuery] Guid? topicId, [FromQuery] int? page)
+        [FromQuery] Guid? boardId, [FromQuery] Guid? topicId, [FromQuery] int? page,
+        IAuthorizationService? authorization = null, IModuleIdentity? identity = null)
     {
         http.Response.Headers.CacheControl = ManagedListExtensions.NoStore;
 
         return Results.Ok(await ToPage(
             await queries.Posts(Paging(page), boardId, topicId, false, null, DeletionState.Active, http.RequestAborted),
-            users, http.RequestAborted));
+            users, http.RequestAborted, await CanModerate(http, authorization),
+            identity is null ? null : await identity.UserId(http)));
     }
 
     [IgnoreETag]
     public static async Task<IResult> LatestWidgetPosts(
         HttpContext http, ForumQueries queries, IModuleUsers users, IModuleCreationOrder ordering,
-        [FromQuery] int? limit)
+        [FromQuery] int? limit, IAuthorizationService? authorization = null, IModuleIdentity? identity = null)
     {
         http.Response.Headers.CacheControl = ManagedListExtensions.NoStore;
         var page = await queries.LatestPosts(ordering, Math.Clamp(limit ?? 5, 1, 50), http.RequestAborted);
 
-        return Results.Ok(await ToPage(page, users, http.RequestAborted));
+        return Results.Ok(await ToPage(page, users, http.RequestAborted, await CanModerate(http, authorization),
+            identity is null ? null : await identity.UserId(http)));
     }
 
     [IgnoreETag]
@@ -122,7 +127,7 @@ public static class ForumEndpoints
         await http.WithDeletionState(authorization, deleted, async deletion =>
             Results.Ok(await ToPage(
                 await queries.Posts(Paging(page), null, null, true, state, deletion, http.RequestAborted),
-                users, http.RequestAborted)));
+                users, http.RequestAborted, await CanModerate(http, authorization))));
 
     [IgnoreETag]
     public static async Task<IResult> CreatePost(
@@ -145,7 +150,7 @@ public static class ForumEndpoints
             board.Entity.Moderation, await queries.UserMode(userId, http.RequestAborted));
         var result = await commands.Create(
             new ForumPost(request.BoardId, request.TopicId, userId,
-                request.TopicId.HasValue ? "" : request.Title ?? "", request.Body, state),
+                request.TopicId.HasValue ? "" : request.Title ?? "", request.Body, state, request.IsAnonymous ?? false),
             http.RequestAborted);
 
         return result is VersionedSaveResult.Saved saved
@@ -154,7 +159,8 @@ public static class ForumEndpoints
     }
 
     [IgnoreETag]
-    public static async Task<IResult> GetPost(Guid id, HttpContext http, ForumQueries queries, IModuleUsers users)
+    public static async Task<IResult> GetPost(Guid id, HttpContext http, ForumQueries queries, IModuleUsers users,
+        IAuthorizationService? authorization = null, IModuleIdentity? identity = null)
     {
         http.Response.Headers.CacheControl = ManagedListExtensions.NoStore;
         var post = await queries.Post(id, http.RequestAborted);
@@ -175,9 +181,62 @@ public static class ForumEndpoints
             }
         }
 
-        var page = await ToPage(new ForumQueries.Page<ForumPost>(1, 1, 1, [post]), users, http.RequestAborted);
+        var page = await ToPage(new ForumQueries.Page<ForumPost>(1, 1, 1, [post]), users, http.RequestAborted,
+            await CanModerate(http, authorization), identity is null ? null : await identity.UserId(http));
 
         return Results.Ok(page.Items[0]);
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> UpdatePost(
+        Guid id, PostRequest request, HttpContext http, ForumQueries queries,
+        IVersionedCommands<ForumPost> commands, IModuleIdentity identity, IAuthorizationService authorization)
+    {
+        if (await identity.UserId(http) is not { } viewer)
+        {
+            return Results.Unauthorized();
+        }
+
+        var post = await queries.Post(id, http.RequestAborted);
+
+        if (post is null)
+        {
+            return Results.NotFound();
+        }
+
+        if (post.Entity.AuthorId != viewer && !await CanModerate(http, authorization))
+        {
+            return Results.Forbid();
+        }
+
+        return (await commands.Update(id, post.Entity with
+        {
+            Title = post.Entity.TopicId.HasValue ? "" : request.Title ?? "",
+            Body = request.Body,
+            IsAnonymous = request.IsAnonymous ?? post.Entity.IsAnonymous
+        }, http.RequestAborted)).ToResult();
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> DeletePost(
+        Guid id, HttpContext http, ForumQueries queries, IVersionedCommands<ForumPost> commands,
+        IModuleIdentity identity, IAuthorizationService authorization)
+    {
+        if (await identity.UserId(http) is not { } viewer)
+        {
+            return Results.Unauthorized();
+        }
+
+        var post = await queries.Post(id, http.RequestAborted);
+
+        if (post is null)
+        {
+            return Results.NotFound();
+        }
+
+        return post.Entity.AuthorId == viewer || await CanModerate(http, authorization)
+            ? (await commands.Delete(id, http.RequestAborted)).ToNoContentResult()
+            : Results.Forbid();
     }
 
     [IgnoreETag]
@@ -288,19 +347,28 @@ public static class ForumEndpoints
 
     private static Flipper Paging(int? page) => Flipper.Create(page, 20, 20, 100);
 
+    private static async Task<bool> CanModerate(HttpContext http, IAuthorizationService? authorization) =>
+        authorization is not null && (await authorization.HoldsGrantAsync(http.User, ForumNames.Moderate)
+            || await authorization.HoldsGrantAsync(http.User, ForumNames.Manage));
+
     private static async Task<PostPage> ToPage(
-        ForumQueries.Page<ForumPost> page, IModuleUsers users, CancellationToken cancellationToken)
+        ForumQueries.Page<ForumPost> page, IModuleUsers users, CancellationToken cancellationToken,
+        bool canModerate = false, Guid? viewer = null)
     {
-        var profiles = await users.Find(page.Items.Select(post => post.Entity.AuthorId).Distinct().ToArray(), cancellationToken);
+        var profiles = await users.Find(page.Items.Where(post => !post.Entity.IsAnonymous || canModerate)
+            .Select(post => post.Entity.AuthorId).Distinct().ToArray(), cancellationToken);
 
         return new PostPage(page.Total, page.Index, page.PageCount, page.Items.Select(row =>
         {
             var post = row.Entity;
-            var profile = profiles.FirstOrDefault(user => user.Id == post.AuthorId);
+            var hidden = post.IsAnonymous && !canModerate;
+            var profile = hidden ? null : profiles.FirstOrDefault(user => user.Id == post.AuthorId);
+            var canEdit = canModerate || viewer == post.AuthorId;
 
-            return new PostResponse(row.Key, row.Version, post.BoardId, post.TopicId, post.AuthorId,
-                profile?.DisplayName ?? "", profile?.PictureId is { } picture ? $"/profile/images/{picture}" : null,
-                post.Title, post.Body, post.State);
+            return new PostResponse(row.Key, row.Version, post.BoardId, post.TopicId, hidden ? null : post.AuthorId,
+                hidden ? "" : profile?.DisplayName ?? post.AuthorId.ToUserLabel(null),
+                profile?.PictureId is { } picture ? $"/profile/images/{picture}" : null,
+                post.Title, post.Body, post.State, post.IsAnonymous, canEdit, canEdit);
         }).ToArray());
     }
 }

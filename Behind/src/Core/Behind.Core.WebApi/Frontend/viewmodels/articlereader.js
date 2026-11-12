@@ -8,6 +8,7 @@ define(["ko", "models/articles", "models/newsmeta"], function (ko, articles, met
         self.title = ko.observable("");
         self.content = ko.observable("");
         self.author = ko.observable("");
+        self.authorHref = ko.observable(null);
         self.stamp = ko.observable("");
         self.created = ko.observable("");
         self.categoryName = ko.observable("");
@@ -43,6 +44,7 @@ define(["ko", "models/articles", "models/newsmeta"], function (ko, articles, met
                     self.title(result.data.title);
                     self.content(result.data.displayContent);
                     self.author(meta.author(result.data.author));
+                    self.authorHref(meta.authorHref(result.data.authorId));
                     self.stamp(meta.stamp(result.data));
                     self.created(meta.created(result.data));
                     self.categoryName(category ? category.name : "");

@@ -3,6 +3,12 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "changed", "text": "The Profile page combines display name, birthday and email privacy into one save action. Language changes are saved immediately, while password changes have a dedicated action." },
+      { "type": "added", "text": "Content restrictions include a searchable, paged item-ID browser showing titles, filenames or other available labels, with the UUID as fallback. Selecting an item fills its ID, and existing rules display readable item labels." },
+      { "type": "added", "text": "Global age restrictions are configurable under Backend.ContentRestrictions.Enabled and disabled by default. When enabled, per-item minimum-age rules filter content and related media across installed modules; viewers without a birthday cannot access restricted content. Rules support versioned management, deletion and developer restoration." },
+      { "type": "added", "text": "Public user profiles provide linked author lookup and permission-checked ban, unban and impersonation actions. Account profiles support an optional private birthday and email privacy, with email hidden by default." },
+      { "type": "changed", "text": "Public display names include a stable eight-character lowercase alphanumeric UUID-derived account tag; blank names use user#tag instead of exposing an email address." },
+      { "type": "added", "text": "Signed-in users can post anonymously while authorized administrators and moderators retain access to the real author profile." },
       { "type": "added", "text": "Administration > Settings provides an OpenTelemetry editor for service name, traces, metrics, log exporters, OTLP endpoints and protocols, instrumentation, and log record options in appsettings.json. Logging and OpenTelemetry changes save together through one appsettings endpoint; OpenTelemetry changes require an application restart." },
       { "type": "fixed", "text": "OpenTelemetry instrumentation names now bind correctly from configuration, enabling OTLP exporters for traces, metrics and logs. Invalid names or configuration values fail explicitly at startup instead of silently disabling instrumentation." },
       { "type": "added", "text": "Layout widgets use Bootstrap card, list, statistics and alert styles by default, with site-specific colors where configured." },

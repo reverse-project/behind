@@ -32,7 +32,8 @@ public sealed class NewsCommentQueries(AbstractCoreContext context) : INewsComme
                         EF.Property<Guid>(comment, VersionedColumns.Key),
                         EF.Property<long>(comment, VersionedColumns.Version),
                         EF.Property<Guid>(comment, NewsCommentConfiguration.AuthorIdProperty),
-                        comment.Content)))
+                        comment.Content,
+                        comment.IsAnonymous)))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -54,7 +55,8 @@ public sealed class NewsCommentQueries(AbstractCoreContext context) : INewsComme
                         authors.GetValueOrDefault(row.AuthorId, string.Empty),
                         row.Content,
                         times.TryGetValue(row.Key, out var commentTimes) ? commentTimes.CreatedAt : None,
-                        times.TryGetValue(row.Key, out var editTimes) ? editTimes.UpdatedAt : None)).ToList())
+                        times.TryGetValue(row.Key, out var editTimes) ? editTimes.UpdatedAt : None,
+                        row.IsAnonymous)).ToList())
                 : None);
     }
 
@@ -74,5 +76,5 @@ public sealed class NewsCommentQueries(AbstractCoreContext context) : INewsComme
             () => Task.FromResult(true),
             now => context.LiveNews().ActiveAt(now).OfKey(newsId).AnyAsync(cancellationToken));
 
-    private sealed record CommentRow(Guid Key, long Version, Guid AuthorId, string Content);
+    private sealed record CommentRow(Guid Key, long Version, Guid AuthorId, string Content, bool IsAnonymous);
 }

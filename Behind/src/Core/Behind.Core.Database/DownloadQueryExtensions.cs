@@ -118,8 +118,9 @@ internal static class DownloadQueryExtensions
                     files[row.FileId].FileName,
                     files[row.FileId].ContentType,
                     files[row.FileId].Length,
-                    users.GetValueOrDefault(row.UploadedById, string.Empty),
-                    times.TryGetValue(row.Key, out var time) ? time.CreatedAt : FunctionalExtensions.None))
+                    users.GetValueOrDefault(row.UploadedById, row.UploadedById.ToUserLabel(null)),
+                    times.TryGetValue(row.Key, out var time) ? time.CreatedAt : FunctionalExtensions.None)
+                { UploadedById = row.UploadedById })
                 .ToList();
         }
     }

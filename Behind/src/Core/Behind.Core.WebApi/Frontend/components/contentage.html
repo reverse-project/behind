@@ -1,0 +1,12 @@
+<div data-bind="if: canManage">
+    <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: toggle, t: 'contentRestrictions.minimumAge'"></button>
+    <div class="border rounded p-2 mt-2" data-bind="if: open">
+        <p class="small" data-bind="visible: !enabled(), t: 'contentRestrictions.disabled'"></p>
+        <label class="form-label">
+            <span data-bind="t: 'contentRestrictions.minimumAge'"></span>
+            <input class="form-control form-control-sm" type="number" min="0" max="150" step="1" data-bind="value: minimumAge, enable: !busy()">
+        </label>
+        <button class="btn btn-sm btn-primary" type="button" data-bind="click: save, enable: !busy(), t: 'common.save'"></button>
+        <p class="small mb-0" role="status" data-bind="text: message"></p>
+    </div>
+</div>

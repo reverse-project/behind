@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Behind.Common;
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
@@ -40,7 +41,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await using var ctx = _factory.CreateContext();
         var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([userId, emailId, roleId, grantId]);
 
-        Assert.Equal("Test User", labels.Label(userId.ToString()));
+        Assert.Equal(userId.ToUserLabel("Test User"), labels.Label(userId.ToString()));
         Assert.Equal("ada2@test.com", labels.Label(emailId.ToString()));
         Assert.Equal("Editors", labels.Label(roleId.ToString()));
         Assert.Equal("Posts.Write", labels.Label(grantId.ToString()));
@@ -73,7 +74,7 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await using var ctx = _factory.CreateContext();
         var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([shameId]);
 
-        Assert.Equal("Wall of shame entry of Test User", labels.Label(shameId.ToString()));
+        Assert.Equal($"Wall of shame entry of {userId.ToUserLabel("Test User")}", labels.Label(shameId.ToString()));
     }
 
     [Fact]
@@ -96,9 +97,9 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
 
         var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([totpId, passkeyId, codeId]);
 
-        Assert.Equal("Authenticator app of Test User", labels.Label(totpId.ToString()));
-        Assert.Equal("Passkey of Test User", labels.Label(passkeyId.ToString()));
-        Assert.Equal("Recovery code of Test User", labels.Label(codeId.ToString()));
+        Assert.Equal($"Authenticator app of {userId.ToUserLabel("Test User")}", labels.Label(totpId.ToString()));
+        Assert.Equal($"Passkey of {userId.ToUserLabel("Test User")}", labels.Label(passkeyId.ToString()));
+        Assert.Equal($"Recovery code of {userId.ToUserLabel("Test User")}", labels.Label(codeId.ToString()));
     }
 
     [Fact]
@@ -167,8 +168,8 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         await using var ctx = bed.Read();
         var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([commentId]);
 
-        Assert.Equal("News comment of Test User", labels.Label(commentId.ToString()));
-        Assert.Equal("News comment of Test User: 1", labels.LabelKey($"{commentId}:1"));
+        Assert.Equal($"News comment of {bed.OtherAuthorId.ToUserLabel("Test User")}", labels.Label(commentId.ToString()));
+        Assert.Equal($"News comment of {bed.OtherAuthorId.ToUserLabel("Test User")}: 1", labels.LabelKey($"{commentId}:1"));
     }
 
     [Fact]

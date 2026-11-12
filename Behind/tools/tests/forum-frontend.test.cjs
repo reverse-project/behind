@@ -31,7 +31,8 @@ const createPager = load(path.join(core, "models/pager.js"), { ko, "models/i18n"
 function model(name, api) {
     const Model = load(path.join(forum, `viewmodels/${name}.js`), {
         ko, "models/session": session, "models/i18n": i18n,
-        "models/pager": createPager, "modules/forum/models/forum": api
+        "models/pager": createPager, "modules/forum/models/forum": api,
+        "models/user": { href: id => id ? "#/user/" + encodeURIComponent(id) : null }
     });
     return new Model();
 }
@@ -92,8 +93,28 @@ test("forum submits moderation-safe payloads and shows pending feedback", async 
     assert.equal(saved.body.topicId, null);
     assert.equal(saved.body.authorId, undefined);
     assert.equal(saved.body.state, undefined);
+    assert.equal(saved.body.isAnonymous, false);
     assert.equal(view.message(), "forum.pending");
     assert.equal(view.body(), "");
+});
+
+test("anonymous forum messages hide public profile links while owners retain controls", async () => {
+    let saved;
+    const view = model("forum", {
+        get: async () => page([{ id: "reply", authorId: null, author: "", isAnonymous: true, canEdit: true }]),
+        save: async (url, body) => { saved = { url, body }; return { state: "Published" }; }
+    });
+    view.board({ key: "board" });
+    view.topic({ id: "topic" });
+    await view.loadReplies();
+    assert.equal(view.replies()[0].author, "comments.anonymous");
+    assert.equal(view.userHref(view.replies()[0].authorId), null);
+    assert.equal(view.replies()[0].canEdit, true);
+    view.body("Anonymous reply");
+    view.isAnonymous(true);
+    await view.submit();
+    assert.equal(saved.body.isAnonymous, true);
+    assert.equal(view.isAnonymous(), false);
 });
 
 test("forum refresh failures cannot become success-shaped feedback", async () => {
@@ -116,6 +137,9 @@ test("manager edits overrides and moderates and restores each resource", async (
         async get(url) {
             if (url === "settings") {
                 return { allowBoardOverrides: true, allowUserOverrides: true };
+            }
+            if (url === "categories") {
+                return [];
             }
             if (url.startsWith("boards")) {
                 return page([board]);
@@ -152,7 +176,10 @@ test("manager edits overrides and moderates and restores each resource", async (
 
 test("profile upload and removal update the visible picture", async () => {
     const Profile = load(path.join(core, "viewmodels/profile.js"), {
-        ko, "models/auth": {}, "models/session": session, "models/user": {},
+        ko, "models/auth": {}, "models/session": session,
+        "models/user": { href: id => id ? "#/user/" + encodeURIComponent(id) : null,
+            label: user => (user.displayName || "user") + "#" + user.id },
+        "models/profiles": {},
         "models/about": {}, "models/usersettings": {}, "models/i18n": i18n,
         "models/profilepicture": {
             upload: async () => ({ url: "/profile/images/picture" }),

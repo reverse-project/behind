@@ -14,7 +14,7 @@ Menu changes refresh mounted menus automatically without losing page content. La
 
 ### Chat
 
-Chat history is kept in the database without the former 200-message limit. Newest messages appear first; scroll down to load older messages automatically, or use **Load older messages**. Messages show the author's profile picture (or initial), creation time and last edit time. Sign in to send up to 1,000 characters or **Reply** to an existing message. **Edit** is available only on your own messages for five minutes after creation; editing does not restart this period. Concurrent edits are rejected instead of overwriting newer text.
+Chat history is kept in the database without the former 200-message limit. Messages appear oldest first; scroll up to load earlier messages automatically, or use **Load older messages**. Messages show the author's profile picture (or initial), creation time and last edit time. Sign in to send up to 1,000 characters or **Reply** to an existing message. **Edit** is available only on your own messages for five minutes after creation; editing does not restart this period. Concurrent edits are rejected instead of overwriting newer text.
 
 Messages appear immediately. Guests may read; signed-in users receive **Chat.Read** and **Chat.Write** by default. In role or user access management, restrict **Chat.Write** to stop posting, replying and editing, or restrict **Chat.Read** to hide the chat and block its API for that signed-in user. Restrictions override role grants. Because guest reading is enabled, a restricted user can still read public chat after signing out.
 

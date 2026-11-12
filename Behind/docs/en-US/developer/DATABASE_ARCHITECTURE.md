@@ -10,6 +10,10 @@ Module feeds reuse audit-derived creation ordering through Common.Database's `IM
 
 ## Forum persistence and profile pictures
 
+The versioned `ContentRestrictions` table stores per-entity minimum ages; `ContentAge` and `HiddenContentIds` apply shared query filtering and transitive parent references. Modules declare filterable types and parent property names through `ModuleDatabase.ContentRestrictedEntities` and `ContentRestrictionParentProperties`. Global `Backend.ContentRestrictions.Enabled` defaults to false and bypasses age filtering without discarding rules.
+
+Profile details add nullable `Users.Birthday` and `Users.HideEmail` (default true); apply the SQLite/PostgreSQL migrations, including flattened installation contexts, before starting the host. Existing accounts keep their email private and have no birthday until explicitly saved. Birthdays are sensitive raw-editor data, not public module profile fields. Account labels are derived from the full UUID, so no additional name-tag column is required.
+
 Scheduled content with equal start times is ordered by audit creation time before the id; the ban list also uses audit creation timestamps rather than UUID order. Neither change adds entity timestamp columns.
 
 `IForumContext` is implemented by the main SQLite/PostgreSQL project contexts, flattening `ForumBoards`, `ForumPosts` and `ForumUserModerations` into the same database as Core. Each table uses the composite `Key`/`Version` primary key, append-only updates, audit-derived timestamps, soft deletion, developer restore/permanent deletion and generic raw editing. The module migrations use `__forumMigrationsHistory` and are applied by the web project migrator after Core. Parent references have no cross-module foreign keys; commands validate active boards and published topics and refuse permanent deletion of referenced boards/topics.

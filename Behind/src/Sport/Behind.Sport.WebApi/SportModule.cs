@@ -57,6 +57,11 @@ public static class SportModule
         Frontend = new ModuleFrontend(typeof(SportModule).Assembly),
         Database = new ModuleDatabase(typeof(DisciplineConfiguration).Assembly)
         {
+            ContentRestrictedEntities =
+            [
+                typeof(Discipline), typeof(Position), typeof(StatType), typeof(Season),
+                typeof(Team), typeof(Player), typeof(PlayerSeason), typeof(Stat)
+            ],
             SoftDeletedEntities =
             [
                 typeof(Discipline),

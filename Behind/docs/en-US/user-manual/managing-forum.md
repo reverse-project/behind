@@ -1,6 +1,6 @@
 # Forum
 
-The main web installation includes **Forum**. Boards can be assigned to a category; the public board list groups boards by category, with uncategorized boards shown separately. Choose a board, open a topic to read replies, or sign in to create a topic or reply. The board and topic lists, breadcrumb navigation and author panels provide a simplified, mobile-friendly forum layout. Authors appear by their display name and profile picture. If the display name is blank, their primary email address is shown publicly instead. Only unavailable accounts show **Unknown author**. Pending/rejected messages are not public. Removing a board or rejecting/deleting a topic also hides its replies.
+The main web installation includes **Forum**. Boards can be assigned to a category; the public board list groups boards by category, with uncategorized boards shown separately. Choose a board, open a topic to read replies, or sign in to create a topic or reply. The board and topic lists, breadcrumb navigation and author panels provide a simplified, mobile-friendly forum layout. Authors appear by their tagged display name and profile picture, linked to their public profile. Blank names use `user#tag`, never an email address. Anonymous messages hide the author's profile and picture from ordinary readers, while authorized administrators and moderators can see the real author. Only unavailable accounts show **Unknown author**. Pending/rejected messages are not public. Removing a board or rejecting/deleting a topic also hides its replies.
 
 ## Writing messages
 
@@ -26,4 +26,4 @@ Delete soft-deletes records. Developers can select **Show deleted** and **Refres
 
 ## Profile picture
 
-Open **Profile**, choose a PNG, JPEG, GIF or WebP image up to **2 MiB**, and it is saved immediately. **Remove** clears your picture. Your picture and display name appear beside forum messages; if the display name is blank, your primary email address is public. Set a display name to avoid showing your email address. Previously downloaded pictures can remain in browser caches after removal.
+Open **Profile**, choose a PNG, JPEG, GIF or WebP image up to **2 MiB**, and it is saved immediately. **Remove** clears your picture. Your picture and tagged display name appear beside non-anonymous forum messages and link to your public profile. Email is never a name fallback; it is shared on your profile only if you explicitly enable it. Previously downloaded pictures can remain in browser caches after removal.

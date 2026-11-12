@@ -6,10 +6,22 @@ Open these pages from your name in the navigation bar.
 
 Use **Profile** to change your display name and your password. Password changes are not available while you impersonate another user.
 
-1. Type a new name (up to 500 characters). Leave it empty to be shown by your primary email address.
+1. Type a new name (up to 500 characters). A stable short account tag is appended, for example `Alex#12ab34cd`. Leave it empty to use `user#12ab34cd`, never your email address.
 2. Choose **Save**.
 
-The line "Shown as ..." tells you how others will see you. This also applies to public forum posts: leaving the name empty makes your primary email address public.
+The line "Shown as ..." tells you how others will see you. Author names link to the public profile at `#/user/<user-id>`.
+
+### Birthday and email privacy
+
+Your birthday is optional and private. It is used to filter content by minimum age when the site's global age restriction setting is enabled; without a birthday, age-restricted content is then unavailable. Global age restrictions are disabled by default. Save your birthday in **Profile**.
+
+**Hide my email on my public profile** is enabled by default. Clear it only if you want your primary email address to be public. This does not change authorized account-management access.
+
+### Public profiles and anonymous comments
+
+Choose **View public profile**, or follow a user's name from content, to see their public name, picture and any email address they chose to share. Administrators with the required permissions can ban, unban or impersonate the user from this page; impersonation follows the existing permission checks and audit rules.
+
+When signed in, choose anonymous posting when adding a comment or forum message. Other readers do not see your profile or picture on that message. Authorized administrators and moderators can still identify the real author; anonymous posting is not anonymous to site staff.
 
 ### Profile picture
 

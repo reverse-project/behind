@@ -204,7 +204,8 @@ public class EmbeddedFrontendTests
         var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
-        Assert.Equal(16, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Equal(17, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Contains("href: \"#/manage/content-restrictions\"", viewModel);
         Assert.Contains("name: \"layouts.title\"", viewModel);
         Assert.Contains("name: \"administration.pages.menus\", icon: \"fa-bars\", href: \"#/manage/menus\", allowed: canReadMenus", viewModel);
         Assert.Contains("hasGrant(\"Menu.Read\")", viewModel);
@@ -352,14 +353,16 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void UserLabel_FallsBackToThePrimaryEmailWhenTheDisplayNameIsBlank()
+    public void UserLabel_UsesAStableAccountTagNeverAnEmailFallback()
     {
         var user = Read(Provider.GetFileInfo("models/user.js"));
         var auth = Read(Provider.GetFileInfo("models/auth.js"));
         var viewModel = Read(Provider.GetFileInfo("viewmodels/session.js"));
 
         Assert.Contains("(user.displayName || \"\").trim()", user);
-        Assert.Contains("emails[0]", user);
+        Assert.DoesNotContain("emails[0]", user);
+        Assert.Contains("Math.imul", user);
+        Assert.Contains("(name || \"user\") + \"#\" + hash", user);
         Assert.Contains("user.label(data.user)", viewModel);
         Assert.Contains("user.label(response.data.user)", auth);
     }
@@ -369,13 +372,18 @@ public class EmbeddedFrontendTests
     {
         var app = Read(Provider.GetFileInfo("app.js"));
         var view = Read(Provider.GetFileInfo("views/profile.html"));
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/profile.js"));
         var auth = Read(Provider.GetFileInfo("models/auth.js"));
         var http = Read(Provider.GetFileInfo("models/http.js"));
 
         Assert.Contains("\"#/profile\": \"controllers/profile\"", app);
         Assert.True(BuiltInMenus.Main.HasItem("Profile", "#/profile", MenuItemKind.User));
         Assert.Contains("value: displayName", view);
+        Assert.Contains("value: birthday", view);
+        Assert.Contains("checked: hideEmail", view);
         Assert.Contains("submit: submit", view);
+        Assert.Equal(1, view.Split("t: 'common.save'").Length - 1);
+        Assert.Contains("profiles.save(self.birthday(), self.hideEmail())", viewModel);
         Assert.Contains("http.put(\"/profile/displayName\"", auth);
         Assert.Contains("put: function", http);
     }
@@ -391,6 +399,7 @@ public class EmbeddedFrontendTests
         Assert.Contains("click: requestLostPassword", signIn);
         Assert.Contains("auth.requestMagicLink(self.email(), captcha, \"auth.lostPassword.requested\", \"LostPassword\")", signInModel);
         Assert.Contains("submit: submitPassword", profile);
+        Assert.Contains("t: 'profile.changePassword'", profile);
         Assert.Contains("value: newPassword", profile);
         Assert.Contains("http.put(\"/profile/password\"", auth);
     }

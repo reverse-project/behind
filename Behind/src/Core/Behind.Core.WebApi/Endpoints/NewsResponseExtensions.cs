@@ -45,7 +45,7 @@ public static class NewsResponseExtensions
                 news.CommentCount,
                 news.IsHighlighted,
                 news.StartAt.ToNullable(),
-                news.EndAt.ToNullable());
+                news.EndAt.ToNullable()) { AuthorId = news.AuthorId };
     }
 
     extension(INewsQueries.ManagedNewsListing news)
@@ -68,7 +68,7 @@ public static class NewsResponseExtensions
                     live => live.StartAt.StatusAt(live.EndAt, now).ToString().ToLowerInvariant()),
                 news.ActiveVersion.Match(() => false, version => version < news.LatestVersion),
                 news.Live.Bind(live => live.StartAt).ToNullable(),
-                news.Live.Bind(live => live.EndAt).ToNullable());
+                news.Live.Bind(live => live.EndAt).ToNullable()) { AuthorId = news.AuthorId };
     }
 
     extension(INewsQueries.NewsDetail news)
@@ -87,7 +87,7 @@ public static class NewsResponseExtensions
                 news.Category.Match<NewsCategoryItem?>(() => null, category => category.ToItem()),
                 news.IsHighlighted,
                 news.StartAt.ToNullable(),
-                news.EndAt.ToNullable());
+                news.EndAt.ToNullable()) { AuthorId = news.AuthorId };
     }
 
     extension(INewsQueries.NewsHistory history)
@@ -116,12 +116,14 @@ public static class NewsResponseExtensions
 
             return new NewsCommentItem(
                 comment.Id.Key,
-                comment.Author,
+                comment.IsAnonymous && !canDeleteAny && !canEditAny ? "" : comment.Author,
                 comment.Content,
                 comment.CreatedAt.ToNullable(),
                 canDeleteAny || isAuthor,
                 canEditAny || isAuthor,
-                comment.UpdatedAt.ToNullable());
+                comment.UpdatedAt.ToNullable(),
+                comment.IsAnonymous,
+                comment.IsAnonymous && !canDeleteAny && !canEditAny ? null : comment.AuthorId);
         }
     }
 

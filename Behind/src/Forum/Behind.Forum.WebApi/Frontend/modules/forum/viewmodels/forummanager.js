@@ -1,8 +1,9 @@
-define(["ko", "models/session", "models/i18n", "models/pager", "modules/forum/models/forum"], function (ko, session, i18n, createPager, api) {
+define(["ko", "models/session", "models/i18n", "models/pager", "modules/forum/models/forum", "models/user"], function (ko, session, i18n, createPager, api, user) {
     return function ForumManagerViewModel() {
         var self = this;
 
         self.busy = ko.observable(false);
+        self.userHref = user.href;
         self.message = ko.observable("");
         self.deleted = ko.observable(false);
         self.reviewState = ko.observable("Pending");

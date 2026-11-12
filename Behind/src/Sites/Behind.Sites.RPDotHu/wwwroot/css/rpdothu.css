@@ -47,6 +47,15 @@ html {
     scrollbar-color: var(--rp-blue) var(--rp-surface);
 }
 
+.behind-public-profile h2 {
+    overflow-wrap: anywhere;
+}
+
+.behind-public-profile .img-thumbnail {
+    object-fit: cover;
+    border-color: var(--rp-blue);
+}
+
 .site-widget .chat-history {
     scrollbar-color: var(--rp-blue) var(--rp-surface);
     box-shadow: 0 1px 3px var(--rp-shadow);

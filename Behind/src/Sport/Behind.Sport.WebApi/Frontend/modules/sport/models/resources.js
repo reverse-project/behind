@@ -119,6 +119,7 @@ define(["modules/sport/models/sport", "modules/sport/models/format", "modules/sp
     var definitions = [
         {
             name: "disciplines",
+            entityType: "Discipline",
             titleKey: "sport.resource.disciplines",
             singularKey: "sport.resource.discipline",
             icon: "fa-futbol",
@@ -140,6 +141,7 @@ define(["modules/sport/models/sport", "modules/sport/models/format", "modules/sp
         },
         {
             name: "positions",
+            entityType: "Position",
             titleKey: "sport.resource.positions",
             singularKey: "sport.resource.position",
             icon: "fa-person-running",
@@ -160,6 +162,7 @@ define(["modules/sport/models/sport", "modules/sport/models/format", "modules/sp
         },
         {
             name: "stat-types",
+            entityType: "StatType",
             titleKey: "sport.resource.statTypes",
             singularKey: "sport.resource.statType",
             icon: "fa-chart-simple",
@@ -186,6 +189,7 @@ define(["modules/sport/models/sport", "modules/sport/models/format", "modules/sp
         },
         {
             name: "seasons",
+            entityType: "Season",
             titleKey: "sport.resource.seasons",
             singularKey: "sport.resource.season",
             icon: "fa-calendar",
@@ -205,6 +209,7 @@ define(["modules/sport/models/sport", "modules/sport/models/format", "modules/sp
         },
         {
             name: "teams",
+            entityType: "Team",
             titleKey: "sport.resource.teams",
             singularKey: "sport.resource.team",
             icon: "fa-shirt",
@@ -232,6 +237,7 @@ define(["modules/sport/models/sport", "modules/sport/models/format", "modules/sp
         },
         {
             name: "players",
+            entityType: "Player",
             titleKey: "sport.resource.players",
             singularKey: "sport.resource.player",
             icon: "fa-user",
@@ -267,6 +273,7 @@ define(["modules/sport/models/sport", "modules/sport/models/format", "modules/sp
         },
         {
             name: "player-seasons",
+            entityType: "PlayerSeason",
             titleKey: "sport.resource.playerSeasons",
             singularKey: "sport.resource.playerSeason",
             icon: "fa-users",
@@ -310,6 +317,7 @@ define(["modules/sport/models/sport", "modules/sport/models/format", "modules/sp
         },
         {
             name: "stats",
+            entityType: "Stat",
             titleKey: "sport.resource.stats",
             singularKey: "sport.resource.stat",
             icon: "fa-ranking-star",

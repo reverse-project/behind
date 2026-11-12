@@ -10,6 +10,8 @@ Open **Administration > Users**. You need the `User.Manage` grant.
 
 Each user shows their name, emails, role badges, and any ban message. Badges mark **You**, **Email not confirmed**, **Banned**, and **Deleted** users.
 
+Choose a user's name to open their public profile. The profile also offers **Ban**, **Unban** and **Impersonate** when the server permits those actions. Email hiding applies to public profiles, not to this authorized management page.
+
 Buttons only appear or work when you are allowed to use them. You can never moderate yourself, and only developers can moderate other developers.
 
 ## Roles shortcuts

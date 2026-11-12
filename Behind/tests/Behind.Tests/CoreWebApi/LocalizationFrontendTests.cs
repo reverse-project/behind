@@ -105,7 +105,8 @@ public class LocalizationFrontendTests
         Assert.Contains("usersettings.saveLocale(code)", viewModel);
         Assert.Contains("i18n.choose(code)", viewModel);
         Assert.Contains("about.loadLocales()", viewModel);
-        Assert.Contains("submit: submitLocale", view);
+        Assert.Contains("event: { change: changeLocale }", view);
+        Assert.DoesNotContain("submit: submitLocale", view);
         Assert.Contains("options: locales, optionsValue: 'code', optionsText: 'name', value: locale", view);
     }
 

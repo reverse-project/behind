@@ -36,7 +36,7 @@ public static class ArticleResponseExtensions
                 article.Author,
                 article.CreatedAt.ToNullable(),
                 article.UpdatedAt.ToNullable(),
-                article.Category.Match<NewsCategoryItem?>(() => null, category => category.ToItem()));
+                article.Category.Match<NewsCategoryItem?>(() => null, category => category.ToItem())) { AuthorId = article.AuthorId };
     }
 
     extension(IArticleQueries.ManagedArticleListing article)
@@ -53,7 +53,7 @@ public static class ArticleResponseExtensions
                 article.Category.Match<NewsCategoryItem?>(() => null, category => category.ToItem()),
                 state == DeletionState.Deleted,
                 article.ActiveVersion.Match(() => NewsResponseExtensions.DraftStatus, _ => PublishedStatus),
-                article.ActiveVersion.Match(() => false, version => version < article.LatestVersion));
+                article.ActiveVersion.Match(() => false, version => version < article.LatestVersion)) { AuthorId = article.AuthorId };
     }
 
     extension(IArticleQueries.ArticleDetail article)
@@ -69,7 +69,7 @@ public static class ArticleResponseExtensions
                 article.Author,
                 article.CreatedAt.ToNullable(),
                 article.UpdatedAt.ToNullable(),
-                article.Category.Match<NewsCategoryItem?>(() => null, category => category.ToItem()));
+                article.Category.Match<NewsCategoryItem?>(() => null, category => category.ToItem())) { AuthorId = article.AuthorId };
     }
 
     extension(IArticleQueries.ArticleHistory history)

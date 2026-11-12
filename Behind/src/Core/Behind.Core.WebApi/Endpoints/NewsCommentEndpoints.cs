@@ -20,7 +20,8 @@ public sealed class NewsCommentEndpoints
     public static readonly string EditGrant = GrantName.Of(GrantArea.News, GrantAction.Manage);
 
     public sealed record SaveNewsCommentRequest(
-        [property: Required, MaxLength(NewsComment.MaxContentLength)] string Content);
+        [property: Required, MaxLength(NewsComment.MaxContentLength)] string Content,
+        bool? IsAnonymous = null);
 
     [IgnoreETag]
     public static async Task<IResult> List(
@@ -69,7 +70,7 @@ public sealed class NewsCommentEndpoints
             () => Task.FromResult<IResult>(Results.Unauthorized()),
             async session =>
             {
-                var added = await commands.Add(id, session.UserId, content, httpContext.RequestAborted);
+                var added = await commands.Add(id, session.UserId, content, httpContext.RequestAborted, request.IsAnonymous ?? false);
 
                 return added.Match(() => Results.NotFound(), commentId => Results.Json(new NewsSavedResponse(commentId, 1)));
             });
@@ -96,7 +97,7 @@ public sealed class NewsCommentEndpoints
                 sessionQueries,
                 queries,
                 authorization,
-                async () => await commands.Update(commentId, content, httpContext.RequestAborted)
+                async () => await commands.Update(commentId, content, httpContext.RequestAborted, request.IsAnonymous)
                     ? Results.NoContent()
                     : Results.NotFound());
     }

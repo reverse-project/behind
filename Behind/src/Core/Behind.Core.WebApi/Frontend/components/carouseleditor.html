@@ -7,6 +7,7 @@
     </div>
     <p class="text-body-secondary" data-bind="t: 'carousels.editor.help'">Optional for every site. Without images the page stays as it is. With images they are shown above the page content as a slider that moves on by itself.</p>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <content-age params="entityType: 'Carousel', id: siteId"></content-age>
     <div data-bind="visible: isDeleted">
         <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2" role="status">
             <span data-bind="t: 'carousels.editor.deletedNotice'">A deleted carousel exists for this site. Restore it or delete it permanently.</span>
@@ -24,6 +25,7 @@
         <li class="list-group-item">
             <div class="d-flex flex-wrap gap-3">
                 <img class="carousel-editor-preview rounded" alt="" data-bind="attr: { src: imageUrl }">
+                <content-age params="entityType: 'VfsFile', id: imageId"></content-age>
                 <div class="flex-grow-1">
                     <label class="form-label small" data-bind="t: 'carousels.editor.caption'">Caption (optional)</label>
                     <input class="form-control form-control-sm mb-2" type="text" data-bind="attr: { maxlength: $parent.captionLimit }, value: caption, valueUpdate: 'input', enable: $parent.canWrite">

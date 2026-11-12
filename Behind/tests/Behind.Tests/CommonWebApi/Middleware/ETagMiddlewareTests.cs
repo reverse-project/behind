@@ -7,6 +7,23 @@ namespace Behind.Tests.CommonWebApi.Middleware;
 
 public class ETagMiddlewareTests
 {
+    [Theory]
+    [InlineData("*")]
+    [InlineData("\"old-user-content\"")]
+    public async Task InvokeAsync_PrivateAgeFilteredResponseNeverReturnsNotModified(string tag)
+    {
+        var context = await InvokeAsync("GET", http =>
+        {
+            http.Response.Headers.CacheControl = "private, no-store";
+            return WriteOk(http, "Age-filtered content");
+        }, tag);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        Assert.False(context.Response.Headers.ContainsKey("ETag"));
+        Assert.Equal("Age-filtered content", System.Text.Encoding.UTF8.GetString(
+            ((MemoryStream)context.Response.Body).ToArray()));
+    }
+
     private static async Task<DefaultHttpContext> InvokeAsync(
         string method,
         Func<HttpContext, Task> endpoint,

@@ -13,6 +13,7 @@ define(["ko", "models/news", "models/newsmeta", "models/pager", "models/letterpa
             title: item.title,
             summary: item.summary,
             author: meta.author(item.author),
+            authorHref: meta.authorHref(item.authorId),
             stamp: meta.stamp(item),
             created: meta.created(item),
             hasCategory: category !== null,

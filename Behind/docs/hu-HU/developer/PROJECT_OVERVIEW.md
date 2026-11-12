@@ -10,9 +10,11 @@ A modul felületi modellje `load(type, limit)` függvényt ad, `{items?, stats?,
 
 ## Fórum és nyilvános profilok
 
+A globális korhatárszűrést az újratölthető `Backend.ContentRestrictions.Enabled` vezérli (alapértéke false). A verziózott elemszabályok a közös szűrt kontextust használják, a tranzitív szülőhivatkozásokra, médiára, adatfolyamokra és darabszámokra is. A modulleírók `ModuleDatabase.ContentRestrictedEntities` és `ContentRestrictionParentProperties` mezői Core-függőség nélkül biztosítják az integrációt.
+
 A fő `Behind.Web` telepítés a Core, Quotes és Sport mellett betölti a `Behind.Forum.*` modult; a meglévő webhelyek nem töltik be a Fórumot. A Common, Domain, Database, SQLite, PostgreSQL és WebApi projektek a `ForumModule.Descriptor` segítségével csatlakoznak. A felület fórumtáblák, témák és válaszok böngészését, valamint moderálással kiegészített adminisztrációt biztosít. A `forum.json` újratölthető, és megjelenik a Beállítások oldalon.
 
-A Core az `IModuleIdentity` felületen adja át a munkamenet felhasználóját, az `IModuleUsers` felületen pedig a nyilvános feliratot és profilkép-azonosítót; a felirat a környező szóközök nélküli megjelenítendő név, üres név esetén az elsődleges e-mail-cím. A modulok nem hivatkoznak a Core-ra. A Core Profil oldalán a meglévő VFS és Bootstrap stílus segítségével lehet képet feltölteni és eltávolítani, minden telepítésben.
+A Core az `IModuleIdentity` felületen adja át a munkamenet felhasználóját, az `IModuleUsers` felületen pedig a nyilvános feliratot és profilkép-azonosítót; a felirat a szóközök nélküli név és állandó UUID-alapú rövid azonosító, üres névnél `user#azonosító`, sohasem e-mail-cím. A modulok nem hivatkoznak a Core-ra. A Core Profil oldalán a meglévő VFS és Bootstrap stílus segítségével lehet képet feltölteni és eltávolítani, minden telepítésben. A szerzőhivatkozások a `#/user/<id>` profilra mutatnak, jogosultságellenőrzött adminisztrátori moderálással és megszemélyesítéssel. A születési dátum opcionális és nem nyilvános, az e-mail megosztásához külön engedély kell.
 
 A funkció tesztjei a `Behind/` könyvtárból a `dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~Forum|FullyQualifiedName~ProfilePicture"` paranccsal futnak; a felület futásidejű tesztjeihez a `node --test tools/tests/forum-frontend.test.cjs` használható. A Node-tesztek a mellékelt Knockoutot és az alkalmazás lapozóját használják, további csomagok nélkül.
 

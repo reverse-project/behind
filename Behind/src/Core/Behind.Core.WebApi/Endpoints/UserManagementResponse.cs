@@ -28,4 +28,7 @@ public sealed record ManagedUserItem(
 
 public sealed record UserListResponse(PageResponse<ManagedUserItem> Users, IReadOnlyList<string> Letters);
 
-public sealed record WallOfShameItem(string DisplayName, string Reason, DateTimeOffset? ExpiresAt);
+public sealed record WallOfShameItem(string DisplayName, string Reason, DateTimeOffset? ExpiresAt)
+{
+    public Guid Id { get; init; }
+}

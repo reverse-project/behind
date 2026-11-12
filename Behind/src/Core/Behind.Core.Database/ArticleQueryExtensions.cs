@@ -24,7 +24,7 @@ internal sealed record ArticleLookups(
     IReadOnlyDictionary<Guid, IArticleQueries.ArticleCategoryInfo> Categories,
     IReadOnlyDictionary<Guid, AuditTimes> Times)
 {
-    public string AuthorOf(ArticleRow row) => Authors.GetValueOrDefault(row.AuthorId, string.Empty);
+    public string AuthorOf(ArticleRow row) => Authors.GetValueOrDefault(row.AuthorId, row.AuthorId.ToUserLabel(null));
 
     public Option<IArticleQueries.ArticleCategoryInfo> CategoryOf(ArticleRow row) =>
         row.CategoryId.ToOption().Bind(id => Categories.TryGetValue(id, out var category)

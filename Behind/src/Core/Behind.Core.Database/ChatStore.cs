@@ -20,6 +20,7 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
             AuthorId = message.AuthorId,
             Text = message.Text,
             ReplyToId = message.ReplyToId,
+            IsAnonymous = message.IsAnonymous,
             CreatedAt = context.AuditLogEntries
                 .Where(audit => audit.EntityName == nameof(ChatMessage)
                     && audit.EntityKey == EF.Property<Guid>(message, VersionedColumns.Key).ToString().ToLower() + ":1"
@@ -50,7 +51,7 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
         var page = found.Take(size).ToArray();
 
         return new IChatStore.Page(
-            await Messages(page, cancellationToken),
+            await Messages(page.Reverse().ToArray(), cancellationToken),
             found.Count > size ? page[^1].Id : null);
     }
 
@@ -60,7 +61,7 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
             cancellationToken);
 
     public async Task<IChatStore.SaveResult> Add(
-        Guid authorId, string text, Guid? replyToId, CancellationToken cancellationToken)
+        Guid authorId, string text, Guid? replyToId, CancellationToken cancellationToken, bool isAnonymous = false)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -70,7 +71,7 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
         }
 
         var id = Guid.CreateVersion7();
-        var result = await Save(new ChatMessage(new(id, 1), authorId, text, replyToId), cancellationToken);
+        var result = await Save(new ChatMessage(new(id, 1), authorId, text, replyToId, isAnonymous), cancellationToken);
 
         if (result.Status == IChatStore.SaveStatus.Saved)
         {
@@ -81,11 +82,11 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
     }
 
     public async Task<IChatStore.SaveResult> Update(
-        Guid id, long version, Guid authorId, string text, CancellationToken cancellationToken)
+        Guid id, long version, Guid authorId, string text, CancellationToken cancellationToken, bool? isAnonymous = null)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var found = await Latest.OfKey(id)
-            .Select(message => new { Version = EF.Property<long>(message, VersionedColumns.Version), message.AuthorId, message.ReplyToId })
+            .Select(message => new { Version = EF.Property<long>(message, VersionedColumns.Version), message.AuthorId, message.ReplyToId, message.IsAnonymous })
             .SingleOrDefaultAsync(cancellationToken);
 
         if (found is null)
@@ -110,7 +111,8 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
             return new(IChatStore.SaveStatus.Conflict);
         }
 
-        var result = await Save(new ChatMessage(new(id, version + 1), authorId, text, found.ReplyToId), cancellationToken);
+        var result = await Save(new ChatMessage(new(id, version + 1), authorId, text, found.ReplyToId,
+            isAnonymous ?? found.IsAnonymous), cancellationToken);
 
         if (result.Status == IChatStore.SaveStatus.Saved)
         {
@@ -162,7 +164,7 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
         var times = await context.AuditTimesAsync<ChatMessage>(
             rows.ToDictionary(row => row.Id, row => row.Version), cancellationToken);
         return rows.Select(row => new IChatStore.Message(row.Id, row.Version, row.AuthorId, row.Text, row.ReplyToId,
-            row.CreatedAt, times[row.Id].UpdatedAt.ToNullable())).ToArray();
+            row.CreatedAt, times[row.Id].UpdatedAt.ToNullable(), row.IsAnonymous)).ToArray();
     }
 
     private sealed record Row
@@ -172,6 +174,7 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
         public Guid AuthorId { get; init; }
         public required string Text { get; init; }
         public Guid? ReplyToId { get; init; }
+        public bool IsAnonymous { get; init; }
         public DateTimeOffset CreatedAt { get; init; }
     }
 }

@@ -1,6 +1,6 @@
 # Fórum
 
-A fő webes telepítés tartalmazza a **Fórumot**. A fórumtáblák kategóriához rendelhetők; a nyilvános fórumlista kategóriák szerint csoportosítja őket, a kategória nélküli táblák külön jelennek meg. Válasszon fórumtáblát, nyisson témát a válaszok olvasásához, vagy jelentkezzen be új téma és válasz írásához. A táblák és témák listája, a navigációs útvonal és a szerzői panelek egyszerűsített, mobilbarát fórumfelületet alkotnak. A szerző mellett a megjelenítendő név és profilkép látható. Üres név esetén az elsődleges e-mail-cím jelenik meg nyilvánosan. Csak az elérhetetlen fiókoknál jelenik meg az **Ismeretlen szerző** felirat. A függő és elutasított üzenetek nem nyilvánosak. A tábla eltávolítása vagy a téma elutasítása/törlése a válaszokat is elrejti.
+A fő webes telepítés tartalmazza a **Fórumot**. A fórumtáblák kategóriához rendelhetők; a nyilvános fórumlista kategóriák szerint csoportosítja őket, a kategória nélküli táblák külön jelennek meg. Válasszon fórumtáblát, nyisson témát a válaszok olvasásához, vagy jelentkezzen be új téma és válasz írásához. A táblák és témák listája, a navigációs útvonal és a szerzői panelek egyszerűsített, mobilbarát fórumfelületet alkotnak. A szerző azonosítóval kiegészített neve és profilképe a nyilvános profilra mutat. Üres névnél `user#azonosító` jelenik meg, sohasem e-mail-cím. Névtelen üzenetnél az olvasók nem látják a szerző profilját és képét, de a jogosult adminisztrátorok és moderátorok látják a valódi szerzőt. Csak az elérhetetlen fiókoknál jelenik meg az **Ismeretlen szerző** felirat. A függő és elutasított üzenetek nem nyilvánosak. A tábla eltávolítása vagy a téma elutasítása/törlése a válaszokat is elrejti.
 
 ## Üzenetek írása
 
@@ -26,4 +26,4 @@ A törlés átmeneti. A fejlesztők a **Töröltek megjelenítése** és **Friss
 
 ## Profilkép
 
-A **Profil** oldalon válasszon legfeljebb **2 MiB** méretű PNG, JPEG, GIF vagy WebP képet; a mentés azonnali. Az **Eltávolítás** törli a profilkép-hivatkozást. A kép és a megjelenítendő név a fórumüzenetek mellett látszik; üres név esetén az elsődleges e-mail-cím nyilvános. Adjon meg nevet, ha nem szeretné megjeleníteni az e-mail-címét. A korábban letöltött képeket a böngésző gyorsítótára az eltávolítás után is megőrizheti.
+A **Profil** oldalon válasszon legfeljebb **2 MiB** méretű PNG, JPEG, GIF vagy WebP képet; a mentés azonnali. Az **Eltávolítás** törli a profilkép-hivatkozást. A kép és az azonosítóval kiegészített név a nem névtelen fórumüzenetek mellett a nyilvános profilra mutat. Az e-mail sohasem helyettesíti a nevet, és a profilon is csak kifejezett engedéllyel nyilvános. A korábban letöltött képeket a böngésző gyorsítótára az eltávolítás után is megőrizheti.

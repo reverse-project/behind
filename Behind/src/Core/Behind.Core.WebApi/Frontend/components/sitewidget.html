@@ -21,6 +21,7 @@
         <!-- ko if: chatReadable -->
         <p class="small text-body-secondary" data-bind="text: t('widgets.chatHelp')"></p>
         <div class="chat-history" tabindex="0" role="region" data-bind="event: { scroll: scrollChat }, attr: { 'aria-label': t('widgets.chat') }">
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="visible: hasOlder, click: loadOlder, disable: loadingOlder, text: t('widgets.chatOlder')"></button>
             <ul class="chat-messages" data-bind="foreach: messages">
                 <li class="chat-message">
                     <div class="chat-author">
@@ -28,9 +29,11 @@
                         <img class="chat-avatar" alt="" data-bind="attr: { src: profilePictureUrl }">
                         <!-- /ko -->
                         <!-- ko ifnot: profilePictureUrl -->
-                        <span class="chat-avatar chat-avatar-placeholder" aria-hidden="true" data-bind="text: author.slice(0, 1)"></span>
+                        <span class="chat-avatar chat-avatar-placeholder" aria-hidden="true" data-bind="text: $component.author($data).slice(0, 1)"></span>
                         <!-- /ko -->
-                        <strong data-bind="text: author"></strong>
+                        <a data-bind="text: $component.author($data), attr: { href: $component.userHref(authorId) }, visible: authorId"></a>
+                        <strong data-bind="text: $component.author($data), visible: !authorId"></strong>
+                        <span data-bind="visible: isAnonymous && authorId, text: $component.t('comments.anonymous')"></span>
                     </div>
                     <div class="chat-times small text-body-secondary">
                         <span data-bind="text: $component.t('widgets.chatCreated')"></span>
@@ -43,7 +46,8 @@
                     <!-- ko if: replyToId -->
                     <blockquote class="chat-reply">
                         <!-- ko if: reply -->
-                        <strong data-bind="text: reply.author"></strong>: <span data-bind="text: reply.text"></span>
+                        <a data-bind="text: $component.author(reply), attr: { href: $component.userHref(reply.authorId) }, visible: reply.authorId"></a>
+                        <strong data-bind="text: $component.author(reply), visible: !reply.authorId"></strong>: <span data-bind="text: reply.text"></span>
                         <!-- /ko -->
                         <!-- ko ifnot: reply -->
                         <span data-bind="text: $component.t('widgets.chatRemoved')"></span>
@@ -64,7 +68,6 @@
                     </div>
                 </li>
             </ul>
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="visible: hasOlder, click: loadOlder, disable: loadingOlder, text: t('widgets.chatOlder')"></button>
         </div>
         <!-- ko if: chatWritable -->
         <!-- ko if: editing -->
@@ -73,6 +76,11 @@
                 <span data-bind="text: t('widgets.chatEdit')"></span>
                 <textarea class="form-control" maxlength="1000" required data-bind="value: editText, valueUpdate: 'input'"></textarea>
             </label>
+            <label class="form-check">
+                <input type="checkbox" class="form-check-input" data-bind="checked: editAnonymous">
+                <span class="form-check-label" data-bind="text: t('comments.postAnonymously')"></span>
+            </label>
+            <p class="form-text" data-bind="text: t('comments.anonymousNotice')"></p>
             <button class="btn btn-primary btn-sm" type="submit" data-bind="disable: busy, text: t('widgets.chatSave')"></button>
             <button class="btn btn-secondary btn-sm" type="button" data-bind="click: cancelEdit, disable: busy, text: t('widgets.chatCancel')"></button>
         </form>
@@ -81,7 +89,8 @@
         <form class="chat-composer" data-bind="submit: send">
             <!-- ko if: replyingTo -->
             <blockquote class="chat-reply">
-                <strong data-bind="text: replyingTo().author"></strong>: <span data-bind="text: replyingTo().text"></span>
+                <a data-bind="text: author(replyingTo()), attr: { href: userHref(replyingTo().authorId) }, visible: replyingTo().authorId"></a>
+                <strong data-bind="text: author(replyingTo()), visible: !replyingTo().authorId"></strong>: <span data-bind="text: replyingTo().text"></span>
                 <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: cancelReply, text: t('widgets.chatCancel')"></button>
             </blockquote>
             <!-- /ko -->
@@ -89,6 +98,11 @@
                 <span data-bind="text: t('widgets.chatMessage')"></span>
                 <textarea class="form-control" maxlength="1000" required data-bind="value: text, valueUpdate: 'input'"></textarea>
             </label>
+            <label class="form-check">
+                <input type="checkbox" class="form-check-input" data-bind="checked: isAnonymous">
+                <span class="form-check-label" data-bind="text: t('comments.postAnonymously')"></span>
+            </label>
+            <p class="form-text" data-bind="text: t('comments.anonymousNotice')"></p>
             <button class="btn btn-primary btn-sm" type="submit" data-bind="disable: busy, text: t('widgets.chatSend')"></button>
         </form>
         <!-- /ko -->

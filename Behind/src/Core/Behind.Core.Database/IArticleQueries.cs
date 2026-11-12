@@ -14,7 +14,10 @@ public interface IArticleQueries
         string Author,
         Option<DateTimeOffset> CreatedAt,
         Option<DateTimeOffset> UpdatedAt,
-        Option<ArticleCategoryInfo> Category);
+        Option<ArticleCategoryInfo> Category)
+    {
+        public Guid AuthorId { get; init; }
+    }
 
     public sealed record ManagedArticleListing(
         Guid Id,
@@ -24,7 +27,10 @@ public interface IArticleQueries
         string Author,
         Option<DateTimeOffset> CreatedAt,
         Option<DateTimeOffset> UpdatedAt,
-        Option<ArticleCategoryInfo> Category);
+        Option<ArticleCategoryInfo> Category)
+    {
+        public Guid AuthorId { get; init; }
+    }
 
     public sealed record ArticleDetail(
         VersionedKey<Guid> Id,
@@ -36,6 +42,7 @@ public interface IArticleQueries
         Option<DateTimeOffset> UpdatedAt,
         Option<ArticleCategoryInfo> Category)
     {
+        public Guid AuthorId { get; init; }
         public string DisplayContent => string.IsNullOrWhiteSpace(Content) ? Summary : Content;
     }
 

@@ -1,3 +1,4 @@
+using Behind.Common;
 using Behind.Common.Database.Modules;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
@@ -17,13 +18,13 @@ public static class ChatEndpoints
     public static readonly string DeleteGrant = GrantName.Of(GrantArea.Chat, GrantAction.Delete);
     public static readonly string ModerationGrant = GrantName.Of(GrantArea.Chat, GrantAction.Manage);
 
-    public sealed record ChatRequest(string? Text, Guid? ReplyToId = null);
-    public sealed record EditRequest(string? Text, long Version);
-    public sealed record Reply(Guid Id, string Author, string Text);
+    public sealed record ChatRequest(string? Text, Guid? ReplyToId = null, bool IsAnonymous = false);
+    public sealed record EditRequest(string? Text, long Version, bool? IsAnonymous = null);
+    public sealed record Reply(Guid Id, string Author, string Text, Guid? AuthorId, bool IsAnonymous = false);
     public sealed record Message(
         Guid Id, long Version, string Author, string? ProfilePictureUrl, string Text,
         DateTimeOffset CreatedAt, DateTimeOffset? UpdatedAt, DateTimeOffset EditableUntil,
-        bool CanEdit, bool CanDelete, Guid? ReplyToId, Reply? Reply);
+        bool CanEdit, bool CanDelete, Guid? ReplyToId, Reply? Reply, Guid? AuthorId, bool IsAnonymous = false);
     public sealed record Page(IReadOnlyList<Message> Items, Guid? NextCursor, bool CanWrite);
 
     [IgnoreETag]
@@ -87,22 +88,27 @@ public static class ChatEndpoints
         var canWrite = viewer is not null && await authorization.HoldsGrantAsync(http.User, WriteGrant);
         var parents = await store.Find(page.Items.Where(message => message.ReplyToId.HasValue)
             .Select(message => message.ReplyToId!.Value).Distinct().ToArray(), cancellationToken);
-        var profiles = (await users.Find(page.Items.Concat(parents).Select(message => message.AuthorId).Distinct().ToArray(),
+        var profiles = (await users.Find(page.Items.Concat(parents).Where(message => !message.IsAnonymous || moderator)
+            .Select(message => message.AuthorId).Distinct().ToArray(),
             cancellationToken)).ToDictionary(profile => profile.Id);
         var replies = parents.ToDictionary(parent => parent.Id, parent =>
-            new Reply(parent.Id, profiles.GetValueOrDefault(parent.AuthorId)?.DisplayName ?? "", parent.Text));
+            new Reply(parent.Id, parent.IsAnonymous && !moderator ? ""
+                : profiles.GetValueOrDefault(parent.AuthorId)?.DisplayName ?? parent.AuthorId.ToUserLabel(null),
+                parent.Text, parent.IsAnonymous && !moderator ? null : parent.AuthorId, parent.IsAnonymous));
         var now = timeProvider.GetUtcNow();
 
         return new Page(page.Items.Select(message =>
         {
-            var profile = profiles.GetValueOrDefault(message.AuthorId);
+            var hidden = message.IsAnonymous && !moderator;
+            var profile = hidden ? null : profiles.GetValueOrDefault(message.AuthorId);
             return new Message(
-                message.Id, message.Version, profile?.DisplayName ?? "",
+                message.Id, message.Version, hidden ? "" : profile?.DisplayName ?? message.AuthorId.ToUserLabel(null),
                 profile?.PictureId is { } picture ? $"/profile/images/{picture}" : null,
                 message.Text, message.CreatedAt, message.UpdatedAt, message.CreatedAt + ChatMessage.EditWindow,
                 canWrite && viewer == message.AuthorId && now < message.CreatedAt + ChatMessage.EditWindow,
                 moderator || canDeleteOwn && viewer == message.AuthorId, message.ReplyToId,
-                message.ReplyToId is { } parent ? replies.GetValueOrDefault(parent) : null);
+                message.ReplyToId is { } parent ? replies.GetValueOrDefault(parent) : null,
+                hidden ? null : message.AuthorId, message.IsAnonymous);
         }).ToArray(), page.NextCursor, canWrite);
     }
 
@@ -131,7 +137,7 @@ public static class ChatEndpoints
             return Results.BadRequest();
         }
 
-        var result = await store.Add(viewer.Value, text, request.ReplyToId, cancellationToken);
+        var result = await store.Add(viewer.Value, text, request.ReplyToId, cancellationToken, request.IsAnonymous);
         return result.Status == IChatStore.SaveStatus.Saved
             ? Results.Created($"/widgets/chat/{result.Id}", new { result.Id })
             : Failure(result.Status);
@@ -162,7 +168,7 @@ public static class ChatEndpoints
             return Results.BadRequest();
         }
 
-        var result = await store.Update(id, request.Version, viewer.Value, text, cancellationToken);
+        var result = await store.Update(id, request.Version, viewer.Value, text, cancellationToken, request.IsAnonymous);
         return result.Status == IChatStore.SaveStatus.Saved ? Results.NoContent() : Failure(result.Status);
     }
 

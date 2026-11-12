@@ -1,5 +1,8 @@
 {
   "Backend": {
+    "ContentRestrictions": {
+      "Enabled": false
+    },
     "DataDirectory": "/workspaces/behind/Data"
   }
 }

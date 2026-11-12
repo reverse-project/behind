@@ -13,6 +13,11 @@ public sealed record HumanUser : User
 
     public Guid? ProfilePictureId { get; init; }
 
+    [Sensible]
+    public DateOnly? Birthday { get; init; }
+
+    public bool HideEmail { get; init; } = true;
+
     public HumanUser() : base(None)
     {
         Emails = new List<Email>();

@@ -33,6 +33,7 @@ define(["ko", "models/auth", "models/session", "models/user", "models/i18n"], fu
         return {
             sessionId: data.sessionId,
             displayName: user.label(data.user),
+            profileHref: user.href(data.user.id),
             userId: data.user.id,
             emails: data.user.emails,
             roles: data.user.roles.map(function (role) {

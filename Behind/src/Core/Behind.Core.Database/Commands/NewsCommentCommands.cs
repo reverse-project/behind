@@ -13,7 +13,8 @@ public sealed class NewsCommentCommands(AbstractCoreContext context, TimeProvide
         Guid newsId,
         Guid authorId,
         string content,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool isAnonymous = false)
     {
         var published = await context.LiveNews()
             .ActiveAt(timeProvider.GetUtcNow())
@@ -27,10 +28,10 @@ public sealed class NewsCommentCommands(AbstractCoreContext context, TimeProvide
 
         var key = Guid.CreateVersion7();
 
-        return await AddVersion(key, 0, newsId, authorId, content, cancellationToken) ? Some(key) : None;
+        return await AddVersion(key, 0, newsId, authorId, content, isAnonymous, cancellationToken) ? Some(key) : None;
     }
 
-    public async Task<bool> Update(Guid commentId, string content, CancellationToken cancellationToken = default)
+    public async Task<bool> Update(Guid commentId, string content, CancellationToken cancellationToken = default, bool? isAnonymous = null)
     {
         var latest = (await context.ActiveComments()
                 .OfKey(commentId)
@@ -39,7 +40,8 @@ public sealed class NewsCommentCommands(AbstractCoreContext context, TimeProvide
                 {
                     Version = EF.Property<long>(comment, VersionedColumns.Version),
                     NewsId = EF.Property<Guid>(comment, NewsCommentConfiguration.NewsIdProperty),
-                    AuthorId = EF.Property<Guid>(comment, NewsCommentConfiguration.AuthorIdProperty)
+                    AuthorId = EF.Property<Guid>(comment, NewsCommentConfiguration.AuthorIdProperty),
+                    comment.IsAnonymous
                 })
                 .Take(1)
                 .ToListAsync(cancellationToken))
@@ -47,7 +49,8 @@ public sealed class NewsCommentCommands(AbstractCoreContext context, TimeProvide
 
         return await latest.Match(
             () => Task.FromResult(false),
-            found => AddVersion(commentId, found.Version, found.NewsId, found.AuthorId, content, cancellationToken));
+            found => AddVersion(commentId, found.Version, found.NewsId, found.AuthorId, content,
+                isAnonymous ?? found.IsAnonymous, cancellationToken));
     }
 
     public async Task<bool> Delete(Guid commentId, CancellationToken cancellationToken = default)
@@ -65,9 +68,10 @@ public sealed class NewsCommentCommands(AbstractCoreContext context, TimeProvide
         Guid newsId,
         Guid authorId,
         string content,
+        bool isAnonymous,
         CancellationToken cancellationToken)
     {
-        var comment = new NewsComment(content);
+        var comment = new NewsComment(content, isAnonymous);
 
         await context.NewsComments.AddAsync(comment, cancellationToken);
 

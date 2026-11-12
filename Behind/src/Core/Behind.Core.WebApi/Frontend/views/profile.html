@@ -11,10 +11,20 @@
     <form data-bind="visible: isSignedIn, submit: submit">
         <div class="mb-3">
             <label class="form-label" for="profile-display-name" data-bind="t: 'profile.displayName'">Display name</label>
-            <input id="profile-display-name" class="form-control" type="text" maxlength="500" autocomplete="nickname" data-bind="value: displayName, attr: { placeholder: emails()[0] }">
-            <div class="form-text" data-bind="t: { key: 'profile.shownAs', args: [shownAs] }">Shown as <strong data-bind="text: shownAs"></strong>. Leave empty to use your primary email address, including on public forum posts.</div>
+            <input id="profile-display-name" class="form-control" type="text" maxlength="500" autocomplete="nickname" data-bind="value: displayName">
+            <div class="form-text" data-bind="t: { key: 'profile.shownAs', args: [shownAs] }">Your name includes a stable account tag. Leave empty to use user#tag.</div>
+            <a data-bind="attr: { href: publicHref }, t: 'profile.viewPublic'">View public profile</a>
         </div>
-        <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.save'">Save</button>
+        <div class="mb-3">
+            <label class="form-label" for="profile-birthday" data-bind="t: 'profile.birthday'">Birthday (optional)</label>
+            <input id="profile-birthday" class="form-control" type="date" autocomplete="bday" data-bind="value: birthday">
+            <p class="form-text" data-bind="t: 'profile.birthdayHelp'">Private. Used when the site's age restrictions are enabled. Without a birthday, age-restricted content is then unavailable.</p>
+        </div>
+        <div class="form-check mb-3">
+            <input id="profile-hide-email" class="form-check-input" type="checkbox" data-bind="checked: hideEmail">
+            <label for="profile-hide-email" class="form-check-label" data-bind="t: 'profile.hideEmail'">Hide my email on my public profile</label>
+        </div>
+        <button type="submit" class="btn btn-primary" data-bind="enable: !busy() && detailsLoaded(), t: 'common.save'">Save</button>
     </form>
     <form class="mt-4" data-bind="visible: isSignedIn, submit: submitPassword">
         <p class="alert alert-info" role="status" data-bind="visible: settingNewPassword, t: 'profile.setNewPassword'">You signed in with a lost password link. Set a new password now.</p>
@@ -23,20 +33,19 @@
             <input id="profile-new-password" class="form-control" type="password" autocomplete="new-password" required data-bind="value: newPassword, hasFocus: passwordFocus">
             <div class="form-text" data-bind="t: 'profile.newPasswordHelp'">Lost your password? Sign in with an email link from the sign in page and set a new one here.</div>
         </div>
-        <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.save'">Save</button>
+        <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'profile.changePassword'">Set password</button>
     </form>
     <div class="mt-4" data-bind="visible: isSignedIn">
         <h2 class="h5" data-bind="t: 'profile.twoFactor'">Two-factor authentication</h2>
         <p data-bind="t: 'profile.twoFactorHelp'">Protect your account with an authenticator app, passkeys and recovery codes.</p>
         <a class="btn btn-outline-primary" href="#/profile/two-factor" data-bind="t: 'profile.twoFactorManage'">Manage two-factor authentication</a>
     </div>
-    <form class="mt-4" data-bind="submit: submitLocale">
+    <div class="mt-4">
         <div class="mb-3">
             <label class="form-label" for="profile-locale" data-bind="t: 'profile.language'">Language</label>
-            <select id="profile-locale" class="form-select" data-bind="options: locales, optionsValue: 'code', optionsText: 'name', value: locale"></select>
-            <div class="form-text" data-bind="t: 'profile.languageHelp'">Saved to your account when you are signed in and remembered in this browser.</div>
+            <select id="profile-locale" class="form-select" data-bind="options: locales, optionsValue: 'code', optionsText: 'name', value: locale, event: { change: changeLocale }, enable: !busy()"></select>
+            <div class="form-text" data-bind="t: 'profile.languageHelp'">Changes are saved as soon as you select a language.</div>
         </div>
-        <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.save'">Save</button>
-    </form>
+    </div>
     <p class="mt-3" role="status" data-bind="visible: hasMessage, text: message"></p>
 </section>

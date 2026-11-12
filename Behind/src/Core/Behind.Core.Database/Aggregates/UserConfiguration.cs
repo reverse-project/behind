@@ -20,6 +20,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         modelBuilder.Entity<HumanUser>(builder =>
         {
             builder.Property(h => h.DisplayName).HasMaxLength(DisplayNameExtensions.MaxLength).IsRequired();
+            builder.Property(h => h.HideEmail).HasDefaultValue(true);
             builder.HasIndex(h => h.DisplayName);
         });
 

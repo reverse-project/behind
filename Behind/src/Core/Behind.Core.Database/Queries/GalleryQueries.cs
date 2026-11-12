@@ -61,7 +61,7 @@ public sealed class GalleryQueries(AbstractCoreContext context) : IGalleryQuerie
                 lookups.CreatedAtOf(row),
                 lookups.UpdatedAtOf(row),
                 lookups.ThumbnailOf(row),
-                lookups.CountOf(row)))
+                lookups.CountOf(row)) { AuthorId = row.AuthorId })
             .ToList();
 
         return new PagedResult<IGalleryQueries.ManagedGalleryListing>(
@@ -166,7 +166,7 @@ public sealed class GalleryQueries(AbstractCoreContext context) : IGalleryQuerie
             lookups.UpdatedAtOf(row),
             lookups.ThumbnailOf(row),
             row.ThumbnailGenerated,
-            items);
+            items) { AuthorId = row.AuthorId };
     }
 
     private static IGalleryQueries.GalleryListing ToListing(GalleryRow row, GalleryLookups lookups) =>
@@ -178,7 +178,7 @@ public sealed class GalleryQueries(AbstractCoreContext context) : IGalleryQuerie
             lookups.CreatedAtOf(row),
             lookups.UpdatedAtOf(row),
             lookups.ThumbnailOf(row),
-            lookups.CountOf(row));
+            lookups.CountOf(row)) { AuthorId = row.AuthorId };
 
     private IDisposable? Scope(DeletionState state) =>
         state == DeletionState.Deleted ? context.SoftDelete.IncludeDeleted() : null;

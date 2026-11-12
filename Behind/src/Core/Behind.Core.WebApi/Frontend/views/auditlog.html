@@ -42,9 +42,9 @@
                 <tr>
                     <td class="text-nowrap" data-bind="text: timestamp"></td>
                     <td>
-                        <div class="text-break" data-bind="text: actor"></div>
+                        <a class="text-break" data-bind="text: actor, attr: { href: actorHref }"></a>
                         <div class="text-body-secondary small text-break" data-bind="visible: actorEmails !== '', text: actorEmails"></div>
-                        <div class="text-body-secondary small text-break" data-bind="visible: hasBehalfOf"><span data-bind="t: 'audit.onBehalfOf'">On behalf of</span> <span data-bind="text: behalfOf"></span></div>
+                        <div class="text-body-secondary small text-break" data-bind="visible: hasBehalfOf"><span data-bind="t: 'audit.onBehalfOf'">On behalf of</span> <a data-bind="text: behalfOf, attr: { href: behalfOfHref }"></a></div>
                     </td>
                     <td><span class="badge" data-bind="text: action, css: actionClass"></span></td>
                     <td>

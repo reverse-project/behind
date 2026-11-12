@@ -35,7 +35,7 @@ public sealed class WallOfShameQueries(AbstractCoreContext context) : IWallOfSha
                 from entry in context.NewestBans(active)
                 join user in context.Users
                     on EF.Property<Guid>(entry, "UserId") equals EF.Property<Guid>(user, "Id")
-                select new ShamedRow(user.DisplayName, entry.Reason, EF.Property<DateTimeOffset?>(entry, "ExpiresAt")))
+                select new ShamedRow(EF.Property<Guid>(user, "Id"), user.DisplayName, entry.Reason, EF.Property<DateTimeOffset?>(entry, "ExpiresAt")))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -54,8 +54,9 @@ public sealed class WallOfShameQueries(AbstractCoreContext context) : IWallOfSha
         public IWallOfShameQueries.ActiveBan ToActiveBan() => new(Reason.Value, Expires.ToOption());
     }
 
-    private sealed record ShamedRow(string DisplayName, Reason Reason, DateTimeOffset? Expires)
+    private sealed record ShamedRow(Guid Id, string DisplayName, Reason Reason, DateTimeOffset? Expires)
     {
-        public IWallOfShameQueries.ShamedUser ToShamedUser() => new(DisplayName, Reason.Value, Expires.ToOption());
+        public IWallOfShameQueries.ShamedUser ToShamedUser() =>
+            new(Id.ToUserLabel(DisplayName), Reason.Value, Expires.ToOption()) { Id = Id };
     }
 }

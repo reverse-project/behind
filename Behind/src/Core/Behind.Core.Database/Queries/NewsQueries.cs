@@ -91,7 +91,7 @@ public sealed class NewsQueries(AbstractCoreContext context) : INewsQueries
                 lookups.CommentsOf(row),
                 live.TryGetValue(row.Key, out var liveRow)
                     ? Some(new INewsQueries.NewsLiveInfo(liveRow.StartAtOption, liveRow.EndAtOption, liveRow.Highlighted))
-                    : None))
+                    : None) { AuthorId = row.AuthorId })
             .ToList();
 
         return new PagedResult<INewsQueries.ManagedNewsListing>(
@@ -196,7 +196,7 @@ public sealed class NewsQueries(AbstractCoreContext context) : INewsQueries
             lookups.CategoryOf(row),
             row.Highlighted,
             row.StartAtOption,
-            row.EndAtOption));
+            row.EndAtOption) { AuthorId = row.AuthorId });
     }
 
     private async Task<IReadOnlyDictionary<Guid, NewsRow>> LiveRowsAsync(
@@ -220,7 +220,7 @@ public sealed class NewsQueries(AbstractCoreContext context) : INewsQueries
             lookups.CommentsOf(row),
             row.Highlighted,
             row.StartAtOption,
-            row.EndAtOption);
+            row.EndAtOption) { AuthorId = row.AuthorId };
 
     private static readonly System.Linq.Expressions.Expression<Func<News, DateTimeOffset?>> StartOf =
         news => EF.Property<DateTimeOffset?>(news, NewsConfiguration.StartAtProperty);

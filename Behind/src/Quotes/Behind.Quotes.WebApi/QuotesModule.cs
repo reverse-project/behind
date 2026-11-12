@@ -39,6 +39,7 @@ public static class QuotesModule
         Frontend = new ModuleFrontend(typeof(QuotesModule).Assembly),
         Database = new ModuleDatabase(typeof(QuoteConfiguration).Assembly)
         {
+            ContentRestrictedEntities = [typeof(Quote)],
             SoftDeletedEntities = [typeof(Quote)]
         }
     };

@@ -32,7 +32,7 @@ internal sealed record NewsLookups(
     IReadOnlyDictionary<Guid, long> CommentCounts,
     IReadOnlyDictionary<Guid, AuditTimes> Times)
 {
-    public string AuthorOf(NewsRow row) => Authors.GetValueOrDefault(row.AuthorId, string.Empty);
+    public string AuthorOf(NewsRow row) => Authors.GetValueOrDefault(row.AuthorId, row.AuthorId.ToUserLabel(null));
 
     public Option<INewsQueries.NewsCategoryInfo> CategoryOf(NewsRow row) =>
         row.CategoryId.ToOption().Bind(id => Categories.TryGetValue(id, out var category)
@@ -109,7 +109,7 @@ internal static class NewsQueryExtensions
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return names.ToDictionary(item => item.Id, item => item.DisplayName);
+            return names.ToDictionary(item => item.Id, item => item.Id.ToUserLabel(item.DisplayName));
         }
 
         public async Task<NewsLookups> LookupsAsync(

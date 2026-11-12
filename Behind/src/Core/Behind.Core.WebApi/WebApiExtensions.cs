@@ -87,6 +87,9 @@ public static class WebApiExtensions
             builder.Services.Configure<CommentsConfiguration>(
                 builder.Configuration.GetSection(CommentsConfiguration.SectionName)
             );
+            builder.Services.Configure<ContentRestrictionsConfiguration>(
+                builder.Configuration.GetSection(ContentRestrictionsConfiguration.SectionName)
+            );
             builder.Services.Configure<DownloadsConfiguration>(
                 builder.Configuration.GetSection(DownloadsConfiguration.SectionName)
             );
@@ -400,6 +403,7 @@ public static class WebApiExtensions
             application.UseSessionValidation();
             application.UseAuthorization();
             application.UseAccessGate();
+            application.UseMiddleware<ContentRestrictionMiddleware>();
             application.UseDeletedRecordsVisibility();
 
             application.MapGet("/session", SessionEndpoints.Get)
@@ -952,6 +956,17 @@ public static class WebApiExtensions
             application.MapRouteAliasEndpoints();
             application.MapAccessEndpoints();
             application.MapRawDatabaseEndpoints();
+            application.MapContentRestrictionEndpoints();
+
+            application.MapGet("/users/profiles/{id:guid}", PublicProfileEndpoints.Get)
+                .WithSummary("Read a public profile and the current actor's moderation permissions.")
+                .Produces<PublicProfileEndpoints.ProfileResponse>().Produces(404);
+            application.MapGet("/profile/details", PublicProfileEndpoints.GetDetails)
+                .WithSummary("Read your private birthday and public email visibility preference.")
+                .Produces<UserProfiles.Details>().Produces(401);
+            application.MapPut("/profile/details", PublicProfileEndpoints.SetDetails)
+                .WithSummary("Replace your optional private birthday and public email visibility preference.")
+                .Produces(204).Produces(400).Produces(401);
 
             application.MapGet("/profile/picture", ProfilePictureEndpoints.Get)
                 .WithSummary("Read your current profile picture reference.");

@@ -16,7 +16,7 @@ partial class ForumContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261111193458_AddBoardCategories";
+    public override string LastMigrationId => "20261112082854_AnonymousForumPosts";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -94,6 +94,11 @@ partial class ForumContextPostgresModelSnapshot : ModelSnapshot
                     .IsRequired()
                     .HasMaxLength(20000)
                     .HasColumnType("character varying(20000)");
+
+                b.Property<bool>("IsAnonymous")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("boolean")
+                    .HasDefaultValue(false);
 
                 b.Property<int>("State")
                     .HasColumnType("integer");

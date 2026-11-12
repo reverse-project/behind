@@ -1,6 +1,6 @@
 define(["require", "ko", "models/widgets", "models/articles", "models/menus",
-    "models/http", "models/session", "models/i18n", "models/invalidation", "text!components/sitewidget.html"],
-function (require, ko, widgets, articles, menus, http, session, i18n, invalidation, template) {
+    "models/http", "models/session", "models/i18n", "models/invalidation", "models/user", "text!components/sitewidget.html"],
+function (require, ko, widgets, articles, menus, http, session, i18n, invalidation, user, template) {
     return {
         viewModel: {
             createViewModel: function (params, componentInfo) {
@@ -24,6 +24,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     messages: ko.observableArray([]),
                     content: ko.observable(""),
                     text: ko.observable(""),
+                    isAnonymous: ko.observable(false),
                     error: ko.observable(""),
                     busy: ko.observable(false),
                     loadingOlder: ko.observable(false),
@@ -31,7 +32,12 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     replyingTo: ko.observable(null),
                     editing: ko.observable(null),
                     editText: ko.observable(""),
+                    editAnonymous: ko.observable(false),
                     signedIn: session.isSignedIn,
+                    userHref: user.href,
+                    author: function (message) {
+                        return message.isAnonymous && !message.authorId ? i18n.t("comments.anonymous") : message.author;
+                    },
                     t: i18n.t
                 };
 
@@ -68,11 +74,11 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
 
                 var chatHistory = function () {
                     var entries = [];
-                    var oldest = self.messages()[self.messages().length - 1];
+                    var oldest = self.messages()[0];
                     var cutoff = oldest ? Date.parse(oldest.createdAt) : null;
                     var read = function (cursor, count) {
                         return chatPage(cursor).then(function (page) {
-                            entries = entries.concat(page.items);
+                            entries = page.items.concat(entries);
                             var last = page.items[page.items.length - 1];
                             var lastTime = last ? Date.parse(last.createdAt) : null;
                             var reachedOldest = cutoff === null || !last
@@ -180,6 +186,10 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                             var history = historyElement();
                             var previousHeight = history ? history.scrollHeight : 0;
                             var previousTop = history ? history.scrollTop : 0;
+                            var previousBottom = history
+                                ? history.scrollHeight - history.scrollTop - history.clientHeight
+                                : null;
+                            var previousFirst = self.messages()[0];
                             self.messages(data.messages || []);
                             if (type === "core.chat") {
                                 var reply = self.replyingTo();
@@ -193,8 +203,13 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                                 chatCursor = data.nextCursor;
                                 chatPages = data.pageCount;
                                 self.hasOlder(!!chatCursor);
-                                if (history && previousTop > 0) {
+                                var previousFirstIndex = previousFirst
+                                    ? self.messages().findIndex(function (message) { return message.id === previousFirst.id; })
+                                    : -1;
+                                if (history && previousFirstIndex > 0) {
                                     history.scrollTop = previousTop + history.scrollHeight - previousHeight;
+                                } else if (history && previousFirst && previousBottom < 80) {
+                                    history.scrollTop = history.scrollHeight;
                                 }
                             }
                             self.content(data.content || "");
@@ -234,7 +249,14 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     return chatPage(chatCursor).then(function (page) {
                         if (!disposed && ticket === sequence && owner === session.accessToken()) {
                             var ids = new Set(self.messages().map(function (message) { return message.id; }));
-                            self.messages(self.messages().concat(page.items.filter(function (message) { return !ids.has(message.id); })));
+                            var history = historyElement();
+                            var previousHeight = history ? history.scrollHeight : 0;
+                            var previousTop = history ? history.scrollTop : 0;
+                            self.messages(page.items.filter(function (message) { return !ids.has(message.id); })
+                                .concat(self.messages()));
+                            if (history) {
+                                history.scrollTop = previousTop + history.scrollHeight - previousHeight;
+                            }
                             chatPages++;
                             chatCursor = page.nextCursor;
                             self.hasOlder(!!chatCursor);
@@ -260,7 +282,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
 
                 self.scrollChat = function (model, event) {
                     var element = event.currentTarget;
-                    if (element.scrollHeight - element.scrollTop - element.clientHeight < 80) {
+                    if (element.scrollTop < 80) {
                         self.loadOlder();
                     }
                     return true;
@@ -280,9 +302,10 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                 self.edit = function (message) {
                     self.editing(message);
                     self.editText(message.text);
+                    self.editAnonymous(!!message.isAnonymous);
                     self.replyingTo(null);
                 };
-                self.cancelEdit = function () { self.editing(null); self.editText(""); };
+                self.cancelEdit = function () { self.editing(null); self.editText(""); self.editAnonymous(false); };
 
                 var mutateChat = function (request, completed) {
                     var owner = session.accessToken();
@@ -310,7 +333,9 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                         return;
                     }
                     return mutateChat(function () {
-                        return http.put("/widgets/chat/" + message.id, { text: text, version: message.version });
+                        return http.put("/widgets/chat/" + message.id, {
+                            text: text, version: message.version, isAnonymous: self.editAnonymous()
+                        });
                     }, self.cancelEdit);
                 };
 
@@ -332,8 +357,10 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
 
                     var parent = self.replyingTo();
                     return mutateChat(function () {
-                        return http.post("/widgets/chat", { text: text, replyToId: parent ? parent.id : null });
-                    }, function () { self.text(""); self.cancelReply(); });
+                        return http.post("/widgets/chat", {
+                            text: text, replyToId: parent ? parent.id : null, isAnonymous: self.isAnonymous()
+                        });
+                    }, function () { self.text(""); self.isAnonymous(false); self.cancelReply(); });
                 };
 
                 var identity = ko.pureComputed(function () {
@@ -349,6 +376,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     self.messages([]);
                     self.content("");
                     self.text("");
+                    self.isAnonymous(false);
                     self.error("");
                     chatPages = 1;
                     chatCursor = null;

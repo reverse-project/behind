@@ -16,7 +16,10 @@ public sealed record NewsListItem(
     long CommentCount,
     bool IsHighlighted,
     DateTimeOffset? StartAt,
-    DateTimeOffset? EndAt);
+    DateTimeOffset? EndAt)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record ManagedNewsItem(
     Guid Id,
@@ -33,7 +36,10 @@ public sealed record ManagedNewsItem(
     string Status,
     bool HasNewerDraft,
     DateTimeOffset? StartAt,
-    DateTimeOffset? EndAt);
+    DateTimeOffset? EndAt)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record PublicNewsListResponse(
     PageResponse<NewsListItem> News,
@@ -57,7 +63,10 @@ public sealed record NewsDetailResponse(
     NewsCategoryItem? Category,
     bool IsHighlighted,
     DateTimeOffset? StartAt,
-    DateTimeOffset? EndAt);
+    DateTimeOffset? EndAt)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record NewsVersionItem(
     long Version,
@@ -77,7 +86,9 @@ public sealed record NewsCommentItem(
     DateTimeOffset? CreatedAt,
     bool CanDelete,
     bool CanEdit = false,
-    DateTimeOffset? UpdatedAt = null);
+    DateTimeOffset? UpdatedAt = null,
+    bool IsAnonymous = false,
+    Guid? AuthorId = null);
 
 public sealed record NewsSavedResponse(Guid Id, long Version);
 

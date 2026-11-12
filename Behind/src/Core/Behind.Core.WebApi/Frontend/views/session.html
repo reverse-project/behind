@@ -6,7 +6,7 @@
         <h2 class="h4 mt-4" data-bind="t: 'session.user'">User</h2>
         <dl class="row behind-details">
             <dt class="col-sm-4" data-bind="t: 'session.name'">Name</dt>
-            <dd class="col-sm-8" data-bind="text: displayName"></dd>
+            <dd class="col-sm-8"><a data-bind="text: displayName, attr: { href: profileHref }"></a></dd>
             <dt class="col-sm-4" data-bind="t: 'session.userId'">User id</dt>
             <dd class="col-sm-8" data-bind="text: userId"></dd>
             <dt class="col-sm-4" data-bind="t: 'session.emails'">Emails</dt>

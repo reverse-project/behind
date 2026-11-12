@@ -15,7 +15,10 @@ public interface IGalleryQueries
         Option<DateTimeOffset> CreatedAt,
         Option<DateTimeOffset> UpdatedAt,
         Option<Guid> ThumbnailId,
-        int ItemCount);
+        int ItemCount)
+    {
+        public Guid AuthorId { get; init; }
+    }
 
     public sealed record ManagedGalleryListing(
         Guid Id,
@@ -26,7 +29,10 @@ public interface IGalleryQueries
         Option<DateTimeOffset> CreatedAt,
         Option<DateTimeOffset> UpdatedAt,
         Option<Guid> ThumbnailId,
-        int ItemCount);
+        int ItemCount)
+    {
+        public Guid AuthorId { get; init; }
+    }
 
     public sealed record GalleryDetail(
         VersionedKey<Guid> Id,
@@ -37,7 +43,10 @@ public interface IGalleryQueries
         Option<DateTimeOffset> UpdatedAt,
         Option<Guid> ThumbnailId,
         bool ThumbnailGenerated,
-        IReadOnlyList<GalleryItemInfo> Items);
+        IReadOnlyList<GalleryItemInfo> Items)
+    {
+        public Guid AuthorId { get; init; }
+    }
 
     public sealed record GalleryVersionInfo(
         long Version,

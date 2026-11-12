@@ -34,7 +34,7 @@ public static class GalleryResponseExtensions
                 gallery.CreatedAt.ToNullable(),
                 gallery.UpdatedAt.ToNullable(),
                 gallery.ThumbnailId.ToImageUrlOrNull(),
-                gallery.ItemCount);
+                gallery.ItemCount) { AuthorId = gallery.AuthorId };
     }
 
     extension(IGalleryQueries.ManagedGalleryListing gallery)
@@ -52,7 +52,7 @@ public static class GalleryResponseExtensions
                 gallery.ItemCount,
                 state == DeletionState.Deleted,
                 gallery.ActiveVersion.Match(() => NewsResponseExtensions.DraftStatus, _ => ArticleResponseExtensions.PublishedStatus),
-                gallery.ActiveVersion.Match(() => false, version => version < gallery.LatestVersion));
+                gallery.ActiveVersion.Match(() => false, version => version < gallery.LatestVersion)) { AuthorId = gallery.AuthorId };
     }
 
     extension(IGalleryQueries.GalleryItemInfo item)
@@ -82,7 +82,7 @@ public static class GalleryResponseExtensions
                 gallery.ThumbnailId.ToNullable(),
                 gallery.ThumbnailId.ToImageUrlOrNull(),
                 gallery.ThumbnailGenerated,
-                gallery.Items.Select(item => item.ToItem()).ToList());
+                gallery.Items.Select(item => item.ToItem()).ToList()) { AuthorId = gallery.AuthorId };
     }
 
     extension(IGalleryQueries.GalleryHistory history)

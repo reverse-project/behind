@@ -26,7 +26,7 @@ internal sealed record GalleryLookups(
     IReadOnlyDictionary<Guid, AuditTimes> Times,
     IReadOnlyDictionary<Guid, GalleryItemSummary> Items)
 {
-    public string AuthorOf(GalleryRow row) => Authors.GetValueOrDefault(row.AuthorId, string.Empty);
+    public string AuthorOf(GalleryRow row) => Authors.GetValueOrDefault(row.AuthorId, row.AuthorId.ToUserLabel(null));
 
     public Option<DateTimeOffset> CreatedAtOf(GalleryRow row) =>
         Times.TryGetValue(row.Key, out var times) ? times.CreatedAt : FunctionalExtensions.None;

@@ -1,4 +1,4 @@
-define(["models/i18n"], function (i18n) {
+define(["models/i18n", "models/user"], function (i18n, user) {
     var formatDate = i18n.dateTime;
 
     var pad = function (value) {
@@ -7,6 +7,7 @@ define(["models/i18n"], function (i18n) {
 
     return {
         formatDate: formatDate,
+        authorHref: user.href,
         toLocalInput: function (value) {
             if (!value) {
                 return "";

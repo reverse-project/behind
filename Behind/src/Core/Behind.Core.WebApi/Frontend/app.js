@@ -8,6 +8,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/profile": "controllers/profile",
         "#/profile/password": "controllers/profilepassword",
         "#/profile/two-factor": "controllers/twofactor",
+        "#/user/:id": "controllers/publicprofile",
         "#/users": "controllers/users",
         "#/roles": "controllers/roles",
         "#/audit-log": "controllers/auditlog",
@@ -42,6 +43,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/manage/route-aliases": "controllers/routealiases",
         "#/manage/access-settings": "controllers/accesssettings",
         "#/manage/raw-database": "controllers/rawdatabase",
+        "#/manage/content-restrictions": "controllers/contentrestrictions",
         "#/changelog": "controllers/changelog",
         "#/licenses": "controllers/licenses",
         "#/sign/in/magiclink": "controllers/magiclink",
@@ -80,6 +82,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     ko.components.register("totp-enrollment", { require: "components/totpenrollment" });
     ko.components.register("letter-pager", { require: "components/letterpager" });
     ko.components.register("access-editor", { require: "components/accesseditor" });
+    ko.components.register("content-age", { require: "components/contentage" });
     ko.components.register("download-tree", { require: "components/downloadtree" });
     ko.components.register("menu-items", { require: "components/menuitems" });
     ko.components.register("menu-nav", { require: "components/menunav" });

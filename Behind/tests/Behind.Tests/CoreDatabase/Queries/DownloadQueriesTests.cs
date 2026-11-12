@@ -78,8 +78,8 @@ public sealed class DownloadQueriesTests : IDisposable
                 "manual.pdf",
                 "application/pdf",
                 2048,
-                "Test User",
-                Some(UploadedAt.AddDays(1))),
+                _bed.OtherAuthorId.ToUserLabel("Test User"),
+                Some(UploadedAt.AddDays(1))) { UploadedById = _bed.OtherAuthorId },
             files[0]);
         Assert.Equal(2, files[1].Length);
     }

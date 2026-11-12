@@ -2,6 +2,23 @@ namespace Behind.Tests.Common.Modules;
 
 public class ModuleCatalogTests
 {
+    [Fact]
+    public void ContentRestrictions_AggregateExplicitModuleEntitiesAndAdditionalParentProperties()
+    {
+        var descriptor = new ModuleDescriptor("content", "Content")
+        {
+            Database = new ModuleDatabase(typeof(ModuleCatalogTests).Assembly)
+            {
+                ContentRestrictedEntities = [typeof(News), typeof(News)],
+                ContentRestrictionParentProperties = ["CustomParentId", "CustomParentId"]
+            }
+        };
+        var catalog = ModuleCatalog.Create([descriptor]).GetOrElse(ModuleCatalog.Empty);
+
+        Assert.Equal([typeof(News)], catalog.ContentRestrictedEntities);
+        Assert.Equal(["CustomParentId"], catalog.ContentRestrictionParentProperties);
+    }
+
     private static ModuleDescriptor Module(string key = "blog") => new(key, "Blog");
 
     private static IReadOnlyList<string> Problems(params ModuleDescriptor[] modules) =>

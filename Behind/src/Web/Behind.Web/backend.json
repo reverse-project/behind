@@ -1,5 +1,8 @@
 {
   "Backend": {
+    "ContentRestrictions": {
+      "Enabled": true
+    },
     "DataDirectory": "/workspaces/behind/Data",
     "Downloads": {
       "MaxFileBytes": 104857600

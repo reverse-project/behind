@@ -18,7 +18,10 @@ public interface INewsQueries
         long CommentCount,
         bool IsHighlighted,
         Option<DateTimeOffset> StartAt,
-        Option<DateTimeOffset> EndAt);
+        Option<DateTimeOffset> EndAt)
+    {
+        public Guid AuthorId { get; init; }
+    }
 
     public sealed record NewsLiveInfo(Option<DateTimeOffset> StartAt, Option<DateTimeOffset> EndAt, bool Highlighted);
 
@@ -32,7 +35,10 @@ public interface INewsQueries
         Option<DateTimeOffset> UpdatedAt,
         Option<NewsCategoryInfo> Category,
         long CommentCount,
-        Option<NewsLiveInfo> Live);
+        Option<NewsLiveInfo> Live)
+    {
+        public Guid AuthorId { get; init; }
+    }
 
     public sealed record NewsDetail(
         VersionedKey<Guid> Id,
@@ -47,6 +53,7 @@ public interface INewsQueries
         Option<DateTimeOffset> StartAt,
         Option<DateTimeOffset> EndAt)
     {
+        public Guid AuthorId { get; init; }
         public string DisplayContent => string.IsNullOrWhiteSpace(Content) ? Summary : Content;
     }
 

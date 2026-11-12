@@ -6,7 +6,7 @@
         <h1 class="mb-2 text-break" data-bind="text: title"></h1>
         <div class="d-flex flex-wrap align-items-center gap-2 small text-body-secondary mb-3">
             <span data-bind="text: count"></span>
-            <span data-bind="text: author"></span>
+            <a data-bind="text: author, attr: { href: authorHref }"></a>
             <span data-bind="text: stamp, attr: { title: created }"></span>
         </div>
         <p class="gallery-description mb-4" data-bind="visible: hasDescription, text: description"></p>

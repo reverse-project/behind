@@ -341,9 +341,9 @@ public sealed class ForumTests : IDisposable
     [Theory]
     [InlineData("Ada Lovelace", "Ada Lovelace")]
     [InlineData("  Ada Lovelace  ", "Ada Lovelace")]
-    [InlineData("", "primary@example.com")]
-    [InlineData("   ", "primary@example.com")]
-    public async Task TopicAndReplyLists_ResolveStoredNamesWithPrimaryEmailFallback(string name, string expected)
+    [InlineData("", "user")]
+    [InlineData("   ", "user")]
+    public async Task TopicAndReplyLists_ResolveStoredNamesWithStablePublicTag(string name, string expected)
     {
         var board = await Board();
         await using (var context = _bed.Write())
@@ -368,13 +368,13 @@ public sealed class ForumTests : IDisposable
                 profiles, board, topicId, 1);
             var response = Assert.IsType<Ok<ForumEndpoints.PostPage>>(result).Value!;
             var post = Assert.Single(response.Items);
-            Assert.Equal(expected, post.Author);
+            Assert.Equal(_author.ToUserLabel(expected), post.Author);
             Assert.Equal(_author, post.AuthorId);
-            Assert.DoesNotContain("secondary@example.com", System.Text.Json.JsonSerializer.Serialize(post));
+            Assert.DoesNotContain("example.com", System.Text.Json.JsonSerializer.Serialize(post));
         }
 
         var details = Assert.IsType<Ok<ForumEndpoints.PostResponse>>(
             await ForumEndpoints.GetPost(topic, new DefaultHttpContext(), new ForumQueries(read), profiles)).Value!;
-        Assert.Equal(expected, details.Author);
+        Assert.Equal(_author.ToUserLabel(expected), details.Author);
     }
 }

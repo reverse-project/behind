@@ -8,6 +8,7 @@ const core = path.resolve(__dirname, "../../src/Core/Behind.Core.WebApi/Frontend
 const ko = require(path.join(core, "libraries/knockout.min.js"));
 
 function load(file, dependencies) {
+    dependencies["models/user"] = { href: id => id ? "#/user/" + encodeURIComponent(id) : null };
     let result;
     vm.runInNewContext(fs.readFileSync(path.join(core, file), "utf8"), {
         define(names, factory) {
@@ -186,6 +187,39 @@ test("reply, edit and removal use the corresponding endpoints and optimistic ver
     await widget.remove(item);
     assert.equal(calls[2].method, "delete");
     assert.equal(calls[2].url, "/widgets/chat/parent");
+    widget.dispose();
+});
+
+test("anonymous chat drafts and reply previews never manufacture a public profile link", async () => {
+    const calls = [];
+    const item = { ...message("hidden"), author: "", authorId: null, isAnonymous: true };
+    const { widget, token } = chatFixture({
+        get: async () => page([item]),
+        post: async (url, body) => { calls.push(body); return { ok: true }; },
+        put: async (url, body) => { calls.push(body); return { ok: true }; }
+    });
+    await settle();
+    assert.equal(widget.author(item), "comments.anonymous");
+    assert.equal(widget.userHref(item.authorId), null);
+    assert.equal(widget.author({ ...item, authorId: "real", author: "Moderator-visible" }), "Moderator-visible");
+    assert.equal(widget.userHref("real"), "#/user/real");
+    widget.reply(item);
+    widget.text("reply");
+    widget.isAnonymous(true);
+    await widget.send();
+    assert.equal(calls[0].isAnonymous, true);
+    assert.equal(calls[0].authorId, undefined);
+    assert.equal(widget.isAnonymous(), false);
+    widget.edit(item);
+    assert.equal(widget.editAnonymous(), true);
+    widget.editAnonymous(false);
+    await widget.saveEdit();
+    assert.equal(calls[1].isAnonymous, false);
+    widget.isAnonymous(true);
+    token(null);
+    await settle();
+    assert.equal(widget.isAnonymous(), false);
+    assert.equal(widget.chatWritable(), false);
     widget.dispose();
 });
 

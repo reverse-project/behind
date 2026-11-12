@@ -1,0 +1,57 @@
+<section class="container py-4">
+    <h1 data-bind="t: 'contentRestrictions.title'"></h1>
+    <p data-bind="t: 'contentRestrictions.policy'"></p>
+    <p class="alert alert-info" data-bind="visible: !enabled(), t: 'contentRestrictions.disabled'"></p>
+    <a class="btn btn-outline-secondary mb-3" href="#/settings" data-bind="t: 'contentRestrictions.settings'"></a>
+    <div data-bind="visible: canManage">
+        <form data-bind="submit: save, visible: !showDeleted()">
+            <label class="form-label" for="restriction-type" data-bind="t: 'contentRestrictions.type'"></label>
+            <select id="restriction-type" class="form-select mb-3" data-bind="options: types, value: entityType" required></select>
+            <label class="form-label" for="restriction-id" data-bind="t: 'contentRestrictions.item'"></label>
+            <div class="input-group mb-2">
+                <input id="restriction-id" class="form-control" data-bind="value: entityId" required pattern="[0-9a-fA-F-]{36}">
+                <button type="button" class="btn btn-outline-secondary" data-bind="click: findItems, enable: entityType() && !browserBusy(), t: 'contentRestrictions.browse'"></button>
+            </div>
+            <p class="form-text text-break" data-bind="text: selectedName"></p>
+            <label class="form-label" for="restriction-age" data-bind="t: 'contentRestrictions.minimumAge'"></label>
+            <input id="restriction-age" type="number" min="0" max="150" step="1" class="form-control mb-3" data-bind="value: minimumAge" required>
+            <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'contentRestrictions.save'"></button>
+        </form>
+        <div class="card my-3" data-bind="visible: browserOpen() && !showDeleted()">
+            <div class="card-body">
+                <form class="input-group mb-3" data-bind="submit: findItems">
+                    <input type="search" class="form-control" maxlength="200" data-bind="value: browserSearch, tAttr: { 'aria-label': 'contentRestrictions.search' }">
+                    <button class="btn btn-outline-primary" type="submit" data-bind="enable: !browserBusy(), t: 'common.search'"></button>
+                </form>
+                <p role="status" data-bind="text: browserMessage"></p>
+                <ul class="list-group mb-3" data-bind="foreach: browserItems">
+                    <li class="list-group-item">
+                        <button class="btn btn-link text-start text-break" type="button" data-bind="click: $parent.chooseItem">
+                            <span class="d-block" data-bind="text: displayName"></span>
+                            <small class="text-body-secondary" data-bind="text: id"></small>
+                        </button>
+                    </li>
+                </ul>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary" type="button" data-bind="click: previousItems, enable: !browserBusy() &amp;&amp; browserPage() &gt; 1, t: 'contentRestrictions.previous'"></button>
+                    <button class="btn btn-outline-secondary" type="button" data-bind="click: nextItems, enable: !browserBusy() &amp;&amp; browserPage() &lt; browserPageCount(), t: 'contentRestrictions.next'"></button>
+                </div>
+            </div>
+        </div>
+        <p role="status" data-bind="text: message"></p>
+        <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'contentRestrictions.showDeleted'"></span></label>
+        <ul class="list-group mt-3" data-bind="foreach: items">
+            <li class="list-group-item">
+                <button class="btn btn-link" data-bind="click: $parent.select">
+                    <span data-bind="text: entityType"></span>
+                    <span data-bind="text: displayName"></span>
+                    <span data-bind="text: entityId"></span>
+                    <span data-bind="text: minimumAge"></span>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" type="button" data-bind="visible: !$parent.showDeleted(), click: $parent.remove, enable: !$parent.busy(), t: 'common.delete'"></button>
+                <button class="btn btn-sm btn-outline-success" type="button" data-bind="visible: $parent.showDeleted, click: $parent.restore, enable: !$parent.busy(), t: 'common.restore'"></button>
+                <button class="btn btn-sm btn-danger" type="button" data-bind="visible: $parent.showDeleted, click: $parent.hardDelete, enable: !$parent.busy(), t: 'content.deletePermanently'"></button>
+            </li>
+        </ul>
+    </div>
+</section>

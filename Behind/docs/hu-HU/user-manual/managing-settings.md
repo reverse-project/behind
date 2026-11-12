@@ -19,6 +19,12 @@ Az oldalak képforgóinak korlátai a `frontend.json` számai (`Frontend › Car
 
 A `frontend.json` **DefaultLocale** beállítása (`Frontend › Site`) az elérhető nyelvek legördülő listája azok hivatalos nevével, például **English (International)** és **Magyar**. A nyelv minden látogatóra érvényes; a fájl nélküli nyelvet a rendszer elutasítja.
 
+## Korhatárszűrés
+
+A **backend.json > Backend > ContentRestrictions** szakasz **Enabled** kapcsolója vezérli a globális korhatárszűrést. **Alapértelmezés szerint kikapcsolt**, és újraindítás nélkül frissül. Kikapcsolva a tárolt korhatárok nem korlátozzák a hozzáférést. Bekapcsolva az olvasó privát születési dátumának meg kell felelnie az elem korhatárának; ismeretlen dátummal a korlátozott elem, kapcsolódó tartalma és fájljai nem érhetők el. A szabályok a **Tartalomkorlátozások** oldalon `RawDatabase.Manage` engedéllyel vagy a támogatott elemszerkesztők korhatármezőjével kezelhetők. A nulla megszünteti a korhatárt. A fejlesztők listázhatják, visszaállíthatják vagy végleg törölhetik a törölt szabályokat.
+
+Válasszon tartalomtípust, majd az **Elemek böngészése** gombbal UUID-másolás nélkül kereshet elemet. Megjelenítési név vagy teljes azonosító alapján kereshet, az **Előző elemek** / **Következő elemek** gombokkal lapozhat. Az elem címe, fájlneve, neve vagy más elérhető szövege jelenik meg; címke hiányában az azonosítója. A kiválasztás kitölti a korlátozás azonosítóját. Az azonosító kézzel is megadható. A meglévő szabályok mellett is olvasható címke jelenik meg.
+
 ## E-mail beállítások
 
 Az `email.json` fül értéklista helyett űrlap:

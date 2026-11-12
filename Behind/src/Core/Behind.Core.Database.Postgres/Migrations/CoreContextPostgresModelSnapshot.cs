@@ -17,12 +17,13 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261111202906_AddChatMessages";
+    public override string LastMigrationId => "20261112082920_ProfilesPrivacyAndContentRestrictions";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
         modelBuilder
+            .HasAnnotation("Behind:AgeRestrictionParents", new[] { "NewsId", "ArticleId", "GalleryId", "CarouselId", "FolderId", "BoardId", "TopicId", "CategoryId", "TeamId", "PlayerId", "SeasonId", "DisciplineId", "PlayerSeasonId", "StatTypeId", "SiteId", "ParentId", "PositionId", "SubjectId" })
             .HasAnnotation("ProductVersion", "11.0.0-rc.3.26522.148")
             .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -122,7 +123,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Articles");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.ArticleCategory", b =>
@@ -147,7 +150,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("ArticleCategories");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.AuditLogEntry", b =>
@@ -208,7 +213,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Carousels");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.CarouselSlide", b =>
@@ -245,6 +252,8 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasIndex("CarouselId", "Version");
 
                 b.ToTable("CarouselSlides");
+
+                b.HasAnnotation("Behind:AgeRestricted", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.ChatMessage", b =>
@@ -257,6 +266,11 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.Property<Guid>("AuthorId")
                     .HasColumnType("uuid");
+
+                b.Property<bool>("IsAnonymous")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("boolean")
+                    .HasDefaultValue(false);
 
                 b.Property<Guid?>("ReplyToId")
                     .HasColumnType("uuid");
@@ -274,7 +288,35 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("ChatMessages");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.ContentRestriction", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<Guid>("EntityId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("EntityType")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.Property<int>("MinimumAge")
+                    .HasColumnType("integer");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("EntityType", "EntityId");
+
+                b.ToTable("ContentRestrictions");
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Download", b =>
@@ -309,7 +351,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Downloads");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.DownloadFolder", b =>
@@ -339,7 +383,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("DownloadFolders");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Email", b =>
@@ -402,7 +448,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Galleries");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.GalleryItem", b =>
@@ -439,6 +487,8 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasIndex("GalleryId", "Version");
 
                 b.ToTable("GalleryItems");
+
+                b.HasAnnotation("Behind:AgeRestricted", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Grant", b =>
@@ -621,7 +671,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("News");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.NewsCategory", b =>
@@ -646,7 +698,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("NewsCategories");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.NewsComment", b =>
@@ -665,6 +719,11 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .HasMaxLength(2000)
                     .HasColumnType("character varying(2000)");
 
+                b.Property<bool>("IsAnonymous")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("boolean")
+                    .HasDefaultValue(false);
+
                 b.Property<Guid>("NewsId")
                     .HasColumnType("uuid");
 
@@ -676,7 +735,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("NewsComments");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Password", b =>
@@ -861,6 +922,8 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasIndex("SiteId", "Version");
 
                 b.ToTable("SiteSections");
+
+                b.HasAnnotation("Behind:AgeRestricted", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.User", b =>
@@ -1088,6 +1151,8 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasIndex("Type");
 
                 b.ToTable("VfsFiles");
+
+                b.HasAnnotation("Behind:AgeRestricted", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.WallOfShameEntry", b =>
@@ -1260,10 +1325,18 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
             {
                 b.HasBaseType("Behind.Core.Domain.User");
 
+                b.Property<DateOnly?>("Birthday")
+                    .HasColumnType("date");
+
                 b.Property<string>("DisplayName")
                     .IsRequired()
                     .HasMaxLength(500)
                     .HasColumnType("character varying(500)");
+
+                b.Property<bool>("HideEmail")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("boolean")
+                    .HasDefaultValue(true);
 
                 b.Property<Guid?>("ProfilePictureId")
                     .HasColumnType("uuid");

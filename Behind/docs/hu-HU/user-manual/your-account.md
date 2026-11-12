@@ -6,10 +6,22 @@ Ezeket az oldalakat a navigációs sávban lévő nevére kattintva nyithatja me
 
 A **Profil** segítségével módosíthatja a megjelenítendő nevét és a jelszavát. A jelszómódosítás nem érhető el, amíg egy másik felhasználót személyesít meg.
 
-1. Írjon be egy új nevet (legfeljebb 500 karakter). Hagyja üresen, hogy az elsődleges e-mail-címe jelenjen meg.
+1. Írjon be egy új nevet (legfeljebb 500 karakter). A névhez állandó rövid fiókazonosító tartozik, például `Alex#12ab34cd`. Üres névnél `user#12ab34cd` jelenik meg, sohasem az e-mail-cím.
 2. Válassza a **Mentés** gombot.
 
-A „Megjelenik mint: ..." sor megmondja, hogyan látnak Önt mások. Ez a nyilvános fórumüzenetekre is érvényes: üres név esetén az elsődleges e-mail-cím nyilvánossá válik.
+A „Megjelenik mint: ..." sor megmondja, hogyan látnak Önt mások. A szerzőnevek a `#/user/<felhasználóazonosító>` nyilvános profilra mutatnak.
+
+### Születési dátum és e-mail-adatvédelem
+
+A születési dátum nem kötelező és nem nyilvános. A tartalmak korhatár szerinti szűrésére szolgál, ha a webhely globális korhatár-beállítása engedélyezett; ilyenkor születési dátum nélkül a korhatáros tartalmak nem érhetők el. A globális korhatárszűrés alapértelmezés szerint ki van kapcsolva. A születési dátum a **Profil** oldalon menthető.
+
+Az **E-mail-címem elrejtése a nyilvános profilomon** alapértelmezés szerint be van kapcsolva. Csak akkor kapcsolja ki, ha nyilvánossá szeretné tenni elsődleges e-mail-címét. Ez a jogosult fiókkezelők hozzáférését nem módosítja.
+
+### Nyilvános profilok és névtelen hozzászólások
+
+A **Nyilvános profil megtekintése** hivatkozással vagy egy felhasználó nevére kattintva megtekintheti nyilvános nevét, képét és az általa megosztott e-mail-címét. A megfelelő jogosultságú adminisztrátorok ezen az oldalon kitilthatják, visszaengedhetik vagy megszemélyesíthetik a felhasználót; a megszemélyesítés a meglévő jogosultsági és auditálási szabályokat követi.
+
+Bejelentkezve névtelenül is küldhet hozzászólást vagy fórumüzenetet. Más olvasók ekkor nem látják az üzenet szerzőjének profilját és képét. A jogosult adminisztrátorok és moderátorok továbbra is azonosíthatják a valódi szerzőt; a névtelenség nem vonatkozik a webhely személyzetére.
 
 ### Profilkép
 

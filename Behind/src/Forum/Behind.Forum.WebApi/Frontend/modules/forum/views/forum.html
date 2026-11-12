@@ -58,7 +58,9 @@
                         <button class="forum-title btn btn-link" data-bind="text: title, click: $root.openTopic, enable: !$root.busy()"></button>
                         <div class="forum-topic-author">
                             <img class="forum-avatar forum-avatar-small" width="32" height="32" alt="" data-bind="visible: pictureUrl, attr: { src: pictureUrl }">
-                            <strong data-bind="text: author || $root.unknownAuthor"></strong>
+                            <a data-bind="text: author || $root.unknownAuthor, attr: { href: $root.userHref(authorId) }, visible: authorId"></a>
+                            <strong data-bind="text: author || $root.unknownAuthor, visible: !authorId"></strong>
+                            <span data-bind="visible: isAnonymous && authorId, t: 'comments.anonymous'">Anonymous</span>
                         </div>
                     </li>
                 </ul>
@@ -72,12 +74,16 @@
                 <aside class="forum-post-author">
                     <img class="forum-avatar" width="72" height="72" alt="" data-bind="visible: pictureUrl, attr: { src: pictureUrl }">
                     <span class="forum-avatar-placeholder fa fa-user" aria-hidden="true" data-bind="visible: !pictureUrl"></span>
-                    <strong data-bind="text: author || $root.unknownAuthor"></strong>
+                    <a data-bind="text: author || $root.unknownAuthor, attr: { href: $root.userHref(authorId) }, visible: authorId"></a>
+                    <strong data-bind="text: author || $root.unknownAuthor, visible: !authorId"></strong>
+                    <span data-bind="visible: isAnonymous && authorId, t: 'comments.anonymous'">Anonymous</span>
                     <span class="forum-author-label" data-bind="t: 'forum.topicStarter'">Topic starter</span>
                 </aside>
                 <div class="forum-post-content">
                     <div class="forum-post-heading" data-bind="t: 'forum.message'">Message</div>
                     <div class="forum-body" data-bind="bbcode: body"></div>
+                    <button class="btn btn-sm btn-outline-primary" data-bind="visible: canEdit, click: $root.edit, t: 'common.edit'">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, click: $root.remove, t: 'common.delete'">Delete</button>
                 </div>
             </article>
             <h4 class="forum-replies-heading" data-bind="t: 'forum.replies'">Replies</h4>
@@ -86,11 +92,15 @@
                     <aside class="forum-post-author">
                         <img class="forum-avatar" width="72" height="72" alt="" data-bind="visible: pictureUrl, attr: { src: pictureUrl }">
                         <span class="forum-avatar-placeholder fa fa-user" aria-hidden="true" data-bind="visible: !pictureUrl"></span>
-                        <strong data-bind="text: author || $root.unknownAuthor"></strong>
+                        <a data-bind="text: author || $root.unknownAuthor, attr: { href: $root.userHref(authorId) }, visible: authorId"></a>
+                        <strong data-bind="text: author || $root.unknownAuthor, visible: !authorId"></strong>
+                        <span data-bind="visible: isAnonymous && authorId, t: 'comments.anonymous'">Anonymous</span>
                     </aside>
                     <div class="forum-post-content">
                         <div class="forum-post-heading" data-bind="t: 'forum.reply'">Reply</div>
                         <div class="forum-body" data-bind="bbcode: body"></div>
+                        <button class="btn btn-sm btn-outline-primary" data-bind="visible: canEdit, click: $root.edit, t: 'common.edit'">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, click: $root.remove, t: 'common.delete'">Delete</button>
                     </div>
                 </article>
             </div>
@@ -101,7 +111,7 @@
         <form class="forum-panel forum-composer" data-bind="visible: isSignedIn, submit: submit">
             <h3 class="forum-panel-heading" data-bind="t: topic() ? 'forum.writeReply' : 'forum.newTopic'">Write a message</h3>
             <div class="forum-composer-content">
-                <div class="mb-3" data-bind="visible: !topic()">
+                <div class="mb-3" data-bind="visible: !topic() || (editing() && !editing().topicId)">
                     <label for="forum-title" class="form-label" data-bind="t: 'forum.topicTitle'">Topic title</label>
                     <input id="forum-title" class="form-control" maxlength="200" data-bind="textInput: title, enable: !busy(), attr: { required: !topic() }">
                 </div>
@@ -118,7 +128,13 @@
                 <div class="forum-body forum-preview" role="region" aria-labelledby="forum-body-label" data-bind="visible: editorMode() === 'preview', bbcode: body"></div>
                 <p id="forum-bbcode-help" class="form-text" data-bind="t: 'forum.bbcodeHelp'">Use the toolbar or BBCode to format your message.</p>
                 <p class="text-danger" role="status" data-bind="visible: body().length > 20000, t: 'forum.tooLong'">The message must not exceed 20,000 characters.</p>
+                <label class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" data-bind="checked: isAnonymous, enable: !busy()">
+                    <span class="form-check-label" data-bind="t: 'comments.postAnonymously'">Hide my identity publicly</span>
+                </label>
+                <p class="form-text" data-bind="t: 'comments.anonymousNotice'">Moderators can still see your profile.</p>
                 <button type="submit" class="btn btn-primary" data-bind="enable: canSubmit, t: 'forum.post'">Post</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: editing, click: cancelEdit, t: 'common.cancel'">Cancel</button>
             </div>
         </form>
     </div>

@@ -1,8 +1,9 @@
-define(["ko", "models/auth", "models/pager", "models/i18n"], function (ko, auth, createPager, i18n) {
+define(["ko", "models/auth", "models/pager", "models/i18n", "models/user"], function (ko, auth, createPager, i18n, user) {
     var pageSize = 10;
 
     var present = function (item) {
         return {
+            profileHref: user.href(item.id),
             name: ko.pureComputed(function () {
                 return (item.displayName || "").trim() || i18n.t("wallofshame.anonymous");
             }),

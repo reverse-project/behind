@@ -255,14 +255,14 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
             });
         },
 
-        addComment: function (id, content) {
-            return http.post("/news/" + id + "/comments", { content: content }).then(function (response) {
+        addComment: function (id, content, isAnonymous) {
+            return http.post("/news/" + id + "/comments", { content: content, isAnonymous: !!isAnonymous }).then(function (response) {
                 return saved(response, "news.commentAdded", commentFailures);
             });
         },
 
-        editComment: function (commentId, content) {
-            return http.post("/news/comments/" + commentId, { content: content }).then(function (response) {
+        editComment: function (commentId, content, isAnonymous) {
+            return http.post("/news/comments/" + commentId, { content: content, isAnonymous: isAnonymous }).then(function (response) {
                 return saved(response, "news.commentChanged", commentEditFailures);
             });
         },

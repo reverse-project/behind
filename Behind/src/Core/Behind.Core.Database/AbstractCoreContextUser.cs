@@ -45,6 +45,9 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
                     select new
                     {
                         user.DisplayName,
+                        user.ProfilePictureId,
+                        user.Birthday,
+                        user.HideEmail,
                         Emails = Emails
                             .Where(e => EF.Property<Guid>(e, "UserId") == EF.Property<Guid>(user, "Id"))
                             .Select(e => new { e.Value, e.ConfirmedAt })
@@ -110,7 +113,12 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
             userResult.DisplayName,
             userResult.Emails.Select(e => new Email(e.Value, e.ConfirmedAt)),
             roles
-        ));
+        )
+        {
+            ProfilePictureId = userResult.ProfilePictureId,
+            Birthday = userResult.Birthday,
+            HideEmail = userResult.HideEmail
+        });
     }
 
     async Task IRepository<HumanUser, Guid>.AddAsync(HumanUser aggregate, CancellationToken cancellationToken) =>

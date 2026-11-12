@@ -88,15 +88,26 @@ public static class AuditLabelExtensions
                     .ToDictionary(item => item.Id, item => item.Label));
         }
 
-        private async Task<IReadOnlyList<Named>> UsersAsync(List<Guid> ids, CancellationToken cancellationToken) =>
-            await context.Users
+        private async Task<IReadOnlyList<Named>> UsersAsync(List<Guid> ids, CancellationToken cancellationToken)
+        {
+            var users = await context.Users
                 .Where(user => ids.Contains(EF.Property<Guid>(user, "Id")))
                 .Select(user => new Named(EF.Property<Guid>(user, "Id"), user.DisplayName))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
+            return users.Select(user => user with { Label = user.Id.ToUserLabel(user.Label) }).ToList();
+        }
+
         private async Task<IReadOnlyList<Named>> NamedAsync(List<Guid> ids, CancellationToken cancellationToken) =>
         [
+            .. await context.ContentRestrictions
+                .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                .OrderByDescending(item => EF.Property<long>(item, VersionedColumns.Version))
+                .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key),
+                    item.EntityType + " minimum age " + item.MinimumAge))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
             .. await context.Roles
                 .Where(role => ids.Contains(EF.Property<Guid>(role, "Id")))
                 .Select(role => new Named(EF.Property<Guid>(role, "Id"), role.Name))

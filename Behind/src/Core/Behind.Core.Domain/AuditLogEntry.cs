@@ -1,4 +1,5 @@
 using Behind.Common;
+using System.ComponentModel.DataAnnotations.Schema;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Domain;
@@ -12,6 +13,12 @@ public sealed record AuditLogEntry(
     Option<User> BehalfOf
 )
 {
+    [NotMapped]
+    public Guid? ActorId { get; init; }
+
+    [NotMapped]
+    public Guid? BehalfOfActorId { get; init; }
+
     public abstract record AuditAction;
 
     public sealed record Created : AuditAction;

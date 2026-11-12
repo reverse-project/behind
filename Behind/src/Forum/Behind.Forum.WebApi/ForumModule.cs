@@ -37,6 +37,7 @@ public static class ForumModule
         Frontend = new ModuleFrontend(typeof(ForumModule).Assembly, ["modules/forum/css/forum.css"]),
         Database = new ModuleDatabase(typeof(ForumBoardConfiguration).Assembly)
         {
+            ContentRestrictedEntities = [typeof(ForumBoardCategory), typeof(ForumBoard), typeof(ForumPost)],
             SoftDeletedEntities = [typeof(ForumBoardCategory), typeof(ForumBoard), typeof(ForumPost), typeof(ForumUserModeration)]
         }
     };

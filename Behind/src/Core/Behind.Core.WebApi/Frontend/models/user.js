@@ -2,9 +2,24 @@ define(function () {
     return {
         label: function (user) {
             var name = (user.displayName || "").trim();
-            var emails = user.emails || [];
+            var normalized = (user.id || "").replace(/-/g, "").toLowerCase();
+            var value = 14695981039346656037n;
 
-            return name || (emails.length > 0 ? emails[0] : "");
+            if (!normalized) {
+                return name || "user";
+            }
+
+            for (var index = 0; index < normalized.length; index++) {
+                value = BigInt.asUintN(64, (value ^ BigInt(normalized.charCodeAt(index))) * 1099511628211n);
+            }
+
+            var hash = value.toString(36).padStart(8, "0").slice(-8);
+
+            return (name || "user") + "#" + hash;
+        },
+
+        href: function (id) {
+            return id ? "#/user/" + encodeURIComponent(id) : null;
         },
 
         grants: function (user) {

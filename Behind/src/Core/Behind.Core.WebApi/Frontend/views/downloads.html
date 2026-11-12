@@ -42,7 +42,7 @@
                             </td>
                             <td class="text-end text-nowrap" data-bind="text: size"></td>
                             <td class="text-nowrap" data-bind="text: uploadedAt"></td>
-                            <td class="text-break" data-bind="text: uploadedBy"></td>
+                            <td class="text-break"><a data-bind="text: uploadedBy, attr: { href: uploadedByHref }"></a></td>
                         </tr>
                     </tbody>
                 </table>

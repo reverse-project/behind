@@ -19,6 +19,12 @@ The limits of the site image carousels are the numbers of `frontend.json` (`Fron
 
 The **DefaultLocale** setting of `frontend.json` (`Frontend › Site`) is a drop-down of the available languages by their official names, for example **English (International)** and **Magyar**. The language applies to every visitor; a locale without a file is refused.
 
+## Age restrictions
+
+In **backend.json > Backend > ContentRestrictions**, **Enabled** turns global age filtering on or off. It is **off by default** and reloads without restarting. While disabled, stored age rules do not limit access. When enabled, readers need a private birthday meeting each item's minimum age; unknown birthdays cannot access restricted items or their related content and files. Manage rules through **Content restrictions** with `RawDatabase.Manage`, or use the minimum-age control on supported item editors. Setting zero removes the age requirement. Developers can list deleted rules, restore them or permanently delete them.
+
+Choose a content type and **Browse items** to find an item without copying its UUID. Search by its display name or full ID and use **Previous items** / **Next items** to page through results. Each item shows its title, filename, name or other available text, falling back to its ID when no label exists. Choose the item to fill the restriction's ID. You can still enter an ID manually. Existing rules also show readable labels.
+
 ## Email settings
 
 The `email.json` tab is a form instead of a list of values:

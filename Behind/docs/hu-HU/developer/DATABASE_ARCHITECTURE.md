@@ -10,6 +10,10 @@ A modul-adatfolyamok a Common.Database `IModuleCreationOrder` felületén haszn�
 
 ## Fórumadatok és profilképek
 
+A verziózott `ContentRestrictions` tábla tárolja az entitásonkénti korhatárokat; a `ContentAge` és `HiddenContentIds` közös lekérdezésszűrést és tranzitív szülőhivatkozásokat kezel. A modulok a szűrhető típusokat és szülőtulajdonságokat a `ModuleDatabase.ContentRestrictedEntities` és `ContentRestrictionParentProperties` mezőkben adják meg. A globális `Backend.ContentRestrictions.Enabled` alapértéke false: a szabályokat megőrzi, de a korhatárszűrést megkerüli.
+
+A profiladatok nullázható `Users.Birthday` és alapértelmezés szerint igaz `Users.HideEmail` mezővel bővülnek; a gazda indítása előtt alkalmazza az SQLite/PostgreSQL-migrációkat az egyesített telepítési kontextusokban is. A meglévő fiókok e-mail-címe rejtett marad, születési dátumuk csak külön mentéssel lesz. A születési dátum érzékeny nyersszerkesztő-adat, nem nyilvános modulprofil-mező. A névazonosító a teljes UUID-ből számítódik, ezért külön oszlopot nem igényel.
+
 Az azonos kezdési idejű időzített tartalmak sorrendjét az azonosító előtt az audit létrehozási időpontja dönti el; a kitiltási lista is auditidőpontokat használ UUID-sorrend helyett. Egyik módosítás sem vezet be saját időbélyegoszlopot.
 
 Az `IForumContext` felületet a fő projekt SQLite/PostgreSQL kontextusai valósítják meg, így a `ForumBoards`, `ForumPosts` és `ForumUserModerations` táblák a Core-ral közös adatbázisba kerülnek. Mindegyik összetett `Key`/`Version` elsődleges kulcsot, új sorral történő módosítást, auditból származó időpontokat, átmeneti törlést, fejlesztői visszaállítást/végleges törlést és általános nyers szerkesztést használ. A modul migrációinak előzménye a `__forumMigrationsHistory`; a webprojekt migrátora a Core után alkalmazza őket. Nincs modulok közötti idegen kulcs; a parancsok ellenőrzik az aktív táblákat és közzétett témákat, és nem engedik a hivatkozott táblák/témák végleges törlését.

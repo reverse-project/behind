@@ -61,7 +61,7 @@ public sealed class NewsCommentQueriesTests : IDisposable
         var comment = Assert.Single((await ListAsync(newsId, new Flipper(1, 10))).Results.Match(() => [], items => items.ToList()));
 
         Assert.Equal(
-            (new VersionedKey<Guid>(key, 1), _bed.OtherAuthorId, "Test User", "Hello", Some(NewsTestBed.Now), None),
+            (new VersionedKey<Guid>(key, 1), _bed.OtherAuthorId, _bed.OtherAuthorId.ToUserLabel("Test User"), "Hello", Some(NewsTestBed.Now), None),
             (comment.Id, comment.AuthorId, comment.Author, comment.Content, comment.CreatedAt, comment.UpdatedAt));
     }
 

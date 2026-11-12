@@ -122,6 +122,63 @@ public sealed class ChatEndpointsTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task AnonymousHistoryAndReplyPreviews_OnlyRevealIdentityToModerators(bool owner, bool moderator)
+    {
+        var author = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var id = Guid.NewGuid();
+        _identity.UserId(_http).Returns(owner ? author : moderator ? Guid.NewGuid() : null);
+        if (moderator)
+        {
+            Permit(ChatEndpoints.ModerationGrant);
+        }
+        Permit(ChatEndpoints.DeleteGrant);
+        _store.List(null, 20, default).Returns(new IChatStore.Page([
+            new(id, 1, author, "anonymous", parent, NewsTestBed.Now, null, true)
+        ], null));
+        _store.Find(Arg.Any<IReadOnlyCollection<Guid>>(), default).Returns([
+            new(parent, 1, author, "anonymous parent", null, NewsTestBed.Now, null, true)
+        ]);
+        _users.Find(Arg.Any<IReadOnlyCollection<Guid>>(), default)
+            .Returns([new IModuleUsers.Profile(author, "Real author", Guid.NewGuid())]);
+
+        var message = Assert.Single(Assert.IsType<Ok<ChatEndpoints.Page>>(await List()).Value!.Items);
+        var details = Assert.IsType<Ok<ChatEndpoints.Message>>(await ChatEndpoints.Get(
+            id, _http, _store, _identity, _users, _authorization, _clock, default)).Value!;
+        foreach (var item in new[] { message, details })
+        {
+            Assert.True(item.IsAnonymous);
+            Assert.Equal(moderator ? author : (Guid?)null, item.AuthorId);
+            Assert.Equal(moderator ? "Real author" : "", item.Author);
+            Assert.Equal(moderator, item.ProfilePictureUrl is not null);
+        }
+        Assert.True(message.Reply!.IsAnonymous);
+        Assert.Equal(moderator ? author : (Guid?)null, message.Reply.AuthorId);
+        Assert.Equal(moderator ? "Real author" : "", message.Reply.Author);
+        Assert.Equal(owner, message.CanEdit);
+        Assert.Equal(owner || moderator, message.CanDelete);
+    }
+
+    [Fact]
+    public async Task AnonymousMutations_ForwardTheFlagWithAuthenticatedAuthor()
+    {
+        var author = Guid.NewGuid();
+        var id = Guid.NewGuid();
+        _identity.UserId(_http).Returns(author);
+        _store.Add(author, "hidden", null, default, true).Returns(new IChatStore.SaveResult(IChatStore.SaveStatus.Saved, id));
+        _store.Update(id, 1, author, "edited", default, true).Returns(new IChatStore.SaveResult(IChatStore.SaveStatus.Saved, id));
+
+        await ChatEndpoints.Add(new("hidden", IsAnonymous: true), _http, _store, _identity, _authorization, default);
+        await ChatEndpoints.Update(id, new("edited", 1, true), _http, _store, _identity, _authorization, default);
+
+        await _store.Received().Add(author, "hidden", null, default, true);
+        await _store.Received().Update(id, 1, author, "edited", default, true);
+    }
+
+    [Theory]
     [InlineData(false, 4)]
     [InlineData(true, 5)]
     [InlineData(true, 6)]

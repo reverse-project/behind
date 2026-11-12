@@ -32,7 +32,7 @@ public static class DownloadResponseExtensions
                 download.Length,
                 download.UploadedBy,
                 download.UploadedAt.ToNullable(),
-                $"{FilePath}/{download.Id}");
+                $"{FilePath}/{download.Id}") { UploadedById = download.UploadedById };
     }
 
     extension(IDownloadQueries.DeletedDownloads deleted)

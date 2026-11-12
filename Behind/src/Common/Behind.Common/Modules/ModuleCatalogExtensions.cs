@@ -71,6 +71,12 @@ public static class ModuleCatalogExtensions
         public IReadOnlyList<Type> SoftDeletedEntities =>
             [..catalog.Databases.SelectMany(database => database.SoftDeletedEntities).Distinct()];
 
+        public IReadOnlyList<Type> ContentRestrictedEntities =>
+            [..catalog.Databases.SelectMany(database => database.ContentRestrictedEntities).Distinct()];
+
+        public IReadOnlyList<string> ContentRestrictionParentProperties =>
+            [..catalog.Databases.SelectMany(database => database.ContentRestrictionParentProperties).Distinct()];
+
         public IReadOnlySet<string> ReadOnlyEntities =>
             catalog.Databases.SelectMany(database => database.ReadOnlyEntities).ToHashSet(StringComparer.Ordinal);
     }

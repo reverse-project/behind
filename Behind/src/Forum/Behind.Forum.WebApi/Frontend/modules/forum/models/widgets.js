@@ -1,4 +1,4 @@
-define(["modules/forum/models/forum"], function (forum) {
+define(["modules/forum/models/forum", "models/i18n"], function (forum, i18n) {
     return {
         load: function (type, limit) {
             if (type === "forum.stats") {
@@ -15,7 +15,7 @@ define(["modules/forum/models/forum"], function (forum) {
 
             return forum.get("widgets/posts?limit=" + limit).then(function (page) {
                 return { items: page.items.slice(0, limit).map(function (post) {
-                    return { title: post.title || post.author, href: "#/forum" };
+                    return { title: post.title || post.author || i18n.t("comments.anonymous"), href: "#/forum" };
                 }) };
             });
         }

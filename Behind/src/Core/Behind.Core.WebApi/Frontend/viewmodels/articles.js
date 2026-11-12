@@ -9,6 +9,7 @@ define(["ko", "models/articles", "models/newsmeta", "models/pager", "models/i18n
             title: item.title,
             summary: item.summary,
             author: meta.author(item.author),
+            authorHref: meta.authorHref(item.authorId),
             stamp: meta.stamp(item),
             created: meta.created(item),
             hasCategory: category !== null,

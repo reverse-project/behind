@@ -39,6 +39,14 @@ public static class ForumRoutesExtensions
                 .Produces<ForumEndpoints.PostSavedResponse>(201).Produces(400).Produces(401).Produces(403).Produces(409)
                 .RequireAuthorization(ForumNames.Read)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ForumEndpoints.PostRequest>>();
+            forum.MapPost("/posts/{id:guid}", ForumEndpoints.UpdatePost)
+                .WithSummary("Edit an owned forum message or moderate it.")
+                .Produces<VersionedSavedResponse>().Produces(401).Produces(403).Produces(404)
+                .RequireAuthorization(ForumNames.Read)
+                .AddEndpointFilter<DataAnnotationValidationFilter<ForumEndpoints.PostRequest>>();
+            forum.MapPost("/posts/{id:guid}/delete", ForumEndpoints.DeletePost)
+                .WithSummary("Delete an owned forum message or moderate it.")
+                .Produces(204).Produces(401).Produces(403).Produces(404).RequireAuthorization(ForumNames.Read);
             forum.MapGet("/settings", ForumEndpoints.Settings)
                 .WithSummary("Read the current forum moderation settings.").Produces<ForumSettings>();
             forum.MapGet("/manage/posts", ForumEndpoints.ManagePosts)
@@ -69,7 +77,7 @@ public static class ForumRoutesExtensions
                 .WithSummary("Set a user moderation override when enabled.").RequireAuthorization(ForumNames.Manage);
             MapLifecycle<ForumBoardCategory>(forum, "/categories", ForumNames.Manage, false);
             MapLifecycle<ForumBoard>(forum, "/boards", ForumNames.Manage);
-            MapLifecycle<ForumPost>(forum, "/posts", ForumNames.Moderate);
+            MapLifecycle<ForumPost>(forum, "/posts", ForumNames.Moderate, false);
             MapLifecycle<ForumUserModeration>(forum, "/manage/users", ForumNames.Manage);
         }
     }

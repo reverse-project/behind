@@ -57,7 +57,7 @@
             <ul class="list-group mb-3" data-bind="foreach: items">
                 <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                     <div class="me-auto">
-                        <strong class="text-break" data-bind="text: displayName"></strong>
+                        <a class="text-break fw-bold" data-bind="text: displayName, attr: { href: profileHref }"></a>
                         <span class="text-body-secondary text-break ms-2" data-bind="text: emails"></span>
                     </div>
                     <button type="button" class="btn btn-sm btn-success" data-bind="visible: $root.canWrite(), enable: !$parent.busy(), click: approve, t: 'accessSettings.pending.approve'">Approve</button>

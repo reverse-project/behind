@@ -58,7 +58,10 @@ public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
             ? Some(result.BehalfOfId.Value.ToUser(result.BehalfOfDisplayName, result.BehalfOfEmails))
             : None;
 
-        return Some(result.Audit with { User = user, BehalfOf = behalfOf });
+        return Some(result.Audit with
+        {
+            User = user, BehalfOf = behalfOf, ActorId = result.UserId, BehalfOfActorId = result.BehalfOfId
+        });
     }
     async Task IRepository<AuditLogEntry, Guid>.
         AddAsync(AuditLogEntry aggregate, CancellationToken cancellationToken) =>

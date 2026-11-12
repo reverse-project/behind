@@ -15,7 +15,7 @@ partial class ForumContextSqliteModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261111193450_AddBoardCategories";
+    public override string LastMigrationId => "20261112082850_AnonymousForumPosts";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -89,6 +89,11 @@ partial class ForumContextSqliteModelSnapshot : ModelSnapshot
                     .IsRequired()
                     .HasMaxLength(20000)
                     .HasColumnType("TEXT");
+
+                b.Property<bool>("IsAnonymous")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER")
+                    .HasDefaultValue(false);
 
                 b.Property<int>("State")
                     .HasColumnType("INTEGER");

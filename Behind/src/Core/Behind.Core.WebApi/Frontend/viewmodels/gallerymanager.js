@@ -21,6 +21,7 @@ define(["ko", "models/session", "models/galleries", "models/newsmeta", "models/m
                 id: item.id,
                 title: item.title,
                 author: meta.author(item.author),
+                authorHref: meta.authorHref(item.authorId),
                 stamp: meta.stamp(item),
                 thumbnailUrl: item.thumbnailUrl,
                 hasThumbnail: !!item.thumbnailUrl,

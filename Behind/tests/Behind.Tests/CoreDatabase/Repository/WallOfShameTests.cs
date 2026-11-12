@@ -128,7 +128,8 @@ public sealed class WallOfShameTests : IDisposable
         Assert.Equal((2L, 2L, 1), (page.Total, page.PageCount, page.PageSize));
         Assert.Equal(["two"], page.Results.Match(() => [], items => items.Select(i => i.Reason).ToList()));
         Assert.Equal(["one"], next.Results.Match(() => [], items => items.Select(i => i.Reason).ToList()));
-        Assert.Equal("Test User", page.Results.Match(() => "", items => items.First().DisplayName));
+        Assert.Equal(second.ToUserLabel("Test User"), page.Results.Match(() => "", items => items.First().DisplayName));
+        Assert.Equal(second, page.Results.Match(() => Guid.Empty, items => items.First().Id));
     }
 
     [Fact]

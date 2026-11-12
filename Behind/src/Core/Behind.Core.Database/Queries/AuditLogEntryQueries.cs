@@ -87,7 +87,7 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerabl
                 ? Some(item.BehalfOfId.Value.ToUser(item.BehalfOfDisplayName, item.BehalfOfEmails))
                 : None;
 
-            return item.Audit with { User = user, BehalfOf = behalfOf };
+            return item.Audit with { User = user, BehalfOf = behalfOf, ActorId = item.UserId, BehalfOfActorId = item.BehalfOfId };
         });
 
         return total > 0

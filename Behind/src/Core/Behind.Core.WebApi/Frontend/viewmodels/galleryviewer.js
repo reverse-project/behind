@@ -12,6 +12,7 @@ define(["ko", "models/galleries", "models/newsmeta"], function (ko, galleries, m
         self.title = ko.observable("");
         self.description = ko.observable("");
         self.author = ko.observable("");
+        self.authorHref = ko.observable(null);
         self.stamp = ko.observable("");
         self.created = ko.observable("");
         self.images = ko.observableArray([]);
@@ -128,6 +129,7 @@ define(["ko", "models/galleries", "models/newsmeta"], function (ko, galleries, m
                     self.title(result.data.title);
                     self.description(result.data.description);
                     self.author(meta.author(result.data.author));
+                    self.authorHref(meta.authorHref(result.data.authorId));
                     self.stamp(meta.stamp(result.data));
                     self.created(meta.created(result.data));
                     self.images(result.data.items.map(present));

@@ -16,6 +16,7 @@ public sealed class NewsCommentConfiguration : IEntityTypeConfiguration<NewsComm
         builder.HasVersionedKey();
 
         builder.Property(comment => comment.Content).HasMaxLength(NewsComment.MaxContentLength).IsRequired();
+        builder.Property(comment => comment.IsAnonymous).HasDefaultValue(false);
 
         builder.Property<Guid>(NewsIdProperty).IsRequired();
 

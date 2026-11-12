@@ -48,7 +48,7 @@ public class RpDotHuSiteTests
 
         Assert.NotNull(telemetry);
         Assert.True(telemetry.IsEnabled);
-        Assert.Equal("rpdothu", telemetry.ServiceName);
+        Assert.Equal("rpdothu-localhost-dev", telemetry.ServiceName);
         Assert.NotNull(telemetry.Traces);
         Assert.NotNull(telemetry.Metrics);
         Assert.NotNull(telemetry.Logging);

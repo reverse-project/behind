@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager", "models/comments", "models/i18n"], function (ko, session, news, meta, createPager, comments, i18n) {
+define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager", "models/comments", "models/i18n", "models/user"], function (ko, session, news, meta, createPager, comments, i18n, user) {
     var commentPageSize = 10;
 
     return function NewsArticleViewModel(context) {
@@ -11,6 +11,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
         self.title = ko.observable("");
         self.content = ko.observable("");
         self.author = ko.observable("");
+        self.authorHref = ko.observable(null);
         self.stamp = ko.observable("");
         self.created = ko.observable("");
         self.categoryName = ko.observable("");
@@ -21,6 +22,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
         self.commentsEnabled = ko.observable(true);
         self.commentMessage = ko.observable("");
         self.newComment = ko.observable("");
+        self.isAnonymous = ko.observable(false);
         self.comments = ko.observableArray([]);
         self.pager = createPager(function () {
             return self.refreshComments();
@@ -51,13 +53,16 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
         });
 
         self.canPost = ko.pureComputed(function () {
-            return self.newComment().trim() !== "" && !self.busy();
+            return session.isSignedIn() && self.newComment().trim() !== "" && !self.busy();
         });
 
         var presentComment = function (item) {
             var row = {
                 id: item.id,
-                author: meta.author(item.author),
+                author: item.isAnonymous && !item.authorId ? i18n.t("comments.anonymous") : meta.author(item.author),
+                authorHref: user.href(item.authorId),
+                isAnonymous: item.isAnonymous,
+                draftAnonymous: ko.observable(item.isAnonymous),
                 content: item.content,
                 createdAt: meta.formatDate(item.createdAt),
                 editedAt: item.updatedAt ? i18n.t("news.edited", [meta.formatDate(item.updatedAt)]) : "",
@@ -73,6 +78,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
             });
             row.startEdit = function () {
                 row.draft(row.content);
+                row.draftAnonymous(row.isAnonymous);
                 row.isEditing(true);
             };
             row.cancelEdit = function () {
@@ -84,7 +90,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
                 }
 
                 return self.perform(function () {
-                    return news.editComment(row.id, row.draft().trim());
+                    return news.editComment(row.id, row.draft().trim(), row.draftAnonymous());
                 });
             };
 
@@ -149,13 +155,14 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
             }
 
             return self.perform(function () {
-                return news.addComment(newsId, self.newComment().trim());
+                return news.addComment(newsId, self.newComment().trim(), self.isAnonymous());
             }).then(function (result) {
                 if (!result.ok) {
                     return undefined;
                 }
 
                 self.newComment("");
+                self.isAnonymous(false);
 
                 return self.pager.last();
             });
@@ -176,6 +183,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/pager"
                     self.title(result.data.title);
                     self.content(result.data.displayContent);
                     self.author(meta.author(result.data.author));
+                    self.authorHref(user.href(result.data.authorId));
                     self.stamp(meta.stamp(result.data));
                     self.created(meta.created(result.data));
                     self.categoryName(category ? category.name : "");

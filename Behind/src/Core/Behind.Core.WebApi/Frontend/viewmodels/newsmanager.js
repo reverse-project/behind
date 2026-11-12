@@ -22,6 +22,7 @@ define(["ko", "models/session", "models/news", "models/newsmeta", "models/manage
                 id: item.id,
                 title: item.title,
                 author: meta.author(item.author),
+                authorHref: meta.authorHref(item.authorId),
                 stamp: meta.stamp(item),
                 categoryName: item.category ? item.category.name : "",
                 hasCategory: item.category !== null,

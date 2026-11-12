@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/pager", "models/i18n"], function (ko, auth, session, createPager, i18n) {
+define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "models/user"], function (ko, auth, session, createPager, i18n, user) {
     var pageSize = 20;
     var defaultRangeDays = 7;
 
@@ -98,9 +98,11 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n"], f
                 return i18n.dateTime(item.timestamp);
             }),
             actor: item.actor.label,
+            actorHref: user.href(item.actor.id),
             actorEmails: item.actor.emails.join(", "),
             hasBehalfOf: item.onBehalfOf !== null,
             behalfOf: item.onBehalfOf ? item.onBehalfOf.label : "",
+            behalfOfHref: item.onBehalfOf ? user.href(item.onBehalfOf.id) : null,
             action: known(actionKeys, item.action),
             actionClass: actionClasses[item.action] || "text-bg-secondary",
             entityName: known(entityKeys, item.entityName),

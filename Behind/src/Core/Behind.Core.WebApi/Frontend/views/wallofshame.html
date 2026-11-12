@@ -5,7 +5,7 @@
     <ul class="list-group mb-3" data-bind="foreach: entries">
         <li class="list-group-item">
             <div class="d-flex flex-wrap align-items-center gap-2">
-                <strong class="text-break" data-bind="text: name"></strong>
+                <a class="text-break fw-bold" data-bind="text: name, attr: { href: profileHref }"></a>
                 <span class="badge text-bg-secondary" data-bind="visible: isTemporary"><span data-bind="t: 'wallofshame.until'">Until</span> <span data-bind="text: expiresAt"></span></span>
             </div>
             <div class="text-break" data-bind="text: reason"></div>

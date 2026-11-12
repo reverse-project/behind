@@ -1,0 +1,14 @@
+@baseUrl = http://localhost:5000
+@accessToken = replace-with-developer-access-token
+
+### Browse the latest nondeleted news by title
+GET {{baseUrl}}/content-restrictions/browse/News?page=1&search=welcome
+Authorization: Bearer {{accessToken}}
+
+### Browse uploaded file names
+GET {{baseUrl}}/content-restrictions/browse/VfsFile?page=1
+Authorization: Bearer {{accessToken}}
+
+### Unsupported entity types return 400
+GET {{baseUrl}}/content-restrictions/browse/HumanUser
+Authorization: Bearer {{accessToken}}

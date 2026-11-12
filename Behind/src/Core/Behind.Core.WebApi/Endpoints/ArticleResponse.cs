@@ -10,7 +10,10 @@ public sealed record ArticleListItem(
     string Author,
     DateTimeOffset? CreatedAt,
     DateTimeOffset? UpdatedAt,
-    NewsCategoryItem? Category);
+    NewsCategoryItem? Category)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record ManagedArticleItem(
     Guid Id,
@@ -23,7 +26,10 @@ public sealed record ManagedArticleItem(
     NewsCategoryItem? Category,
     bool IsDeleted,
     string Status,
-    bool HasNewerDraft);
+    bool HasNewerDraft)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record PublicArticleListResponse(
     PageResponse<ArticleListItem> Articles,
@@ -45,7 +51,10 @@ public sealed record ArticleDetailResponse(
     string Author,
     DateTimeOffset? CreatedAt,
     DateTimeOffset? UpdatedAt,
-    NewsCategoryItem? Category);
+    NewsCategoryItem? Category)
+{
+    public Guid AuthorId { get; init; }
+}
 
 public sealed record ArticleVersionItem(long Version, string Title, DateTimeOffset? CreatedAt, bool IsActive);
 

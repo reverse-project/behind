@@ -16,4 +16,5 @@ public sealed record ForumPost(
     Guid AuthorId,
     string Title,
     string Body,
-    PublicationState State);
+    PublicationState State,
+    bool IsAnonymous = false);

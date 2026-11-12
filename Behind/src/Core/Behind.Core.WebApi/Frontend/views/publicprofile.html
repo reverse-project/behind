@@ -1,0 +1,23 @@
+<section class="behind-public-profile">
+    <h1 class="mb-3" data-bind="t: 'profile.publicTitle'">Public profile</h1>
+    <p class="alert alert-info" role="status" data-bind="visible: message, text: message"></p>
+    <div data-bind="with: profile">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <img class="img-thumbnail" width="96" height="96" alt="" data-bind="visible: pictureId, attr: { src: pictureId ? '/profile/images/' + encodeURIComponent(pictureId) : null }">
+            <h2 class="h4 text-break" data-bind="text: displayName"></h2>
+        </div>
+        <p data-bind="visible: email"><span data-bind="t: 'profile.email'">Email</span>: <span class="text-break" data-bind="text: email"></span></p>
+        <span class="badge text-bg-danger mb-3" data-bind="visible: ban, t: 'users.banned'">Banned</span>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-danger" data-bind="visible: permissions.canModerate && !ban && !$root.banning(), enable: !$root.busy(), click: $root.startBan, t: 'users.ban'">Ban</button>
+            <button type="button" class="btn btn-outline-success" data-bind="visible: permissions.canModerate && ban, enable: !$root.busy(), click: $root.unban, t: 'users.unban'">Unban</button>
+            <button type="button" class="btn btn-outline-warning" data-bind="visible: permissions.canImpersonate, enable: !$root.busy(), click: $root.impersonate, t: 'users.impersonate'">Impersonate</button>
+        </div>
+        <form class="mt-3" data-bind="visible: permissions.canModerate && $root.banning(), submit: $root.ban">
+            <label class="form-label" for="public-profile-ban-reason" data-bind="t: 'users.banMessage'">Ban message:</label>
+            <textarea id="public-profile-ban-reason" class="form-control mb-2" maxlength="500" data-bind="value: $root.banMessage"></textarea>
+            <button type="submit" class="btn btn-danger" data-bind="enable: !$root.busy(), t: 'users.ban'">Ban</button>
+            <button type="button" class="btn btn-outline-secondary" data-bind="click: $root.cancelBan, enable: !$root.busy(), t: 'common.cancel'">Cancel</button>
+        </form>
+    </div>
+</section>

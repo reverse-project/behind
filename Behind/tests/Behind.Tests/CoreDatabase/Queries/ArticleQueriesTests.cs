@@ -157,7 +157,8 @@ public sealed class ArticleQueriesTests : IDisposable
         var item = Assert.Single((await ListAsync()).Results.Match(() => [], found => found.ToList()));
 
         Assert.Equal((new VersionedKey<Guid>(first.Key, 2), "Setup 2", "<p>newer</p>"), (item.Id, item.Title, item.Summary));
-        Assert.Equal("Test User", item.Author);
+        Assert.Equal(_bed.OtherAuthorId.ToUserLabel("Test User"), item.Author);
+        Assert.Equal(_bed.OtherAuthorId, item.AuthorId);
         Assert.Equal((Some(NewsTestBed.Now), Some(NewsTestBed.Now.AddHours(1))), (item.CreatedAt, item.UpdatedAt));
         Assert.Equal(category, item.Category.Match(() => Guid.Empty, found => found.Id));
     }

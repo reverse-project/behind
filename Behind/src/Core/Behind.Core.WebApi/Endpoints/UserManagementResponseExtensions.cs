@@ -14,7 +14,8 @@ public static class UserManagementResponseExtensions
     extension(IWallOfShameQueries.ShamedUser shamed)
     {
         public WallOfShameItem ToItem() =>
-            new(shamed.DisplayName, shamed.Reason, shamed.Expires.Match<DateTimeOffset?>(() => null, expires => expires));
+            new(shamed.DisplayName, shamed.Reason, shamed.Expires.Match<DateTimeOffset?>(() => null, expires => expires))
+            { Id = shamed.Id };
     }
 
     extension(IUserManagementQueries.ManagedUser user)

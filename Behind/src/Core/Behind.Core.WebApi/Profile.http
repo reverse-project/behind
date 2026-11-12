@@ -1,0 +1,38 @@
+@baseUrl = http://localhost:5000
+@token = replace-with-access-token
+@userId = 019a7821-1234-7000-8000-012345678901
+
+### Public profile, without private birthday or hidden email
+GET {{baseUrl}}/users/profiles/{{userId}}
+
+### Public profile with current actor moderation permissions
+GET {{baseUrl}}/users/profiles/{{userId}}
+Authorization: Bearer {{token}}
+
+### Missing public profile
+GET {{baseUrl}}/users/profiles/00000000-0000-0000-0000-000000000000
+
+### Read own private profile settings
+GET {{baseUrl}}/profile/details
+Authorization: Bearer {{token}}
+
+### Store optional private birthday and hide public email
+PUT {{baseUrl}}/profile/details
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "birthday": "2000-02-29", "hideEmail": true }
+
+### Clear birthday and opt in to showing primary email
+PUT {{baseUrl}}/profile/details
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "birthday": null, "hideEmail": false }
+
+### Reject future birthday
+PUT {{baseUrl}}/profile/details
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "birthday": "9999-12-31", "hideEmail": true }

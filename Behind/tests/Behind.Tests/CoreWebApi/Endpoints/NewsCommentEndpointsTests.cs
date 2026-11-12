@@ -56,7 +56,7 @@ public class NewsCommentEndpointsTests
         var item = Single(await ListAs(context, QueriesWith(Comment(UserId))));
 
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
-        Assert.Equal(new NewsCommentItem(CommentId, "Ada", "Nice", Now, false), item);
+        Assert.Equal(new NewsCommentItem(CommentId, "Ada", "Nice", Now, false, AuthorId: UserId), item);
     }
 
     [Fact]

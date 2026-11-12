@@ -30,6 +30,7 @@
         <ul class="list-group mb-3" data-bind="foreach: boards.items">
             <li class="list-group-item d-flex flex-wrap gap-2">
                 <span class="me-auto" data-bind="text: entity.name + ' - ' + $root.categoryName(entity.categoryId)"></span>
+                <content-age params="entityType: 'ForumBoard', id: key"></content-age>
                 <button class="btn btn-sm btn-outline-primary" data-bind="visible: !$root.deleted(), click: edit, enable: !$root.busy(), t: 'common.edit'">Edit</button>
                 <button class="btn btn-sm btn-outline-danger" data-bind="visible: !$root.deleted(), click: remove, enable: !$root.busy(), t: 'common.delete'">Delete</button>
                 <button class="btn btn-sm btn-outline-success" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: restore, enable: !$root.busy(), t: 'common.restore'">Restore</button>
@@ -49,6 +50,7 @@
         <ul class="list-group mb-3" data-bind="foreach: categories.items">
             <li class="list-group-item d-flex flex-wrap gap-2">
                 <span class="me-auto" data-bind="text: entity.name"></span>
+                <content-age params="entityType: 'ForumBoardCategory', id: key"></content-age>
                 <button class="btn btn-sm btn-outline-primary" data-bind="visible: !$root.deleted(), click: edit, enable: !$root.busy(), t: 'common.edit'">Edit</button>
                 <button class="btn btn-sm btn-outline-danger" data-bind="visible: !$root.deleted(), click: remove, enable: !$root.busy(), t: 'common.delete'">Delete</button>
                 <button class="btn btn-sm btn-outline-success" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: restore, enable: !$root.busy(), t: 'common.restore'">Restore</button>
@@ -65,7 +67,8 @@
         <div data-bind="foreach: posts.items">
             <article class="card card-body mb-3">
                 <h3 class="h5" data-bind="text: title"></h3>
-                <p><strong data-bind="text: author || $root.unknownAuthor"></strong> <span class="badge text-bg-secondary" data-bind="text: stateLabel"></span></p>
+                <content-age params="entityType: 'ForumPost', id: id"></content-age>
+                <p><a class="fw-bold" data-bind="text: author || $root.unknownAuthor, attr: { href: $root.userHref(authorId) }"></a> <span class="badge text-bg-secondary" data-bind="visible: isAnonymous, t: 'comments.anonymous'">Anonymous</span> <span class="badge text-bg-secondary" data-bind="text: stateLabel"></span></p>
                 <div class="forum-body" data-bind="bbcode: body"></div>
                 <div class="d-flex flex-wrap gap-2">
                     <button class="btn btn-sm btn-success" data-bind="visible: !$root.deleted(), click: approve, enable: !$root.busy(), t: 'forum.approve'">Publish</button>
@@ -89,7 +92,7 @@
         </form>
         <ul class="list-group mb-3" data-bind="foreach: rules.items">
             <li class="list-group-item d-flex flex-wrap gap-2">
-                <span class="me-auto" data-bind="text: label"></span>
+                <a class="me-auto" data-bind="text: label, attr: { href: $root.userHref(userId) }"></a>
                 <button class="btn btn-sm btn-outline-primary" data-bind="visible: !$root.deleted() &amp;&amp; $root.settings().allowUserOverrides, click: edit, enable: !$root.busy(), t: 'common.edit'">Edit</button>
                 <button class="btn btn-sm btn-outline-danger" data-bind="visible: !$root.deleted(), click: remove, enable: !$root.busy(), t: 'common.delete'">Delete</button>
                 <button class="btn btn-sm btn-outline-success" data-bind="visible: $root.deleted() &amp;&amp; $root.canViewDeleted(), click: restore, enable: !$root.busy(), t: 'common.restore'">Restore</button>

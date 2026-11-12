@@ -9,13 +9,13 @@
 | Sign in, Sign up | when signed out | the sign in and sign up pages |
 | Your name (menu) | when signed in | Profile, Session, Sessions, Administration (only if you may use it), and Sign out |
 
-If you have no display name, your email address is shown in the menu.
+Your name includes a stable short account tag. If you have no display name, `user#tag` is shown, never your email address.
 
 ## Creating an account
 
 1. Choose **Sign up**.
 2. Enter your **email** and a **password**.
-3. Optionally enter a **display name**. If you leave it empty your email address is shown instead.
+3. Optionally enter a **display name**. A stable account tag is appended; leave the name empty to use `user#tag`.
 4. Type the characters shown in the captcha picture. If they are hard to read, choose **New picture**.
 5. Choose **Create account**.
 

@@ -68,7 +68,7 @@ public sealed class ArticleQueries(AbstractCoreContext context) : IArticleQuerie
                 lookups.AuthorOf(row),
                 lookups.CreatedAtOf(row),
                 lookups.UpdatedAtOf(row),
-                lookups.CategoryOf(row)))
+                lookups.CategoryOf(row)) { AuthorId = row.AuthorId })
             .ToList();
 
         return new PagedResult<IArticleQueries.ManagedArticleListing>(
@@ -165,7 +165,7 @@ public sealed class ArticleQueries(AbstractCoreContext context) : IArticleQuerie
             lookups.AuthorOf(row),
             lookups.CreatedAtOf(row),
             lookups.UpdatedAtOf(row),
-            lookups.CategoryOf(row)));
+            lookups.CategoryOf(row)) { AuthorId = row.AuthorId });
     }
 
     private static IArticleQueries.ArticleListing ToListing(ArticleRow row, ArticleLookups lookups) =>
@@ -176,7 +176,7 @@ public sealed class ArticleQueries(AbstractCoreContext context) : IArticleQuerie
             lookups.AuthorOf(row),
             lookups.CreatedAtOf(row),
             lookups.UpdatedAtOf(row),
-            lookups.CategoryOf(row));
+            lookups.CategoryOf(row)) { AuthorId = row.AuthorId };
 
     private IDisposable? Scope(DeletionState state) =>
         state == DeletionState.Deleted ? context.SoftDelete.IncludeDeleted() : null;

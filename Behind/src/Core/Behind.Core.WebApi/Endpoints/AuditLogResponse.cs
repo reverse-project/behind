@@ -1,6 +1,9 @@
 namespace Behind.Core.WebApi.Endpoints;
 
-public sealed record AuditLogActor(string Kind, string Label, IReadOnlyList<string> Emails);
+public sealed record AuditLogActor(string Kind, string Label, IReadOnlyList<string> Emails)
+{
+    public Guid? Id { get; init; }
+}
 
 public sealed record AuditLogChange(string Property, string? OldValue, string? NewValue);
 

@@ -33,7 +33,8 @@ public sealed class ETagMiddleware(RequestDelegate next, ETagOptions options, IL
             context.Response.Body = originalBody;
         }
 
-        if (!options.AllowedStatusCodes.Contains(context.Response.StatusCode))
+        if (!options.AllowedStatusCodes.Contains(context.Response.StatusCode)
+            || context.Response.GetTypedHeaders().CacheControl?.NoStore == true)
         {
             await CopyToAsync(buffer, originalBody, context.RequestAborted);
             return;

@@ -14,7 +14,10 @@ public interface IDownloadQueries
         string ContentType,
         long Length,
         string UploadedBy,
-        Option<DateTimeOffset> UploadedAt);
+        Option<DateTimeOffset> UploadedAt)
+    {
+        public Guid UploadedById { get; init; }
+    }
 
     public sealed record DeletedDownloads(
         IReadOnlyList<DownloadFolderInfo> Folders,

@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/accesssettings", "models/managedlist", "models/i18n", "bindings/richeditor"], function (ko, session, accessSettings, createManagedList, i18n) {
+define(["ko", "models/session", "models/accesssettings", "models/managedlist", "models/i18n", "models/user", "bindings/richeditor"], function (ko, session, accessSettings, createManagedList, i18n, user) {
     return function AccessSettingsViewModel() {
         var self = this;
 
@@ -93,6 +93,7 @@ define(["ko", "models/session", "models/accesssettings", "models/managedlist", "
             var row = {
                 id: item.id,
                 displayName: item.displayName,
+                profileHref: user.href(item.id),
                 emails: item.emails.join(", ")
             };
 

@@ -16,7 +16,7 @@
             <div class="card-body">
                 <h2 class="h4 card-title"><a class="text-break" data-bind="attr: { href: href }, text: title"></a></h2>
                 <div class="d-flex flex-wrap align-items-center gap-2 small text-body-secondary mb-2">
-                    <span data-bind="text: author"></span>
+                    <a data-bind="text: author, attr: { href: authorHref }"></a>
                     <span data-bind="text: stamp, attr: { title: created }"></span>
                     <span class="badge text-bg-secondary" data-bind="visible: hasCategory, text: categoryName"></span>
                 </div>

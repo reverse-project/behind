@@ -16,7 +16,7 @@
         <ul class="list-group mb-3" data-bind="foreach: users">
             <li class="list-group-item">
                 <div class="d-flex flex-wrap align-items-center gap-2">
-                    <strong class="text-break" data-bind="text: name"></strong>
+                    <a class="text-break fw-bold" data-bind="text: name, attr: { href: profileHref }"></a>
                     <span class="badge text-bg-secondary" data-bind="visible: isCurrent, t: 'users.you'">You</span>
                     <span class="badge text-bg-warning" data-bind="visible: isEmailUnconfirmed, t: 'users.emailUnconfirmed'">Email not confirmed</span>
                     <span class="badge text-bg-danger" data-bind="visible: isBanned, t: 'users.banned'">Banned</span>

@@ -18,12 +18,13 @@
         <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'gallerymanager.empty'">No galleries found.</p>
         <ul class="list-group mb-3" data-bind="foreach: items">
             <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                <content-age params="entityType: 'Gallery', id: id"></content-age>
                 <img class="gallery-manager-thumbnail" alt="" data-bind="visible: hasThumbnail, attr: { src: thumbnailUrl }">
                 <span class="gallery-manager-thumbnail gallery-manager-placeholder" data-bind="visible: !hasThumbnail"><i class="fa-solid fa-images" aria-hidden="true"></i></span>
                 <div class="me-auto">
                     <a class="fw-bold text-break" data-bind="attr: { href: href }, text: title, visible: !isDeleted"></a>
                     <strong class="text-break" data-bind="text: title, visible: isDeleted"></strong>
-                    <div class="small text-body-secondary" data-bind="text: author"></div>
+                    <a class="small" data-bind="text: author, attr: { href: authorHref }"></a>
                 </div>
                 <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'gallerymanager.deleted'">Deleted</span>
                 <span class="badge text-bg-secondary" data-bind="visible: isDraft && !isDeleted, t: 'gallerymanager.draft'">Draft</span>

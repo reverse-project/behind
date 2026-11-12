@@ -109,6 +109,7 @@ define(["ko", "models/downloads", "models/downloadtree", "models/filetypes", "mo
                 size: filetypes.sizeOf(file.length),
                 uploadedAt: i18n.dateTime(file.uploadedAt),
                 uploadedBy: meta.author(file.uploadedBy),
+                uploadedByHref: meta.authorHref(file.uploadedById),
                 url: file.url
             };
 

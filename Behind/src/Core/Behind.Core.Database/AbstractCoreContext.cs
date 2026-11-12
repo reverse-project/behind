@@ -11,13 +11,17 @@ using Microsoft.Extensions.Logging;
 namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog modules)
-    : DbContext(options), IUnitOfWork, IModuleContext
+    : DbContext(options), IUnitOfWork, IModuleContext, IContentRestrictionContext
 {
     protected AbstractCoreContext(DbContextOptions options) : this(options, ModuleCatalog.Empty)
     {
     }
 
     public ModuleCatalog Modules { get; } = modules;
+
+    public Guid[] HiddenContentIds { get; set; } = [];
+
+    public DbSet<ContentRestriction> ContentRestrictions => Set<ContentRestriction>();
 
     DbContext IModuleContext.Context => this;
 
@@ -70,10 +74,18 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
             this,
             DeletionRecorded,
             [..CoreSoftDeletedEntities, ..Modules.SoftDeletedEntities]);
+        modelBuilder.ApplyContentRestrictions(this,
+        [
+            typeof(Site), typeof(SiteSection), typeof(News), typeof(NewsCategory), typeof(NewsComment),
+            typeof(Article), typeof(ArticleCategory), typeof(Gallery), typeof(GalleryItem),
+            typeof(Carousel), typeof(CarouselSlide), typeof(DownloadFolder), typeof(Download), typeof(VfsFile),
+            typeof(ChatMessage), ..Modules.ContentRestrictedEntities
+        ], Modules.ContentRestrictionParentProperties);
     }
 
     private static readonly Type[] CoreSoftDeletedEntities =
     [
+        typeof(ContentRestriction),
         typeof(User),
         typeof(Email),
         typeof(Role),

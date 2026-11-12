@@ -49,6 +49,7 @@
                     <div class="col">
                         <div class="card h-100">
                             <img class="card-img-top gallery-editor-image" data-bind="attr: { src: thumbnailUrl, alt: description() }">
+                            <content-age params="entityType: 'VfsFile', id: imageId"></content-age>
                             <div class="card-body">
                                 <label class="form-label small" data-bind="t: 'galleryeditor.imageDescription'">Description (optional)</label>
                                 <textarea class="form-control" rows="2" maxlength="2000" data-bind="value: description, valueUpdate: 'input', enable: $root.canWrite"></textarea>

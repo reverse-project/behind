@@ -7,6 +7,7 @@ define(["ko", "models/galleries", "models/newsmeta", "models/pager"], function (
             title: item.title,
             description: item.description,
             author: meta.author(item.author),
+            authorHref: meta.authorHref(item.authorId),
             stamp: meta.stamp(item),
             created: meta.created(item),
             thumbnailUrl: item.thumbnailUrl,

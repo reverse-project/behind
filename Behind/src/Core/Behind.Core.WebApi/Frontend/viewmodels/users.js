@@ -82,6 +82,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
             var row = {
                 id: item.id,
                 name: user.label(item),
+                profileHref: user.href(item.id),
                 emails: item.emails.join(", "),
                 isEmailUnconfirmed: !item.emailConfirmed,
                 canConfirmEmail: item.permissions.canConfirmEmail,

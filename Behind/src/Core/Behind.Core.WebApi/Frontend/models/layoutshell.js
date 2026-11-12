@@ -1,4 +1,4 @@
-define(["ko", "models/layouts", "models/invalidation", "models/restriction", "models/i18n", "components/siteheader", "components/sitefooter"], function (ko, layouts, invalidation, restriction, i18n, siteHeader, siteFooter) {
+define(["ko", "models/layouts", "models/invalidation", "models/restriction", "models/i18n", "components/siteheader", "components/sitefooter", "models/contentlocale"], function (ko, layouts, invalidation, restriction, i18n, siteHeader, siteFooter, contentLocale) {
     var shell = null;
     var main = null;
     var header = null;
@@ -9,6 +9,7 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
     var footerSlot = null;
     var context = null;
     var route = "#/";
+    var preview = null;
     var host = null;
     var mounted = [];
     var error = null;
@@ -92,13 +93,34 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
         restoreRoots();
         if (!fixedBindings) {
             if (header) {
-                siteHeader.mount(header, { context: context, template: headerTemplate });
+                mountHeader(header, configuredHeader());
             }
             if (footer) {
                 siteFooter.mount(footer, { template: footerTemplate });
             }
             fixedBindings = true;
         }
+    };
+
+    var configuredHeader = function () {
+        var configuration = layouts.current();
+        var selected = configuration && layouts.select(configuration, route);
+        return selected && selected.sections.reduce(function (found, section) {
+            return found || section.widgets.find(function (widget) {
+                return widget.type === "core.header";
+            });
+        }, null);
+    };
+
+    var mountHeader = function (element, widget) {
+        widget = widget || {};
+        siteHeader.mount(element, {
+            context: context,
+            template: headerTemplate,
+            hamburgerPosition: widget.hamburgerPosition,
+            showLocaleSwitch: widget.showLocaleSwitch,
+            localeSwitchView: widget.localeSwitchView
+        });
     };
 
     var preparePublicShell = function () {
@@ -134,7 +156,7 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
         cell.appendChild(element);
         mounted.push(element);
         if (isHeader) {
-            siteHeader.mount(element, { context: context, template: headerTemplate, hamburgerPosition: widget.hamburgerPosition });
+            mountHeader(element, widget);
         } else {
             siteFooter.mount(element, { template: footerTemplate });
         }
@@ -190,13 +212,13 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
 
         clear();
 
-        if (restriction.restricted() || managementRoute.test(route)) {
+        if (restriction.restricted() || managementRoute.test(route) && !preview) {
             mountFixedShell();
             return;
         }
 
         var configuration = layouts.current();
-        var layout = configuration && layouts.select(configuration, route);
+        var layout = preview || configuration && layouts.select(configuration, route);
         if (!layout) {
             mountFixedShell();
             return;
@@ -274,7 +296,10 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
         renderBadges(layout.badges);
     };
 
-    var refresh = function () {
+    var refresh = function (event) {
+        if (event && route === "#/manage/layouts") {
+            preview = event.preview || null;
+        }
         var current = ++generation;
         activeRefresh = current;
         return layouts.load().then(function () {
@@ -334,6 +359,9 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
             return refresh();
         },
         route: function (value) {
+            if (value !== route) {
+                preview = null;
+            }
             route = value;
             generation++;
             render();

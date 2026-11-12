@@ -82,6 +82,7 @@
                 <div class="forum-post-content">
                     <div class="forum-post-heading" data-bind="t: 'forum.message'">Message</div>
                     <div class="forum-body" data-bind="bbcode: body"></div>
+                    <content-locale params="entityType: 'ForumPost', id: id, allowed: canEdit"></content-locale>
                     <button class="btn btn-sm btn-outline-primary" data-bind="visible: canEdit, click: $root.edit, t: 'common.edit'">Edit</button>
                     <button class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, click: $root.remove, t: 'common.delete'">Delete</button>
                 </div>
@@ -99,6 +100,7 @@
                     <div class="forum-post-content">
                         <div class="forum-post-heading" data-bind="t: 'forum.reply'">Reply</div>
                         <div class="forum-body" data-bind="bbcode: body"></div>
+                        <content-locale params="entityType: 'ForumPost', id: id, allowed: canEdit"></content-locale>
                         <button class="btn btn-sm btn-outline-primary" data-bind="visible: canEdit, click: $root.edit, t: 'common.edit'">Edit</button>
                         <button class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, click: $root.remove, t: 'common.delete'">Delete</button>
                     </div>

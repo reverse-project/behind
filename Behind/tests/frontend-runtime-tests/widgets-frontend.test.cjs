@@ -9,6 +9,10 @@ const ko = require(path.join(core, "libraries/knockout.min.js"));
 
 function load(file, dependencies) {
     dependencies["models/user"] = { href: id => id ? "#/user/" + encodeURIComponent(id) : null };
+    dependencies["models/contentlocale"] ||= {
+        current: ko.observable(null),
+        assignmentRevision: ko.observable(0)
+    };
     let result;
     vm.runInNewContext(fs.readFileSync(path.join(core, file), "utf8"), {
         define(names, factory) {
@@ -435,9 +439,16 @@ test("chat sends text, refreshes on invalidation, and disposes its timer and lis
         "models/i18n": { t: key => key },
         "models/invalidation": {
             subscribe(topic, callback) {
-                assert.equal(topic, "widgets");
-                handler = callback;
+                if (topic === "widget:core.chat") {
+                    handler = callback;
+                } else {
+                    assert.equal(topic, "widgets");
+                }
                 return { dispose() { disposed = true; } };
+            },
+            invalidate(topic) {
+                assert.equal(topic, "widget:core.chat");
+                return handler();
             }
         },
         "text!components/sitewidget.html": "",

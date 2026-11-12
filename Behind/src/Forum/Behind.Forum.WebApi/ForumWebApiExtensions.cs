@@ -1,5 +1,6 @@
 using Behind.Common.Configuration;
 using Behind.Common.Modules;
+using Behind.Common.WebApi;
 using Behind.Forum.Common;
 using Behind.Forum.Database;
 using Behind.Forum.WebApi.Endpoints;
@@ -21,6 +22,7 @@ public static class ForumWebApiExtensions
                 .Validate(settings => Enum.IsDefined(settings.Moderation), "Invalid forum moderation mode.")
                 .ValidateOnStart();
             builder.Services.AddModule(ForumModule.Descriptor).AddForumDatabase();
+            builder.Services.AddScoped<IContentLocalePermission, ForumPostLocalePermission>();
 
             return builder;
         }

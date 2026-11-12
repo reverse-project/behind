@@ -94,6 +94,7 @@ public partial class LocalizationCompletenessTests
         var used = SourceFiles()
             .SelectMany(path => KeyLikeLiterals(Read(path), prefixes))
             .ToHashSet();
+        used.UnionWith(CoreModule.Descriptor.Widgets.Select(widget => widget.Name));
 
         var unused = english.Keys.Where(key => !used.Contains(key)).Order().ToList();
 

@@ -19,7 +19,8 @@ public sealed class GalleryEndpoints
     public sealed record SaveGalleryItemRequest(
         [property: Required] Guid ImageId,
         [property: Required] Guid ThumbnailId,
-        [property: MaxLength(GalleryItem.MaxDescriptionLength)] string? Description);
+        [property: MaxLength(GalleryItem.MaxDescriptionLength)] string? Description,
+        Guid? Id = null);
 
     public sealed record SaveGalleryRequest(
         [property: Required, MaxLength(Gallery.MaxTitleLength)] string Title,

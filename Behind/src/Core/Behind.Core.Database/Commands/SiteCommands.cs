@@ -208,7 +208,9 @@ public sealed class SiteCommands(
             return new SiteSaveResult.SlugTaken();
         }
 
-        if (!await HasImages(sections, cancellationToken))
+        if (!await HasImages(sections, cancellationToken)
+            || !await context.HasContentChildren<SiteSection>(siteId, SiteSectionConfiguration.SiteIdProperty,
+                sections.Select(section => section.Id), cancellationToken))
         {
             return new SiteSaveResult.UnknownImage();
         }
@@ -227,6 +229,11 @@ public sealed class SiteCommands(
         foreach (var (section, position) in sections.Select((section, position) => (section, position)))
         {
             await AddSection(new VersionedKey<Guid>(siteId, version), section, position, cancellationToken);
+        }
+
+        if (context.ContentLocaleSpecified)
+        {
+            await context.StageContentLocale(nameof(Site), siteId, context.SelectedContentLocale, cancellationToken);
         }
 
         var result = await Save(
@@ -258,7 +265,7 @@ public sealed class SiteCommands(
         await context.SiteSections.AddAsync(section, cancellationToken);
 
         var entry = context.Entry(section);
-        entry.StampVersionedKey(Guid.CreateVersion7(), site.Version);
+        entry.StampVersionedKey(draft.Id ?? Guid.CreateVersion7(), site.Version);
         entry.Property<Guid>(SiteSectionConfiguration.SiteIdProperty).CurrentValue = site.Key;
         entry.Property<Guid?>(SiteSectionConfiguration.ImageIdProperty).CurrentValue =
             draft.ImageId.Match<Guid?>(() => null, imageId => imageId);

@@ -4,6 +4,7 @@ define(["ko", "models/http", "models/modules"], function (ko, http, modules) {
     var messages = ko.observable({});
     var browserKey = "behind.locale";
     var account = ko.observable("");
+    var content = "";
     var siteDefault = "";
     var applied = null;
     var pending = Promise.resolve();
@@ -103,7 +104,7 @@ define(["ko", "models/http", "models/modules"], function (ko, http, modules) {
     };
 
     var preferred = function () {
-        return account() || remembered() || siteDefault || fallbackLocale;
+        return content || account() || remembered() || siteDefault || fallbackLocale;
     };
 
     var apply = function () {
@@ -163,6 +164,10 @@ define(["ko", "models/http", "models/modules"], function (ko, http, modules) {
         },
         useAccount: function (code) {
             account(code || "");
+        },
+        useContent: function (code) {
+            content = code || "";
+            return apply();
         },
         choose: function (code) {
             remember(code);

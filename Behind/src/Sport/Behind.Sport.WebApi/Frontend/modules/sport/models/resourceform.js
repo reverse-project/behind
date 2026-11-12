@@ -159,6 +159,7 @@ define(["ko", "models/i18n", "modules/sport/models/sport"], function (ko, i18n, 
         var found = ko.observableArray([]);
         var query = ko.observable("").extend({ rateLimit: { timeout: searchDelay, method: "notifyWhenChangesStop" } });
         var ticket = 0;
+        field.message = ko.observable("");
 
         var context = function () {
             var resource = typeof definition.target === "function" ? definition.target(form) : definition.target;
@@ -184,14 +185,21 @@ define(["ko", "models/i18n", "modules/sport/models/sport"], function (ko, i18n, 
 
             if (current === null) {
                 found([]);
+                field.message("");
                 return Promise.resolve();
             }
 
             return sport
-                .list(current.resource, Object.assign({ page: 1, pageSize: pageSize, search: query().trim() }, current.scope))
+                .manage(current.resource, Object.assign({ page: 1, pageSize: pageSize, search: query().trim() }, current.scope))
                 .then(function (result) {
                     if (mine === ticket) {
                         found(result.ok ? result.data.page.items : []);
+                        field.message(result.ok ? "" : result.message);
+                    }
+                }).catch(function () {
+                    if (mine === ticket) {
+                        found([]);
+                        field.message(i18n.t("common.error.generic"));
                     }
                 });
         };

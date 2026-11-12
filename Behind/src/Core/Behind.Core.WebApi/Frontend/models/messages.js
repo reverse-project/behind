@@ -1,4 +1,4 @@
-define(["models/http", "models/results", "models/paging"], function (http, results, pagination) {
+define(["models/http", "models/results", "models/paging", "models/invalidation"], function (http, results, pagination, invalidation) {
     var sessionExpired = results.sessionExpired;
 
     var outcome = results.create({
@@ -7,7 +7,9 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
     });
 
     var loaded = outcome.loaded;
-    var saved = outcome.saved;
+    var saved = function (response, message, failures) {
+        return invalidation.after("widget:core.message", outcome.saved(response, message, failures));
+    };
 
     var readFailures = {
         401: sessionExpired,

@@ -75,6 +75,7 @@
                     <span class="badge text-bg-secondary" data-bind="visible: isUser, t: 'menuitems.userMenu'">User menu</span>
                     <span class="badge text-bg-secondary" data-bind="visible: isSub, t: { key: 'menuitems.subItemOf', args: [parentTitle] }">Sub item of <span data-bind="text: parentTitle"></span></span>
                     <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                    <content-locale params="entityType: 'MenuItem', id: id, allowed: $root.canWrite"></content-locale>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
                     <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>

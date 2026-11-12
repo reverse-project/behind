@@ -30,8 +30,8 @@ public class NavigationFrontendTests
     [Fact]
     public void Footer_OffersABackToTopButtonThatScrollsByHand()
     {
-        Assert.Contains("click: scrollToTop", Read("index.html"));
-        Assert.Contains("fa-arrow-up", Read("index.html"));
+        Assert.Contains("click: scrollToTop", Read("components/sitefooter.html"));
+        Assert.Contains("fa-arrow-up", Read("components/sitefooter.html"));
         Assert.Contains("self.scrollToTop = function", Read("viewmodels/footer.js"));
         Assert.Contains("window.scrollTo({ top: 0, behavior: \"smooth\" })", Read("viewmodels/footer.js"));
     }

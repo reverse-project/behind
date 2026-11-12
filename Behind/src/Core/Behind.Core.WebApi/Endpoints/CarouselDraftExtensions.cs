@@ -36,7 +36,7 @@ public static class CarouselDraftExtensions
                    || caption.Length > configuration.CaptionLimit
                    || !link.IsSafeCarouselLink
                 ? None
-                : Some(new ICarouselCommands.CarouselSlideDraft(slide.ImageId, caption, link));
+                : Some(new ICarouselCommands.CarouselSlideDraft(slide.ImageId, caption, link, slide.Id));
         }
     }
 }

@@ -118,7 +118,9 @@ public sealed class GalleryCommands(
         bool publish,
         CancellationToken cancellationToken)
     {
-        if (!await HasImages(draft, cancellationToken))
+        if (!await HasImages(draft, cancellationToken)
+            || !await context.HasContentChildren<GalleryItem>(key, GalleryItemConfiguration.GalleryIdProperty,
+                draft.Items.Select(item => item.Id), cancellationToken))
         {
             return new GallerySaveResult.UnknownImage();
         }
@@ -173,7 +175,7 @@ public sealed class GalleryCommands(
         await context.GalleryItems.AddAsync(item, cancellationToken);
 
         var entry = context.Entry(item);
-        entry.StampVersionedKey(Guid.CreateVersion7(), gallery.Version);
+        entry.StampVersionedKey(draft.Id ?? Guid.CreateVersion7(), gallery.Version);
         entry.Property<Guid>(GalleryItemConfiguration.GalleryIdProperty).CurrentValue = gallery.Key;
         entry.Property<Guid>(GalleryItemConfiguration.ImageIdProperty).CurrentValue = draft.ImageId;
         entry.Property<Guid>(GalleryItemConfiguration.ThumbnailIdProperty).CurrentValue = draft.ThumbnailId;

@@ -43,6 +43,7 @@ define(["models/http", "models/results", "models/paging"], function (http, resul
     var draft = function (fields) {
         return {
             alias: fields.alias,
+            contentLocale: fields.contentLocale || null,
             target: fields.target
         };
     };

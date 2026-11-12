@@ -222,7 +222,7 @@ test("public chrome and route content are rendered only by the layout engine and
     assert.equal(fixture.footer.parentNode, fixture.application);
     assert.equal(fixture.main.parentNode, fixture.application);
     assert.equal(fixture.bindings.length, 4);
-    assert.equal(fixture.bindings[2].binding.component.params.hamburgerPosition, undefined);
+    assert.equal(fixture.bindings[2].binding.component.params.hamburgerPosition, "left");
     assert.ok(fixture.cleaned.includes(fixture.header));
     assert.ok(fixture.cleaned.includes(fixture.footer));
     assert.ok(!fixture.cleaned.includes(fixture.main));

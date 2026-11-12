@@ -38,6 +38,11 @@ public static class ForumModule
         Database = new ModuleDatabase(typeof(ForumBoardConfiguration).Assembly)
         {
             ContentRestrictedEntities = [typeof(ForumBoardCategory), typeof(ForumBoard), typeof(ForumPost)],
+            ContentLocaleEditPolicies = new Dictionary<string, string>
+            {
+                [nameof(ForumBoardCategory)] = ForumNames.Manage,
+                [nameof(ForumBoard)] = ForumNames.Manage
+            },
             SoftDeletedEntities = [typeof(ForumBoardCategory), typeof(ForumBoard), typeof(ForumPost), typeof(ForumUserModeration)]
         }
     };

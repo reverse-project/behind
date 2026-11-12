@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/managedlist", "models/i18n", "modules/sport/models/sport", "modules/sport/models/resources", "modules/sport/models/resourceform", "modules/sport/models/links"], function (ko, session, createManagedList, i18n, sport, resources, createForm, links) {
+define(["ko", "models/session", "models/managedlist", "models/i18n", "modules/sport/models/sport", "modules/sport/models/resources", "modules/sport/models/resourceform", "modules/sport/models/links", "models/contentlocale", "models/http"], function (ko, session, createManagedList, i18n, sport, resources, createForm, links, contentLocale, http) {
     return function ManagerViewModel(context) {
         var self = this;
         var definition = resources.find(context.params.resource);
@@ -40,6 +40,12 @@ define(["ko", "models/session", "models/managedlist", "models/i18n", "modules/sp
         self.form = form;
         self.columns = definition.columns;
         self.editingId = ko.observable(null);
+        self.contentLocale = ko.observable("");
+        self.localeLoadFailed = contentLocale.loadFailed;
+        self.localeLoaded = ko.observable(true);
+        self.localeOptions = ko.pureComputed(function () {
+            return [{ code: "", name: i18n.t("contentLocale.neutral") }].concat(contentLocale.locales());
+        });
         self.isEditing = ko.pureComputed(function () {
             return self.editingId() !== null;
         });
@@ -47,7 +53,7 @@ define(["ko", "models/session", "models/managedlist", "models/i18n", "modules/sp
             return i18n.t(self.isEditing() ? "sport.editor.edit" : "sport.editor.new", [i18n.t(definition.singularKey)]);
         });
         self.canSave = ko.pureComputed(function () {
-            return self.canWrite() && !self.busy() && !form.uploading() && form.isComplete();
+            return self.canWrite() && (definition.entityType !== "Discipline" || !contentLocale.loadFailed() && self.localeLoaded()) && !self.busy() && !form.uploading() && form.isComplete();
         });
 
         var present = function (item) {
@@ -68,7 +74,24 @@ define(["ko", "models/session", "models/managedlist", "models/i18n", "modules/sp
                 self.editingId(row.id);
                 form.reset();
 
-                return form.load(item);
+                var loading = form.load(item);
+                if (definition.entityType !== "Discipline") {
+                    return loading;
+                }
+                self.localeLoaded(false);
+                return Promise.all([loading, http.get("/content-locales/Discipline/" + encodeURIComponent(row.id)).then(function (response) {
+                    if (self.editingId() !== row.id) {
+                        return;
+                    }
+                    if (response.ok) {
+                        self.contentLocale(response.data.locale || "");
+                        self.localeLoaded(true);
+                    } else {
+                        self.list.message(i18n.t("contentLocale.error"));
+                    }
+                }).catch(function () {
+                    self.list.message(i18n.t("contentLocale.error"));
+                })]);
             };
             row.remove = function () {
                 if (!window.confirm(i18n.t("sport.confirm.delete", [definition.label(item)]))) {
@@ -112,6 +135,8 @@ define(["ko", "models/session", "models/managedlist", "models/i18n", "modules/sp
 
         self.reset = function () {
             self.editingId(null);
+            self.contentLocale("");
+            self.localeLoaded(true);
             form.reset();
         };
 
@@ -121,6 +146,9 @@ define(["ko", "models/session", "models/managedlist", "models/i18n", "modules/sp
             }
 
             var draft = form.draft();
+            if (definition.entityType === "Discipline") {
+                draft.contentLocale = self.contentLocale() || null;
+            }
 
             return self.list.perform(function () {
                 var saving = self.isEditing()
@@ -129,6 +157,10 @@ define(["ko", "models/session", "models/managedlist", "models/i18n", "modules/sp
 
                 return saving.then(function (result) {
                     if (result.ok) {
+                        contentLocale.clearMedia();
+                        if (definition.entityType === "Discipline") {
+                            contentLocale.assignmentRevision(contentLocale.assignmentRevision() + 1);
+                        }
                         self.reset();
                     }
 

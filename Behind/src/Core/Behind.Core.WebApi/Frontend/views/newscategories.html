@@ -7,7 +7,7 @@
     <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'news.deniedCategories'">You need news access to manage news categories.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
     <div data-bind="visible: canRead">
-        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
+        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save, contentLocaleScope: { entityType: 'NewsCategory', id: editingId, allowed: canWrite }">
             <h2 class="h5" data-bind="text: heading"></h2>
             <div class="mb-3">
                 <label class="form-label" for="news-category-name" data-bind="t: 'content.name'">Name</label>
@@ -38,11 +38,12 @@
             <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
             <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'content.noCategories'">No categories found.</p>
             <ul class="list-group mb-3" data-bind="foreach: items">
-                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2" data-bind="contentLocaleScope: { entityType: 'NewsCategory', id: id, allowed: $root.canWrite() && !isDeleted }">
                     <img class="news-category-thumbnail" data-bind="visible: hasImage, attr: { src: headerImageUrl, alt: name }">
                     <strong class="me-auto text-break" data-bind="text: name"></strong>
                     <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'content.deleted'">Deleted</span>
                     <content-age params="entityType: 'NewsCategory', id: id"></content-age>
+                    <content-locale params="entityType: 'NewsCategory', id: id, allowed: $root.canWrite"></content-locale>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
                     <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>

@@ -3,7 +3,10 @@ define(["ko", "viewmodels/header", "text!components/siteheader.html"], function 
         if (componentInfo) {
             componentInfo.element.setAttribute("data-hamburger-position", ko.unwrap((params || {}).hamburgerPosition) || "default");
         }
-        return new HeaderViewModel((params || {}).context);
+        var viewModel = new HeaderViewModel((params || {}).context);
+        viewModel.localeSwitch = (params || {}).showLocaleSwitch !== false;
+        viewModel.localeSwitchView = ko.unwrap((params || {}).localeSwitchView) || "view";
+        return viewModel;
     };
 
     var updateCollapseIds = function (element, id) {

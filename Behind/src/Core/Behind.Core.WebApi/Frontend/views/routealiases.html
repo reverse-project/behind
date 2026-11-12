@@ -6,9 +6,12 @@
     <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'routeAliases.signInToManage'">to manage route aliases.</span></p>
     <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'routeAliases.denied'">You need route alias access to manage route aliases.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: localeLoadFailed, t: 'contentLocale.error'"></div>
     <div data-bind="visible: canRead">
         <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
             <h2 class="h5" data-bind="text: heading"></h2>
+            <label class="form-label" for="alias-content-locale" data-bind="t: 'contentLocale.label'">Content locale</label>
+            <select id="alias-content-locale" class="form-select mb-3" data-bind="options: localeOptions, optionsText: 'name', optionsValue: 'code', value: contentLocale"></select>
             <div class="mb-3">
                 <label class="form-label" for="route-alias-alias" data-bind="t: 'routeAliases.alias'">Short route</label>
                 <div class="input-group">

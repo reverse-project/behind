@@ -35,6 +35,7 @@
             <ul class="list-group mb-3" data-bind="foreach: items">
                 <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                     <content-age params="entityType: 'Quote', id: id"></content-age>
+                    <content-locale params="entityType: 'Quote', id: id, allowed: $root.canWrite"></content-locale>
                     <div class="me-auto">
                         <span class="text-break" data-bind="text: text"></span>
                         <strong class="ms-2 text-break" data-bind="text: author"></strong>

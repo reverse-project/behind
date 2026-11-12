@@ -137,7 +137,7 @@ define(["ko", "models/downloads", "models/downloadtree", "models/filetypes", "mo
         };
 
         var loadTree = function (keep) {
-            return downloads.folders().then(function (result) {
+            return downloads.folders(config.manage && ko.unwrap(config.manage)).then(function (result) {
                 if (!result.ok) {
                     browser.message(result.message);
 
@@ -165,7 +165,7 @@ define(["ko", "models/downloads", "models/downloadtree", "models/filetypes", "mo
                 return Promise.resolve();
             }
 
-            return downloads.files(current.id).then(function (result) {
+            return downloads.files(current.id, config.manage && ko.unwrap(config.manage)).then(function (result) {
                 if (result.ok) {
                     browser.files(result.data.files.map(browser.presentFile));
                 } else {

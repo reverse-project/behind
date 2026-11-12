@@ -57,9 +57,10 @@ public class DownloadsFrontendTests
         Assert.Contains("pattern: /(?:^|\\/)#\\/manage\\/downloads\\/(.*)$/, controller: \"controllers/downloadmanager\"", app);
         Assert.Contains("pattern: /(?:^|\\/)#\\/downloads\\/(.*)$/, controller: \"controllers/downloads\"", app);
         Assert.Contains("ko.components.register(\"download-tree\", { require: \"components/downloadtree\" })", app);
-        Assert.True(
-            app.IndexOf("patternRoutes.forEach", StringComparison.Ordinal)
-            < app.IndexOf("[routes, moduleRouteTable(), siteRoutes].forEach", StringComparison.Ordinal));
+        var patterns = app.IndexOf("patternRoutes.forEach", StringComparison.Ordinal);
+        var tables = app.IndexOf("var tables = [routes, moduleRouteTable(), siteRoutes];", StringComparison.Ordinal);
+        var registration = app.IndexOf("tables.forEach", StringComparison.Ordinal);
+        Assert.True(patterns >= 0 && tables > patterns && registration > tables);
     }
 
     [Fact]

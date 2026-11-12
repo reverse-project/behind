@@ -1,4 +1,4 @@
-define(["jquery", "models/session"], function ($, session) {
+define(["jquery", "models/session", "models/contentlocale"], function ($, session, contentLocale) {
     var parse = function (text) {
         if (!text) {
             return null;
@@ -42,25 +42,32 @@ define(["jquery", "models/session"], function ($, session) {
         }
     };
 
-    var send = function (method, url, body, extraHeaders) {
+    var send = function (method, url, body, extraHeaders, requestLocale) {
         var token = session.accessToken();
         var hasBody = body !== undefined;
         var isForm = hasBody && body instanceof FormData;
 
+        var locale = arguments.length > 4 ? requestLocale : contentLocale.current();
+        var cacheKey = (locale || "") + "\n" + url;
         var entries = isCacheable(method, url, extraHeaders) ? cacheOf(token) : null;
-        var cached = entries ? entries.get(url) : undefined;
+        var cached = entries ? entries.get(cacheKey) : undefined;
+        var headers = $.extend(
+            {},
+            token ? { Authorization: "Bearer " + token } : {},
+            locale ? { "X-Content-Locale": locale } : {},
+            cached ? { "If-None-Match": cached.etag } : {},
+            extraHeaders
+        );
+        if (headers["X-Content-Locale"] === null) {
+            delete headers["X-Content-Locale"];
+        }
 
         return new Promise(function (resolve) {
             $.ajax({
                 url: url,
                 method: method,
                 dataType: "text",
-                headers: $.extend(
-                    {},
-                    token ? { Authorization: "Bearer " + token } : {},
-                    cached ? { "If-None-Match": cached.etag } : {},
-                    extraHeaders
-                ),
+                headers: headers,
                 contentType: hasBody && !isForm ? "application/json" : false,
                 processData: !isForm,
                 data: hasBody && !isForm ? JSON.stringify(body) : body
@@ -72,14 +79,18 @@ define(["jquery", "models/session"], function ($, session) {
                     }
 
                     if (entries) {
-                        remember(entries, url, xhr.getResponseHeader("ETag"), data);
+                        remember(entries, cacheKey, xhr.getResponseHeader("ETag"), data);
                     }
 
-                    resolve({ ok: true, status: xhr.status, data: parse(data) });
+                    var parsed = parse(data);
+                    if (isForm) {
+                        contentLocale.trackMedia(parsed);
+                    }
+                    resolve({ ok: true, status: xhr.status, data: parsed });
                 },
                 function (xhr) {
                     if (entries) {
-                        entries.delete(url);
+                        entries.delete(cacheKey);
                     }
 
                     resolve({ ok: false, status: xhr.status, data: parse(xhr.responseText) });
@@ -118,14 +129,15 @@ define(["jquery", "models/session"], function ($, session) {
 
     var request = function (method, url, body, extraHeaders) {
         var wasSignedIn = session.isSignedIn();
+        var locale = contentLocale.current();
 
-        return send(method, url, body, extraHeaders).then(function (response) {
+        return send(method, url, body, extraHeaders, locale).then(function (response) {
             if (response.status !== 401 || !wasSignedIn || url === sessionUrl) {
                 return response;
             }
 
             return renew().then(function (renewed) {
-                return renewed ? send(method, url, body, extraHeaders) : response;
+                return renewed ? send(method, url, body, extraHeaders, locale) : response;
             });
         });
     };

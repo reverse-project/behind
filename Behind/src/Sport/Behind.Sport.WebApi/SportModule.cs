@@ -57,6 +57,11 @@ public static class SportModule
         Frontend = new ModuleFrontend(typeof(SportModule).Assembly),
         Database = new ModuleDatabase(typeof(DisciplineConfiguration).Assembly)
         {
+            ContentLocaleEditPolicies = new[]
+            {
+                typeof(Discipline), typeof(Position), typeof(StatType), typeof(Season),
+                typeof(Team), typeof(Player), typeof(PlayerSeason), typeof(Stat)
+            }.ToDictionary(type => type.Name, _ => SportModuleNames.WriteGrant),
             ContentRestrictedEntities =
             [
                 typeof(Discipline), typeof(Position), typeof(StatType), typeof(Season),

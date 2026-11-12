@@ -1,4 +1,5 @@
 using System.Text;
+using System.Diagnostics;
 using Behind.Core.WebApi;
 using Microsoft.Extensions.FileProviders;
 
@@ -24,7 +25,7 @@ public class InvalidationFrontendTests
 
         Assert.Contains("subscribe: function (topic, handler)", model);
         Assert.Contains("dispose: function ()", model);
-        Assert.Contains("invalidate: function (topic)", model);
+        Assert.Contains("invalidate: invalidate", model);
         Assert.Contains("Promise.allSettled(pending)", model);
         Assert.Contains("throw new AggregateError(errors,", model);
     }
@@ -47,5 +48,32 @@ public class InvalidationFrontendTests
         Assert.Contains("identitySubscription.dispose();", Read("viewmodels/header.js"));
         Assert.Contains("menu.dispose();", Read("components/menunav.js"));
         Assert.Contains("items.dispose();", Read("components/menunav.js"));
+    }
+
+    [Fact]
+    public async Task MutationsRefreshWidgetsAndLayoutSavesBypassOlderLoads()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Behind.Tests.csproj")))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        var start = new ProcessStartInfo("node")
+        {
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false
+        };
+        start.ArgumentList.Add(Path.Combine(directory.FullName, "CoreWebApi", "InvalidationFrontend.test.js"));
+        start.ArgumentList.Add(Path.GetFullPath(Path.Combine(directory.FullName, "../../src/Core/Behind.Core.WebApi/Frontend")));
+        start.ArgumentList.Add(Path.GetFullPath(Path.Combine(directory.FullName, "../../src/Forum/Behind.Forum.WebApi/Frontend")));
+        using var process = Process.Start(start);
+        Assert.NotNull(process);
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        Assert.True(process.ExitCode == 0, (await output) + (await error));
     }
 }

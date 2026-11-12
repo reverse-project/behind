@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog modules)
-    : DbContext(options), IUnitOfWork, IModuleContext, IContentRestrictionContext
+    : DbContext(options), IUnitOfWork, IModuleContext, IContentRestrictionContext, IContentLocaleStore
 {
     protected AbstractCoreContext(DbContextOptions options) : this(options, ModuleCatalog.Empty)
     {
@@ -22,6 +22,27 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
     public Guid[] HiddenContentIds { get; set; } = [];
 
     public DbSet<ContentRestriction> ContentRestrictions => Set<ContentRestriction>();
+
+    public DbSet<ContentLocale> ContentLocales => Set<ContentLocale>();
+
+    public bool IncludeAllContentLocales { get; set; } = true;
+
+    public string[] HiddenLocaleContentKeys { get; set; } = [];
+
+    public string? SelectedContentLocale { get; set; }
+
+    public bool ContentLocaleSpecified { get; set; }
+
+    Task<string?> IContentLocaleStore.FindContentLocale(string entityType, Guid entityId, CancellationToken cancellationToken) =>
+        this.FindContentLocale(entityType, entityId, cancellationToken);
+
+    Task IContentLocaleStore.StageContentLocale(
+        string entityType, Guid entityId, string? locale, CancellationToken cancellationToken) =>
+        this.StageContentLocale(entityType, entityId, locale, cancellationToken);
+
+    IQueryable<TEntity> IContentLocaleStore.InContentLocale<TEntity>(
+        IQueryable<TEntity> source, string entityType, string? locale) =>
+        this.InContentLocale(source, entityType, locale);
 
     DbContext IModuleContext.Context => this;
 
@@ -81,11 +102,21 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
             typeof(Carousel), typeof(CarouselSlide), typeof(DownloadFolder), typeof(Download), typeof(VfsFile),
             typeof(ChatMessage), ..Modules.ContentRestrictedEntities
         ], Modules.ContentRestrictionParentProperties);
+        modelBuilder.ApplyContentLocales(this,
+        [
+            typeof(Site), typeof(SiteSection), typeof(News), typeof(NewsCategory), typeof(NewsComment),
+            typeof(Article), typeof(ArticleCategory), typeof(Gallery), typeof(GalleryItem),
+            typeof(Carousel), typeof(CarouselSlide), typeof(DownloadFolder), typeof(Download), typeof(VfsFile),
+            typeof(ChatMessage), typeof(Menu), typeof(MenuItem), typeof(RouteAlias), typeof(Message),
+            ..Modules.ContentRestrictedEntities
+        ]);
+        modelBuilder.Entity<Carousel>().HasAnnotation("Behind:LocaleOwnerType", nameof(Site));
     }
 
     private static readonly Type[] CoreSoftDeletedEntities =
     [
         typeof(ContentRestriction),
+        typeof(ContentLocale),
         typeof(User),
         typeof(Email),
         typeof(Role),

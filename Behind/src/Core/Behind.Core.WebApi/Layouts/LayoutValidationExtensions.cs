@@ -54,6 +54,7 @@ public static partial class LayoutValidationExtensions
             {
                 if (layout is null || string.IsNullOrEmpty(layout.Id) || !Identifier().IsMatch(layout.Id)
                     || !ids.Add(layout.Id) || string.IsNullOrWhiteSpace(layout.Name) || layout.Name.Length > 200
+                    || layout.Locale is { Length: 0 or > 100 }
                     || layout.Sections is null || layout.Sections.Count < 1
                     || layout.Badges is null || layout.Badges.Count > 20
                     || layout.Sections.Count > (configuration.SchemaVersion == 0 ? 20 : 22))
@@ -105,6 +106,7 @@ public static partial class LayoutValidationExtensions
                             || widget.Editor is not ("html" or "richtext") || widget.Limit is < 1 or > 50
                             || widget.Layer is < -100 or > 100
                             || widget.HamburgerPosition is not ("default" or "left" or "right")
+                            || widget.Type == "core.locale-switch" && widget.LocaleSwitchView is not ("view" or "flag-only" or "flag-and-text" or "text-only")
                             || !widget.HasValidMessage
                             || widget.Row < 1 || widget.Column < 1 || widget.RowSpan is < 1 or > 12
                             || widget.ColumnSpan is < 1 or > 12 || widget.Row > section.Rows - widget.RowSpan + 1
@@ -124,15 +126,16 @@ public static partial class LayoutValidationExtensions
                 }
             }
 
-            var active = configuration.Layouts.Where(layout => !layout.Deleted).Select(layout => layout.Id)
-                .ToHashSet(StringComparer.Ordinal);
-            var routes = new HashSet<string>(StringComparer.Ordinal);
+            var active = configuration.Layouts.Where(layout => !layout.Deleted)
+                .ToDictionary(layout => layout.Id, layout => layout.Locale, StringComparer.Ordinal);
+            var routes = new HashSet<(string Route, string? Locale)>();
 
-            return active.Contains(configuration.DefaultLayout) && configuration.Assignments.All(assignment =>
+            return active.ContainsKey(configuration.DefaultLayout) && configuration.Assignments.All(assignment =>
                 assignment is not null && assignment.Route is { Length: > 1 and <= 500 }
                 && assignment.Route.StartsWith("#/", StringComparison.Ordinal)
-                && !assignment.Route[..^1].Contains('*') && routes.Add(assignment.Route)
-                && assignment.Layout is not null && active.Contains(assignment.Layout));
+                && !assignment.Route[..^1].Contains('*')
+                && assignment.Layout is not null && active.TryGetValue(assignment.Layout, out var assignmentLocale)
+                && routes.Add((assignment.Route, assignmentLocale)));
         }
 
         public LayoutConfiguration Sanitize() => configuration with

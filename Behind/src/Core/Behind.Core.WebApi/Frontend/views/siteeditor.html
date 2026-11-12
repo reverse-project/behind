@@ -1,4 +1,4 @@
-<section class="behind-wide">
+<section class="behind-wide" data-bind="contentLocaleScope: { entityType: 'Site', id: siteId, allowed: canWrite, revision: localeRevision }">
     <content-age params="entityType: 'Site', id: siteId"></content-age>
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <h1 class="mb-0" data-bind="text: heading"></h1>
@@ -7,8 +7,11 @@
     <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'sites.signInToManage'">to manage sites.</span></p>
     <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'sites.denied'">You need site access to manage sites.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: localeLoadFailed, t: 'contentLocale.error'"></div>
     <div data-bind="visible: canRead">
         <form data-bind="submit: saveDraft">
+            <label class="form-label" for="site-content-locale" data-bind="t: 'contentLocale.label'">Content locale</label>
+            <select id="site-content-locale" class="form-select mb-3" data-bind="options: localeOptions, optionsText: 'name', optionsValue: 'code', value: contentLocale, enable: canWrite"></select>
             <div class="mb-3">
                 <label class="form-label" for="site-title" data-bind="t: 'common.title'">Title</label>
                 <input id="site-title" class="form-control" type="text" maxlength="200" data-bind="value: title, valueUpdate: 'input', enable: canWrite">
@@ -47,9 +50,9 @@
         </div>
         <div class="mb-4" data-bind="visible: hasLive">
             <h2 class="h5" data-bind="t: 'sites.editor.liveAddress'">Live address</h2>
-            <p class="mb-0"><a data-bind="attr: { href: primaryPath }, text: primaryPath"></a></p>
-            <p class="mb-0"><a data-bind="attr: { href: fallbackPath }, text: fallbackPath"></a></p>
-            <p class="mb-0" data-bind="visible: isLiveIndex"><a href="#/">#/</a> <span class="badge text-bg-primary" data-bind="t: 'sites.customIndex'">Custom index</span></p>
+            <p class="mb-0"><a data-content-locale-explicit data-bind="attr: { href: primaryPath }, text: primaryPath"></a></p>
+            <p class="mb-0"><a data-content-locale-explicit data-bind="attr: { href: fallbackPath }, text: fallbackPath"></a></p>
+            <p class="mb-0" data-bind="visible: isLiveIndex"><a data-content-locale-explicit data-bind="attr: { href: indexPath }, text: indexPath"></a> <span class="badge text-bg-primary" data-bind="t: 'sites.customIndex'">Custom index</span></p>
         </div>
         <div data-bind="visible: !isNew">
             <h2 class="h5" data-bind="t: 'sites.editor.versions'">Versions</h2>

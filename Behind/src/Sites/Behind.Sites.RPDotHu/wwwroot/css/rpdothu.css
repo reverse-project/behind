@@ -61,6 +61,21 @@ html {
     box-shadow: 0 1px 3px var(--rp-shadow);
 }
 
+:is(#header-container, .behind-page-header) locale-switch {
+    display: block;
+    max-width: 100%;
+    color: var(--rp-blue);
+}
+
+:is(#header-container, .behind-page-header) locale-switch .form-select {
+    border-color: var(--rp-blue);
+}
+
+locale-switch .locale-switch-choices .btn {
+    color: var(--rp-blue);
+    border-color: var(--rp-blue);
+}
+
 body {
     overflow-x: clip;
     color: var(--rp-text);

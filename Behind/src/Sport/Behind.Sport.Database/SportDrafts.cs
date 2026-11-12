@@ -7,11 +7,11 @@ namespace Behind.Sport.Database;
 public sealed record DisciplineDraft(
     [property: Required, MaxLength(Discipline.MaxNameLength)] string Name,
     [property: Required, MaxLength(Discipline.MaxSlugLength), RegularExpression(DisciplineDraft.SlugPattern)] string Slug)
-    : IDraft<DisciplineDraft>
+    : ContentLocaleDraft, IDraft<DisciplineDraft>
 {
     public const string SlugPattern = "^[a-z0-9]+(-[a-z0-9]+)*$";
 
-    public DisciplineDraft Normalized() => new(Name.ToRequiredText(), Slug.ToRequiredText().ToLowerInvariant());
+    public DisciplineDraft Normalized() => this with { Name = Name.ToRequiredText(), Slug = Slug.ToRequiredText().ToLowerInvariant() };
 }
 
 public sealed record PositionDraft(

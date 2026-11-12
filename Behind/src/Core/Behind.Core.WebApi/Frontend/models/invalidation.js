@@ -7,6 +7,31 @@ define([], function () {
         }
     };
 
+    var invalidate = function (topic, value) {
+        requireTopic(topic);
+
+        var subscriptions = topics.get(topic);
+        var pending = Array.from(subscriptions || []).map(function (subscription) {
+            return Promise.resolve().then(function () {
+                if (subscriptions.has(subscription)) {
+                    return subscription.handler(value);
+                }
+            });
+        });
+
+        return Promise.allSettled(pending).then(function (results) {
+            var errors = results.filter(function (result) {
+                return result.status === "rejected";
+            }).map(function (result) {
+                return result.reason;
+            });
+
+            if (errors.length > 0) {
+                throw new AggregateError(errors, "Failed to invalidate " + topic + ".");
+            }
+        });
+    };
+
     return {
         subscribe: function (topic, handler) {
             requireTopic(topic);
@@ -36,28 +61,15 @@ define([], function () {
             };
         },
 
-        invalidate: function (topic) {
-            requireTopic(topic);
+        invalidate: invalidate,
 
-            var subscriptions = topics.get(topic);
-            var pending = Array.from(subscriptions || []).map(function (subscription) {
-                return Promise.resolve().then(function () {
-                    if (subscriptions.has(subscription)) {
-                        return subscription.handler();
-                    }
-                });
-            });
+        after: function (topic, result) {
+            if (!result.ok) {
+                return result;
+            }
 
-            return Promise.allSettled(pending).then(function (results) {
-                var errors = results.filter(function (result) {
-                    return result.status === "rejected";
-                }).map(function (result) {
-                    return result.reason;
-                });
-
-                if (errors.length > 0) {
-                    throw new AggregateError(errors, "Failed to invalidate " + topic + ".");
-                }
+            return invalidate(topic).then(function () {
+                return result;
             });
         }
     };

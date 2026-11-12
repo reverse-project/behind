@@ -135,6 +135,10 @@ public sealed class ChatStore(AbstractCoreContext context, TimeProvider timeProv
     {
         await context.ChatMessages.AddAsync(message, cancellationToken);
         context.Entry(message).StampVersionedKey(message.Id.Key, message.Id.Version);
+        if (message.Id.Version == 1 && context.SelectedContentLocale is not null)
+        {
+            await context.StageContentLocale(nameof(ChatMessage), message.Id.Key, context.SelectedContentLocale, cancellationToken);
+        }
 
         try
         {

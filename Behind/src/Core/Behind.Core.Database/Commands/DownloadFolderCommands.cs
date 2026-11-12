@@ -151,6 +151,10 @@ public sealed class DownloadFolderCommands(AbstractCoreContext context, IVfsComm
         var entry = context.Entry(folder);
         entry.StampVersionedKey(id.Key, id.Version);
         entry.Property<Guid?>(DownloadFolderConfiguration.ParentIdProperty).CurrentValue = parentId;
+        if (context.ContentLocaleSpecified)
+        {
+            await context.StageContentLocale(nameof(DownloadFolder), key, context.SelectedContentLocale, cancellationToken);
+        }
 
         try
         {
@@ -189,8 +193,11 @@ public sealed class DownloadFolderCommands(AbstractCoreContext context, IVfsComm
         CancellationToken cancellationToken)
     {
         var lowered = slug.ToLowerInvariant();
+        var locale = context.ContentLocaleSpecified
+            ? context.SelectedContentLocale
+            : await context.FindContentLocale(nameof(DownloadFolder), folderId, cancellationToken);
 
-        return await context.LatestFoldersIn(DeletionState.Active)
+        return await context.InContentLocale(context.LatestFoldersIn(DeletionState.Active), nameof(DownloadFolder), locale)
             .AnyAsync(
                 folder => folder.Slug.ToLower() == lowered
                           && EF.Property<Guid?>(folder, DownloadFolderConfiguration.ParentIdProperty) == parentId

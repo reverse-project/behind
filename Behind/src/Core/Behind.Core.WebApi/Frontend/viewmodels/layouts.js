@@ -1,4 +1,4 @@
-define(["ko", "models/layouts", "models/messages", "models/widgets", "models/session", "models/i18n", "bindings/richeditor"], function (ko, layouts, messages, widgets, session, i18n) {
+define(["ko", "models/layouts", "models/messages", "models/widgets", "models/session", "models/i18n", "models/contentlocale", "bindings/richeditor"], function (ko, layouts, messages, widgets, session, i18n, contentLocale) {
     var id = function () {
         return window.crypto.randomUUID();
     };
@@ -18,6 +18,8 @@ define(["ko", "models/layouts", "models/messages", "models/widgets", "models/ses
             noMargin: ko.observable(!!data.noMargin),
             noPadding: ko.observable(!!data.noPadding),
             hamburgerPosition: ko.observable(data.hamburgerPosition || "default"),
+            showLocaleSwitch: ko.observable(!!data.showLocaleSwitch),
+            localeSwitchView: ko.observable(data.localeSwitchView || "view"),
             menu: ko.observable(data.menu || "main"),
             content: ko.observable(data.content || ""),
             editor: ko.observable(data.editor || "richtext"),
@@ -52,6 +54,7 @@ define(["ko", "models/layouts", "models/messages", "models/widgets", "models/ses
         return {
             id: data.id,
             name: ko.observable(data.name),
+            locale: ko.observable(data.locale || ""),
             deleted: ko.observable(!!data.deleted),
             badges: ko.observableArray((data.badges || []).map(editableBadge)),
             sections: ko.observableArray(data.sections.map(editableSection))
@@ -65,12 +68,14 @@ define(["ko", "models/layouts", "models/messages", "models/widgets", "models/ses
             layer: Number(widget.layer()), cssClass: trimCssClass ? widget.cssClass().trim() : widget.cssClass(),
             borderless: widget.borderless(), noMargin: widget.noMargin(), noPadding: widget.noPadding(),
             hamburgerPosition: widget.hamburgerPosition(),
+            showLocaleSwitch: widget.showLocaleSwitch(),
+            localeSwitchView: widget.localeSwitchView(),
             menu: widget.menu(), content: widget.content(), editor: widget.editor(), limit: Number(widget.limit()), message: widget.message()
         };
     };
     var requestLayout = function (layout, trimCssClass) {
         return {
-            id: layout.id, name: layout.name(), deleted: layout.deleted(),
+            id: layout.id, name: layout.name(), locale: layout.locale() || null, deleted: layout.deleted(),
             badges: layout.badges().map(function (badge) {
                 return {
                     id: badge.id, text: badge.text().trim(), image: badge.image(),
@@ -89,6 +94,10 @@ define(["ko", "models/layouts", "models/messages", "models/widgets", "models/ses
         var self = this;
         var revision = 0;
         self.schemaVersion = ko.observable(1);
+        self.localeLoadFailed = contentLocale.loadFailed;
+        self.localeOptions = ko.pureComputed(function () {
+            return [{ code: "", name: i18n.t("contentLocale.neutral") }].concat(contentLocale.locales());
+        });
         self.layouts = ko.observableArray([]);
         self.selected = ko.observable(null);
         self.defaultLayout = ko.observable("");
@@ -99,7 +108,7 @@ define(["ko", "models/layouts", "models/messages", "models/widgets", "models/ses
             return session.hasGrant("Configuration.Read");
         });
         self.canWrite = ko.pureComputed(function () {
-            return session.hasGrant("Configuration.Manage") && !self.busy();
+            return session.hasGrant("Configuration.Manage") && !self.busy() && !self.localeLoadFailed();
         });
         self.canManageDeleted = ko.pureComputed(function () {
             return session.hasGrant("RawDatabase.Manage");
@@ -346,8 +355,9 @@ define(["ko", "models/layouts", "models/messages", "models/widgets", "models/ses
                 assignments: self.assignments().map(function (assignment) {
                     return { route: assignment.route().trim(), layout: assignment.layout() };
                 })
-            }).then(function (response) {
+            }, selectedId).then(function (response) {
                 if (response.ok) {
+                    contentLocale.clearMedia();
                     apply(response.data, selectedId);
                     self.message(i18n.t("layouts.saved"));
                 } else {

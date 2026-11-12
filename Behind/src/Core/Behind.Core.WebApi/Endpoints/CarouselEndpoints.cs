@@ -20,7 +20,8 @@ public sealed class CarouselEndpoints
     public sealed record SaveCarouselSlideRequest(
         [property: Required] Guid ImageId,
         [property: MaxLength(CarouselSlide.MaxCaptionLength)] string? Caption,
-        [property: MaxLength(CarouselSlide.MaxLinkUrlLength)] string? LinkUrl);
+        [property: MaxLength(CarouselSlide.MaxLinkUrlLength)] string? LinkUrl,
+        Guid? Id = null);
 
     public sealed record SaveCarouselRequest(
         int IntervalSeconds,

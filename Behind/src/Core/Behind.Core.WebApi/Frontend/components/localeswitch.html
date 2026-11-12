@@ -1,0 +1,13 @@
+<div>
+    <label class="visually-hidden" data-bind="t: 'contentLocale.switch'"></label>
+    <!-- ko if: view === 'view' -->
+    <select class="form-select form-select-sm" data-bind="options: options, optionsText: optionLabel, optionsValue: 'code', value: value, event: { change: change }, enable: !busy(), tAttr: { 'aria-label': 'contentLocale.switch' }"></select>
+    <!-- /ko -->
+    <!-- ko if: view !== 'view' -->
+    <div class="locale-switch-choices d-flex flex-wrap gap-2" data-bind="foreach: options">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bind="text: $component.optionLabel($data), click: $component.selectLocale, enable: !$component.busy(), attr: { 'aria-label': $component.optionName($data), 'aria-pressed': $component.value() === code }"></button>
+    </div>
+    <!-- /ko -->
+    <span class="text-danger small" role="alert" data-bind="visible: error, text: error"></span>
+    <span class="text-danger small" role="alert" data-bind="visible: loadFailed, t: 'contentLocale.error'"></span>
+</div>

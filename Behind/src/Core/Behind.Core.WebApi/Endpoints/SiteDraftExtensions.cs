@@ -62,7 +62,8 @@ public static class SiteDraftExtensions
                     content,
                     section.ImageId.ToOption(),
                     section.ImageId is null ? string.Empty : imageAlt,
-                    section.ImagePosition));
+                    section.ImagePosition,
+                    section.Id));
         }
     }
 }

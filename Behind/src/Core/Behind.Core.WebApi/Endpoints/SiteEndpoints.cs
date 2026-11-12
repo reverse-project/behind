@@ -7,6 +7,7 @@ using Behind.Core.Database;
 using Behind.Core.Domain;
 using Behind.Common.Database;
 using Behind.Common.WebApi;
+using Behind.Common.WebApi.Infrastructure.Localization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +31,8 @@ public sealed class SiteEndpoints
         [property: MaxLength(SiteSection.MaxContentLength * 2)] string? Content,
         Guid? ImageId,
         [property: MaxLength(SiteSection.MaxImageAltLength * 2)] string? ImageAlt,
-        SiteSectionImagePosition ImagePosition);
+        SiteSectionImagePosition ImagePosition,
+        Guid? Id = null);
 
     public sealed record SaveSiteRequest(
         [property: Required, MaxLength(Site.MaxTitleLength)] string Title,
@@ -38,7 +40,7 @@ public sealed class SiteEndpoints
         [property: MaxLength(Site.MaxContentLength)] string? Content,
         bool Publish,
         bool HideTitle = false,
-        IReadOnlyList<SaveSiteSectionRequest>? Sections = null);
+        IReadOnlyList<SaveSiteSectionRequest>? Sections = null) : ContentLocaleDraft;
 
     [IgnoreETag]
     public static Task<IResult> List(
@@ -117,8 +119,15 @@ public sealed class SiteEndpoints
     }
 
     [IgnoreETag]
-    public static Task<IResult> Create(SaveSiteRequest request, HttpContext httpContext, ISiteCommands commands) =>
-        WithDraft(
+    public static async Task<IResult> Create(
+        SaveSiteRequest request, HttpContext httpContext, ISiteCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null)
+    {
+        if (!await request.SelectContentLocale(context, locales, httpContext.RequestAborted))
+        {
+            return Results.BadRequest();
+        }
+        return await WithDraft(
             request,
             async draft =>
                 (await commands.Create(
@@ -129,14 +138,21 @@ public sealed class SiteEndpoints
                     draft.HideTitle,
                     draft.Sections,
                     httpContext.RequestAborted)).ToResult());
+    }
 
     [IgnoreETag]
-    public static Task<IResult> SaveVersion(
+    public static async Task<IResult> SaveVersion(
         Guid id,
         SaveSiteRequest request,
         HttpContext httpContext,
-        ISiteCommands commands) =>
-        WithDraft(
+        ISiteCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null)
+    {
+        if (!await request.SelectContentLocale(context, locales, httpContext.RequestAborted))
+        {
+            return Results.BadRequest();
+        }
+        return await WithDraft(
             request,
             async draft =>
                 (await commands.SaveVersion(
@@ -148,6 +164,7 @@ public sealed class SiteEndpoints
                     draft.HideTitle,
                     draft.Sections,
                     httpContext.RequestAborted)).ToResult());
+    }
 
     [IgnoreETag]
     public static async Task<IResult> Activate(

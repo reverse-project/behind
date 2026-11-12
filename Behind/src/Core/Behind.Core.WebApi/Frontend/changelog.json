@@ -3,6 +3,9 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "changed", "text": "Saving a layout applies the selected saved layout around the layout editor without losing the editor state. Other management pages keep their fixed shell." },
+      { "type": "fixed", "text": "Content and forum widget changes refresh mounted widgets after successful edits, and layout saves no longer reuse an older in-flight layout request." },
+      { "type": "added", "text": "Optional content locales are selected from the signed-in user's profile, browser cache or site default and sent with content requests without changing routes. Sites and route aliases reuse slugs across locales, and content is visible only in its assigned locale. Layouts offer a Locale switch widget and optional header switch with view, flag-only, flag-and-text and text-only presentations; flags are configurable in locale JSON. Changing the selector updates the signed-in user's interface language." },
       { "type": "changed", "text": "Layout image badges sit flush against their selected page corner without margins, padding or gaps between images. Text badges retain their inset and padding." },
       { "type": "added", "text": "Header widget placements offer a hamburger-button position setting: Site default, Left or Right. The setting works with the core header and both site skins; existing layouts and management headers preserve their site's default position." },
       { "type": "added", "text": "Layouts support top-layer badges for development notices and linked funding images. Add up to 20 text or uploaded-image badges per layout, choose a page corner and width, and optionally link to a safe URL. Badges stack above layout sections and menus, scroll with the page, remain responsive and never appear on management/account pages. Uploaded images reuse the layout VFS." },

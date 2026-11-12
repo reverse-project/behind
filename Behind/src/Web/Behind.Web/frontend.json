@@ -2,7 +2,7 @@
   "Frontend": {
     "Url": "http://localhost:5000/",
     "Site": {
-      "Title": "Behind Development Build",
+      "Title": "Behind Dev Build",
       "Copyright": "\u00A9 2026 Reverse Project",
       "DefaultLocale": "hu-HU",
       "ContactEmail": "system@zwebnt.hu"

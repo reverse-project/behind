@@ -214,6 +214,9 @@ public static class WebApiExtensions
             builder.Services.AddScoped<Behind.Common.Database.Modules.IModuleUsers>(
                 provider => provider.GetRequiredService<UserProfiles>());
             builder.Services.AddScoped<IModuleIdentity, ModuleIdentity>();
+            builder.Services.AddScoped<IContentLocalePermission, NewsCommentLocalePermission>();
+            builder.Services.AddScoped<IContentLocalePermission, ChatMessageLocalePermission>();
+            builder.Services.AddScoped<IContentLocalePermission, VfsFileLocalePermission>();
             builder.Services.AddScoped<IUserSettingQueries, UserSettingQueries>();
             builder.Services.AddScoped<IUserSettingCommands, UserSettingCommands>();
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
@@ -286,6 +289,7 @@ public static class WebApiExtensions
 
         public WebApplicationBuilder AddCore()
         {
+            builder.Services.AddModule(CoreModule.Descriptor);
             builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
             builder.Services.AddExceptionHandler<UnhandledExceptionHandler>();
             builder.Services.AddHttpContextAccessor();
@@ -406,6 +410,7 @@ public static class WebApiExtensions
             application.UseAuthorization();
             application.UseAccessGate();
             application.UseMiddleware<ContentRestrictionMiddleware>();
+            application.UseMiddleware<ContentLocaleMiddleware>();
             application.UseDeletedRecordsVisibility();
 
             application.MapGet("/session", SessionEndpoints.Get)
@@ -960,6 +965,7 @@ public static class WebApiExtensions
             application.MapAccessEndpoints();
             application.MapRawDatabaseEndpoints();
             application.MapContentRestrictionEndpoints();
+            application.MapContentLocaleEndpoints();
 
             application.MapGet("/users/profiles/{id:guid}", PublicProfileEndpoints.Get)
                 .WithSummary("Read a public profile and the current actor's moderation permissions.")

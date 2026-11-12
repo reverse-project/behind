@@ -51,7 +51,24 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
     };
 
     var read = function (quill) {
-        return isEmpty(quill) ? "" : quill.getSemanticHTML();
+        if (isEmpty(quill)) {
+            return "";
+        }
+        var html = quill.getSemanticHTML();
+        var sourceImages = quill.root.querySelectorAll("img");
+        if (!Array.prototype.some.call(sourceImages, function (image) { return image.hasAttribute("data-content-locale-source"); })) {
+            return html;
+        }
+        var container = document.createElement("div");
+        container.innerHTML = html;
+        var images = container.querySelectorAll("img");
+        Array.prototype.forEach.call(sourceImages, function (image, index) {
+            var source = image.getAttribute("data-content-locale-source");
+            if (source !== null && images[index] && images[index].getAttribute("src") === image.getAttribute("src")) {
+                images[index].setAttribute("src", source);
+            }
+        });
+        return container.innerHTML;
     };
 
     var insertImages = function (quill, upload, index, files) {

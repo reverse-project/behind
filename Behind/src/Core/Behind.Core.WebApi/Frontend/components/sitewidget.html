@@ -13,6 +13,9 @@
     <h2 class="card-header h5 mb-0" data-bind="visible: title, text: title"></h2>
     <div class="card-body">
         <p class="alert alert-danger" role="alert" data-bind="visible: error, text: error"></p>
+        <!-- ko if: type === 'core.locale-switch' -->
+        <locale-switch params="view: localeSwitchView"></locale-switch>
+        <!-- /ko -->
         <!-- ko if: type === 'core.menu-horizontal' || type === 'core.menu-vertical' -->
         <menu-items params="items: menuItems, variant: type === 'core.menu-vertical' ? 'vertical' : 'nav'"></menu-items>
         <!-- /ko -->

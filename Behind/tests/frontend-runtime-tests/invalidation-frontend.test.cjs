@@ -66,7 +66,11 @@ function fixture() {
     };
     const menus = load("models/menus.js", {
         ko, "models/http": http, "models/results": results, "models/paging": {},
-        "models/session": session, "models/i18n": i18n, "models/invalidation": invalidation
+        "models/session": session, "models/i18n": i18n, "models/invalidation": invalidation,
+        "models/contentlocale": {
+            current: ko.observable(null),
+            assignmentRevision: ko.observable(0)
+        }
     });
     return { menus, http, session, invalidation, calls, setTitle: value => { title = value; } };
 }

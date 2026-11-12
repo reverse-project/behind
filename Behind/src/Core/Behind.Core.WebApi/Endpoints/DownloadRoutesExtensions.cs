@@ -25,6 +25,12 @@ public static class DownloadRoutesExtensions
                 .Produces<DownloadFoldersResponse>()
                 .Produces(500);
 
+            application.MapGet("/downloads/folders/manage", DownloadEndpoints.ListFolders)
+                .RequireAuthorization(write);
+
+            application.MapGet("/downloads/folders/{id:guid}/files/manage", DownloadEndpoints.ListFiles)
+                .RequireAuthorization(write);
+
             application.MapGet("/downloads/folders/{id:guid}/files", DownloadEndpoints.ListFiles)
                 .Produces<DownloadFilesResponse>()
                 .Produces(404)

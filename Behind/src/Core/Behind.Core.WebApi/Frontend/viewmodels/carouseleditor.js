@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/carousels", "models/i18n"], function (ko, session, carousels, i18n) {
+define(["ko", "models/session", "models/carousels", "models/i18n", "models/contentlocale"], function (ko, session, carousels, i18n, contentLocale) {
     var states = { none: "none", live: "live", deleted: "deleted" };
 
     return function CarouselEditorViewModel(params) {
@@ -93,6 +93,7 @@ define(["ko", "models/session", "models/carousels", "models/i18n"], function (ko
 
         var present = function (item) {
             var slide = {
+                id: item.id || null,
                 imageId: item.imageId,
                 imageUrl: item.imageUrl,
                 caption: ko.observable(item.caption || ""),
@@ -230,7 +231,7 @@ define(["ko", "models/session", "models/carousels", "models/i18n"], function (ko
             var fields = {
                 intervalSeconds: self.intervalValue(),
                 slides: self.slides().map(function (slide) {
-                    return { imageId: slide.imageId, caption: slide.caption().trim(), linkUrl: slide.linkUrl().trim() };
+                    return { id: slide.id, imageId: slide.imageId, caption: slide.caption().trim(), linkUrl: slide.linkUrl().trim() };
                 })
             };
 
@@ -238,6 +239,9 @@ define(["ko", "models/session", "models/carousels", "models/i18n"], function (ko
                 return carousels.save(siteId, fields).then(function (result) {
                     self.message(result.message);
 
+                    if (result.ok) {
+                        contentLocale.clearMedia();
+                    }
                     return result.ok ? self.load() : result;
                 });
             });

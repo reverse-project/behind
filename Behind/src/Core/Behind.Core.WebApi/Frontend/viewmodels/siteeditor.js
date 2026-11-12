@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/sites", "models/sitesections", "models/slug", "models/i18n", "bindings/richeditor"], function (ko, session, sites, sectionsModel, slug, i18n) {
+define(["ko", "models/session", "models/sites", "models/sitesections", "models/slug", "models/i18n", "models/contentlocale", "models/http", "bindings/richeditor"], function (ko, session, sites, sectionsModel, slug, i18n, contentLocale, http) {
     var statusOf = function (item) {
         if (item.isActive) {
             return { key: "sites.status.live", css: "text-bg-success" };
@@ -31,6 +31,13 @@ define(["ko", "models/session", "models/sites", "models/sitesections", "models/s
         });
         self.busy = ko.observable(false);
         self.message = ko.observable("");
+        self.localeLoadFailed = contentLocale.loadFailed;
+        self.contentLocale = ko.observable("");
+        self.localeRevision = ko.observable(0);
+        self.localeLoaded = ko.observable(self.isNew);
+        self.localeOptions = ko.pureComputed(function () {
+            return [{ code: "", name: i18n.t("contentLocale.neutral") }].concat(contentLocale.locales());
+        });
         self.title = ko.observable("");
         self.slug = ko.observable("");
         self.slugEdited = ko.observable(!self.isNew);
@@ -108,6 +115,9 @@ define(["ko", "models/session", "models/sites", "models/sitesections", "models/s
         self.fallbackPath = ko.pureComputed(function () {
             return self.hasLive() ? "#/site/" + self.live().slug : "";
         });
+        self.indexPath = ko.pureComputed(function () {
+            return "#/";
+        });
 
         self.hasEmptySection = ko.pureComputed(function () {
             return self.sections().some(function (section) {
@@ -116,7 +126,7 @@ define(["ko", "models/session", "models/sites", "models/sitesections", "models/s
         });
 
         self.canSave = ko.pureComputed(function () {
-            return self.canWrite() && !self.busy() && self.title().trim() !== "" && slug.create(self.slug()) !== "" && !self.hasEmptySection();
+            return self.canWrite() && !contentLocale.loadFailed() && self.localeLoaded() && !self.busy() && self.title().trim() !== "" && slug.create(self.slug()) !== "" && !self.hasEmptySection();
         });
 
         var run = function (action) {
@@ -218,6 +228,7 @@ define(["ko", "models/session", "models/sites", "models/sitesections", "models/s
             var fields = {
                 title: self.title().trim(),
                 slug: slug.create(self.slug()),
+                contentLocale: self.contentLocale() || null,
                 content: self.content(),
                 hideTitle: self.hideTitle(),
                 sections: self.sections().map(sectionsModel.toRequest),
@@ -233,6 +244,9 @@ define(["ko", "models/session", "models/sites", "models/sitesections", "models/s
                     if (!result.ok) {
                         return result;
                     }
+                    contentLocale.clearMedia();
+                    contentLocale.assignmentRevision(contentLocale.assignmentRevision() + 1);
+                    self.localeRevision(self.localeRevision() + 1);
 
                     if (self.isNew) {
                         context.navigate("#/sites/" + result.data.id);
@@ -242,7 +256,7 @@ define(["ko", "models/session", "models/sites", "models/sitesections", "models/s
                     self.slug(fields.slug);
                     self.basedOn(result.data.version);
 
-                    return self.loadHistory();
+                    return readVersion(result.data.version).then(self.loadHistory);
                 });
             });
         };
@@ -293,6 +307,16 @@ define(["ko", "models/session", "models/sites", "models/sitesections", "models/s
                     ? settings
                     : Promise.all([
                         settings,
+                        http.get("/content-locales/Site/" + encodeURIComponent(siteId)).then(function (response) {
+                            if (response.ok) {
+                                self.contentLocale(response.data.locale || "");
+                                self.localeLoaded(true);
+                            } else {
+                                self.message(i18n.t("contentLocale.error"));
+                            }
+                        }).catch(function () {
+                            self.message(i18n.t("contentLocale.error"));
+                        }),
                         self.loadHistory().then(function (result) {
                             return result.ok ? readVersion(result.data.versions[0].version) : null;
                         })

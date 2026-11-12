@@ -1,5 +1,11 @@
 # Database Architecture
 
+## Content locale persistence
+
+Optional content-locale assignments are persisted with the shared database and participate in public content filtering across installed modules. The unlocalized content space remains the default for existing records and is shared with selected locales; no migration assigns the interface's default language to legacy content. Site and route-alias slug checks include shared slugs when checking a selected locale. Apply the updated Core migrations through the installation's existing migrator before starting the host, including flattened SQLite and PostgreSQL installations. Back up locale assignments with the content database and locale-aware layout settings with `layouts.json`.
+
+`ContentLocales` stores versioned `ContentLocale` records (`Id`, `EntityType`, `EntityId`, nullable `Locale`). The named `ContentLocale` EF filter uses the common `IContentLocaleContext`, `IContentLocaleStore` and `ContentLocaleScope` contracts. Null assignments make roots neutral and children inherit the effective parent locale. Module edit policies are declared through `ModuleDatabase.ContentLocaleEditPolicies`; ownership-sensitive checks use `IContentLocalePermission`. Raw editing and audit labels include the new entity.
+
 ## Scheduled site messages
 
 Core's `Messages` table stores immutable `(Key, Version)` versions with `Name`, `Title`, `Content`, `Level`, nullable `StartsAt` and nullable `EndsAt`. Schedule bounds are UTC ticks, using the existing `DateTimeOffsetConverter`; creation/update times and deletion state come only from the audit log. `AddMessages` migrations exist for SQLite and PostgreSQL and are applied through the existing Core migration chain, also for flattened site databases. Run the application database migrator before starting the updated host. The raw editor discovers all columns automatically and audit labels resolve the message name.

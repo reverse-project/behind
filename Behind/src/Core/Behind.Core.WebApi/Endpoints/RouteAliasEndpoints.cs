@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Behind.Common;
 using Behind.Common.Database;
 using Behind.Common.WebApi;
+using Behind.Common.WebApi.Infrastructure.Localization;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Database;
 using Behind.Core.Domain;
@@ -18,7 +19,7 @@ public sealed class RouteAliasEndpoints
 
     public sealed record SaveRouteAliasRequest(
         [property: Required, MaxLength(RouteAlias.MaxAliasLength * 2)] string Alias,
-        [property: Required, MaxLength(RouteAlias.MaxTargetLength)] string Target);
+        [property: Required, MaxLength(RouteAlias.MaxTargetLength)] string Target) : ContentLocaleDraft;
 
     [IgnoreETag]
     public static async Task<IResult> Resolve(
@@ -68,23 +69,37 @@ public sealed class RouteAliasEndpoints
             });
 
     [IgnoreETag]
-    public static Task<IResult> Create(
+    public static async Task<IResult> Create(
         SaveRouteAliasRequest request,
         HttpContext httpContext,
-        IRouteAliasCommands commands) =>
-        request.ToDraft().Match(
+        IRouteAliasCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null)
+    {
+        if (!await request.SelectContentLocale(context, locales, httpContext.RequestAborted))
+        {
+            return Results.BadRequest();
+        }
+        return await request.ToDraft().Match(
             () => Task.FromResult<IResult>(Results.BadRequest()),
             async draft => (await commands.Create(draft, httpContext.RequestAborted)).ToResult());
+    }
 
     [IgnoreETag]
-    public static Task<IResult> Update(
+    public static async Task<IResult> Update(
         Guid id,
         SaveRouteAliasRequest request,
         HttpContext httpContext,
-        IRouteAliasCommands commands) =>
-        request.ToDraft().Match(
+        IRouteAliasCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null)
+    {
+        if (!await request.SelectContentLocale(context, locales, httpContext.RequestAborted))
+        {
+            return Results.BadRequest();
+        }
+        return await request.ToDraft().Match(
             () => Task.FromResult<IResult>(Results.BadRequest()),
             async draft => (await commands.Update(id, draft, httpContext.RequestAborted)).ToResult());
+    }
 
     [IgnoreETag]
     public static async Task<IResult> Delete(Guid id, HttpContext httpContext, IRouteAliasCommands commands) =>

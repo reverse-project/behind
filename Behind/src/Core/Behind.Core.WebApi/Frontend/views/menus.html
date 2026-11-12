@@ -42,6 +42,7 @@
                     </div>
                     <span class="badge text-bg-secondary" data-bind="visible: isBuiltIn, t: 'menus.builtIn'">Built-in</span>
                     <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                    <content-locale params="entityType: 'Menu', id: id, allowed: $root.canWrite"></content-locale>
                     <a class="btn btn-sm btn-outline-primary" data-bind="attr: { href: itemsHref }, t: 'menus.items'">Items</a>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && !isBuiltIn && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>

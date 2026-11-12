@@ -1,4 +1,4 @@
-define(["ko", "models/http", "models/results", "models/paging", "models/session", "models/i18n", "models/invalidation"], function (ko, http, results, pagination, session, i18n, invalidation) {
+define(["ko", "models/http", "models/results", "models/paging", "models/session", "models/i18n", "models/invalidation", "models/contentlocale"], function (ko, http, results, pagination, session, i18n, invalidation, contentLocale) {
     var sessionExpired = results.sessionExpired;
 
     var outcome = results.create({
@@ -195,6 +195,8 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
         var subscriptions = [
             session.isSignedIn.subscribe(reload),
             session.grants.subscribe(reload),
+            contentLocale.current.subscribe(reload),
+            contentLocale.assignmentRevision.subscribe(reload),
             invalidation.subscribe("menus", function () {
                 return reload().then(function (result) {
                     if (!result.ok) {

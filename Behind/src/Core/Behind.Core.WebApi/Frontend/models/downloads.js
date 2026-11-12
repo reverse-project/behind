@@ -1,4 +1,4 @@
-define(["models/http", "models/results", "models/i18n"], function (http, results, i18n) {
+define(["models/http", "models/results", "models/i18n", "models/invalidation"], function (http, results, i18n, invalidation) {
     var sessionExpired = results.sessionExpired;
 
     var outcome = results.create({
@@ -9,7 +9,9 @@ define(["models/http", "models/results", "models/i18n"], function (http, results
     });
 
     var loaded = outcome.loaded;
-    var saved = outcome.saved;
+    var saved = function (response, message, failures) {
+        return invalidation.after("widget:core.downloads", outcome.saved(response, message, failures));
+    };
 
     var readFailures = {
         404: "downloads.error.folderGone"
@@ -57,7 +59,7 @@ define(["models/http", "models/results", "models/i18n"], function (http, results
     };
 
     var folderDraft = function (fields) {
-        return { displayName: fields.displayName, slug: fields.slug };
+        return { displayName: fields.displayName, slug: fields.slug, contentLocale: fields.contentLocale || null };
     };
 
     var folderPath = function (id) {
@@ -75,14 +77,16 @@ define(["models/http", "models/results", "models/i18n"], function (http, results
     };
 
     return {
-        folders: function () {
-            return http.get("/downloads/folders").then(function (response) {
+        folders: function (manage) {
+            var request = manage ? http.get("/downloads/folders/manage") : http.get("/downloads/folders");
+            return request.then(function (response) {
                 return loaded(response, readFailures);
             });
         },
 
-        files: function (folderId) {
-            return http.get(folderPath(folderId) + "/files").then(function (response) {
+        files: function (folderId, manage) {
+            var request = manage ? http.get(folderPath(folderId) + "/files/manage") : http.get(folderPath(folderId) + "/files");
+            return request.then(function (response) {
                 return loaded(response, readFailures);
             });
         },
@@ -128,9 +132,11 @@ define(["models/http", "models/results", "models/i18n"], function (http, results
 
                 var stored = response.data.files[0];
 
-                return stored.error
+                var result = stored.error
                     ? { ok: false, message: i18n.t(fileErrors[stored.error] || "downloads.error.uploadFailed") }
                     : { ok: true, message: "" };
+
+                return invalidation.after("widget:core.downloads", result);
             });
         },
 

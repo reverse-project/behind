@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261112115436_AddMessages";
+    public override string LastMigrationId => "20261112195911_ContentLocales";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -125,6 +125,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -152,6 +153,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -213,8 +215,10 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Carousels");
 
+                b.HasAnnotation("Behind:LocaleOwnerType", "Site");
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -253,7 +257,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("CarouselSlides");
 
-                b.HasAnnotation("Behind:AgeRestricted", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.ChatMessage", b =>
@@ -290,7 +296,38 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.ContentLocale", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<Guid>("EntityId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("EntityType")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.Property<string>("Locale")
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("EntityType", "EntityId", "Locale");
+                b.HasIndex("EntityType", "EntityId", "Version").IsUnique();
+
+                b.ToTable("ContentLocales");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.ContentRestriction", b =>
@@ -355,6 +392,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -387,6 +425,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -452,6 +491,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -490,7 +530,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("GalleryItems");
 
-                b.HasAnnotation("Behind:AgeRestricted", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Grant", b =>
@@ -576,7 +618,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Menus");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.MenuItem", b =>
@@ -624,7 +668,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("MenuItems");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Message", b =>
@@ -667,7 +713,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Messages");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.News", b =>
@@ -718,6 +766,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -745,6 +794,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -782,6 +832,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -874,7 +925,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("RouteAliases");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Site", b =>
@@ -916,6 +969,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Sites");
 
+                b.HasAnnotation("Behind:ContentLocale", true);
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -968,7 +1022,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("SiteSections");
 
-                b.HasAnnotation("Behind:AgeRestricted", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.User", b =>
@@ -1197,7 +1253,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("VfsFiles");
 
-                b.HasAnnotation("Behind:AgeRestricted", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.WallOfShameEntry", b =>

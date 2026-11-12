@@ -9,6 +9,12 @@ const root = path.resolve(__dirname, "../../src/Core/Behind.Core.WebApi/Frontend
 const ko = require(path.join(root, "libraries/knockout.min.js"));
 
 function load(file, dependencies, extra = {}) {
+    dependencies["models/contentlocale"] ||= {
+        current: ko.observable(null),
+        loadFailed: ko.observable(false),
+        locales: ko.observableArray([]),
+        clearMedia() {}
+    };
     if (file === "models/layouts.js") {
         dependencies["models/results"] = load("models/results.js", {
             "models/i18n": { tOr: key => key }

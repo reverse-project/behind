@@ -1,12 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using Behind.Common;
 using Behind.Common.WebApi;
+using Behind.Common.WebApi.Infrastructure.Localization;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using static Behind.Common.FunctionalExtensions;
 
@@ -19,7 +21,7 @@ public sealed class DownloadEndpoints
 
     public sealed record SaveFolderRequest(
         [property: Required, MaxLength(DownloadFolder.MaxDisplayNameLength)] string DisplayName,
-        [property: MaxLength(DownloadFolder.MaxSlugLength * 2)] string? Slug);
+        [property: MaxLength(DownloadFolder.MaxSlugLength * 2)] string? Slug) : ContentLocaleDraft;
 
     public sealed record RenameDownloadRequest(
         [property: Required, MaxLength(Download.MaxDisplayNameLength)] string DisplayName);
@@ -68,27 +70,36 @@ public sealed class DownloadEndpoints
     }
 
     [IgnoreETag]
-    public static Task<IResult> CreateFolder(
+    public static async Task<IResult> CreateFolder(
         SaveFolderRequest request,
         HttpContext httpContext,
-        IDownloadFolderCommands commands) =>
-        SaveFolder(request, draft => commands.Create(None, draft, httpContext.RequestAborted));
+        IDownloadFolderCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null) =>
+        await request.SelectContentLocale(context, locales, httpContext.RequestAborted)
+            ? await SaveFolder(request, draft => commands.Create(None, draft, httpContext.RequestAborted))
+            : Results.BadRequest();
 
     [IgnoreETag]
-    public static Task<IResult> CreateSubfolder(
+    public static async Task<IResult> CreateSubfolder(
         Guid id,
         SaveFolderRequest request,
         HttpContext httpContext,
-        IDownloadFolderCommands commands) =>
-        SaveFolder(request, draft => commands.Create(id, draft, httpContext.RequestAborted));
+        IDownloadFolderCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null) =>
+        await request.SelectContentLocale(context, locales, httpContext.RequestAborted)
+            ? await SaveFolder(request, draft => commands.Create(id, draft, httpContext.RequestAborted))
+            : Results.BadRequest();
 
     [IgnoreETag]
-    public static Task<IResult> UpdateFolder(
+    public static async Task<IResult> UpdateFolder(
         Guid id,
         SaveFolderRequest request,
         HttpContext httpContext,
-        IDownloadFolderCommands commands) =>
-        SaveFolder(request, draft => commands.Update(id, draft, httpContext.RequestAborted));
+        IDownloadFolderCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null) =>
+        await request.SelectContentLocale(context, locales, httpContext.RequestAborted)
+            ? await SaveFolder(request, draft => commands.Update(id, draft, httpContext.RequestAborted))
+            : Results.BadRequest();
 
     [IgnoreETag]
     public static async Task<IResult> DeleteFolder(Guid id, HttpContext httpContext, IDownloadFolderCommands commands) =>

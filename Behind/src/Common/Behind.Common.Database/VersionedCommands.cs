@@ -127,6 +127,10 @@ public abstract class VersionedCommands<TEntity, TDraft>(IModuleContext context)
 
         await Database.Set<TEntity>().AddAsync(entity, cancellationToken);
         Database.Entry(entity).StampVersionedKey(id.Key, id.Version);
+        if (Database is IContentLocaleStore { ContentLocaleSpecified: true } locales)
+        {
+            await locales.StageContentLocale(typeof(TEntity).Name, key, locales.SelectedContentLocale, cancellationToken);
+        }
 
         try
         {

@@ -12,14 +12,24 @@ public sealed class DisciplineCommands(ISportContext context) : SportCommands<Di
     protected override async Task<Option<string>> Validate(
         Guid key,
         DisciplineDraft draft,
-        CancellationToken cancellationToken) =>
-        Reject(
-            await Sport.ActiveLatest(Sport.Disciplines)
+        CancellationToken cancellationToken)
+    {
+        var rows = Sport.ActiveLatest(Sport.Disciplines);
+        if (Database is IContentLocaleStore locales)
+        {
+            var locale = locales.ContentLocaleSpecified
+                ? locales.SelectedContentLocale
+                : await locales.FindContentLocale(nameof(Discipline), key, cancellationToken);
+            rows = locales.InContentLocale(rows, nameof(Discipline), locale);
+        }
+        return Reject(
+            await rows
                 .AnyAsync(
                     discipline => discipline.Slug == draft.Slug
                                   && EF.Property<Guid>(discipline, VersionedColumns.Key) != key,
                     cancellationToken),
             SportRejections.Duplicate);
+    }
 
     protected override async Task<bool> IsReferenced(Guid key, CancellationToken cancellationToken) =>
         await IsReferencedBy(Sport.Positions, row => row.DisciplineId == key, cancellationToken)

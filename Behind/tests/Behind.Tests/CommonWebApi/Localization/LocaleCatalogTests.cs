@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Behind.Common.WebApi.Infrastructure.Localization;
 using Microsoft.Extensions.FileProviders;
 
@@ -5,7 +6,8 @@ namespace Behind.Tests.CommonWebApi.Localization;
 
 public class LocaleCatalogTests
 {
-    private static string Locale(string name) => $$"""{ "name": "{{name}}", "messages": { "a": "b" } }""";
+    private static string Locale(string name, string? flag = null) =>
+        $$"""{ "name": "{{name}}", "flag": {{(flag is null ? "null" : JsonSerializer.Serialize(flag))}}, "messages": { "a": "b" } }""";
 
     private static LocaleCatalog Catalog(TempFrontendDirectory directory) => new(directory.Provider);
 
@@ -16,7 +18,7 @@ public class LocaleCatalogTests
             new Dictionary<string, string>
             {
                 ["locales/hu-HU.json"] = Locale("Magyar"),
-                ["locales/en-US.json"] = Locale("English (International)"),
+                ["locales/en-US.json"] = Locale("English (International)", "🇺🇸"),
                 ["locales/de-DE.json"] = Locale("Deutsch")
             });
 
@@ -25,7 +27,7 @@ public class LocaleCatalogTests
         Assert.Equal(
             [
                 new LocaleInfo("de-DE", "Deutsch"),
-                new LocaleInfo("en-US", "English (International)"),
+                new LocaleInfo("en-US", "English (International)", "🇺🇸"),
                 new LocaleInfo("hu-HU", "Magyar")
             ],
             locales);
@@ -44,6 +46,22 @@ public class LocaleCatalogTests
         var locales = await Catalog(directory).ListAsync();
 
         Assert.Equal([new LocaleInfo("fr-FR", "fr-FR"), new LocaleInfo("it-IT", "it-IT")], locales);
+    }
+
+    [Fact]
+    public async Task ListAsync_UsesOptionalFlagMetadata()
+    {
+        using var directory = new TempFrontendDirectory(
+            new Dictionary<string, string>
+            {
+                ["locales/en-US.json"] = Locale("English", "🇺🇸"),
+                ["locales/fr-FR.json"] = Locale("Français")
+            });
+
+        var locales = await Catalog(directory).ListAsync();
+
+        Assert.Equal("🇺🇸", Assert.Single(locales, locale => locale.Code == "en-US").Flag);
+        Assert.Null(Assert.Single(locales, locale => locale.Code == "fr-FR").Flag);
     }
 
     [Fact]

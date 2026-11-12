@@ -40,6 +40,10 @@ public static class QuotesModule
         Database = new ModuleDatabase(typeof(QuoteConfiguration).Assembly)
         {
             ContentRestrictedEntities = [typeof(Quote)],
+            ContentLocaleEditPolicies = new Dictionary<string, string>
+            {
+                [nameof(Quote)] = QuotesModuleNames.WriteGrant
+            },
             SoftDeletedEntities = [typeof(Quote)]
         }
     };

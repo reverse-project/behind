@@ -1,5 +1,11 @@
 # Tartományi modell tervezése
 
+## A tartalmi nyelv jelentése
+
+A tartalom nyelve opcionális láthatósági metaadat. A nyelv nélküli tartalom minden kiválasztott nyelven megjelenik; nyelvválasztás nélkül csak a nyelv nélküli tartalom látható. A nyelvhez rendelt tartalom kizárólag a kiválasztott nyelven, a megosztott tartalom mellett jelenik meg. Így csak az eltérő tartalmat kell nyelvenként megadni. A felületi nyelv módosítása önmagában nem rendeli át a tartalmat. A slug az oldalt és útvonalálnevet nyelven belül azonosítja, a megosztott slug azonban minden nyelven foglalt. A jogosultság, közzététel, időzítés, korhatár és törlési állapot továbbra is a nyelvi láthatóság mellett érvényesül.
+
+A `ContentLocale` az entitás logikai kulcsához tartozó verziózott hozzárendelés. Null hozzárendeléssel a gyökér nyelv nélkülivé válik; a saját hozzárendelés nélküli gyermek a szülő tényleges nyelvét örökli. A `SiteLayout.Locale` az elrendezés tartalmi nyelvét választja ki, a `LayoutWidget.ShowLocaleSwitch` az opcionális fejlécvezérlőt kapcsolja be.
+
 ## Elrendezéskonfiguráció modellje
 
 A `LayoutConfiguration` revíziót, alapelrendezés-azonosítót, elrendezéseket és útvonal-hozzárendeléseket tartalmaz. A `SiteLayout` elnevezett rácsos szakaszokat és törlésjelzőt ad; a `LayoutSection` 1–12 sort és oszlopot, valamint `Width` értéket (`"site"`, alapértelmezett, vagy `"full"`; a nélküle tárolt elrendezések `"site"` értékkel töltődnek be, minden más érték érvénytelen) határoz meg. Az `Overlap` az előző szakaszhoz képest 0–2000 képponttal feljebb mozgatja, a `Layer` (-100–100) a szakaszok rétegsorrendjét adja meg. Minden `LayoutWidget` egyedi elhelyezésazonosítót, katalógustípust, címet, 1-től számozott pozíciót, sor-/oszlopátfogást, saját `Layer` értéket (-100–100) és típusfüggő beállításokat (menünév, egyéni tartalom/szerkesztő, elemszám) tartalmaz. A widgetek átfedhetik egymást, de a rácson belül kell maradniuk; minden elrendezésben pontosan egy `core.content` lehet. A hiányzó átfedési és rétegmezők alapértéke nulla. Az azonos pontosságú előtagmintával szemben a pontos útvonal nyer; a leghosszabb illeszkedő útvonal érvényesül. Csak aktív elrendezés rendelhető hozzá. Az egyéni HTML mentéskor és olvasáskor tisztításon esik át.

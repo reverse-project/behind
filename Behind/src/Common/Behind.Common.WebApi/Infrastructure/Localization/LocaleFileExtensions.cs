@@ -9,6 +9,7 @@ namespace Behind.Common.WebApi.Infrastructure.Localization;
 public static class LocaleFileExtensions
 {
     public const string NameProperty = "name";
+    public const string FlagProperty = "flag";
 
     private static readonly Regex CodePattern = new(
         "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
@@ -52,7 +53,7 @@ public static class LocaleFileExtensions
                 {
                     using (document)
                     {
-                        return new LocaleInfo(code, document!.RootElement.NameOr(code));
+                        return new LocaleInfo(code, document!.RootElement.NameOr(code), document.RootElement.Flag);
                     }
                 });
     }
@@ -66,5 +67,13 @@ public static class LocaleFileExtensions
             && !string.IsNullOrWhiteSpace(name.GetString())
                 ? name.GetString()!
                 : fallback;
+
+        private string? Flag =>
+            root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty(FlagProperty, out var flag)
+            && flag.ValueKind == JsonValueKind.String
+            && !string.IsNullOrWhiteSpace(flag.GetString())
+                ? flag.GetString()
+                : null;
     }
 }

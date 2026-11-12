@@ -19,6 +19,9 @@ public static class ForumRoutesExtensions
             forum.MapGet("/boards", ForumEndpoints.Boards)
                 .WithSummary("List forum boards; deleted records require developer permission.")
                 .Produces<ForumEndpoints.BoardPage>();
+            forum.MapGet("/manage/boards", ForumEndpoints.Boards)
+                .RequireAuthorization(ForumNames.Manage)
+                .Produces<ForumEndpoints.BoardPage>();
             forum.MapGet("/categories", ForumEndpoints.Categories)
                 .WithSummary("List active forum board categories.")
                 .Produces<IReadOnlyList<ForumEndpoints.BoardCategoryResponse>>();

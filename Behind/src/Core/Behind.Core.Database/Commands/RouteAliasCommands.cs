@@ -100,6 +100,11 @@ public sealed class RouteAliasCommands(AbstractCoreContext context) : IRouteAlia
         await context.RouteAliases.AddAsync(alias, cancellationToken);
         context.Entry(alias).StampVersionedKey(id.Key, id.Version);
 
+        if (context.ContentLocaleSpecified)
+        {
+            await context.StageContentLocale(nameof(RouteAlias), key, context.SelectedContentLocale, cancellationToken);
+        }
+
         try
         {
             await context.SaveChangesAsync(cancellationToken);
@@ -127,9 +132,14 @@ public sealed class RouteAliasCommands(AbstractCoreContext context) : IRouteAlia
         return (latest.Version, latest.Alias);
     }
 
-    private async Task<bool> IsAliasTaken(Guid aliasId, string alias, CancellationToken cancellationToken) =>
-        await context.LatestRouteAliasesIn(DeletionState.Active)
+    private async Task<bool> IsAliasTaken(Guid aliasId, string alias, CancellationToken cancellationToken)
+    {
+        var locale = context.ContentLocaleSpecified
+            ? context.SelectedContentLocale
+            : await context.FindContentLocale(nameof(RouteAlias), aliasId, cancellationToken);
+        return await context.InContentLocale(context.LatestRouteAliasesIn(DeletionState.Active), nameof(RouteAlias), locale)
             .AnyAsync(
                 candidate => candidate.Alias == alias && EF.Property<Guid>(candidate, VersionedColumns.Key) != aliasId,
                 cancellationToken);
+    }
 }

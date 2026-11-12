@@ -1,4 +1,4 @@
-<section class="behind-wide">
+<section class="behind-wide" data-bind="contentLocaleScope: { entityType: 'Gallery', id: galleryId, allowed: canWrite }">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <h1 class="mb-0" data-bind="text: heading"></h1>
         <a class="btn btn-outline-secondary ms-auto" href="#/manage/galleries" data-bind="t: 'galleryviewer.back'">Back to galleries</a>
@@ -50,6 +50,7 @@
                         <div class="card h-100">
                             <img class="card-img-top gallery-editor-image" data-bind="attr: { src: thumbnailUrl, alt: description() }">
                             <content-age params="entityType: 'VfsFile', id: imageId"></content-age>
+                            <content-locale params="entityType: 'GalleryItem', id: id, allowed: $root.canWrite"></content-locale>
                             <div class="card-body">
                                 <label class="form-label small" data-bind="t: 'galleryeditor.imageDescription'">Description (optional)</label>
                                 <textarea class="form-control" rows="2" maxlength="2000" data-bind="value: description, valueUpdate: 'input', enable: $root.canWrite"></textarea>

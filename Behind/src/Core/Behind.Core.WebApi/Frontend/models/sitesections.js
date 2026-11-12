@@ -24,6 +24,7 @@ define(["ko"], function (ko) {
 
     var editable = function (data) {
         var section = {
+            id: data.id || null,
             theme: ko.observable(data.theme || themes[0]),
             title: ko.observable(data.title || ""),
             content: ko.observable(data.content || ""),
@@ -57,6 +58,7 @@ define(["ko"], function (ko) {
 
     var toRequest = function (section) {
         return {
+            id: section.id,
             theme: section.theme(),
             title: section.title().trim(),
             content: section.content(),

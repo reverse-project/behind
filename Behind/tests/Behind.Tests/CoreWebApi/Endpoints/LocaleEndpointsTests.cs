@@ -12,7 +12,7 @@ public class LocaleEndpointsTests
         var result = await LocaleEndpoints.Get(TestLocales.Embedded, CancellationToken.None);
 
         var locales = Assert.IsType<JsonHttpResult<IReadOnlyList<LocaleInfo>>>(result).Value!;
-        Assert.Contains(new LocaleInfo("en-US", "English (International)"), locales);
-        Assert.Contains(new LocaleInfo("hu-HU", "Magyar"), locales);
+        Assert.Contains(new LocaleInfo("en-US", "English (International)", "🇺🇸"), locales);
+        Assert.Contains(new LocaleInfo("hu-HU", "Magyar", "🇭🇺"), locales);
     }
 }

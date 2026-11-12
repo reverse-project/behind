@@ -61,6 +61,13 @@ public class FseSiteTests
         Assert.True(skin > appCss, "css/fse.css after css/app.css");
     }
 
+    [Fact]
+    public void Header_OffersOptionalLocaleSwitchWithSkinStyling()
+    {
+        Assert.Contains("data-bind=\"visible: localeSwitch\"><locale-switch></locale-switch>", Read("wwwroot/index.html"));
+        Assert.Contains(":is(#header-container, .behind-page-header) locale-switch", Read("wwwroot/css/fse.css"));
+    }
+
     [Theory]
     [InlineData("<header id=\"header-container\">")]
     [InlineData("<main id=\"main-container\"")]

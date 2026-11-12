@@ -1,6 +1,7 @@
-define(["models/http", "models/invalidation", "models/results"], function (http, invalidation, results) {
+define(["models/http", "models/invalidation", "models/results", "models/contentlocale"], function (http, invalidation, results, contentLocale) {
     var configuration = null;
-    var pending = null;
+    var configurationLocale = null;
+    var pending = {};
     var imageFailures = {
         400: "content.error.imageRequired",
         401: results.sessionExpired,
@@ -10,8 +11,8 @@ define(["models/http", "models/invalidation", "models/results"], function (http,
     };
     var outcome = results.create({});
 
-    var remember = function (data) {
-        if (!configuration || data.revision >= configuration.revision) {
+    var remember = function (data, locale) {
+        if (locale === contentLocale.current() && (!configuration || configurationLocale !== locale || data.revision >= configuration.revision)) {
             configuration = {
                 schemaVersion: data.schemaVersion,
                 revision: data.revision,
@@ -21,27 +22,34 @@ define(["models/http", "models/invalidation", "models/results"], function (http,
                 }),
                 assignments: data.assignments
             };
+            configurationLocale = locale;
         }
         return configuration;
     };
 
     var load = function () {
-        if (!pending) {
-            pending = http.get("/layouts").then(function (response) {
+        var locale = contentLocale.current();
+        var key = locale || "";
+        if (!pending[key]) {
+            var request = http.get("/layouts").then(function (response) {
                 if (!response.ok) {
                     throw new Error("layouts.error.load");
                 }
 
-                return remember(response.data);
+                return remember(response.data, locale);
             }).finally(function () {
-                pending = null;
+                if (pending[key] === request) {
+                    delete pending[key];
+                }
             });
+            pending[key] = request;
         }
 
-        return pending;
+        return pending[key];
     };
 
     var select = function (data, route) {
+        var locale = contentLocale.current();
         var matches = data.assignments.filter(function (assignment) {
             return assignment.route.endsWith("*")
                 ? route.indexOf(assignment.route.slice(0, -1)) === 0
@@ -50,7 +58,13 @@ define(["models/http", "models/invalidation", "models/results"], function (http,
             var specificity = function (assignment) {
                 return assignment.route.length * 2 + (assignment.route.endsWith("*") ? 0 : 1);
             };
-            return specificity(right) - specificity(left);
+            var leftLayout = data.layouts.find(function (layout) { return layout.id === left.layout; });
+            var rightLayout = data.layouts.find(function (layout) { return layout.id === right.layout; });
+            var localeMatch = function (layout) {
+                return layout && (layout.locale || null) === locale ? 1 : 0;
+            };
+            return specificity(right) - specificity(left)
+                || localeMatch(rightLayout) - localeMatch(leftLayout);
         });
         var id = matches.length ? matches[0].layout : data.defaultLayout;
         return data.layouts.find(function (layout) {
@@ -69,19 +83,23 @@ define(["models/http", "models/invalidation", "models/results"], function (http,
         load: load,
         select: select,
         current: function () {
-            return configuration;
+            return configurationLocale === contentLocale.current() ? configuration : null;
         },
         manage: function () {
             return http.get("/layouts/manage");
         },
-        save: function (data) {
+        save: function (data, selectedId) {
             return http.post("/layouts", data).then(function (response) {
                 if (!response.ok) {
                     return response;
                 }
 
-                remember(response.data);
-                return invalidation.invalidate("layouts").then(function () {
+                pending = {};
+                remember(response.data, contentLocale.current());
+                var selected = response.data.layouts.find(function (layout) {
+                    return layout.id === selectedId && !layout.deleted;
+                });
+                return invalidation.invalidate("layouts", { preview: selected || null }).then(function () {
                     return response;
                 });
             });

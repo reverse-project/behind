@@ -12,7 +12,8 @@ public interface ISiteCommands
         string Content,
         Option<Guid> ImageId,
         string ImageAlt,
-        SiteSectionImagePosition ImagePosition);
+        SiteSectionImagePosition ImagePosition,
+        Guid? Id = null);
 
     Task<SiteSaveResult> Create(
         string title,

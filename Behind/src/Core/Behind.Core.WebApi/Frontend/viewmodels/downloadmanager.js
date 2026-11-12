@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "models/filetypes", "models/slug", "models/i18n"], function (ko, session, downloads, createBrowser, filetypes, slug, i18n) {
+define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "models/filetypes", "models/slug", "models/i18n", "models/contentlocale", "models/http"], function (ko, session, downloads, createBrowser, filetypes, slug, i18n, contentLocale, http) {
     return function DownloadManagerViewModel(context) {
         var self = this;
         var browser = null;
@@ -150,13 +150,19 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
             return row;
         };
 
-        browser = createBrowser({ rootHref: "#/manage/downloads", params: context.params, decorate: decorate });
+        browser = createBrowser({ rootHref: "#/manage/downloads", params: context.params, decorate: decorate, manage: self.canWrite });
         self.browser = browser;
 
         self.folderMode = ko.observable("");
         self.folderName = ko.observable("");
         self.folderSlug = ko.observable("");
         self.folderSlugEdited = ko.observable(false);
+        self.folderLocale = ko.observable("");
+        self.localeLoadFailed = contentLocale.loadFailed;
+        self.folderLocaleLoaded = ko.observable(true);
+        self.folderLocaleOptions = ko.pureComputed(function () {
+            return [{ code: "", name: i18n.t(browser.selected() ? "contentLocale.inherit" : "contentLocale.neutral") }].concat(contentLocale.locales());
+        });
 
         self.isEditingFolder = ko.pureComputed(function () {
             return self.folderMode() === "edit";
@@ -186,7 +192,7 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
             }
         });
         self.canSaveFolder = ko.pureComputed(function () {
-            return self.canWrite() && !self.busy() && self.folderName().trim() !== "" && slug.create(self.folderSlug()) !== "";
+            return self.canWrite() && !contentLocale.loadFailed() && self.folderLocaleLoaded() && !self.busy() && self.folderName().trim() !== "" && slug.create(self.folderSlug()) !== "";
         });
 
         self.closeFolderForm = function () {
@@ -194,6 +200,8 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
             self.folderName("");
             self.folderSlug("");
             self.folderSlugEdited(false);
+            self.folderLocale("");
+            self.folderLocaleLoaded(true);
         };
         self.startCreateFolder = function () {
             self.closeFolderForm();
@@ -211,6 +219,20 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
             self.folderName(current.displayName);
             self.folderSlug(current.slug);
             self.folderMode("edit");
+            self.folderLocaleLoaded(false);
+            return http.get("/content-locales/DownloadFolder/" + encodeURIComponent(current.id)).then(function (response) {
+                if (self.folderMode() !== "edit" || !browser.selected() || browser.selected().id !== current.id) {
+                    return;
+                }
+                if (response.ok) {
+                    self.folderLocale(response.data.locale || "");
+                    self.folderLocaleLoaded(true);
+                } else {
+                    browser.message(i18n.t("contentLocale.error"));
+                }
+            }).catch(function () {
+                browser.message(i18n.t("contentLocale.error"));
+            });
         };
 
         self.saveFolder = function () {
@@ -218,7 +240,7 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
                 return Promise.resolve();
             }
 
-            var fields = { displayName: self.folderName().trim(), slug: slug.create(self.folderSlug()) };
+            var fields = { displayName: self.folderName().trim(), slug: slug.create(self.folderSlug()), contentLocale: self.folderLocale() || null };
             var current = browser.selected();
             var editing = self.isEditingFolder();
 
@@ -231,6 +253,7 @@ define(["ko", "models/session", "models/downloads", "models/downloadbrowser", "m
                     if (!result.ok) {
                         return result;
                     }
+                    contentLocale.assignmentRevision(contentLocale.assignmentRevision() + 1);
 
                     self.closeFolderForm();
 

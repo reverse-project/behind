@@ -8,6 +8,7 @@
     <p class="form-text" data-bind="t: 'layouts.cssClassHelp'">Space-separated ASCII CSS identifiers matching [-_a-zA-Z][-_a-zA-Z0-9]*, up to 500 characters. Surrounding spaces are trimmed when saved; preview classes are isolated from editor controls.</p>
     <div class="alert alert-info" role="status" data-bind="visible: message, text: message"></div>
     <div class="alert alert-warning" role="alert" data-bind="visible: messageLoadError, text: messageLoadError"></div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: localeLoadFailed, t: 'contentLocale.error'"></div>
     <div data-bind="if: canRead">
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <button class="btn btn-outline-primary" type="button" data-bind="click: addLayout, enable: canWrite, t: 'layouts.add'">Add layout</button>
@@ -19,9 +20,11 @@
         <fieldset data-bind="enable: canWrite">
             <label class="form-label" for="layout-default" data-bind="t: 'layouts.default'">Default layout</label>
             <select id="layout-default" class="form-select mb-4" data-bind="options: activeLayouts, optionsText: label, optionsValue: 'id', value: defaultLayout"></select>
-            <div data-bind="with: selected">
+            <div data-bind="with: selected, attr: { 'data-content-locale': selected() ? selected().locale() : '' }">
                 <label class="form-label" for="layout-name" data-bind="t: 'common.name'">Name</label>
                 <input id="layout-name" class="form-control mb-3" maxlength="200" data-bind="value: name">
+                <label class="form-label" for="layout-locale" data-bind="t: 'contentLocale.label'">Content locale</label>
+                <select id="layout-locale" class="form-select mb-3" data-bind="options: $root.localeOptions, optionsText: 'name', optionsValue: 'code', value: locale"></select>
                 <div class="d-flex flex-wrap gap-2 mb-3">
                     <button class="btn btn-outline-danger" type="button" data-bind="visible: !deleted(), click: $root.deleteLayout, t: 'common.delete'">Delete</button>
                     <button class="btn btn-outline-success" type="button" data-bind="visible: deleted() && $root.canManageDeleted(), click: $root.restoreLayout, t: 'common.restore'">Restore</button>
@@ -95,6 +98,15 @@
                                         <option value="default" data-bind="t: 'layouts.hamburger.default'">Site default</option>
                                         <option value="left" data-bind="t: 'layouts.hamburger.left'">Left</option>
                                         <option value="right" data-bind="t: 'layouts.hamburger.right'">Right</option>
+                                    </select>
+                                </label>
+                                <label class="form-check mb-2" data-bind="visible: type() === 'core.header'"><input class="form-check-input" type="checkbox" data-bind="checked: showLocaleSwitch"><span class="form-check-label" data-bind="t: 'layouts.showLocaleSwitch'">Show locale switch</span></label>
+                                <label class="d-block mb-2" data-bind="visible: type() === 'core.header' || type() === 'core.locale-switch'"><span data-bind="t: 'layouts.localeSwitchView'">Locale switch view</span>
+                                    <select class="form-select" data-bind="value: localeSwitchView">
+                                        <option value="view" data-bind="t: 'layouts.localeSwitchView.view'">View</option>
+                                        <option value="flag-only" data-bind="t: 'layouts.localeSwitchView.flagOnly'">Flag only</option>
+                                        <option value="flag-and-text" data-bind="t: 'layouts.localeSwitchView.flagAndText'">Flag and text</option>
+                                        <option value="text-only" data-bind="t: 'layouts.localeSwitchView.textOnly'">Text only</option>
                                     </select>
                                 </label>
                                 <div class="d-flex flex-wrap gap-3 mb-2">

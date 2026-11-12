@@ -84,7 +84,7 @@ define(["ko", "models/session", "models/i18n", "models/pager", "modules/forum/mo
             row.hardDelete = function () { return change("hard/delete"); };
             return row;
         };
-        self.boards = section("boards", self.canManage, function (row) {
+        self.boards = section("manage/boards", self.canManage, function (row) {
             row.edit = function () {
                 self.boardId(row.key);
                 self.boardName(row.entity.name);
@@ -139,7 +139,17 @@ define(["ko", "models/session", "models/i18n", "models/pager", "modules/forum/mo
             self.categoryNameInput("");
         };
         self.loadCategoryOptions = function () {
-            return api.get("categories").then(function (categories) {
+            var loadPage = function (page, items) {
+                return api.get("manage/categories?page=" + page).then(function (result) {
+                    var all = items.concat(result.items);
+                    return page < result.pageCount ? loadPage(page + 1, all) : all;
+                });
+            };
+            if (!self.canManage()) {
+                self.categoryOptions([{ value: "", label: i18n.t("forum.uncategorized") }]);
+                return Promise.resolve();
+            }
+            return loadPage(1, []).then(function (categories) {
                 self.categoryOptions([{ value: "", label: i18n.t("forum.uncategorized") }].concat(
                     categories.map(function (category) {
                         return { value: category.key, label: category.entity.name };

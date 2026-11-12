@@ -21,7 +21,9 @@ public sealed class CarouselCommands(
             return new CarouselSaveResult.NotFound();
         }
 
-        if (!await HasImages(draft, cancellationToken))
+        if (!await HasImages(draft, cancellationToken)
+            || !await context.HasContentChildren<CarouselSlide>(siteId, CarouselSlideConfiguration.CarouselIdProperty,
+                draft.Slides.Select(slide => slide.Id), cancellationToken))
         {
             return new CarouselSaveResult.UnknownImage();
         }
@@ -133,7 +135,7 @@ public sealed class CarouselCommands(
         await context.CarouselSlides.AddAsync(slide, cancellationToken);
 
         var entry = context.Entry(slide);
-        entry.StampVersionedKey(Guid.CreateVersion7(), carousel.Version);
+        entry.StampVersionedKey(draft.Id ?? Guid.CreateVersion7(), carousel.Version);
         entry.Property<Guid>(CarouselSlideConfiguration.CarouselIdProperty).CurrentValue = carousel.Key;
         entry.Property<Guid>(CarouselSlideConfiguration.ImageIdProperty).CurrentValue = draft.ImageId;
         entry.Property<int>(CarouselSlideConfiguration.PositionProperty).CurrentValue = position;

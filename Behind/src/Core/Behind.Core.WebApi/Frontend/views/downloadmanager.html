@@ -12,9 +12,11 @@
     <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'downloadmanager.denied'">You need download access to manage downloads.</div>
     <p class="text-body-secondary" data-bind="visible: canRead() && browser.loading(), t: 'common.loading'">Loading...</p>
     <div class="alert alert-info" role="alert" data-bind="visible: browser.hasMessage, text: browser.message"></div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: localeLoadFailed, t: 'contentLocale.error'"></div>
     <div class="alert alert-warning" role="alert" data-bind="visible: canRead() && browser.missing()"><span data-bind="t: 'downloads.folderMissing'">This folder does not exist.</span> <a href="#/manage/downloads" data-bind="t: 'downloads.goToDownloads'">Go to the downloads</a>.</div>
     <div class="row g-4" data-bind="visible: canRead() && browser.found()">
         <content-age params="entityType: 'DownloadFolder', id: browser.selected() && browser.selected().id"></content-age>
+        <content-locale params="entityType: 'DownloadFolder', id: browser.selected() && browser.selected().id, allowed: $root.canWrite"></content-locale>
         <div class="col-md-4 col-lg-3">
             <nav aria-label="Download folders" class="card card-body" data-bind="tAttr: { 'aria-label': 'downloads.folders' }">
                 <a class="text-decoration-none mb-2" data-bind="attr: { href: browser.rootHref }, css: { 'download-tree-selected': browser.rootSelected }"><i class="fa-solid fa-house me-1" aria-hidden="true"></i><span data-bind="t: 'downloads.all'">All downloads</span></a>
@@ -33,6 +35,8 @@
             </nav>
             <form class="card card-body mb-4" data-bind="visible: canWrite() && isFolderFormOpen(), submit: saveFolder">
                 <h2 class="h5" data-bind="text: folderFormHeading"></h2>
+                <label class="form-label" for="download-folder-locale" data-bind="t: 'contentLocale.label'">Content locale</label>
+                <select id="download-folder-locale" class="form-select mb-3" data-bind="options: folderLocaleOptions, optionsText: 'name', optionsValue: 'code', value: folderLocale"></select>
                 <div class="mb-3">
                     <label class="form-label" for="download-folder-name" data-bind="t: 'downloadmanager.displayName'">Display name</label>
                     <input id="download-folder-name" class="form-control" type="text" maxlength="200" data-bind="value: folderName, valueUpdate: 'input'">
@@ -85,7 +89,7 @@
                         </tr>
                     </thead>
                     <tbody data-bind="foreach: browser.files">
-                        <tr>
+                        <tr data-bind="contentLocaleScope: { entityType: 'Download', id: id, allowed: $root.canWrite }">
                             <td class="text-break">
                                 <i class="me-2 download-file-icon" aria-hidden="true" data-bind="css: icon"></i>
                                 <!-- ko ifnot: editing -->
@@ -105,6 +109,7 @@
                             <td class="text-break"><a data-bind="text: uploadedBy, attr: { href: uploadedByHref }"></a></td>
                             <td class="text-nowrap text-end">
                                 <content-age params="entityType: 'Download', id: id"></content-age>
+                                <content-locale params="entityType: 'Download', id: id, allowed: $root.canWrite"></content-locale>
                                 <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: $root.canWrite() && !editing(), enable: !$root.busy(), click: edit, t: 'downloadmanager.rename'">Rename</button>
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: $root.canDelete(), enable: !$root.busy(), click: remove, t: 'common.delete'">Delete</button>
                             </td>

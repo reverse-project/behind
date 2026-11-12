@@ -55,13 +55,14 @@ public class SiteFrontendTests
         Assert.Contains("\"#/site/:slug\": \"controllers/site\"", app);
         Assert.Contains("var siteController = \"controllers/site\"", app);
         Assert.Contains("app.get(aliasRoute,", app);
-        Assert.Contains("[routes, moduleRouteTable(), siteRoutes].forEach", app);
+        var tables = app.IndexOf("var tables = [routes, moduleRouteTable(), siteRoutes];", StringComparison.Ordinal);
+        var registration = app.IndexOf("tables.forEach", StringComparison.Ordinal);
+        Assert.True(tables >= 0 && registration > tables);
         Assert.True(
             app.IndexOf("\"#/sign/in/magiclink\"", StringComparison.Ordinal)
             < app.IndexOf("app.get(aliasRoute,", StringComparison.Ordinal));
         Assert.True(
-            app.IndexOf("[routes, moduleRouteTable(), siteRoutes].forEach", StringComparison.Ordinal)
-            < app.IndexOf("app.get(aliasRoute,", StringComparison.Ordinal));
+            registration < app.IndexOf("app.get(aliasRoute,", StringComparison.Ordinal));
     }
 
     [Fact]

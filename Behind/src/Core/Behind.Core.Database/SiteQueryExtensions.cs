@@ -103,7 +103,10 @@ internal static class SiteQueryExtensions
             string slug,
             CancellationToken cancellationToken)
         {
-            var candidates = await context.Sites
+            var locale = context.ContentLocaleSpecified
+                ? context.SelectedContentLocale
+                : await context.FindContentLocale(nameof(Site), siteId, cancellationToken);
+            var candidates = await context.InContentLocale(context.Sites, nameof(Site), locale)
                 .Where(site => site.Slug == slug && EF.Property<Guid>(site, SiteConfiguration.SiteIdProperty) != siteId)
                 .ToRows()
                 .AsNoTracking()

@@ -38,8 +38,8 @@ public sealed class EmailAddressCommandsTests : IDisposable
         await using var read = _factory.CreateContext();
         var addresses = await new EmailQueries(read).Addresses(userId);
         Assert.Equal(2, addresses.Count);
-        Assert.Equal("owner@test.com", addresses[0].Value);
-        Assert.Equal("second@test.com", addresses[1].Value);
+        Assert.Contains(addresses, address => address.Value == "owner@test.com");
+        Assert.Contains(addresses, address => address.Value == "second@test.com");
     }
 
     [Theory]
@@ -68,8 +68,8 @@ public sealed class EmailAddressCommandsTests : IDisposable
 
         await using var read = _factory.CreateContext();
         var addresses = await new EmailQueries(read).Addresses(userId);
-        Assert.Equal("replacement@test.com", addresses[0].Value);
-        Assert.Equal(Now, addresses[1].ConfirmedAt);
+        Assert.Equal("replacement@test.com", Assert.Single(addresses, address => address.Id == id).Value);
+        Assert.Equal(Now, Assert.Single(addresses, address => address.Value == "second@test.com").ConfirmedAt);
         Assert.Equal(userId, await read.Emails.Where(email => EF.Property<Guid>(email, "Id") == id)
             .Select(email => EF.Property<Guid>(email, "UserId")).SingleAsync());
         var updated = Assert.IsType<AuditLogEntry.Updated>(Assert.Single(await read.AuditLogEntries.ToListAsync()).Action);
@@ -149,7 +149,7 @@ public sealed class EmailAddressCommandsTests : IDisposable
         context.ChangeTracker.Clear();
         Assert.True(await new EmailCommands(context, new FixedTimeProvider(Now.AddDays(1)))
             .ConfirmAddress(userId, added.Id, "changed@test.com"));
-        Assert.Equal(Now, (await new EmailQueries(context).Addresses(userId))[1].ConfirmedAt);
+        Assert.Equal(Now, Assert.Single(await new EmailQueries(context).Addresses(userId), address => address.Id == added.Id).ConfirmedAt);
         await commands.RemoveAddress(userId, added.Id);
         Assert.False(await commands.ConfirmAddress(userId, added.Id, "changed@test.com"));
     }

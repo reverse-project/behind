@@ -1,10 +1,12 @@
 using Behind.Common;
 using Behind.Common.Database;
 using Behind.Common.WebApi;
+using Behind.Common.WebApi.Infrastructure.Localization;
 using Behind.Common.WebApi.Middleware;
 using Behind.Sport.Database;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Behind.Sport.WebApi.Endpoints;
 
@@ -35,18 +37,26 @@ public static class ResourceEndpoints
     public static async Task<IResult> Create<TDraft>(
         TDraft draft,
         HttpContext httpContext,
-        IVersionedCommands<TDraft> commands)
+        IVersionedCommands<TDraft> commands,
+        [FromServices] ISportContext? context = null, [FromServices] LocaleCatalog? locales = null)
         where TDraft : IDraft<TDraft> =>
-        (await commands.Create(draft.Normalized(), httpContext.RequestAborted)).ToResult();
+        draft is ContentLocaleDraft selection && !await selection.SelectContentLocale(
+            context?.Context as IContentLocaleStore, locales, httpContext.RequestAborted)
+            ? Results.BadRequest()
+            : (await commands.Create(draft.Normalized(), httpContext.RequestAborted)).ToResult();
 
     [IgnoreETag]
     public static async Task<IResult> Update<TDraft>(
         Guid id,
         TDraft draft,
         HttpContext httpContext,
-        IVersionedCommands<TDraft> commands)
+        IVersionedCommands<TDraft> commands,
+        [FromServices] ISportContext? context = null, [FromServices] LocaleCatalog? locales = null)
         where TDraft : IDraft<TDraft> =>
-        (await commands.Update(id, draft.Normalized(), httpContext.RequestAborted)).ToResult();
+        draft is ContentLocaleDraft selection && !await selection.SelectContentLocale(
+            context?.Context as IContentLocaleStore, locales, httpContext.RequestAborted)
+            ? Results.BadRequest()
+            : (await commands.Update(id, draft.Normalized(), httpContext.RequestAborted)).ToResult();
 
     [IgnoreETag]
     public static async Task<IResult> Delete<TDraft>(

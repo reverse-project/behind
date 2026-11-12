@@ -7,6 +7,7 @@
         <div class="collapse navbar-collapse" data-bind="attr: { id: navigationId }">
             <menu-items params="items: links, variant: 'navbar'"></menu-items>
             <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item" data-bind="visible: localeSwitch"><locale-switch params="view: localeSwitchView"></locale-switch></li>
                 <li class="nav-item dropdown" data-bind="visible: isSignedIn">
                     <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: label"></button>
                     <div class="dropdown-menu">

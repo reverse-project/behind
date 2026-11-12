@@ -117,6 +117,22 @@ public sealed class LayoutsFrontendTests
     }
 
     [Fact]
+    public void HeaderLocaleSwitch_UsesItsPersistedPresentation()
+    {
+        var editor = Read("views/layouts.html");
+        Assert.Contains("visible: type() === 'core.header' || type() === 'core.locale-switch'", editor);
+        Assert.Contains("value: localeSwitchView", editor);
+        var shell = Read("models/layoutshell.js");
+        Assert.Contains("localeSwitchView: widget.localeSwitchView", shell);
+        Assert.Contains("mountHeader(header, configuredHeader())", shell);
+        Assert.Contains("return found || section.widgets.find", shell);
+        var header = Read("components/siteheader.js");
+        Assert.Contains("localeSwitchView = ko.unwrap((params || {}).localeSwitchView) || \"view\"", header);
+        Assert.Contains("<locale-switch params=\"view: localeSwitchView\"></locale-switch>", Read("components/siteheader.html"));
+        Assert.Contains("localeSwitchView: widget.localeSwitchView()", Read("viewmodels/layouts.js"));
+    }
+
+    [Fact]
     public void Badges_UseAnAbsoluteClickThroughOverlayAboveLayoutSections()
     {
         var css = Read("css/app.css");

@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules", "models/layoutshell"], function ($, migrate, ko, Sammy, accounts, branding, session, usersettings, restriction, i18n, modules, layoutShell) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules", "models/layoutshell", "models/contentlocale", "models/about", "bindings/contentlocalescope"], function ($, migrate, ko, Sammy, accounts, branding, session, usersettings, restriction, i18n, modules, layoutShell, contentLocale, about) {
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
@@ -75,6 +75,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     var siteController = "controllers/site";
     var aliasController = "controllers/routealias";
     var following = false;
+    var execution = 0;
 
     ko.components.register("pager", { require: "components/pager" });
     ko.components.register("captcha", { require: "components/captcha" });
@@ -92,6 +93,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     ko.components.register("site-widget", { require: "components/sitewidget" });
     ko.components.register("site-header", { require: "components/siteheader" });
     ko.components.register("site-footer", { require: "components/sitefooter" });
+    ko.components.register("content-locale", { require: "components/contentlocale" });
+    ko.components.register("locale-switch", { require: "components/localeswitch" });
 
     var container = function () {
         return $("#main-container");
@@ -137,12 +140,26 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     };
 
     var execute = function (requested, params) {
+        var ticket = ++execution;
+        contentLocale.clearMedia();
+        i18n.useContent(contentLocale.current());
         var controllerName = restriction.restricted() && openControllers.indexOf(requested) < 0
             ? restrictionController
             : requested;
 
         require([controllerName], function (Controller) {
-            new Controller($.extend({}, context, { params: params })).exec();
+            if (ticket !== execution) {
+                return;
+            }
+            var guardedContext = $.extend({}, context, {
+                params: params,
+                renderView: function (view, viewModel) {
+                    if (ticket === execution) {
+                        context.renderView(view, viewModel);
+                    }
+                }
+            });
+            new Controller(guardedContext).exec();
         });
     };
 
@@ -176,7 +193,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
                 });
             });
 
-            [routes, moduleRouteTable(), siteRoutes].forEach(function (table) {
+            var tables = [routes, moduleRouteTable(), siteRoutes];
+            tables.forEach(function (table) {
                 Object.keys(table).forEach(function (path) {
                     app.get(path, function () {
                         execute(table[path], this.params.toHash());
@@ -207,7 +225,50 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     };
 
     var syncUserSettings = function () {
-        return session.isSignedIn() ? usersettings.load() : usersettings.clear();
+        var settings = session.isSignedIn() ? usersettings.load() : usersettings.clear();
+        return settings.then(function (result) {
+            if (result.ok) {
+                contentLocale.current(contentLocale.defaultLocale([
+                    usersettings.locale(),
+                    i18n.remembered()
+                ], branding.locale()));
+            }
+            return result;
+        });
+    };
+
+    var localizeLinks = function () {
+        var media = new WeakMap();
+        var update = function () {
+            document.querySelectorAll("img[src], a[href]").forEach(function (element) {
+                var name = element.tagName.toLowerCase() === "img" ? "src" : "href";
+                var value = element.getAttribute(name);
+                var previous = media.get(element);
+                if (!previous || value !== previous.applied) {
+                    previous = { source: value };
+                }
+                var scope = element.closest("[data-content-locale]");
+                var locale = scope ? scope.getAttribute("data-content-locale") || null : contentLocale.current();
+                var localized = contentLocale.media(previous.source, locale);
+                previous.applied = localized;
+                media.set(element, previous);
+                if (name === "src" && element.closest(".ql-editor")) {
+                    if (localized !== previous.source) {
+                        element.setAttribute("data-content-locale-source", previous.source);
+                    } else {
+                        element.removeAttribute("data-content-locale-source");
+                    }
+                }
+                if (localized !== value) {
+                    element.setAttribute(name, localized);
+                }
+            });
+        };
+        var observer = new MutationObserver(update);
+        observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["href", "src", "data-content-locale"] });
+        contentLocale.current.subscribe(update);
+        contentLocale.mediaRevision.subscribe(update);
+        update();
     };
 
     return {
@@ -218,7 +279,16 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
                 document.title = title;
             });
 
-            return Promise.all([branding.load(), modules.load()])
+            return about.loadLocales().then(function (result) {
+                contentLocale.loadFailed(!result.ok);
+                if (result.ok) {
+                    contentLocale.locales(result.items);
+                }
+            }).catch(function () {
+                contentLocale.loadFailed(true);
+            }).then(function () {
+                return Promise.all([branding.load(), modules.load()]);
+            })
                 .then(function () {
                     router = createRouter();
                     i18n.useDefault(branding.locale());
@@ -227,6 +297,17 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
                 })
                 .then(function () {
                     i18n.useAccount(usersettings.locale());
+                    var defaultLocale = contentLocale.defaultLocale([
+                        usersettings.locale(),
+                        i18n.remembered()
+                    ], branding.locale());
+                    contentLocale.current(defaultLocale);
+                    i18n.useContent(defaultLocale);
+                    contentLocale.current.subscribe(function (locale) {
+                        i18n.useContent(locale).then(function () {
+                            router.runRoute("get", window.location.hash || "#/");
+                        });
+                    });
                     usersettings.locale.subscribe(i18n.useAccount);
                     session.isSignedIn.subscribe(syncUserSettings);
                     session.isImpersonating.subscribe(syncUserSettings);
@@ -240,6 +321,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
                 })
                 .then(function () {
                     return layoutShell.start(context).then(function () {
+                        localizeLinks();
                         router.run("#/");
                     });
                 });

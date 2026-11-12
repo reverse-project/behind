@@ -60,6 +60,9 @@ public class LocalizationFrontendTests
         var app = Read("app.js");
 
         Assert.Contains("i18n.useDefault(branding.locale())", app);
+        Assert.Contains("contentLocale.defaultLocale([", app);
+        Assert.Contains("contentLocale.current(defaultLocale)", app);
+        Assert.DoesNotContain("contentLocale.route(", app);
         Assert.True(app.IndexOf("i18n.apply()", StringComparison.Ordinal) < app.IndexOf("router.run(\"#/\")", StringComparison.Ordinal));
         Assert.Contains("defaultLocale: data.defaultLocale", Read("models/about.js"));
         Assert.Contains("locale(site.defaultLocale || \"\")", Read("models/branding.js"));

@@ -78,6 +78,7 @@ define(["ko", "models/http", "models/results", "models/paging", "models/i18n"], 
             thumbnailImageId: fields.thumbnailImageId || null,
             items: (fields.items || []).map(function (item) {
                 return {
+                    id: item.id || null,
                     imageId: item.imageId,
                     thumbnailId: item.thumbnailId,
                     description: item.description

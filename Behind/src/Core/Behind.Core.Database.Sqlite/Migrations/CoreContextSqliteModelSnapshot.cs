@@ -16,7 +16,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261112115426_AddMessages";
+    public override string LastMigrationId => "20261112195936_ContentLocales";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -121,6 +121,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -148,6 +149,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -209,8 +211,10 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("Carousels");
 
+                b.HasAnnotation("Behind:LocaleOwnerType", "Site");
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -249,7 +253,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("CarouselSlides");
 
-                b.HasAnnotation("Behind:AgeRestricted", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.ChatMessage", b =>
@@ -286,7 +292,38 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.ContentLocale", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<Guid>("EntityId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("EntityType")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Locale")
+                    .HasMaxLength(100)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("EntityType", "EntityId", "Locale");
+                b.HasIndex("EntityType", "EntityId", "Version").IsUnique();
+
+                b.ToTable("ContentLocales");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.ContentRestriction", b =>
@@ -351,6 +388,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -383,6 +421,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -448,6 +487,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -486,7 +526,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("GalleryItems");
 
-                b.HasAnnotation("Behind:AgeRestricted", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Grant", b =>
@@ -572,7 +614,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("Menus");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.MenuItem", b =>
@@ -620,7 +664,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("MenuItems");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Message", b =>
@@ -663,7 +709,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("Messages");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.News", b =>
@@ -714,6 +762,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -741,6 +790,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -778,6 +828,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true)
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -870,7 +921,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("RouteAliases");
 
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Site", b =>
@@ -912,6 +965,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("Sites");
 
+                b.HasAnnotation("Behind:ContentLocale", true);
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -964,7 +1018,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("SiteSections");
 
-                b.HasAnnotation("Behind:AgeRestricted", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.User", b =>
@@ -1193,7 +1249,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
                 b.ToTable("VfsFiles");
 
-                b.HasAnnotation("Behind:AgeRestricted", true);
+                b
+                    .HasAnnotation("Behind:AgeRestricted", true)
+                    .HasAnnotation("Behind:ContentLocale", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.WallOfShameEntry", b =>

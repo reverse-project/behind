@@ -20,6 +20,7 @@
         <ul class="list-group mb-3" data-bind="foreach: items">
             <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                 <content-age params="entityType: 'Article', id: id"></content-age>
+                <content-locale params="entityType: 'Article', id: id, allowed: $root.canWrite"></content-locale>
                 <div class="me-auto">
                     <a class="fw-bold text-break" data-bind="attr: { href: href }, text: title, visible: !isDeleted"></a>
                     <strong class="text-break" data-bind="text: title, visible: isDeleted"></strong>

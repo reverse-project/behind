@@ -4,7 +4,7 @@ namespace Behind.Core.Database;
 
 public interface ICarouselCommands
 {
-    public sealed record CarouselSlideDraft(Guid ImageId, string Caption, string LinkUrl);
+    public sealed record CarouselSlideDraft(Guid ImageId, string Caption, string LinkUrl, Guid? Id = null);
 
     public sealed record CarouselDraft(int IntervalSeconds, IReadOnlyList<CarouselSlideDraft> Slides);
 

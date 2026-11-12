@@ -1,5 +1,11 @@
 # Adatbázis-architektúra
 
+## Tartalmi nyelvek tárolása
+
+Az opcionális tartalmi nyelvhozzárendelések a közös adatbázisban maradnak meg, és részt vesznek a telepített modulok nyilvános tartalmának szűrésében. A meglévő rekordok nyelv nélküli alapértéke minden kiválasztott nyelvvel megosztott; migráció nem rendeli hozzájuk a felület alapnyelvét. Az oldal- és útvonalálnév-slug ellenőrzése a kiválasztott nyelvnél a megosztott slugokat is figyelembe veszi. A gazda indítása előtt a telepítés meglévő migrátorával alkalmazza a frissített Core-migrációkat, az egyesített SQLite- és PostgreSQL-telepítésekben is. A nyelvhozzárendeléseket a tartalmi adatbázissal, a nyelvhez kötött elrendezésbeállításokat a `layouts.json` fájllal együtt mentse.
+
+A `ContentLocales` verziózott `ContentLocale` rekordokat tárol (`Id`, `EntityType`, `EntityId`, nullázható `Locale`). A `ContentLocale` nevű EF-szűrő a közös `IContentLocaleContext`, `IContentLocaleStore` és `ContentLocaleScope` szerződéseket használja. Null hozzárendeléssel a gyökér nyelv nélkülivé válik, a gyermek a szülő tényleges nyelvét örökli. A modul szerkesztési szabályait a `ModuleDatabase.ContentLocaleEditPolicies`, a tulajdonosfüggő ellenőrzéseket az `IContentLocalePermission` adja. Az új entitást a nyers szerkesztő és az auditfeliratok is kezelik.
+
 ## Ütemezett webhelyüzenetek
 
 A Core `Messages` táblája változtathatatlan `(Key, Version)` verziókat tárol `Name`, `Title`, `Content`, `Level`, valamint opcionális `StartsAt` és `EndsAt` mezőkkel. Az időhatárok UTC tick értékek a meglévő `DateTimeOffsetConverter` használatával; a létrehozási/módosítási idő és törlési állapot kizárólag az auditnaplóból származik. Az SQLite- és PostgreSQL-`AddMessages` migrációkat a meglévő Core migrációs lánc alkalmazza az egyesített webhely-adatbázisokban is. Az új gazdaalkalmazás indítása előtt futtassa az alkalmazás adatbázis-migrátorát. A nyers szerkesztő minden oszlopot automatikusan felismer, az auditfelirat az üzenet nevét mutatja.

@@ -5,7 +5,7 @@ namespace Behind.Core.Database;
 
 public interface IGalleryCommands
 {
-    public sealed record GalleryItemDraft(Guid ImageId, Guid ThumbnailId, string Description);
+    public sealed record GalleryItemDraft(Guid ImageId, Guid ThumbnailId, string Description, Guid? Id = null);
 
     public sealed record GalleryDraft(
         string Title,

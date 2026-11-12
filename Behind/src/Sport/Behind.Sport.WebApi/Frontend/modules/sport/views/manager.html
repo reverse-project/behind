@@ -21,9 +21,14 @@
     <!-- /ko -->
     <!-- ko ifnot: isHub -->
     <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: localeLoadFailed, t: 'contentLocale.error'"></div>
     <div data-bind="visible: canRead">
-        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
+        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save, contentLocaleScope: { entityType: definition.entityType, id: editingId, allowed: canWrite }">
             <h2 class="h5" data-bind="text: heading"></h2>
+            <div class="mb-3" data-bind="if: definition.entityType === 'Discipline'">
+                <label class="form-label" for="sport-content-locale" data-bind="t: 'contentLocale.label'">Content locale</label>
+                <select id="sport-content-locale" class="form-select" data-bind="options: localeOptions, optionsText: 'name', optionsValue: 'code', value: contentLocale"></select>
+            </div>
             <!-- ko foreach: form.fields -->
             <div class="mb-3">
                 <!-- ko if: type === 'checkbox' -->
@@ -54,6 +59,7 @@
                 <input class="form-control mb-1" type="search" maxlength="100" placeholder="Search" aria-label="Search" data-bind="value: query, valueUpdate: 'input', event: { keydown: keydown }, enable: ready, tAttr: { placeholder: 'sport.manage.referenceSearch', 'aria-label': 'sport.manage.referenceSearch' }">
                 <select class="form-select" data-bind="attr: { id: id }, options: options, optionsText: 'label', optionsValue: 'id', optionsCaption: $root.chooseLabel(), value: value, valueAllowUnset: true, enable: ready"></select>
                 <div class="form-text" data-bind="visible: !ready(), t: 'sport.manage.referenceNotReady'">Choose the related fields first.</div>
+                <div class="form-text text-danger" role="alert" data-bind="visible: message, text: message"></div>
                 <!-- /ko -->
                 <!-- ko if: type === 'image' -->
                 <input class="form-control" type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-bind="attr: { id: id }, event: { change: upload }, enable: !$root.busy() && !uploading()">
@@ -94,7 +100,7 @@
                         </tr>
                     </thead>
                     <tbody data-bind="foreach: items">
-                        <tr data-bind="css: { 'table-secondary': isDeleted }">
+                        <tr data-bind="css: { 'table-secondary': isDeleted }, contentLocaleScope: { entityType: $root.definition.entityType, id: id, allowed: $root.canWrite() && !isDeleted }">
                             <!-- ko foreach: cells -->
                             <td>
                                 <div class="d-flex align-items-center gap-2">
@@ -107,6 +113,7 @@
                             <!-- /ko -->
                             <td class="text-end text-nowrap">
                                 <content-age params="entityType: $root.definition.entityType, id: id"></content-age>
+                                <content-locale params="entityType: $root.definition.entityType, id: id, allowed: $root.canWrite"></content-locale>
                                 <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
                                 <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>

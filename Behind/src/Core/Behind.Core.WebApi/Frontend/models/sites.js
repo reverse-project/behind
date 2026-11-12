@@ -59,6 +59,7 @@ define(["models/http", "models/results"], function (http, results) {
         return {
             title: fields.title,
             slug: fields.slug,
+            contentLocale: fields.contentLocale || null,
             content: fields.content,
             publish: !!fields.publish,
             hideTitle: !!fields.hideTitle,

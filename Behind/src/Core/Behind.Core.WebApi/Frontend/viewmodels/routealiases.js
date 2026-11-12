@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/routealiases", "models/managedlist", "models/i18n"], function (ko, session, routeAliases, createManagedList, i18n) {
+define(["ko", "models/session", "models/routealiases", "models/managedlist", "models/i18n", "models/contentlocale", "models/http"], function (ko, session, routeAliases, createManagedList, i18n, contentLocale, http) {
     return function RouteAliasesViewModel() {
         var self = this;
 
@@ -19,6 +19,12 @@ define(["ko", "models/session", "models/routealiases", "models/managedlist", "mo
         self.editingId = ko.observable(null);
         self.alias = ko.observable("");
         self.target = ko.observable("");
+        self.localeLoadFailed = contentLocale.loadFailed;
+        self.contentLocale = ko.observable("");
+        self.localeLoaded = ko.observable(true);
+        self.localeOptions = ko.pureComputed(function () {
+            return [{ code: "", name: i18n.t("contentLocale.neutral") }].concat(contentLocale.locales());
+        });
 
         self.isEditing = ko.pureComputed(function () {
             return self.editingId() !== null;
@@ -29,7 +35,7 @@ define(["ko", "models/session", "models/routealiases", "models/managedlist", "mo
         });
 
         self.canSave = ko.pureComputed(function () {
-            return self.canWrite() && !self.busy() && self.alias().trim() !== "" && self.target().trim() !== "";
+            return self.canWrite() && !contentLocale.loadFailed() && self.localeLoaded() && !self.busy() && self.alias().trim() !== "" && self.target().trim() !== "";
         });
 
         var present = function (item) {
@@ -45,6 +51,20 @@ define(["ko", "models/session", "models/routealiases", "models/managedlist", "mo
                 self.editingId(row.id);
                 self.alias(row.alias);
                 self.target(row.target);
+                self.localeLoaded(false);
+                return http.get("/content-locales/RouteAlias/" + encodeURIComponent(row.id)).then(function (response) {
+                    if (self.editingId() !== row.id) {
+                        return;
+                    }
+                    if (response.ok) {
+                        self.contentLocale(response.data.locale || "");
+                        self.localeLoaded(true);
+                    } else {
+                        self.list.message(i18n.t("contentLocale.error"));
+                    }
+                }).catch(function () {
+                    self.list.message(i18n.t("contentLocale.error"));
+                });
             };
             row.remove = function () {
                 if (!window.confirm(i18n.t("routeAliases.confirm.delete", [row.alias]))) {
@@ -88,6 +108,8 @@ define(["ko", "models/session", "models/routealiases", "models/managedlist", "mo
             self.editingId(null);
             self.alias("");
             self.target("");
+            self.contentLocale("");
+            self.localeLoaded(true);
         };
 
         self.save = function () {
@@ -95,7 +117,7 @@ define(["ko", "models/session", "models/routealiases", "models/managedlist", "mo
                 return Promise.resolve();
             }
 
-            var fields = { alias: self.alias().trim(), target: self.target().trim() };
+            var fields = { alias: self.alias().trim(), target: self.target().trim(), contentLocale: self.contentLocale() || null };
 
             return self.list.perform(function () {
                 var saving = self.isEditing() ? routeAliases.save(self.editingId(), fields) : routeAliases.create(fields);

@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/galleries", "models/i18n"], function (ko, session, galleries, i18n) {
+define(["ko", "models/session", "models/galleries", "models/i18n", "models/contentlocale"], function (ko, session, galleries, i18n, contentLocale) {
     var automatic = "auto";
     var uploaded = "upload";
 
@@ -20,6 +20,7 @@ define(["ko", "models/session", "models/galleries", "models/i18n"], function (ko
     return function GalleryEditorViewModel(context) {
         var self = this;
         var galleryId = context.params.id || null;
+        self.galleryId = galleryId;
 
         self.isNew = galleryId === null;
         self.isSignedIn = session.isSignedIn;
@@ -129,6 +130,7 @@ define(["ko", "models/session", "models/galleries", "models/i18n"], function (ko
 
         var createItem = function (data) {
             var item = {
+                id: data.id || null,
                 imageId: data.imageId,
                 thumbnailId: data.thumbnailId,
                 imageUrl: data.imageUrl,
@@ -332,7 +334,7 @@ define(["ko", "models/session", "models/galleries", "models/i18n"], function (ko
                 description: self.description(),
                 thumbnailImageId: self.thumbnailMode() === uploaded ? self.uploadedThumbnailId() : null,
                 items: self.items().map(function (item) {
-                    return { imageId: item.imageId, thumbnailId: item.thumbnailId, description: item.description() };
+                    return { id: item.id, imageId: item.imageId, thumbnailId: item.thumbnailId, description: item.description() };
                 }),
                 publish: publish
             };
@@ -346,6 +348,7 @@ define(["ko", "models/session", "models/galleries", "models/i18n"], function (ko
                     if (!result.ok) {
                         return result;
                     }
+                    contentLocale.clearMedia();
 
                     if (self.isNew) {
                         context.navigate("#/manage/galleries/" + result.data.id);

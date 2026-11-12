@@ -1,4 +1,4 @@
-define(["ko", "models/session", "models/articles", "models/newsmeta", "models/i18n", "bindings/richeditor"], function (ko, session, articles, meta, i18n) {
+define(["ko", "models/session", "models/articles", "models/newsmeta", "models/i18n", "models/paging", "models/contentlocale", "bindings/richeditor"], function (ko, session, articles, meta, i18n, paging, contentLocale) {
     var statusOf = function (item) {
         return item.isActive ? { label: "content.status.live", css: "text-bg-success" } : { label: "content.status.version", css: "text-bg-secondary" };
     };
@@ -6,6 +6,7 @@ define(["ko", "models/session", "models/articles", "models/newsmeta", "models/i1
     return function ArticleEditorViewModel(context) {
         var self = this;
         var articleId = context.params.id || null;
+        self.articleId = articleId;
 
         self.isNew = articleId === null;
         self.isSignedIn = session.isSignedIn;
@@ -87,11 +88,13 @@ define(["ko", "models/session", "models/articles", "models/newsmeta", "models/i1
         };
 
         var loadCategories = function () {
-            return articles.categories().then(function (result) {
+            return paging.all(articles.manageCategories, function (data) { return data.categories; }).then(function (result) {
                 if (result.ok) {
                     self.categories(result.data.map(function (category) {
                         return { id: category.id, name: category.name };
                     }));
+                } else {
+                    self.message(result.message);
                 }
             });
         };
@@ -162,6 +165,7 @@ define(["ko", "models/session", "models/articles", "models/newsmeta", "models/i1
                     if (!result.ok) {
                         return result;
                     }
+                    contentLocale.clearMedia();
 
                     if (self.isNew) {
                         context.navigate("#/manage/articles/" + result.data.id);

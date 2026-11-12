@@ -138,10 +138,10 @@ test("manager edits overrides and moderates and restores each resource", async (
             if (url === "settings") {
                 return { allowBoardOverrides: true, allowUserOverrides: true };
             }
-            if (url === "categories") {
-                return [];
+            if (url.includes("categories")) {
+                return page([]);
             }
-            if (url.startsWith("boards")) {
+            if (url.includes("boards")) {
                 return page([board]);
             }
             if (url.startsWith("manage/posts")) {

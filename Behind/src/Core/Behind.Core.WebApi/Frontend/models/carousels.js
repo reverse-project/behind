@@ -55,7 +55,7 @@ define(["models/http", "models/results"], function (http, results) {
         return {
             intervalSeconds: fields.intervalSeconds,
             slides: fields.slides.map(function (slide) {
-                return { imageId: slide.imageId, caption: slide.caption, linkUrl: slide.linkUrl };
+                return { id: slide.id || null, imageId: slide.imageId, caption: slide.caption, linkUrl: slide.linkUrl };
             })
         };
     };

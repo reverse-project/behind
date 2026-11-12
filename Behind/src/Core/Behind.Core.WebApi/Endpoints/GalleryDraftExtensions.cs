@@ -35,7 +35,7 @@ public static class GalleryDraftExtensions
                    || item.ThumbnailId == Guid.Empty
                    || description.Length > GalleryItem.MaxDescriptionLength
                 ? None
-                : Some(new IGalleryCommands.GalleryItemDraft(item.ImageId, item.ThumbnailId, description));
+                : Some(new IGalleryCommands.GalleryItemDraft(item.ImageId, item.ThumbnailId, description, item.Id));
         }
     }
 }

@@ -169,6 +169,32 @@ public sealed class LayoutConfigurationTests : IDisposable
     }
 
     [Fact]
+    public void LocaleSwitchView_DefaultsToViewAndPersists()
+    {
+        Assert.Equal("view", new LayoutWidget().LocaleSwitchView);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var legacy = JsonSerializer.Deserialize<LayoutWidget>("""{"id":"legacy"}""", options)!;
+        Assert.Equal("view", legacy.LocaleSwitchView);
+        var saved = JsonSerializer.Serialize(new LayoutWidget { LocaleSwitchView = "flag-only" }, options);
+        Assert.Equal("flag-only", JsonSerializer.Deserialize<LayoutWidget>(saved, options)!.LocaleSwitchView);
+    }
+
+    [Theory]
+    [InlineData("view", true)]
+    [InlineData("flag-only", true)]
+    [InlineData("flag-and-text", true)]
+    [InlineData("text-only", true)]
+    [InlineData("unknown", false)]
+    [InlineData(null, false)]
+    public void LocaleSwitchView_IsValidated(string? view, bool valid)
+    {
+        Assert.Equal(valid, Grid(new LayoutWidget
+        {
+            Id = "locale-switch", Type = "core.locale-switch", Column = 3, LocaleSwitchView = view!
+        }).IsValid(ModuleCatalog.Empty, false));
+    }
+
+    [Fact]
     public async Task CellAppearanceOptions_DefaultOffAndPersistIndependently()
     {
         var old = JsonSerializer.Deserialize<LayoutWidget>("""{"id":"legacy"}""",
@@ -435,6 +461,25 @@ public sealed class LayoutConfigurationTests : IDisposable
         Assert.False(Grid(new LayoutWidget { Id = "content", Type = "core.news", Column = 3 }).IsValid(ModuleCatalog.Empty));
         Assert.False((new LayoutConfiguration { Assignments = [new("#/news", "missing")] }).IsValid(ModuleCatalog.Empty));
         Assert.False((new LayoutConfiguration { Assignments = [new("#/n*ews", "default")] }).IsValid(ModuleCatalog.Empty));
+    }
+
+    [Fact]
+    public void SameRouteMayBeAssignedPerLocaleButNotTwiceWithinOneLocale()
+    {
+        var configuration = new LayoutConfiguration
+        {
+            Layouts =
+            [
+                new SiteLayout { Id = "default", Name = "Default" },
+                new SiteLayout { Id = "hungarian", Name = "Hungarian", Locale = "hu-HU" }
+            ],
+            Assignments = [new("#/news", "default"), new("#/news", "hungarian")]
+        };
+        Assert.True(configuration.IsValid(ModuleCatalog.Empty));
+        Assert.False((configuration with
+        {
+            Assignments = [new("#/news", "default"), new("#/news", "default")]
+        }).IsValid(ModuleCatalog.Empty));
     }
 
     [Theory]

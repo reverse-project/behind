@@ -1,6 +1,6 @@
 define(["require", "ko", "models/widgets", "models/articles", "models/menus",
-    "models/http", "models/session", "models/i18n", "models/invalidation", "models/user", "text!components/sitewidget.html"],
-function (require, ko, widgets, articles, menus, http, session, i18n, invalidation, user, template) {
+    "models/http", "models/session", "models/i18n", "models/invalidation", "models/user", "models/contentlocale", "text!components/sitewidget.html"],
+function (require, ko, widgets, articles, menus, http, session, i18n, invalidation, user, contentLocale, template) {
     return {
         viewModel: {
             createViewModel: function (params, componentInfo) {
@@ -19,6 +19,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                 var self = {
                     type: type,
                     title: ko.unwrap(widget.title) || "",
+                    localeSwitchView: ko.unwrap(widget.localeSwitchView) || "view",
                     items: ko.observableArray([]),
                     stats: ko.observableArray([]),
                     messages: ko.observableArray([]),
@@ -182,6 +183,9 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                 };
 
                 var load = function () {
+                    if (type === "core.locale-switch") {
+                        return Promise.resolve({});
+                    }
                     if (type === "core.message") {
                         return loadMessage();
                     }
@@ -377,7 +381,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     return request().then(checked).then(function () {
                         if (!disposed && owner === session.accessToken()) {
                             completed();
-                            return self.refresh();
+                            return invalidation.invalidate("widget:" + type);
                         }
                     }).catch(function (error) {
                         if (!disposed && owner === session.accessToken()) {
@@ -461,6 +465,8 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     self.refresh();
                 });
                 var subscription = invalidation.subscribe("widgets", self.refresh);
+                var typeSubscription = invalidation.subscribe("widget:" + type, self.refresh);
+                var localeSubscription = contentLocale.assignmentRevision.subscribe(self.refresh);
                 self.refresh();
 
                 if (type === "core.chat") {
@@ -481,6 +487,8 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     disposed = true;
                     sequence++;
                     subscription.dispose();
+                    typeSubscription.dispose();
+                    localeSubscription.dispose();
                     identitySubscription.dispose();
                     identity.dispose();
                     self.menuItems.dispose();

@@ -10,6 +10,8 @@ public sealed record LayoutWidget
     public bool NoMargin { get; init; }
     public bool NoPadding { get; init; }
     public string HamburgerPosition { get; init; } = "default";
+    public bool ShowLocaleSwitch { get; init; }
+    public string LocaleSwitchView { get; init; } = "view";
     public int Row { get; init; } = 1;
     public int Column { get; init; } = 1;
     public int RowSpan { get; init; } = 1;
@@ -47,6 +49,7 @@ public sealed record SiteLayout
 {
     public string Id { get; init; } = "default";
     public string Name { get; init; } = "Default";
+    public string? Locale { get; init; }
     public bool Deleted { get; init; }
     public IReadOnlyList<LayoutBadge> Badges { get; init; } = [];
     public IReadOnlyList<LayoutSection> Sections { get; init; } = [new()];

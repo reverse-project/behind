@@ -57,7 +57,7 @@ public sealed class SportDetailQueries(
             var refs = await SeasonRefs(history.Select(row => row.SeasonId).Concat(playerStats.Select(row => row.SeasonId)), cancellationToken);
 
             return new PlayerDetail(
-                player,
+                PlayerPublicListing.From(player),
                 refs.Select(season => new PlayerSeasonDetail(
                         season,
                         history.FirstOrDefault(row => row.SeasonId == season.Id),

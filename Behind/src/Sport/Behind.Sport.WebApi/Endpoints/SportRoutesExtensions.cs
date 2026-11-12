@@ -24,7 +24,7 @@ public static class SportRoutesExtensions
             application.MapResource<StatTypeDraft, StatTypeListing>("stat-types");
             application.MapResource<SeasonDraft, SeasonListing>("seasons");
             application.MapResource<TeamDraft, TeamListing>("teams");
-            application.MapResource<PlayerDraft, PlayerListing>("players");
+            application.MapPlayers();
             application.MapResource<PlayerSeasonDraft, PlayerSeasonListing>("player-seasons");
             application.MapResource<StatDraft, StatListing>("stats");
             application.MapDetails();
@@ -40,6 +40,24 @@ public static class SportRoutesExtensions
                 .Produces(400)
                 .Produces(500);
 
+            application.MapResourceActions<TDraft, TListing>(path);
+        }
+
+        private void MapPlayers()
+        {
+            var path = $"{Root}/players";
+
+            application.MapGet(path, ResourceEndpoints.ListPlayers)
+                .Produces<SportListResponse<PlayerPublicListing>>()
+                .Produces(400)
+                .Produces(500);
+
+            application.MapResourceActions<PlayerDraft, PlayerListing>(path);
+        }
+
+        private void MapResourceActions<TDraft, TListing>(string path)
+            where TDraft : class, IDraft<TDraft>
+        {
             application.MapGet($"{path}/manage", ResourceEndpoints.Manage<TListing>)
                 .RequireAuthorization(SportModuleNames.ReadGrant)
                 .Produces<SportListResponse<TListing>>()

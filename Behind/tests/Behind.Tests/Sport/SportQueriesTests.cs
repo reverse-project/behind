@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Behind.Sport.Database;
 using Behind.Sport.Domain;
 
@@ -146,6 +147,8 @@ public sealed class SportQueriesTests : IDisposable
         Assert.Equal(["2025/26", "2024/25"], detail.Seasons.Select(season => season.Season.Name));
         Assert.Equal(["Rovers", "United"], detail.Seasons.Select(season => season.Membership!.TeamName));
         Assert.Equal([12d, 3d], detail.Seasons.Select(season => Assert.Single(season.Stats).Value));
+        Assert.Equal(25, detail.Player.Age);
+        Assert.DoesNotContain("birthDate", JsonSerializer.Serialize(detail), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

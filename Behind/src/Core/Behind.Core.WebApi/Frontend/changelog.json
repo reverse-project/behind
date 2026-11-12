@@ -3,6 +3,7 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "changed", "text": "Sport player lists and public profiles show age without exposing exact birth dates. Birth dates remain available only in authorized management." },
       { "type": "changed", "text": "Saving a layout applies the selected saved layout around the layout editor without losing the editor state. Other management pages keep their fixed shell." },
       { "type": "fixed", "text": "Content and forum widget changes refresh mounted widgets after successful edits, and layout saves no longer reuse an older in-flight layout request." },
       { "type": "added", "text": "Optional content locales are selected from the signed-in user's profile, browser cache or site default and sent with content requests without changing routes. Sites and route aliases reuse slugs across locales, and content is visible only in its assigned locale. Layouts offer a Locale switch widget and optional header switch with view, flag-only, flag-and-text and text-only presentations; flags are configurable in locale JSON. Changing the selector updates the signed-in user's interface language." },

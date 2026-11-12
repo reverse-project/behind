@@ -17,7 +17,7 @@ public sealed record PlayerSeasonDetail(
     PlayerSeasonListing? Membership,
     IReadOnlyList<StatListing> Stats);
 
-public sealed record PlayerDetail(PlayerListing Player, IReadOnlyList<PlayerSeasonDetail> Seasons);
+public sealed record PlayerDetail(PlayerPublicListing Player, IReadOnlyList<PlayerSeasonDetail> Seasons);
 
 public sealed record SeasonTeam(Guid Id, string Name, string? LogoUrl, int PlayerCount);
 

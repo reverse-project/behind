@@ -18,8 +18,6 @@
                     <dd class="col-sm-8 col-lg-9" data-bind="visible: !!teamId"><sport-link params="kind: 'team', id: teamId, text: teamName"></sport-link></dd>
                     <dt class="col-sm-4 col-lg-3" data-bind="visible: $root.format.present(age), t: 'sport.field.age'">Age</dt>
                     <dd class="col-sm-8 col-lg-9" data-bind="visible: $root.format.present(age), text: $root.format.age(age)"></dd>
-                    <dt class="col-sm-4 col-lg-3" data-bind="visible: $root.format.present(birthDate), t: 'sport.field.birthDate'">Birth date</dt>
-                    <dd class="col-sm-8 col-lg-9" data-bind="visible: $root.format.present(birthDate), text: $root.format.date(birthDate)"></dd>
                     <dt class="col-sm-4 col-lg-3" data-bind="visible: $root.format.present(nationality), t: 'sport.field.nationality'">Nationality</dt>
                     <dd class="col-sm-8 col-lg-9" data-bind="visible: $root.format.present(nationality), text: nationality"></dd>
                     <dt class="col-sm-4 col-lg-3" data-bind="visible: $root.format.present(heightCm), t: 'sport.field.height'">Height</dt>

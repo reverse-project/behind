@@ -71,6 +71,48 @@ public sealed record PlayerListing(
     public string Name => $"{FirstName} {LastName}";
 }
 
+public sealed record PlayerPublicListing(
+    Guid Id,
+    Guid DisciplineId,
+    string DisciplineName,
+    string FirstName,
+    string LastName,
+    int? Age,
+    string? Nationality,
+    Guid? PositionId,
+    string? PositionName,
+    int? HeightCm,
+    int? WeightKg,
+    Side? DominantSide,
+    string? Biography,
+    Guid? TeamId,
+    string? TeamName,
+    string? PictureUrl,
+    bool IsDeleted)
+{
+    public string Name => $"{FirstName} {LastName}";
+
+    public static PlayerPublicListing From(PlayerListing player) =>
+        new(
+            player.Id,
+            player.DisciplineId,
+            player.DisciplineName,
+            player.FirstName,
+            player.LastName,
+            player.Age,
+            player.Nationality,
+            player.PositionId,
+            player.PositionName,
+            player.HeightCm,
+            player.WeightKg,
+            player.DominantSide,
+            player.Biography,
+            player.TeamId,
+            player.TeamName,
+            player.PictureUrl,
+            player.IsDeleted);
+}
+
 public sealed record PlayerSeasonListing(
     Guid Id,
     Guid PlayerId,

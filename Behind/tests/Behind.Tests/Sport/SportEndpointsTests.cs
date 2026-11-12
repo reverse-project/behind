@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Behind.Common.Database.Modules;
 using Behind.Common.WebApi;
 using Behind.Sport.Common;
@@ -49,6 +50,45 @@ public class SportEndpointsTests
                 DeletionState.Active,
                 SportFilter.Empty with { Season = season, Scope = StatScope.Team }),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ListPlayers_ExposesAgeButNotBirthDate()
+    {
+        var player = new PlayerListing(
+            Id,
+            Guid.NewGuid(),
+            "Soccer",
+            "Ada",
+            "Lovelace",
+            new DateOnly(2000, 12, 10),
+            25,
+            "British",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false);
+        var queries = Substitute.For<IListingQueries<PlayerListing>>();
+        queries.List(default!, default).ReturnsForAnyArgs(
+            new PagedResult<PlayerListing>(1, 1, 1, 10, Some<IEnumerable<PlayerListing>>([player])));
+        queries.GetLetters(default!, default).ReturnsForAnyArgs(["L"]);
+
+        var result = await ResourceEndpoints.ListPlayers(
+            new DefaultHttpContext(),
+            queries,
+            new FakeAuthorizationService(),
+            new SportListQuery());
+
+        var body = Assert.IsType<JsonHttpResult<SportListResponse<PlayerPublicListing>>>(result).Value!;
+        var publicPlayer = Assert.Single(body.Page.Items);
+        Assert.Equal(25, publicPlayer.Age);
+        Assert.DoesNotContain("birthDate", JsonSerializer.Serialize(body), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

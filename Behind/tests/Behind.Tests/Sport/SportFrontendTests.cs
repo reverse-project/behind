@@ -161,6 +161,15 @@ public class SportFrontendTests
         Assert.Contains("sport-link", view);
     }
 
+    [Fact]
+    public void PlayerProfile_ShowsAgeWithoutExactBirthDate()
+    {
+        var view = Read("modules/sport/views/player.html");
+
+        Assert.Contains("'sport.field.age'", view);
+        Assert.DoesNotContain("birthDate", view, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData("en-US")]
     [InlineData("hu-HU")]

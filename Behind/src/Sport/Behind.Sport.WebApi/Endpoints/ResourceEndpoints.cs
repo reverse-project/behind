@@ -23,7 +23,21 @@ public static class ResourceEndpoints
         IListingQueries<TListing> queries,
         IAuthorizationService authorization,
         [AsParameters] SportListQuery query) =>
-        Page(httpContext, queries, authorization, query, false);
+        Page<TListing, TListing>(httpContext, queries, authorization, query, false, static listing => listing);
+
+    [IgnoreETag]
+    public static Task<IResult> ListPlayers(
+        HttpContext httpContext,
+        IListingQueries<PlayerListing> queries,
+        IAuthorizationService authorization,
+        [AsParameters] SportListQuery query) =>
+        Page<PlayerListing, PlayerPublicListing>(
+            httpContext,
+            queries,
+            authorization,
+            query,
+            false,
+            PlayerPublicListing.From);
 
     [IgnoreETag]
     public static Task<IResult> Manage<TListing>(
@@ -31,7 +45,7 @@ public static class ResourceEndpoints
         IListingQueries<TListing> queries,
         IAuthorizationService authorization,
         [AsParameters] SportListQuery query) =>
-        Page(httpContext, queries, authorization, query, query.Deleted);
+        Page<TListing, TListing>(httpContext, queries, authorization, query, query.Deleted, static listing => listing);
 
     [IgnoreETag]
     public static async Task<IResult> Create<TDraft>(
@@ -79,12 +93,13 @@ public static class ResourceEndpoints
         IVersionedCommands<TDraft> commands) =>
         (await commands.HardDelete(id, httpContext.RequestAborted)).ToResult();
 
-    private static Task<IResult> Page<TListing>(
+    private static Task<IResult> Page<TListing, TResponse>(
         HttpContext httpContext,
         IListingQueries<TListing> queries,
         IAuthorizationService authorization,
         SportListQuery query,
-        bool deleted) =>
+        bool deleted,
+        Func<TListing, TResponse> present) =>
         httpContext.WithManagedList(
             authorization,
             query.Search,
@@ -102,6 +117,6 @@ public static class ResourceEndpoints
                 var page = await queries.List(request, httpContext.RequestAborted);
                 var letters = await queries.GetLetters(request, httpContext.RequestAborted);
 
-                return Results.Json(new SportListResponse<TListing>(page.ToPageResponse(listing => listing), letters));
+                return Results.Json(new SportListResponse<TResponse>(page.ToPageResponse(present), letters));
             });
 }

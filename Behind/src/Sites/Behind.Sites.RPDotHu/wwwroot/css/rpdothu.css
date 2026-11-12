@@ -118,7 +118,7 @@ h4, .h4, h5, .h5, h6, .h6 {
     font-weight: 600;
 }
 
-#header-container .rp-menu {
+:is(#header-container, .behind-page-header) .rp-menu {
     position: sticky;
     top: 0;
     z-index: 1020;
@@ -134,7 +134,7 @@ h4, .h4, h5, .h5, h6, .h6 {
     --bs-navbar-toggler-border-color: rgba(20, 52, 127, 0.45);
 }
 
-#header-container .rp-menu .navbar-toggler-icon {
+:is(#header-container, .behind-page-header) .rp-menu .navbar-toggler-icon {
     --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2820, 52, 127, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
@@ -167,7 +167,7 @@ h4, .h4, h5, .h5, h6, .h6 {
     color: var(--rp-blue-dark);
 }
 
-#header-container .rp-menu .nav-link {
+:is(#header-container, .behind-page-header) .rp-menu .nav-link {
     position: relative;
     padding: 0.6rem 0.9rem;
     color: var(--rp-blue);
@@ -177,28 +177,28 @@ h4, .h4, h5, .h5, h6, .h6 {
     transition: color 0.2s ease, background-color 0.2s ease;
 }
 
-#header-container .rp-menu .nav-link:hover,
-#header-container .rp-menu .nav-link:focus-visible,
-#header-container .rp-menu .nav-link[aria-expanded="true"] {
+:is(#header-container, .behind-page-header) .rp-menu .nav-link:hover,
+:is(#header-container, .behind-page-header) .rp-menu .nav-link:focus-visible,
+:is(#header-container, .behind-page-header) .rp-menu .nav-link[aria-expanded="true"] {
     color: var(--rp-blue-dark);
     background-color: rgba(20, 52, 127, 0.08);
 }
 
-#header-container .rp-menu .menu-parent:has(> .menu-parent-toggle.show) > .nav-link {
+:is(#header-container, .behind-page-header) .rp-menu .menu-parent:has(> .menu-parent-toggle.show) > .nav-link {
     color: var(--rp-blue-dark);
     background-color: rgba(20, 52, 127, 0.08);
 }
 
-#header-container .rp-menu .nav-link.active {
+:is(#header-container, .behind-page-header) .rp-menu .nav-link.active {
     color: var(--rp-blue-dark);
     background-color: rgba(20, 52, 127, 0.12);
 }
 
-#header-container .rp-menu .nav-link::after {
+:is(#header-container, .behind-page-header) .rp-menu .nav-link::after {
     border-top-color: var(--rp-blue);
 }
 
-#header-container .rp-menu .dropdown-menu {
+:is(#header-container, .behind-page-header) .rp-menu .dropdown-menu {
     --bs-dropdown-bg: #ffffff;
     --bs-dropdown-color: var(--rp-blue);
     --bs-dropdown-link-color: var(--rp-blue);
@@ -213,7 +213,7 @@ h4, .h4, h5, .h5, h6, .h6 {
     box-shadow: 0 0.75rem 1.5rem var(--rp-shadow);
 }
 
-#header-container .rp-menu .dropdown-item {
+:is(#header-container, .behind-page-header) .rp-menu .dropdown-item {
     font-weight: 600;
     padding: 0.5rem 1rem;
 }
@@ -226,10 +226,25 @@ h4, .h4, h5, .h5, h6, .h6 {
     border-color: var(--rp-blue);
 }
 
-.behind-layout .behind-widget h2 {
+.behind-layout-badge-text {
+    box-shadow: 0 0.15rem 0.5rem var(--rp-shadow);
+}
+
+.behind-layout .behind-widget > .card-header {
     color: var(--rp-blue);
     background-color: var(--bs-primary-bg-subtle);
     border-bottom-color: var(--rp-blue);
+}
+
+.behind-layout-section-full {
+    background-color: var(--bs-primary-bg-subtle);
+    border-top: 3px solid var(--rp-blue);
+    padding: 1rem;
+}
+
+.behind-layout-section-full .behind-widget {
+    border-color: transparent;
+    background-color: transparent;
 }
 
 .behind-layout:has(.behind-site-leading-carousel) {
@@ -656,7 +671,7 @@ button:focus-visible,
     outline-offset: 2px;
 }
 
-#footer-container .rp-contact {
+:is(#footer-container, .behind-page-footer) .rp-contact {
     padding: 2.5rem 0;
     color: #ffffff;
     background-color: var(--rp-blue);
@@ -753,56 +768,56 @@ button:focus-visible,
     color: var(--rp-silver);
 }
 
-#footer-container .rp-bottom {
+:is(#footer-container, .behind-page-footer) .rp-bottom {
     padding: 0.9rem 0;
     color: var(--rp-blue);
     background: linear-gradient(180deg, #ffffff 0%, var(--rp-silver) 100%);
     border-top: 1px solid var(--rp-silver-dark);
 }
 
-#footer-container .rp-bottom a {
+:is(#footer-container, .behind-page-footer) .rp-bottom a {
     color: var(--rp-blue);
     text-decoration: none;
 }
 
-#footer-container .rp-bottom a:hover,
-#footer-container .rp-bottom a:focus-visible {
+:is(#footer-container, .behind-page-footer) .rp-bottom a:hover,
+:is(#footer-container, .behind-page-footer) .rp-bottom a:focus-visible {
     color: var(--rp-blue-dark);
     text-decoration: underline;
 }
 
-#footer-container .rp-bottom .behind-scroll-top {
+:is(#footer-container, .behind-page-footer) .rp-bottom .behind-scroll-top {
     color: var(--rp-blue);
     border-color: var(--rp-blue);
 }
 
-#footer-container .rp-bottom .behind-scroll-top:hover,
-#footer-container .rp-bottom .behind-scroll-top:focus-visible {
+:is(#footer-container, .behind-page-footer) .rp-bottom .behind-scroll-top:hover,
+:is(#footer-container, .behind-page-footer) .rp-bottom .behind-scroll-top:focus-visible {
     color: #ffffff;
     background-color: var(--rp-blue);
     text-decoration: none;
 }
 
-#footer-container .rp-bottom .nav {
+:is(#footer-container, .behind-page-footer) .rp-bottom .nav {
     gap: 0.25rem;
 }
 
-#footer-container .rp-bottom .nav-link {
+:is(#footer-container, .behind-page-footer) .rp-bottom .nav-link {
     padding: 0.25rem 0.5rem;
     color: var(--rp-blue) !important;
 }
 
-#footer-container .rp-bottom .nav-link:hover,
-#footer-container .rp-bottom .nav-link:focus-visible {
+:is(#footer-container, .behind-page-footer) .rp-bottom .nav-link:hover,
+:is(#footer-container, .behind-page-footer) .rp-bottom .nav-link:focus-visible {
     color: var(--rp-blue-dark) !important;
 }
 
-#footer-container .text-body-secondary {
+:is(#footer-container, .behind-page-footer) .text-body-secondary {
     color: var(--rp-blue) !important;
 }
 
 @media (max-width: 991.98px) {
-    #header-container .rp-menu .navbar-collapse {
+    :is(#header-container, .behind-page-header) .rp-menu .navbar-collapse {
         padding: 0.5rem 0;
     }
 }
@@ -840,21 +855,21 @@ button:focus-visible,
 
 /* Keep the caret beside its link; the dropdown menu is absolutely positioned from lg up (navbar-expand-lg). */
 @media (min-width: 992px) {
-    #header-container .rp-menu .menu-parent {
+    :is(#header-container, .behind-page-header) .rp-menu .menu-parent {
         flex-wrap: nowrap;
     }
 
-    #header-container .rp-menu .menu-parent-link {
+    :is(#header-container, .behind-page-header) .rp-menu .menu-parent-link {
         flex: 1 1 auto;
     }
 
-    #header-container .rp-menu .menu-parent-toggle {
+    :is(#header-container, .behind-page-header) .rp-menu .menu-parent-toggle {
         flex: 0 0 auto;
         align-self: center;
     }
 
     /* Bridge the gap between the item and its dropdown so the pointer can reach the submenu without closing it. */
-    #header-container .rp-menu .menu-parent > .dropdown-menu::before {
+    :is(#header-container, .behind-page-header) .rp-menu .menu-parent > .dropdown-menu::before {
         content: "";
         position: absolute;
         top: -0.75rem;
@@ -864,11 +879,11 @@ button:focus-visible,
     }
 }
 
-#header-container .rp-menu .menu-parent-link {
+:is(#header-container, .behind-page-header) .rp-menu .menu-parent-link {
     padding-right: 0.25rem;
 }
 
-#header-container .rp-menu .menu-parent-toggle {
+:is(#header-container, .behind-page-header) .rp-menu .menu-parent-toggle {
     padding-left: 0.25rem;
     padding-right: 0.6rem;
 }

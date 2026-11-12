@@ -229,6 +229,12 @@ public static class AuditLabelExtensions
                 .Select(alias => new Named(EF.Property<Guid>(alias, VersionedColumns.Key), alias.Alias))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken),
+            .. await context.Messages
+                .Where(message => ids.Contains(EF.Property<Guid>(message, VersionedColumns.Key)))
+                .OrderByDescending(message => EF.Property<long>(message, VersionedColumns.Version))
+                .Select(message => new Named(EF.Property<Guid>(message, VersionedColumns.Key), message.Name))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
             .. await context.AccessSettings
                 .Where(settings => ids.Contains(EF.Property<Guid>(settings, VersionedColumns.Key)))
                 .Select(settings => new Named(EF.Property<Guid>(settings, VersionedColumns.Key), AccessSettingsKind))

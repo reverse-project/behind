@@ -50,6 +50,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
         Menu: "audit.entities.Menu",
         MenuItem: "audit.entities.MenuItem",
         RouteAlias: "audit.entities.RouteAlias",
+        Message: "audit.entities.Message",
         AccessSettings: "audit.entities.AccessSettings",
         PendingUserApprovals: "audit.entities.PendingUserApprovals",
         Gallery: "audit.entities.Gallery",

@@ -25,5 +25,11 @@ define(["ko", "models/about", "models/branding"], function (ko, about, branding)
         self.activate = function () {
             return about.loadVersion().then(self.version);
         };
+
+        self.dispose = function () {
+            self.hasCopyright.dispose();
+            self.hasVersion.dispose();
+            self.label.dispose();
+        };
     };
 });

@@ -16,7 +16,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261112082917_ProfilesPrivacyAndContentRestrictions";
+    public override string LastMigrationId => "20261112115426_AddMessages";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -313,6 +313,8 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.HasIndex("EntityType", "EntityId");
 
                 b.ToTable("ContentRestrictions");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Download", b =>
@@ -617,6 +619,49 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.HasIndex("ParentId");
 
                 b.ToTable("MenuItems");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.Message", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Content")
+                    .IsRequired()
+                    .HasMaxLength(100000)
+                    .HasColumnType("TEXT");
+
+                b.Property<long?>("EndsAt")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Level")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<long?>("StartsAt")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("Name");
+
+                b.ToTable("Messages");
 
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });

@@ -18,8 +18,10 @@ function load(file, dependencies) {
             }));
         },
         Promise,
+        console,
         window: { setInterval: callback => { dependencies.tick = callback; return 42; },
-            clearInterval: id => dependencies.cleared.push(id), confirm: () => true }
+            clearInterval: id => dependencies.cleared.push(id), confirm: () => true,
+            localStorage: dependencies.storage }
     }, { filename: file });
     return result;
 }
@@ -28,7 +30,8 @@ async function settle() {
     await new Promise(resolve => setImmediate(resolve));
 }
 
-function chatFixture(http, grants = ["Chat.Read", "Chat.Write"], signedIn = true) {
+function chatFixture(http, grants = ["Chat.Read", "Chat.Write"], signedIn = true,
+    widgetConfig = { type: "core.chat" }, storage) {
     const access = ko.observableArray(grants);
     const token = ko.observable(signedIn ? "token" : null);
     const dependencies = {
@@ -44,12 +47,89 @@ function chatFixture(http, grants = ["Chat.Read", "Chat.Write"], signedIn = true
         "models/i18n": { t: key => key },
         "models/invalidation": { subscribe: () => ({ dispose() {} }) },
         "text!components/sitewidget.html": "",
-        cleared: []
+        cleared: [], storage
     };
     const widget = load("components/sitewidget.js", dependencies).viewModel
-        .createViewModel({ widget: { type: "core.chat" } });
+        .createViewModel({ widget: widgetConfig });
     return { widget, access, token, dependencies };
 }
+
+function messageFixture(http, storage = { getItem: () => null, setItem() {} }) {
+    return chatFixture(http, [], false, { type: "core.message", message: "notice" }, storage);
+}
+
+test("message widgets follow schedule availability through polling and clear their timer", async () => {
+    let response = { ok: false, status: 404 };
+    const urls = [];
+    const fixture = messageFixture({ get: async url => { urls.push(url); return response; } });
+    await settle();
+    assert.equal(fixture.widget.messageVisible(), false);
+    assert.equal(fixture.widget.error(), "");
+    response = { ok: true, data: { id: "notice", version: 1, title: "", content: "<p>Open</p>", level: "warning" } };
+    fixture.dependencies.tick();
+    await settle();
+    assert.equal(fixture.widget.messageVisible(), true);
+    assert.equal(fixture.widget.message().content, "<p>Open</p>");
+    assert.match(fixture.widget.messageClass(), /alert-warning/);
+    response = { ok: false, status: 404 };
+    fixture.dependencies.tick();
+    await settle();
+    assert.equal(fixture.widget.messageVisible(), false);
+    assert.ok(urls.every(url => url === "/widgets/messages/notice"));
+    fixture.widget.dispose();
+    assert.deepEqual(fixture.dependencies.cleared, [42]);
+});
+
+test("message dismissal persists per version and edits show the message again", async () => {
+    const stored = new Map();
+    const storage = { getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value) };
+    let version = 1;
+    const http = { get: async () => ({ ok: true, data: { id: "notice", version, content: "Text", level: "info" } }) };
+    const first = messageFixture(http, storage);
+    await settle();
+    first.widget.dismissMessage();
+    assert.equal(stored.get("behind.message.dismissed.notice.1"), "1");
+    assert.equal(first.widget.messageVisible(), false);
+    first.widget.dispose();
+    const next = messageFixture(http, storage);
+    await settle();
+    assert.equal(next.widget.messageVisible(), false);
+    version = 2;
+    await next.widget.refresh();
+    assert.equal(next.widget.messageVisible(), true);
+    next.widget.dispose();
+});
+
+test("message storage failures preserve in-memory dismissal", async () => {
+    const storage = {
+        getItem() { throw new Error("storage blocked"); },
+        setItem() { throw new Error("storage blocked"); }
+    };
+    const { widget } = messageFixture({
+        get: async () => ({ ok: true, data: { id: "notice", version: 1, content: "Text", level: "success" } })
+    }, storage);
+    await settle();
+    widget.dismissMessage();
+    await widget.refresh();
+    assert.equal(widget.messageVisible(), false);
+    widget.dispose();
+});
+
+test("message request errors are surfaced and late responses cannot resurrect a disposed widget", async () => {
+    let finish;
+    let reads = 0;
+    const { widget } = messageFixture({
+        get: () => ++reads === 1 ? Promise.resolve({ ok: false, status: 500 })
+            : new Promise(resolve => { finish = resolve; })
+    });
+    await settle();
+    assert.ok(widget.error());
+    const pending = widget.refresh();
+    widget.dispose();
+    finish({ ok: true, data: { id: "notice", version: 1, content: "Text", level: "danger" } });
+    await pending;
+    assert.equal(widget.message(), null);
+});
 
 function message(id, text = id) {
     return {
@@ -85,7 +165,8 @@ test("bundled site themes customize the shared widget card", () => {
         const css = fs.readFileSync(path.resolve(__dirname,
             `../../src/Sites/Behind.Sites.${site}/wwwroot/css/${stylesheet}`), "utf8");
         assert.match(css, new RegExp(`\\.behind-layout \\.behind-widget \\{\\s*border-color: var\\(--${color}\\);`));
-        assert.match(css, new RegExp(`\\.behind-layout \\.behind-widget h2 \\{[^}]*background-color: var\\(--bs-primary-bg-subtle\\);[^}]*border-bottom-color: var\\(--${color}\\);`));
+        assert.match(css, new RegExp(`\\.behind-layout \\.behind-widget > \\.card-header \\{[^}]*background-color: var\\(--bs-primary-bg-subtle\\);[^}]*border-bottom-color: var\\(--${color}\\);`));
+        assert.doesNotMatch(css, /\.behind-layout \.behind-widget h2\s*\{/);
     }
 });
 
@@ -110,18 +191,18 @@ test("chat scroll loads older history once, deduplicates messages and refresh pr
     const older = widget.loadOlder();
     await widget.loadOlder();
     assert.equal(reads.length, 2);
-    resolveOlder(page([message("latest"), message("older")]));
+    resolveOlder(page([message("older"), message("latest")]));
     await older;
-    assert.deepEqual(Array.from(widget.messages(), item => item.id), ["latest", "older"]);
+    assert.deepEqual(Array.from(widget.messages(), item => item.id), ["older", "latest"]);
     assert.equal(widget.hasOlder(), false);
     refreshing = true;
     await widget.refresh();
-    assert.equal(widget.messages()[1].text, "edited older");
+    assert.equal(widget.messages()[0].text, "edited older");
     assert.equal(reads.length, 4);
     widget.dispose();
 });
 
-test("scroll triggers loading near the end and retries older history after failure without losing messages", async () => {
+test("scroll triggers loading near the top and retries older history after failure without losing messages", async () => {
     let olderReads = 0;
     const { widget } = chatFixture({
         get: async url => url.includes("before=")
@@ -132,12 +213,17 @@ test("scroll triggers loading near the end and retries older history after failu
     const event = { currentTarget: { scrollHeight: 1000, scrollTop: 850, clientHeight: 100 } };
     widget.scrollChat(null, event);
     await settle();
+    assert.equal(olderReads, 0);
+    event.currentTarget.scrollTop = 20;
+    widget.scrollChat(null, event);
+    await settle();
     assert.equal(widget.messages().length, 1);
     assert.equal(widget.hasOlder(), true);
     assert.ok(widget.error());
     widget.scrollChat(null, event);
     await settle();
     assert.equal(widget.messages().length, 2);
+    assert.deepEqual(Array.from(widget.messages(), item => item.id), ["old", "new"]);
     assert.equal(widget.error(), "");
     widget.dispose();
 });
@@ -157,7 +243,7 @@ test("refresh retains the oldest loaded message when new messages push it onto a
     await settle();
     updated = true;
     await fixture.widget.refresh();
-    assert.deepEqual(Array.from(fixture.widget.messages(), item => item.id), ["z", "a"]);
+    assert.deepEqual(Array.from(fixture.widget.messages(), item => item.id), ["a", "z"]);
     fixture.widget.dispose();
 });
 
@@ -324,8 +410,8 @@ test("catalog contains core entries and installed module entries", () => {
         "models/modules": { widgets: () => [{ key: "forum.posts", name: "widgets.forumPosts" }] }
     });
     assert.deepEqual(Array.from(model.catalog(), item => item.key), [
-        "core.content", "core.news", "core.articles", "core.downloads",
-        "core.menu-horizontal", "core.menu-vertical", "core.custom", "core.chat", "forum.posts"
+        "core.header", "core.content", "core.footer", "core.news", "core.articles", "core.downloads",
+        "core.menu-horizontal", "core.menu-vertical", "core.custom", "core.chat", "core.message", "forum.posts"
     ]);
 });
 

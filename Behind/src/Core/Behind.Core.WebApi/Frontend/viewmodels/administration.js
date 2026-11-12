@@ -35,6 +35,10 @@ define(["ko", "models/session", "models/i18n", "models/modules"], function (ko, 
         return session.hasGrant("Menu.Read");
     };
 
+    var canReadMessages = function () {
+        return session.hasGrant("Message.Read");
+    };
+
     var canReadRouteAliases = function () {
         return session.hasGrant("RouteAlias.Read");
     };
@@ -64,6 +68,7 @@ define(["ko", "models/session", "models/i18n", "models/modules"], function (ko, 
         { name: "administration.pages.menus", icon: "fa-bars", href: "#/manage/menus", allowed: canReadMenus },
         { name: "layouts.title", icon: "fa-table-cells", href: "#/manage/layouts", allowed: canReadConfiguration },
         { name: "administration.pages.routeAliases", icon: "fa-route", href: "#/manage/route-aliases", allowed: canReadRouteAliases },
+        { name: "administration.pages.messages", icon: "fa-bullhorn", href: "#/manage/messages", allowed: canReadMessages },
         { name: "administration.pages.accessSettings", icon: "fa-lock", href: "#/manage/access-settings", allowed: canReadAccessSettings },
         { name: "administration.pages.auditLog", icon: "fa-clipboard-list", href: "#/audit-log", allowed: canReadAuditLog },
         { name: "administration.pages.rawDatabase", icon: "fa-database", href: "#/manage/raw-database", allowed: canManageRawDatabase },

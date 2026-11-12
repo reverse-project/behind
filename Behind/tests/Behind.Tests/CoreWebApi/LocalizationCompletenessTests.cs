@@ -19,7 +19,7 @@ public partial class LocalizationCompletenessTests
     [GeneratedRegex(@"[""']((?:[a-z][A-Za-z0-9]*)(?:\.[A-Za-z0-9]+)+)[""']")]
     private static partial Regex QuotedKeyPattern();
 
-    [GeneratedRegex(@"<(?<tag>[a-zA-Z][a-zA-Z0-9-]*)(?<attributes>(?:\s[^<>]*?)?)>(?<text>[^<>]+)")]
+    [GeneratedRegex(@"<(?<tag>[a-zA-Z][a-zA-Z0-9-]*)(?<attributes>(?:[^<>""']|""[^""]*""|'[^']*')*)>(?<text>[^<>]+)")]
     private static partial Regex TextNodePattern();
 
     private static IEnumerable<string> SourceFiles(string folder = "/")
@@ -128,6 +128,25 @@ public partial class LocalizationCompletenessTests
             .ToList();
 
         Assert.Empty(offenders);
+    }
+
+    [Theory]
+    [InlineData("""<button data-bind="enable: count() > 1, t: 'common.remove'">Remove</button>""")]
+    [InlineData("""<button data-bind="enable: count() < 2, t: 'common.remove'">Remove</button>""")]
+    [InlineData("""<p title="A > B" data-bind="text: message">Message</p>""")]
+    [InlineData("""<label title='A < B' data-bind="t: 'common.name'">Name</label>""")]
+    public void LocalizedText_WithAngleBracketsInQuotedAttributes_IsNotFlagged(string html)
+    {
+        Assert.Empty(UnlocalizedTexts(html));
+    }
+
+    [Theory]
+    [InlineData("""<button data-bind="enable: count() > 1">Remove</button>""", "Remove")]
+    [InlineData("""<p title="A < B">Untranslated text</p>""", "Untranslated text")]
+    [InlineData("""<button data-bind="enable: count() > 1, t: 'common.remove'">Remove</button><p>Untranslated text</p>""", "Untranslated text")]
+    public void UnlocalizedText_WithAngleBracketsInQuotedAttributes_IsStillFlagged(string html, string expected)
+    {
+        Assert.Equal(expected, Assert.Single(UnlocalizedTexts(html)));
     }
 
     private static IEnumerable<string> Placeholders(string text) =>

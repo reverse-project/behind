@@ -141,6 +141,18 @@ public class FseSiteTests
     }
 
     [Fact]
+    public void Skin_PreservesLayoutHamburgerHorizontalMargins()
+    {
+        var css = Read("wwwroot/css/fse.css");
+        var toggle = css.Split(".fse-menu .navbar-toggler {", StringSplitOptions.None)[1].Split('}')[0];
+
+        Assert.Contains("margin-block: 0.5rem", toggle);
+        Assert.DoesNotContain("margin:", toggle);
+        Assert.DoesNotContain("margin-left:", toggle);
+        Assert.DoesNotContain("margin-right:", toggle);
+    }
+
+    [Fact]
     public void WebManifest_UsesFseBranding()
     {
         var manifest = ReadJson("wwwroot/site.webmanifest");

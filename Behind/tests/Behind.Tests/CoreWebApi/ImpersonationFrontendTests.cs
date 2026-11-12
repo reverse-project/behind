@@ -59,13 +59,13 @@ public class ImpersonationFrontendTests
     [Fact]
     public void Header_ShowsABannerWithAStopButtonWhileImpersonating()
     {
-        var index = Read("index.html");
+        var template = Read("components/siteheader.html");
         var header = Read("viewmodels/header.js");
 
-        Assert.Contains("css: { 'd-none': !isImpersonating() }", index);
-        Assert.Contains("border-bottom d-none\" role=\"alert\"", index);
-        Assert.DoesNotContain("style=\"display", index);
-        Assert.Contains("click: stopImpersonating", index);
+        Assert.Contains("css: { 'd-none': !isImpersonating() }", template);
+        Assert.Contains("border-bottom d-none\" role=\"alert\"", template);
+        Assert.DoesNotContain("style=\"display", template);
+        Assert.Contains("click: stopImpersonating", template);
         Assert.Contains("self.isImpersonating = session.isImpersonating", header);
         Assert.Contains("auth.stopImpersonating()", header);
     }

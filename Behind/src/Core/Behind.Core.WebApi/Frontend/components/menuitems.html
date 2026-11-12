@@ -1,8 +1,11 @@
 <ul data-bind="foreach: items, css: listClass">
-    <li data-bind="visible: !hasChildren || $component.isDropdown, css: $component.itemClass">
+    <li data-bind="visible: !hasChildren || $component.isDropdown || $component.isVertical, css: $component.itemClass">
         <a data-bind="attr: attributes, text: title, click: open, css: $component.linkClass"></a>
+        <div data-bind="if: hasChildren && $component.isVertical">
+            <menu-items params="items: children, variant: 'vertical'"></menu-items>
+        </div>
     </li>
-    <li class="nav-item dropdown menu-parent" data-bind="visible: hasChildren && !$component.isDropdown, menuHover: $component.hover">
+    <li class="nav-item dropdown menu-parent" data-bind="visible: hasChildren && !$component.isDropdown && !$component.isVertical, menuHover: $component.hover">
         <a class="nav-link menu-parent-link" data-bind="attr: attributes, text: title, click: open"></a>
         <button type="button" class="nav-link dropdown-toggle dropdown-toggle-split menu-parent-toggle" data-bs-toggle="dropdown" data-bs-reference="parent" aria-expanded="false" data-bind="tAttr: { 'aria-label': { key: 'menuitems.toggleSubItems', args: [title] } }"></button>
         <ul class="dropdown-menu" data-bind="foreach: children">

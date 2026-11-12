@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261112082920_ProfilesPrivacyAndContentRestrictions";
+    public override string LastMigrationId => "20261112115436_AddMessages";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -317,6 +317,8 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasIndex("EntityType", "EntityId");
 
                 b.ToTable("ContentRestrictions");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Download", b =>
@@ -621,6 +623,49 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasIndex("ParentId");
 
                 b.ToTable("MenuItems");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.Message", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("Content")
+                    .IsRequired()
+                    .HasMaxLength(100000)
+                    .HasColumnType("character varying(100000)");
+
+                b.Property<long?>("EndsAt")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("Level")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.Property<long?>("StartsAt")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("Name");
+
+                b.ToTable("Messages");
 
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });

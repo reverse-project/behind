@@ -4,8 +4,10 @@
         <a class="btn btn-outline-secondary" href="#/administration" data-bind="t: 'menus.back'">Back to administration</a>
         <button class="btn btn-primary" type="button" data-bind="click: save, enable: canWrite, t: 'common.save'">Save</button>
     </div>
-    <p data-bind="t: 'layouts.help'">Arrange widgets in grid sections. Each layout must contain exactly one site content widget. Save applies all changes.</p>
+    <p data-bind="t: 'layouts.help'">Arrange widgets in grid sections. Each layout must contain exactly one site content widget. These layouts apply only to public pages; management and sign-in keep their fixed shell. Save applies all changes.</p>
+    <p class="form-text" data-bind="t: 'layouts.cssClassHelp'">Space-separated ASCII CSS identifiers matching [-_a-zA-Z][-_a-zA-Z0-9]*, up to 500 characters. Surrounding spaces are trimmed when saved; preview classes are isolated from editor controls.</p>
     <div class="alert alert-info" role="status" data-bind="visible: message, text: message"></div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: messageLoadError, text: messageLoadError"></div>
     <div data-bind="if: canRead">
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <button class="btn btn-outline-primary" type="button" data-bind="click: addLayout, enable: canWrite, t: 'layouts.add'">Add layout</button>
@@ -27,15 +29,51 @@
                 </div>
                 <h2 class="h5" data-bind="t: 'layouts.preview'">Layout preview</h2>
                 <div class="behind-layout-preview mb-4" data-bind="foreach: sections">
-                    <div class="behind-layout-section" data-bind="style: { gridTemplateColumns: 'repeat(' + Math.max(1, Math.min(12, Number(columns()))) + ', minmax(0, 1fr))', gridTemplateRows: 'repeat(' + Math.max(1, Math.min(12, Number(rows()))) + ', minmax(3rem, auto))' }, foreach: widgets">
-                        <div class="behind-layout-preview-cell" data-bind="style: { gridRow: row() + ' / span ' + rowSpan(), gridColumn: column() + ' / span ' + columnSpan() }, text: title() || $root.widgetName(type())"></div>
+                    <div class="behind-layout-band" data-bind="style: { marginTop: $index() ? -Number(overlap()) + 'px' : '0px', zIndex: layer() }">
+                        <div class="behind-layout-section" style="pointer-events: none !important" data-bind="attr: { class: 'behind-layout-section ' + (cssClass() || '') }, css: { 'behind-layout-preview-full': width() === 'full' }, style: { gridTemplateColumns: 'repeat(' + Math.max(1, Math.min(12, Number(columns()))) + ', minmax(0, 1fr))', gridTemplateRows: 'repeat(' + Math.max(1, Math.min(12, Number(rows()))) + ', minmax(3rem, auto))' }, foreach: widgets">
+                            <div class="behind-layout-preview-cell" style="pointer-events: none !important" data-bind="attr: { class: 'behind-layout-preview-cell ' + (cssClass() || '') }, style: { gridRow: row() + ' / span ' + rowSpan(), gridColumn: column() + ' / span ' + columnSpan(), zIndex: layer() }, text: title() || $root.widgetName(type())"></div>
+                        </div>
                     </div>
                 </div>
+                <h2 class="h5" data-bind="t: 'layouts.badges'">Top-layer badges</h2>
+                <p class="form-text" data-bind="t: 'layouts.badgeHelp'">Badges overlay the page at a corner and scroll with it. Badges in the same corner stack in list order. Text is required, and becomes alternative text for an uploaded image. Links are optional. Save applies changes; management pages never show badges.</p>
+                <div data-bind="foreach: badges">
+                    <div class="card card-body mb-3">
+                        <div class="row g-2 mb-2">
+                            <label class="col-md-6"><span data-bind="t: 'layouts.badgeText'">Text / image description</span><input class="form-control" maxlength="200" data-bind="value: text"></label>
+                            <label class="col-md-6"><span data-bind="t: 'layouts.badgeLink'">Link (optional)</span><input class="form-control" maxlength="2000" data-bind="value: link"></label>
+                            <label class="col-md-6"><span data-bind="t: 'layouts.badgePosition'">Page corner</span><select class="form-select" data-bind="value: position">
+                                <option value="top-left" data-bind="t: 'layouts.badge.topLeft'">Top left</option>
+                                <option value="top-right" data-bind="t: 'layouts.badge.topRight'">Top right</option>
+                                <option value="bottom-left" data-bind="t: 'layouts.badge.bottomLeft'">Bottom left</option>
+                                <option value="bottom-right" data-bind="t: 'layouts.badge.bottomRight'">Bottom right</option>
+                            </select></label>
+                            <label class="col-md-6"><span data-bind="t: 'layouts.badgeWidth'">Width (px)</span><input class="form-control" type="number" min="40" max="600" step="1" data-bind="value: width"></label>
+                            <label class="col-12"><span data-bind="t: 'layouts.badgeUpload'">Upload badge image</span><input class="form-control" type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-bind="event: { change: $root.uploadBadge }"></label>
+                        </div>
+                        <div class="mb-2" data-bind="if: image"><img class="img-fluid" style="max-height: 10rem" data-bind="attr: { src: image, alt: text }"></div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-secondary" type="button" data-bind="visible: image, click: function () { image(''); }, t: 'layouts.badgeRemoveImage'">Remove image</button>
+                            <button class="btn btn-outline-danger" type="button" data-bind="click: $root.removeBadge, t: 'layouts.badgeRemove'">Remove badge</button>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-outline-primary mb-4" type="button" data-bind="click: $root.addBadge, t: 'layouts.badgeAdd'">Add badge</button>
                 <div data-bind="foreach: sections">
                     <section class="card card-body mb-3">
                         <div class="d-flex flex-wrap gap-2 mb-3 align-items-end">
                             <label><span data-bind="t: 'layouts.rows'">Rows</span><input class="form-control" type="number" min="1" max="12" data-bind="value: rows"></label>
                             <label><span data-bind="t: 'layouts.columns'">Columns</span><input class="form-control" type="number" min="1" max="12" data-bind="value: columns"></label>
+                            <label><span data-bind="t: 'layouts.width'">Width</span>
+                                <select class="form-select" data-bind="value: width">
+                                    <option value="site" data-bind="t: 'layouts.width.site'">Site width</option>
+                                    <option value="full" data-bind="t: 'layouts.width.full'">Full width</option>
+                                </select>
+                                <span class="form-text" data-bind="t: 'layouts.widthHelp'">Full-page layouts apply only to public pages. Management and sign-in retain their fixed shell.</span>
+                            </label>
+                            <label><span data-bind="t: 'layouts.cssClass'">CSS classes</span><input class="form-control" maxlength="500" data-bind="value: cssClass"></label>
+                            <label data-bind="visible: $index() > 0"><span data-bind="t: 'layouts.overlap'">Overlap previous section (px)</span><input class="form-control" type="number" min="0" max="2000" step="1" data-bind="value: overlap"></label>
+                            <label><span data-bind="t: 'layouts.layer'">Layer</span><input class="form-control" type="number" min="-100" max="100" step="1" data-bind="value: layer"></label>
                             <button class="btn btn-outline-secondary" type="button" data-bind="click: function () { $root.moveSection($data, -1); }, t: 'layouts.up'">Move up</button>
                             <button class="btn btn-outline-secondary" type="button" data-bind="click: function () { $root.moveSection($data, 1); }, t: 'layouts.down'">Move down</button>
                             <button class="btn btn-outline-danger ms-auto" type="button" data-bind="click: $root.removeSection, t: 'layouts.removeSection'">Remove section</button>
@@ -49,12 +87,28 @@
                                     <label class="col-6 col-md-3"><span data-bind="t: 'layouts.column'">Column</span><input class="form-control" type="number" min="1" max="12" data-bind="value: column"></label>
                                     <label class="col-6 col-md-3"><span data-bind="t: 'layouts.rowSpan'">Row span</span><input class="form-control" type="number" min="1" max="12" data-bind="value: rowSpan"></label>
                                     <label class="col-6 col-md-3"><span data-bind="t: 'layouts.columnSpan'">Column span</span><input class="form-control" type="number" min="1" max="12" data-bind="value: columnSpan"></label>
+                                    <label class="col-6 col-md-3"><span data-bind="t: 'layouts.layer'">Layer</span><input class="form-control" type="number" min="-100" max="100" step="1" data-bind="value: layer"></label>
                                 </div>
+                                <label class="d-block mb-2"><span data-bind="t: 'layouts.cssClass'">CSS classes</span><input class="form-control" maxlength="500" data-bind="value: cssClass"></label>
+                                <label class="d-block mb-2" data-bind="visible: type() === 'core.header'"><span data-bind="t: 'layouts.hamburgerPosition'">Hamburger button position</span>
+                                    <select class="form-select" data-bind="value: hamburgerPosition">
+                                        <option value="default" data-bind="t: 'layouts.hamburger.default'">Site default</option>
+                                        <option value="left" data-bind="t: 'layouts.hamburger.left'">Left</option>
+                                        <option value="right" data-bind="t: 'layouts.hamburger.right'">Right</option>
+                                    </select>
+                                </label>
+                                <div class="d-flex flex-wrap gap-3 mb-2">
+                                    <label class="form-check"><input class="form-check-input" type="checkbox" data-bind="checked: borderless"><span class="form-check-label" data-bind="t: 'layouts.borderless'">Borderless</span></label>
+                                    <label class="form-check"><input class="form-check-input" type="checkbox" data-bind="checked: noMargin"><span class="form-check-label" data-bind="t: 'layouts.noMargin'">No margin</span></label>
+                                    <label class="form-check"><input class="form-check-input" type="checkbox" data-bind="checked: noPadding"><span class="form-check-label" data-bind="t: 'layouts.noPadding'">No padding</span></label>
+                                </div>
+                                <p class="form-text" data-bind="t: 'layouts.cellAppearanceHelp'">Apply to this cell and its widget frame, not nested content or section gaps. The placement preview keeps its editing outlines.</p>
                                 <label class="d-block mb-2" data-bind="visible: type() === 'core.menu-horizontal' || type() === 'core.menu-vertical'"><span data-bind="t: 'layouts.menu'">Menu name</span><input class="form-control" maxlength="200" data-bind="value: menu"></label>
                                 <label class="d-block mb-2" data-bind="visible: ['core.news', 'core.articles', 'core.downloads', 'core.chat', 'forum.posts'].indexOf(type()) >= 0"><span data-bind="t: 'layouts.limit'">Item limit</span><input class="form-control" type="number" min="1" max="50" data-bind="value: limit"></label>
+                                <label class="d-block mb-2" data-bind="visible: type() === 'core.message'"><span data-bind="t: 'layouts.message'">Message</span><select class="form-select" data-bind="options: $root.messages, optionsText: 'name', optionsValue: 'id', optionsCaption: $root.messageCaption, value: message, valueAllowUnset: true"></select></label>
                                 <div data-bind="if: type() === 'core.custom'">
                                     <label class="d-block mb-2"><span data-bind="t: 'layouts.editor'">Editor</span><select class="form-select" data-bind="value: editor"><option value="richtext" data-bind="t: 'layouts.richtext'">Rich text</option><option value="html" data-bind="t: 'layouts.htmlEditor'">HTML</option></select></label>
-                                    <div class="mb-3" data-bind="if: editor() === 'richtext'"><div data-bind="richEditor: { value: content, enabled: $root.canWrite }"></div></div>
+                                    <div class="mb-3" data-bind="if: editor() === 'richtext'"><div data-bind="richEditor: { value: content, upload: $root.uploadImage, enabled: $root.canWrite }"></div></div>
                                     <label class="d-block mb-3" data-bind="visible: editor() === 'html'"><span data-bind="t: 'layouts.htmlEditor'">HTML</span><textarea class="form-control font-monospace" rows="8" maxlength="100000" data-bind="value: content"></textarea></label>
                                     <p class="form-text" data-bind="t: 'layouts.htmlHelp'">Scripts and unsafe HTML are removed when saving.</p>
                                 </div>

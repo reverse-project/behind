@@ -23,6 +23,7 @@ This manual describes what you can do in the Behind web application today.
 - **[Quotes](./managing-quotes.md)** - the example module: reading the quotes and managing them with soft delete, restore and permanent delete.
 - **[Sport](./managing-sport.md)** - the Sport module: browsing teams, players, seasons, leaderboards and statistics, and managing them with player pictures per season and team logos.
 - **[Documentation](./managing-markdown-viewer.md)** - the Markdown Viewer module: reading Markdown documents and generating a static documentation website from a directory.
+- **[Messages](./managing-messages.md)** - scheduled notices with a level, placed into layouts with the Message widget.
 - **[Route aliases](./managing-route-aliases.md)** - short routes for pages, for example `#/manuals` for a download directory.
 - **[Access settings](./managing-access-settings.md)** - a restriction page that shows the website only to users with a role, and approval of new accounts before they can sign in.
 - **[Impersonation](./impersonation.md)** - acting as another user to see what they see, and how it shows in the audit log.

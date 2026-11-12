@@ -1,8 +1,11 @@
 define(["ko", "models/auth", "models/session", "models/menus", "models/accounts", "models/branding", "models/i18n"], function (ko, auth, session, menus, accounts, branding, i18n) {
+    var navigationSequence = 0;
+
     return function HeaderViewModel(context) {
         var self = this;
         var main = menus.follow("main");
 
+        self.navigationId = "navigation-" + (++navigationSequence);
         var itemsOfKind = function (kind) {
             return ko.pureComputed(function () {
                 return main().items.filter(function (item) {

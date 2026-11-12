@@ -1,10 +1,19 @@
-define(["models/http", "models/invalidation"], function (http, invalidation) {
+define(["models/http", "models/invalidation", "models/results"], function (http, invalidation, results) {
     var configuration = null;
     var pending = null;
+    var imageFailures = {
+        400: "content.error.imageRequired",
+        401: results.sessionExpired,
+        403: "content.error.imageForbidden",
+        413: "content.error.imageTooLarge",
+        415: "content.error.imageType"
+    };
+    var outcome = results.create({});
 
     var remember = function (data) {
         if (!configuration || data.revision >= configuration.revision) {
             configuration = {
+                schemaVersion: data.schemaVersion,
                 revision: data.revision,
                 defaultLayout: data.defaultLayout,
                 layouts: data.layouts.filter(function (layout) {
@@ -50,6 +59,13 @@ define(["models/http", "models/invalidation"], function (http, invalidation) {
     };
 
     return {
+        uploadImage: function (file) {
+            var form = new FormData();
+            form.append("file", file);
+            return http.postForm("/layouts/images", form).then(function (response) {
+                return outcome.loaded(response, imageFailures);
+            });
+        },
         load: load,
         select: select,
         current: function () {

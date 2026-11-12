@@ -251,6 +251,8 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IMenuItemCommands, MenuItemCommands>();
             builder.Services.AddScoped<IRouteAliasQueries, RouteAliasQueries>();
             builder.Services.AddScoped<IRouteAliasCommands, RouteAliasCommands>();
+            builder.Services.AddScoped<IMessageQueries, MessageQueries>();
+            builder.Services.AddScoped<IMessageCommands, MessageCommands>();
             builder.Services.AddScoped<IAccessSettingsQueries, AccessSettingsQueries>();
             builder.Services.AddScoped<IAccessSettingsCommands, AccessSettingsCommands>();
             builder.Services.AddScoped<IUserApprovalQueries, UserApprovalQueries>();
@@ -954,6 +956,7 @@ public static class WebApiExtensions
             application.MapLayoutEndpoints();
             application.MapWidgetEndpoints();
             application.MapRouteAliasEndpoints();
+            application.MapMessageEndpoints();
             application.MapAccessEndpoints();
             application.MapRawDatabaseEndpoints();
             application.MapContentRestrictionEndpoints();

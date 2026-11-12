@@ -23,6 +23,27 @@ public class SiteImageEndpointsTests
         new FormFile(new MemoryStream(content), 0, content.Length, "file", fileName);
 
     [Fact]
+    public async Task LayoutImages_UploadAndServeOnlyTheirOwnVfsType()
+    {
+        var id = Guid.NewGuid();
+        var commands = Substitute.For<IVfsCommands>();
+        commands.Add(Arg.Any<IVfsCommands.Upload>(), Arg.Any<CancellationToken>()).Returns(id);
+        var uploaded = await SiteImageEndpoints.UploadLayout(File(Png), new DefaultHttpContext(), commands, Options());
+        Assert.Equal(new SiteImageResponse(id, $"/layouts/images/{id}"),
+            Assert.IsType<JsonHttpResult<SiteImageResponse>>(uploaded).Value);
+        await commands.Received(1).Add(
+            Arg.Is<IVfsCommands.Upload>(upload => upload.Type == VfsTypes.Layouts), Arg.Any<CancellationToken>());
+
+        var queries = Substitute.For<IVfsQueries>();
+        queries.Open(VfsTypes.LayoutImages, id, Arg.Any<CancellationToken>())
+            .Returns(Some(new IVfsQueries.Content(new VfsFile(VfsTypes.Layouts, "logo.png", "image/png", Png.Length), Png)));
+        var context = new DefaultHttpContext();
+        Assert.IsType<FileContentHttpResult>(await SiteImageEndpoints.GetLayout(id, context, queries));
+        Assert.Equal(SiteImageEndpoints.ImmutableCache, context.Response.Headers.CacheControl);
+        Assert.IsType<NotFound>(await SiteImageEndpoints.Get(id, new DefaultHttpContext(), queries));
+    }
+
+    [Fact]
     public async Task Upload_StoresTheImageAndReturnsItsUrl()
     {
         var id = Guid.NewGuid();

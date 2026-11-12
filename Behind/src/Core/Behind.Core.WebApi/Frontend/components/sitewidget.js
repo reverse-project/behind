@@ -23,6 +23,8 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     stats: ko.observableArray([]),
                     messages: ko.observableArray([]),
                     content: ko.observable(""),
+                    message: ko.observable(null),
+                    messageDismissed: ko.observable(false),
                     text: ko.observable(""),
                     isAnonymous: ko.observable(false),
                     error: ko.observable(""),
@@ -124,7 +126,66 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     });
                 };
 
+                var messageId = ko.unwrap(widget.message) || "";
+                var dismissedMessageKey = null;
+                var messageLevels = ["info", "success", "warning", "danger"];
+                var dismissalKey = function (message) {
+                    return "behind.message.dismissed." + message.id + "." + message.version;
+                };
+                var isDismissed = function (message) {
+                    if (dismissedMessageKey === dismissalKey(message)) {
+                        return true;
+                    }
+                    try {
+                        return window.localStorage.getItem(dismissalKey(message)) !== null;
+                    } catch (error) {
+                        console.warn("Message dismissal storage is unavailable", error);
+                        return false;
+                    }
+                };
+
+                self.messageClass = ko.pureComputed(function () {
+                    var message = self.message();
+                    var level = message && messageLevels.indexOf(message.level) >= 0 ? message.level : "info";
+                    return "alert alert-" + level + " alert-dismissible behind-message";
+                });
+                self.messageVisible = ko.pureComputed(function () {
+                    return self.message() !== null && !self.messageDismissed();
+                });
+                self.dismissMessage = function () {
+                    var message = self.message();
+
+                    if (message) {
+                        dismissedMessageKey = dismissalKey(message);
+                        try {
+                            window.localStorage.setItem(dismissalKey(message), "1");
+                        } catch (error) {
+                            console.warn("Message dismissal could not be stored", error);
+                        }
+                    }
+
+                    self.messageDismissed(true);
+                };
+
+                var loadMessage = function () {
+                    if (!messageId) {
+                        return Promise.resolve({ message: null });
+                    }
+
+                    return http.get("/widgets/messages/" + encodeURIComponent(messageId)).then(function (response) {
+                        if (response.status === 404) {
+                            return { message: null };
+                        }
+
+                        return { message: checked(response) };
+                    });
+                };
+
                 var load = function () {
+                    if (type === "core.message") {
+                        return loadMessage();
+                    }
+
                     if (type === "core.news") {
                         return http.get("/widgets/news").then(checked).then(function (data) {
                             return { items: data.slice(0, limit).map(function (item) {
@@ -213,6 +274,8 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                                 }
                             }
                             self.content(data.content || "");
+                            self.message(data.message || null);
+                            self.messageDismissed(data.message ? isDismissed(data.message) : false);
                             self.error("");
                         }
                     }).catch(function (error) {
@@ -229,6 +292,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                                 self.cancelEdit();
                             }
                             self.content("");
+                            self.message(null);
                             self.error(error.message || i18n.t("common.error.generic"));
                         }
                     }).finally(function () {
@@ -375,6 +439,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     self.stats([]);
                     self.messages([]);
                     self.content("");
+                    self.message(null);
                     self.text("");
                     self.isAnonymous(false);
                     self.error("");
@@ -406,6 +471,12 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     }, 15000);
                 }
 
+                if (type === "core.message") {
+                    timer = window.setInterval(function () {
+                        self.refresh();
+                    }, 60000);
+                }
+
                 self.dispose = function () {
                     disposed = true;
                     sequence++;
@@ -415,6 +486,8 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     self.menuItems.dispose();
                     self.chatReadable.dispose();
                     self.chatWritable.dispose();
+                    self.messageClass.dispose();
+                    self.messageVisible.dispose();
 
                     if (follower) {
                         follower.dispose();

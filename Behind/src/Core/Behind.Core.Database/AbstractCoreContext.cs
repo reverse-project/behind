@@ -107,6 +107,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         typeof(Menu),
         typeof(MenuItem),
         typeof(RouteAlias),
+        typeof(Message),
         typeof(AccessSettings)
     ];
 

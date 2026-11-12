@@ -25,6 +25,8 @@ public class ChangelogFrontendTests
     [InlineData("controllers/changelog.js")]
     [InlineData("viewmodels/changelog.js")]
     [InlineData("viewmodels/footer.js")]
+    [InlineData("components/siteheader.html")]
+    [InlineData("components/sitefooter.html")]
     [InlineData("views/changelog.html")]
     public void Provider_ContainsFile(string path)
     {
@@ -58,14 +60,16 @@ public class ChangelogFrontendTests
     public void Index_ShowsTheNameAndVersionInTheFooterLinkedToTheChangelog()
     {
         var index = Read("index.html");
+        var footer = Read("components/sitefooter.html");
         var app = Read("app.js");
 
         Assert.Contains("<footer id=\"footer-container\"", index);
-        Assert.Contains("href=\"#/changelog\"", index);
-        Assert.Contains("text: name", index);
-        Assert.Contains("text: label", index);
+        Assert.Contains("href=\"#/changelog\"", footer);
+        Assert.Contains("text: name", footer);
+        Assert.Contains("text: label", footer);
         Assert.Contains("\"#/changelog\": \"controllers/changelog\"", app);
-        Assert.Contains("$(\"#footer-container\")[0]", app);
+        Assert.Contains("layoutShell.start(context)", app);
+        Assert.Contains("components/sitefooter", app);
     }
 
     [Fact]
@@ -94,12 +98,13 @@ public class ChangelogFrontendTests
     [Fact]
     public void Branding_ShowsTheConfiguredTitleAndCopyright()
     {
-        var index = Read("index.html");
+        var header = Read("components/siteheader.html");
+        var footer = Read("components/sitefooter.html");
         var branding = Read("models/branding.js");
         var app = Read("app.js");
 
-        Assert.Contains("data-bind=\"text: title\"", index);
-        Assert.Contains("visible: hasCopyright, text: copyright", index);
+        Assert.Contains("data-bind=\"text: title\"", header);
+        Assert.Contains("visible: hasCopyright, text: copyright", footer);
         Assert.Contains("about.loadSite()", branding);
         Assert.Contains("document.title = title", app);
         Assert.Contains("branding.load()", app);

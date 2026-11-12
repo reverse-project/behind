@@ -1,0 +1,29 @@
+<nav class="navbar navbar-expand-md border-bottom">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#/" data-bind="text: title">Behind</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" aria-expanded="false" aria-label="Toggle navigation" data-bind="attr: { 'data-bs-target': '#' + navigationId, 'aria-controls': navigationId }, tAttr: { 'aria-label': 'app.toggleNavigation' }">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" data-bind="attr: { id: navigationId }">
+            <menu-items params="items: links, variant: 'navbar'"></menu-items>
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item dropdown" data-bind="visible: isSignedIn">
+                    <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: label"></button>
+                    <div class="dropdown-menu">
+                        <menu-items params="items: userItems, variant: 'dropdown'"></menu-items>
+                        <hr class="dropdown-divider">
+                        <button type="button" class="dropdown-item" data-bind="click: signOut, t: 'app.signOut'">Sign out</button>
+                    </div>
+                </li>
+                <li class="nav-item" data-bind="visible: !isSignedIn() && canSignIn()"><a class="nav-link" href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a></li>
+                <li class="nav-item" data-bind="visible: !isSignedIn() && canSignUp()"><a class="nav-link" href="#/sign-up" data-bind="t: 'app.signUp'">Sign up</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="alert alert-warning rounded-0 mb-0 border-0 border-bottom d-none" role="alert" data-bind="css: { 'd-none': !isImpersonating() }">
+    <div class="container d-flex flex-wrap align-items-center gap-2">
+        <span data-bind="t: { key: 'app.impersonating', args: [label] }">You are impersonating <strong data-bind="text: label"></strong>. Everything you do is recorded in the audit log on their behalf.</span>
+        <button type="button" class="btn btn-sm btn-warning ms-md-auto" data-bind="click: stopImpersonating, t: 'app.stopImpersonating'">Stop impersonating</button>
+    </div>
+</div>

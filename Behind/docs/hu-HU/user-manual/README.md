@@ -23,6 +23,7 @@ Ez a kézikönyv azt ismerteti, hogy a Behind webalkalmazásban jelenleg mit teh
 - **[Idézetek](./managing-quotes.md)** - a példamodul: idézetek olvasása és kezelése átmeneti törléssel, visszaállítással és végleges törléssel.
 - **[Sport](./managing-sport.md)** - a Sport modul: csapatok, játékosok, szezonok, ranglisták és statisztikák böngészése, kezelésük szezononkénti játékosképekkel és csapatlogókkal.
 - **[Dokumentáció](./managing-markdown-viewer.md)** - a Markdown Viewer modul: Markdown dokumentumok olvasása és statikus dokumentációs weboldal előállítása egy könyvtárból.
+- **[Üzenetek](./managing-messages.md)** - ütemezett, szinttel rendelkező értesítések, amelyeket az Üzenet widgettel helyezhet el az elrendezésekben.
 - **[Útvonal-álnevek](./managing-route-aliases.md)** - rövid útvonalak oldalakhoz, például `#/manuals` egy letöltési könyvtárhoz.
 - **[Hozzáférési beállítások](./managing-access-settings.md)** - egy korlátozó oldal, amely a weboldalt csak egy szerepkörrel rendelkező felhasználóknak mutatja, és az új fiókok jóváhagyása a bejelentkezésük előtt.
 - **[Megszemélyesítés](./impersonation.md)** - egy másik felhasználó nevében eljárni, hogy lássa, amit ő lát, és hogyan jelenik meg ez az auditnaplóban.

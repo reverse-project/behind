@@ -71,6 +71,18 @@ public sealed class SiteImageEndpoints
             type);
 
     [IgnoreETag]
+    public static Task<IResult> UploadLayout(
+        IFormFile? file,
+        HttpContext httpContext,
+        IVfsCommands commands,
+        IOptionsSnapshot<SitesConfiguration> configuration) =>
+        Store(VfsTypes.Layouts, file, httpContext, commands, configuration.Value.ImageLimit);
+
+    [IgnoreETag]
+    public static Task<IResult> GetLayout(Guid id, HttpContext httpContext, IVfsQueries queries) =>
+        Serve(VfsTypes.LayoutImages, id, httpContext, queries);
+
+    [IgnoreETag]
     public static Task<IResult> Get(Guid id, HttpContext httpContext, IVfsQueries queries) =>
         Serve(VfsTypes.AllSiteImages, id, httpContext, queries);
 

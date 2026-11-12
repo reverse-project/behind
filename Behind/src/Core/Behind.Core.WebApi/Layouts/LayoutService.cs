@@ -65,6 +65,7 @@ public sealed class LayoutService(IOptions<BackendConfiguration> backend, Module
             var sanitized = configuration.Sanitize();
             var saved = sanitized with
             {
+                SchemaVersion = 1,
                 Revision = checked(current.Revision + 1),
                 Layouts = manageDeleted
                     ? sanitized.Layouts
@@ -106,14 +107,21 @@ public sealed class LayoutService(IOptions<BackendConfiguration> backend, Module
         }
 
         await using var stream = File.OpenRead(path);
-        var configuration = await JsonSerializer.DeserializeAsync<LayoutConfiguration>(stream, JsonOptions, cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        var configuration = document.RootElement.Deserialize<LayoutConfiguration>(JsonOptions);
+
+        if (configuration is not null && !document.RootElement.EnumerateObject()
+            .Any(property => property.Name.Equals("schemaVersion", StringComparison.OrdinalIgnoreCase)))
+        {
+            configuration = configuration with { SchemaVersion = 0 };
+        }
 
         if (configuration is null || !configuration.IsValid(modules, requireInstalledWidgets: false))
         {
             throw new InvalidDataException("The layout configuration is invalid.");
         }
 
-        return configuration.Sanitize();
+        return configuration.UpgradePageLayouts().Sanitize();
     }
 
     public void Dispose() => gate.Dispose();

@@ -15,6 +15,7 @@ Az **Adminisztráció** egy olyan oldal, amely az Ön által használható kezel
 | Idézetek (modul) | a `Quotes.Read` engedély (módosításhoz `Quotes.Write`) | [Idézetek](./managing-quotes.md) |
 | Sport (modul) | a `Sport.Read` engedély (módosításhoz `Sport.Write`) | [Sport](./managing-sport.md) |
 | Dokumentáció (modul) | a `MarkdownViewer.Read` engedély (a statikus oldalak előállításához `MarkdownViewer.Write`) | [Dokumentáció](./managing-markdown-viewer.md) |
+| Üzenetek | a `Message.Read` engedély (módosításhoz `Message.Write`) | [Üzenetek](./managing-messages.md) |
 | Útvonal-álnevek | a `RouteAlias.Read` engedély (módosításhoz `RouteAlias.Write`) | [Útvonal-álnevek](./managing-route-aliases.md) |
 | Hozzáférési beállítások | az `Access.Read` engedély (módosításhoz `Access.Write`) | [Hozzáférési beállítások](./managing-access-settings.md) |
 | Nyers adatbázis | a `RawDatabase.Manage` engedély (fejlesztőknek) | [Nyers adatbázis](./managing-raw-database.md) |

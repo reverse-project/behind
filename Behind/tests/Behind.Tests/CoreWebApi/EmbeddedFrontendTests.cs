@@ -44,6 +44,10 @@ public class EmbeddedFrontendTests
     [InlineData("viewmodels/session.js")]
     [InlineData("views/session.html")]
     [InlineData("viewmodels/header.js")]
+    [InlineData("components/siteheader.js")]
+    [InlineData("components/siteheader.html")]
+    [InlineData("components/sitefooter.js")]
+    [InlineData("components/sitefooter.html")]
     [InlineData("controllers/administration.js")]
     [InlineData("viewmodels/administration.js")]
     [InlineData("views/administration.html")]
@@ -156,13 +160,13 @@ public class EmbeddedFrontendTests
         var app = Read(Provider.GetFileInfo("app.js"));
 
         Assert.Contains("\"#/session\": \"controllers/session\"", app);
-        Assert.Contains("viewmodels/header", app);
+        Assert.Contains("ko.components.register(\"site-header\"", app);
     }
 
     [Fact]
     public void Header_ShowsUserNameMenuWithTheUserMenuItemsAndSignOutWhenSignedIn_AndSignInLinksOtherwise()
     {
-        var index = Read(Provider.GetFileInfo("index.html"));
+        var index = Read(Provider.GetFileInfo("components/siteheader.html"));
         var header = Read(Provider.GetFileInfo("viewmodels/header.js"));
         var menu = index[index.IndexOf("nav-item dropdown", StringComparison.Ordinal)..];
         menu = menu[..menu.IndexOf("</div>", StringComparison.Ordinal)];
@@ -204,7 +208,7 @@ public class EmbeddedFrontendTests
         var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
-        Assert.Equal(17, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Equal(18, viewModel.Split("icon: \"fa-").Length - 1);
         Assert.Contains("href: \"#/manage/content-restrictions\"", viewModel);
         Assert.Contains("name: \"layouts.title\"", viewModel);
         Assert.Contains("name: \"administration.pages.menus\", icon: \"fa-bars\", href: \"#/manage/menus\", allowed: canReadMenus", viewModel);
@@ -245,7 +249,7 @@ public class EmbeddedFrontendTests
         var index = Read(Provider.GetFileInfo("index.html"));
 
         Assert.True(index.IndexOf("css/bootstrap.min.css", StringComparison.Ordinal) < index.IndexOf("css/app.css", StringComparison.Ordinal));
-        Assert.Contains("data-bs-toggle=\"collapse\"", index);
+        Assert.Contains("data-bs-toggle=\"collapse\"", Read(Provider.GetFileInfo("components/siteheader.html")));
     }
 
     [Fact]
@@ -361,7 +365,10 @@ public class EmbeddedFrontendTests
 
         Assert.Contains("(user.displayName || \"\").trim()", user);
         Assert.DoesNotContain("emails[0]", user);
-        Assert.Contains("Math.imul", user);
+        Assert.Contains("BigInt.asUintN(64", user);
+        Assert.Contains("14695981039346656037n", user);
+        Assert.Contains("1099511628211n", user);
+        Assert.Contains(".toString(36).padStart(8, \"0\").slice(-8)", user);
         Assert.Contains("(name || \"user\") + \"#\" + hash", user);
         Assert.Contains("user.label(data.user)", viewModel);
         Assert.Contains("user.label(response.data.user)", auth);
@@ -382,7 +389,9 @@ public class EmbeddedFrontendTests
         Assert.Contains("value: birthday", view);
         Assert.Contains("checked: hideEmail", view);
         Assert.Contains("submit: submit", view);
-        Assert.Equal(1, view.Split("t: 'common.save'").Length - 1);
+        var profileForm = view[view.IndexOf("<form data-bind=\"visible: isSignedIn, submit: submit\"", StringComparison.Ordinal)..];
+        profileForm = profileForm[..profileForm.IndexOf("</form>", StringComparison.Ordinal)];
+        Assert.Equal(1, profileForm.Split("t: 'common.save'").Length - 1);
         Assert.Contains("profiles.save(self.birthday(), self.hideEmail())", viewModel);
         Assert.Contains("http.put(\"/profile/displayName\"", auth);
         Assert.Contains("put: function", http);

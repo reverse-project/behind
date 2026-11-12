@@ -78,7 +78,7 @@ public class MenusFrontendTests
         Assert.Contains("ko.components.register(\"menu-nav\", { require: \"components/menunav\" })", app);
         Assert.True(
             app.IndexOf("ko.components.register(\"menu-items\"", StringComparison.Ordinal)
-            < app.IndexOf("ko.applyBindings(new HeaderViewModel", StringComparison.Ordinal));
+            < app.IndexOf("layoutShell.start(context)", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -94,14 +94,15 @@ public class MenusFrontendTests
     public void Header_BuildsItsNavigationFromTheMainMenuAndTheFooterOffersAMenuToo()
     {
         var header = Read("viewmodels/header.js");
-        var index = Read("index.html");
+        var template = Read("components/siteheader.html");
+        var footer = Read("components/sitefooter.html");
 
         Assert.Contains("menus.follow(\"main\")", header);
         Assert.Contains("itemsOfKind(\"Link\")", header);
         Assert.Contains("itemsOfKind(\"User\")", header);
-        Assert.Contains("params=\"items: links, variant: 'navbar'\"", index);
-        Assert.Contains("params=\"items: userItems, variant: 'dropdown'\"", index);
-        Assert.Contains("<menu-nav params=\"name: 'footer'\"></menu-nav>", index);
+        Assert.Contains("params=\"items: links, variant: 'navbar'\"", template);
+        Assert.Contains("params=\"items: userItems, variant: 'dropdown'\"", template);
+        Assert.Contains("<menu-nav params=\"name: 'footer'\"></menu-nav>", footer);
     }
 
     [Fact]

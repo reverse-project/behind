@@ -41,6 +41,7 @@ public class VfsTypesTests
     [InlineData(VfsTypes.NewsCategories, VfsTypes.NewsImageUrl)]
     [InlineData(VfsTypes.Articles, VfsTypes.ArticleImageUrl)]
     [InlineData(VfsTypes.ArticleCategories, VfsTypes.ArticleImageUrl)]
+    [InlineData(VfsTypes.Layouts, VfsTypes.LayoutImageUrl)]
     public void ImageUrlOf_IsTheImageUrlOfTheContentOfTheType(string type, string expected)
     {
         Assert.Equal(expected, VfsTypes.ImageUrlOf(type));
@@ -58,6 +59,8 @@ public class VfsTypesTests
     public void SameKindAs_KeepsTheGalleryImagesApartFromTheSiteImages()
     {
         Assert.Equal([VfsTypes.Galleries], VfsTypes.SameKindAs(VfsTypes.Galleries));
+        Assert.Equal([VfsTypes.Layouts], VfsTypes.SameKindAs(VfsTypes.Layouts));
+        Assert.DoesNotContain(VfsTypes.Layouts, VfsTypes.AllSiteImages);
         Assert.DoesNotContain(VfsTypes.Galleries, VfsTypes.SameKindAs(VfsTypes.News));
         Assert.Contains(VfsTypes.ArticleCategories, VfsTypes.SameKindAs(VfsTypes.Sites));
     }

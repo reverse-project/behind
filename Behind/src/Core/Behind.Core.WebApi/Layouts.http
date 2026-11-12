@@ -1,5 +1,21 @@
 @baseUrl = http://localhost:5000
 @token = replace-with-access-token
+@imageId = 18fdcc69-269d-4c1a-9123-56f83cd36d50
+
+### Upload a custom widget picture (Configuration.Manage)
+POST {{baseUrl}}/layouts/images
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=widget-picture
+
+--widget-picture
+Content-Disposition: form-data; name="file"; filename="picture.png"
+Content-Type: image/png
+
+< ./picture.png
+--widget-picture--
+
+### Read an uploaded custom widget picture (404 for an unknown id)
+GET {{baseUrl}}/layouts/images/{{imageId}}
 
 ### Public active layouts
 GET {{baseUrl}}/layouts
@@ -14,17 +30,30 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "schemaVersion": 1,
   "revision": 0,
   "defaultLayout": "default",
   "layouts": [
     {
       "id": "default",
       "name": "Default",
+      "badges": [
+        { "id": "development", "text": "Under development", "position": "top-right", "width": 180 }
+      ],
       "sections": [
+        {
+          "width": "full",
+          "widgets": [{ "id": "header", "type": "core.header", "hamburgerPosition": "right" }]
+        },
         {
           "rows": 1,
           "columns": 1,
-          "widgets": [{ "id": "content", "type": "core.content" }]
+          "cssClass": "page-body",
+          "widgets": [{ "id": "content", "type": "core.content", "cssClass": "page-content", "borderless": true, "noMargin": true, "noPadding": true }]
+        },
+        {
+          "width": "full",
+          "widgets": [{ "id": "footer", "type": "core.footer" }]
         }
       ]
     }

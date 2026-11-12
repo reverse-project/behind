@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmodels/footer", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules", "models/layoutshell"], function ($, migrate, ko, Sammy, HeaderViewModel, FooterViewModel, accounts, branding, session, usersettings, restriction, i18n, modules, layoutShell) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules", "models/layoutshell"], function ($, migrate, ko, Sammy, accounts, branding, session, usersettings, restriction, i18n, modules, layoutShell) {
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
@@ -41,6 +41,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
         "#/manage/layouts": "controllers/layouts",
         "#/manage/menus/:id": "controllers/menuitems",
         "#/manage/route-aliases": "controllers/routealiases",
+        "#/manage/messages": "controllers/messages",
         "#/manage/access-settings": "controllers/accesssettings",
         "#/manage/raw-database": "controllers/rawdatabase",
         "#/manage/content-restrictions": "controllers/contentrestrictions",
@@ -89,6 +90,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
     ko.components.register("carousel-editor", { require: "components/carouseleditor" });
     ko.components.register("site-sections-editor", { require: "components/sectionseditor" });
     ko.components.register("site-widget", { require: "components/sitewidget" });
+    ko.components.register("site-header", { require: "components/siteheader" });
+    ko.components.register("site-footer", { require: "components/sitefooter" });
 
     var container = function () {
         return $("#main-container");
@@ -236,13 +239,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "viewmodels/header", "viewmod
                     return i18n.apply();
                 })
                 .then(function () {
-                    ko.applyBindings(new HeaderViewModel(context), $("#header-container")[0]);
-
-                    var footer = new FooterViewModel();
-
-                    ko.applyBindings(footer, $("#footer-container")[0]);
-                    footer.activate();
-                    return layoutShell.start().then(function () {
+                    return layoutShell.start(context).then(function () {
                         router.run("#/");
                     });
                 });

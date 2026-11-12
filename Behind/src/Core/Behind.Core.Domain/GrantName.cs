@@ -19,10 +19,11 @@ public static class GrantArea
     public const string RouteAlias = nameof(RouteAlias);
     public const string Access = nameof(Access);
     public const string Chat = nameof(Chat);
+    public const string Message = nameof(Message);
 
     public const string RawDatabase = nameof(RawDatabase);
 
-    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download, RouteAlias, Access, Chat];
+    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download, RouteAlias, Access, Chat, Message];
 
     public static IReadOnlyList<string> ActionsOf(string area) =>
         area == Impersonation ? [GrantAction.Manage] : GrantAction.All;

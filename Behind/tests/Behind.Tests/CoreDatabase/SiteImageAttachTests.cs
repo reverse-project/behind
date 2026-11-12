@@ -1,5 +1,6 @@
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
+using Behind.Core.WebApi.Layouts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Tests.CoreDatabase;
@@ -29,6 +30,23 @@ public sealed class SiteImageAttachTests : IDisposable
     private static string Image(Guid id, string url = VfsTypes.SiteImageUrl) => $"""<img src="{url}/{id}">""";
 
     private async Task<bool> ExistsAsync(string path) => (await _bed.ContentStore.Read(path)).Match(() => false, _ => true);
+
+    [Fact]
+    public async Task LayoutImages_MoveUnderTheConfigurationAndRemainReadable()
+    {
+        await using var context = _bed.Write();
+        var files = new VfsCommands(context, _bed.ContentStore);
+        var bytes = new byte[] { 1, 2, 3 };
+        var image = await files.Add(new IVfsCommands.Upload(VfsTypes.Layouts, "widget.png", "image/png", bytes));
+        await files.AttachSiteImagesOf(VfsTypes.Layouts, LayoutConfiguration.ImagesKey,
+            [Image(image, VfsTypes.LayoutImageUrl)]);
+
+        Assert.True(await ExistsAsync(VfsTestPaths.Of(VfsTypes.Layouts, image, LayoutConfiguration.ImagesKey)));
+        Assert.False(await ExistsAsync(VfsTestPaths.Of(VfsTypes.Layouts, image)));
+        var stored = await new Behind.Core.Database.Queries.VfsQueries(context, _bed.ContentStore)
+            .Open(VfsTypes.LayoutImages, image);
+        Assert.True(stored.Match(() => false, content => content.Bytes.SequenceEqual(bytes)));
+    }
 
     [Fact]
     public async Task Create_MovesTheImagesOfTheContentUnderTheSite()

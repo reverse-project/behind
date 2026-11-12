@@ -34,6 +34,9 @@ public static class WidgetRoutesExtensions
                 .WithSummary("List recent public downloads.").Produces<DownloadFilesResponse>();
             widgets.MapGet("/news", WidgetEndpoints.LatestNews)
                 .WithSummary("List live news in newest creation order.").Produces<IReadOnlyList<NewsListItem>>();
+            widgets.MapGet("/messages/{id:guid}", MessageEndpoints.Live)
+                .WithSummary("Read a scheduled message while it is live.")
+                .Produces<MessageWidgetResponse>().Produces(404);
         }
     }
 }

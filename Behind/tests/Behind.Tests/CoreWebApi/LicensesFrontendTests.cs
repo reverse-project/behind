@@ -76,10 +76,8 @@ public class LicensesFrontendTests
     [Fact]
     public void Footer_LinksToTheLicensesPage()
     {
-        var index = Read("index.html");
+        var footer = Read("components/sitefooter.html");
         var app = Read("app.js");
-
-        var footer = index[index.IndexOf("<footer id=\"footer-container\"", StringComparison.Ordinal)..];
 
         Assert.Contains("href=\"#/licenses\"", footer);
         Assert.Contains("\"#/licenses\": \"controllers/licenses\"", app);

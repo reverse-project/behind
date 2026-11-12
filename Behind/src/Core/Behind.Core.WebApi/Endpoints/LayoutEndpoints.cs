@@ -1,5 +1,7 @@
 using Behind.Common.WebApi;
 using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
+using Behind.Core.Domain;
 using Behind.Core.WebApi.Layouts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -35,6 +37,7 @@ public static class LayoutEndpoints
         ILayoutService layouts,
         IOptions<SecurityConfiguration> security,
         ILogger<LayoutService> logger,
+        IVfsCommands files,
         CancellationToken cancellationToken)
     {
         if (security.Value.ReadOnlyConfiguration)
@@ -56,7 +59,19 @@ public static class LayoutEndpoints
             };
         }
 
-        logger.LogInformation("Layout configuration saved at revision {Revision}", result.Configuration!.Revision);
+        await files.AttachSiteImagesOf(
+            VfsTypes.Layouts,
+            LayoutConfiguration.ImagesKey,
+            result.Configuration!.Layouts.SelectMany(layout => layout.Sections)
+                .SelectMany(section => section.Widgets)
+                .Where(widget => widget.Type == "core.custom")
+                .Select(widget => widget.Content),
+            result.Configuration.Layouts.SelectMany(layout => layout.Badges)
+                .Where(badge => badge.Image.Length > 0)
+                .Select(badge => Guid.Parse(badge.Image[(VfsTypes.LayoutImageUrl.Length + 1)..])),
+            cancellationToken);
+
+        logger.LogInformation("Layout configuration saved at revision {Revision}", result.Configuration.Revision);
         return Results.Json(result.Configuration with
         {
             Layouts = result.Configuration.Layouts.Where(layout => deleted || !layout.Deleted).ToArray()

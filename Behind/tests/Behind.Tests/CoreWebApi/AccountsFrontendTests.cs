@@ -31,11 +31,11 @@ public class AccountsFrontendTests
     [Fact]
     public void Header_ShowsTheButtonsOnlyWhileTheyAreEnabled()
     {
-        var index = Read("index.html");
+        var template = Read("components/siteheader.html");
         var header = Read("viewmodels/header.js");
 
-        Assert.Contains("visible: !isSignedIn() && canSignIn()\"><a class=\"nav-link\" href=\"#/sign-in\"", index);
-        Assert.Contains("visible: !isSignedIn() && canSignUp()\"><a class=\"nav-link\" href=\"#/sign-up\"", index);
+        Assert.Contains("visible: !isSignedIn() && canSignIn()\"><a class=\"nav-link\" href=\"#/sign-in\"", template);
+        Assert.Contains("visible: !isSignedIn() && canSignUp()\"><a class=\"nav-link\" href=\"#/sign-up\"", template);
         Assert.Contains("self.canSignIn = accounts.signIn", header);
         Assert.Contains("self.canSignUp = accounts.signUp", header);
     }

@@ -147,11 +147,11 @@ public class RpDotHuSiteTests
     [InlineData("--bs-primary: #14347f")]
     [InlineData("--bs-primary-rgb: 20, 52, 127")]
     [InlineData("--bs-secondary: #ffffff")]
-    [InlineData("#header-container .rp-menu")]
+    [InlineData(":is(#header-container, .behind-page-header) .rp-menu")]
     [InlineData("linear-gradient(180deg, #ffffff")]
     [InlineData("--bs-navbar-color: var(--rp-blue)")]
-    [InlineData("#footer-container .rp-contact")]
-    [InlineData("#footer-container .rp-bottom")]
+    [InlineData(":is(#footer-container, .behind-page-footer) .rp-contact")]
+    [InlineData(":is(#footer-container, .behind-page-footer) .rp-bottom")]
     [InlineData(".behind-carousel")]
     [InlineData(".behind-section-accented")]
     [InlineData(".ql-snow .ql-tooltip .ql-link-target input")]
@@ -216,7 +216,7 @@ public class RpDotHuSiteTests
     {
         var css = Read("wwwroot/css/rpdothu.css");
 
-        Assert.Contains("#header-container .rp-menu .navbar-toggler-icon {", css);
+        Assert.Contains(":is(#header-container, .behind-page-header) .rp-menu .navbar-toggler-icon {", css);
         Assert.Matches(@"\.navbar-toggler-icon \{\s*--bs-navbar-toggler-icon-bg: url\(", css);
     }
 

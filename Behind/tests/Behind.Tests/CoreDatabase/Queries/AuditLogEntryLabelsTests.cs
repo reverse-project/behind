@@ -421,6 +421,25 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesMessagesAfterTheirNewestNameEvenWhenDeleted()
+    {
+        using var bed = new NewsTestBed();
+        var messageId = await bed.CreateMessageAsync(MessageTestBedExtensions.MessageDraft("maintenance"));
+        await bed.WithMessageCommandsAsync(commands => commands.Update(
+            messageId,
+            MessageTestBedExtensions.MessageDraft("outage")));
+        var goneId = await bed.CreateMessageAsync(MessageTestBedExtensions.MessageDraft("gone"));
+        await bed.WithMessageCommandsAsync(commands => commands.Delete(goneId));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([messageId, goneId]);
+
+        Assert.Equal("outage", labels.Label(messageId.ToString()));
+        Assert.Equal("gone", labels.Label(goneId.ToString()));
+        Assert.Equal("outage: 1", labels.LabelKey($"{messageId}:1"));
+    }
+
+    [Fact]
     public async Task ResolveLabels_NamesTheAccessSettingsByTheirKind()
     {
         using var bed = new NewsTestBed();

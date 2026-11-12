@@ -11,7 +11,8 @@ define(["jquery", "bootstrap", "text!components/menuitems.html", "bindings/menuh
     var variants = {
         nav: { list: "nav", item: "nav-item", link: "nav-link link-secondary" },
         navbar: { list: "navbar-nav mb-2 mb-md-0", item: "nav-item", link: "nav-link" },
-        dropdown: { list: "list-unstyled mb-0", item: "", link: "dropdown-item" }
+        dropdown: { list: "list-unstyled mb-0", item: "", link: "dropdown-item" },
+        vertical: { list: "list-unstyled mb-0 menu-vertical", item: "", link: "dropdown-item text-wrap" }
     };
 
     return {
@@ -22,6 +23,7 @@ define(["jquery", "bootstrap", "text!components/menuitems.html", "bindings/menuh
                 return {
                     items: params.items,
                     isDropdown: params.variant === "dropdown",
+                    isVertical: params.variant === "vertical",
                     hover: params.hover === true,
                     listClass: variant.list,
                     itemClass: variant.item,

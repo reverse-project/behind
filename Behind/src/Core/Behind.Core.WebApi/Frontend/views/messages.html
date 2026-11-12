@@ -1,0 +1,79 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'messages.title'">Messages</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'messages.back'">Back to administration</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'messages.signInToManage'">to manage messages.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'messages.denied'">You need message access to manage messages.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
+    <div data-bind="visible: canRead">
+        <form class="card card-body mb-4" data-bind="visible: canWrite, submit: save">
+            <h2 class="h5" data-bind="text: heading"></h2>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="message-name" data-bind="t: 'messages.name'">Name</label>
+                    <input id="message-name" class="form-control" type="text" maxlength="200" data-bind="value: name, valueUpdate: 'input'">
+                    <div class="form-text" data-bind="t: 'messages.nameHelp'">The name shown in the layout editor. Visitors never see it.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="message-level" data-bind="t: 'messages.levelLabel'">Level</label>
+                    <select id="message-level" class="form-select" data-bind="options: levels, optionsText: 'text', optionsValue: 'value', value: level"></select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="message-title" data-bind="t: 'messages.messageTitle'">Title</label>
+                <input id="message-title" class="form-control" type="text" maxlength="200" data-bind="value: title, valueUpdate: 'input'">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" data-bind="t: 'messages.content'">Content</label>
+                <div data-bind="richEditor: { value: content, enabled: canWrite }"></div>
+                <div class="form-text" data-bind="t: 'messages.contentHelp'">Scripts and unsafe HTML are removed when saving.</div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="message-starts-at" data-bind="t: 'messages.startsAt'">Visible from</label>
+                    <input id="message-starts-at" class="form-control" type="datetime-local" data-bind="value: startsAt">
+                    <div class="form-text" data-bind="t: 'messages.startsAtHelp'">Leave empty to show the message right away.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="message-ends-at" data-bind="t: 'messages.endsAt'">Visible until</label>
+                    <input id="message-ends-at" class="form-control" type="datetime-local" data-bind="value: endsAt">
+                    <div class="form-text" data-bind="t: 'messages.endsAtHelp'">Leave empty to show the message until it is deleted.</div>
+                </div>
+            </div>
+            <div class="alert alert-warning" role="alert" data-bind="visible: !isScheduleValid(), t: 'messages.scheduleInvalid'">The end must be later than the start.</div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isEditing, click: reset, t: 'common.cancel'">Cancel</button>
+            </div>
+        </form>
+        <div data-bind="with: list">
+            <form class="input-group mb-3" data-bind="submit: find">
+                <input class="form-control" type="search" maxlength="200" placeholder="Search by name or title" aria-label="Search messages" data-bind="value: search, tAttr: { placeholder: 'messages.search.placeholder', 'aria-label': 'messages.search.label' }">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
+            </form>
+            <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+                <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'messages.showDeleted'">Show deleted messages</span></label>
+            </div>
+            <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
+            <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'messages.empty'">No messages found.</p>
+            <ul class="list-group mb-3" data-bind="foreach: items">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <div class="me-auto">
+                        <strong class="text-break" data-bind="text: name"></strong>
+                        <span class="text-body-secondary mx-2">&mdash;</span>
+                        <span class="text-break" data-bind="text: title"></span>
+                        <div class="small text-body-secondary" data-bind="visible: isScheduled"><span data-bind="t: 'messages.from'">From</span> <span data-bind="text: startsAt || '\u2013'"></span> <span data-bind="t: 'messages.until'">until</span> <span data-bind="text: endsAt || '\u2013'"></span></div>
+                    </div>
+                    <span class="badge" data-bind="css: badge, text: levelText"></span>
+                    <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete, t: 'common.deletePermanently'">Delete permanently</button>
+                </li>
+            </ul>
+            <pager class="d-block" params="pager: pager"></pager>
+        </div>
+    </div>
+</section>

@@ -964,6 +964,26 @@ public static class WebApiExtensions
             application.MapGet("/profile/details", PublicProfileEndpoints.GetDetails)
                 .WithSummary("Read your private birthday and public email visibility preference.")
                 .Produces<UserProfiles.Details>().Produces(401);
+            application.MapGet("/profile/emails", ProfileEmailEndpoints.Get)
+                .WithSummary("List your email addresses and their confirmation status.")
+                .Produces<ProfileEmailEndpoints.AddressesResponse>().Produces(401).Produces(403);
+            application.MapPost("/profile/emails", ProfileEmailEndpoints.Save)
+                .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEmailEndpoints.AddressRequest>>()
+                .RequireRateLimiting(ConfirmationEmailExtensions.ResendRateLimitPolicy)
+                .WithSummary("Add an email address and request confirmation when required.")
+                .Produces<ProfileEmailEndpoints.SavedAddress>(201).Produces(400).Produces(401).Produces(403).Produces(409).Produces(429);
+            application.MapPut("/profile/emails/{id:guid}", ProfileEmailEndpoints.Save)
+                .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEmailEndpoints.AddressRequest>>()
+                .RequireRateLimiting(ConfirmationEmailExtensions.ResendRateLimitPolicy)
+                .WithSummary("Change an email address, resetting its confirmation when required.")
+                .Produces<ProfileEmailEndpoints.SavedAddress>().Produces(400).Produces(401).Produces(403).Produces(404).Produces(409).Produces(429);
+            application.MapDelete("/profile/emails/{id:guid}", ProfileEmailEndpoints.Remove)
+                .WithSummary("Remove an email address, retaining at least one address.")
+                .Produces(204).Produces(401).Produces(403).Produces(404).Produces(409);
+            application.MapPost("/profile/emails/{id:guid}/confirmation", ProfileEmailEndpoints.Resend)
+                .RequireRateLimiting(ConfirmationEmailExtensions.ResendRateLimitPolicy)
+                .WithSummary("Resend confirmation for one of your unconfirmed email addresses.")
+                .Produces(204).Produces(401).Produces(403).Produces(404).Produces(429).Produces(503);
             application.MapPut("/profile/details", PublicProfileEndpoints.SetDetails)
                 .WithSummary("Replace your optional private birthday and public email visibility preference.")
                 .Produces(204).Produces(400).Produces(401);

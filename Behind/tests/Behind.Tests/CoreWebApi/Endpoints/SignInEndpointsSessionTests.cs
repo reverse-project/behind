@@ -17,6 +17,29 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public class SignInEndpointsSessionTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SignInPassword_UsesConfirmationOfTheRequestedAddress(bool confirmed)
+    {
+        var user = NewUser("secret", !confirmed);
+        user.Emails = user.Emails.Append(new Email("second@test.com", confirmed ? Now : null)).ToArray();
+        var commands = Substitute.For<ISessionCommands>();
+        var result = await SignInEndpoints.SignInPassword(UserManagerFor(user), Security(Some(Jwt)), commands,
+            NoBans(), NoTwoFactor(), new FixedTimeProvider(Now), NewHttpContext(),
+            NullLogger<SignInEndpoints>.Instance, new("SECOND@test.com", "secret"));
+        if (confirmed)
+        {
+            Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
+            await commands.Received(1).CreateForUserId(user.Id, Arg.Any<ValidSession>(), Arg.Any<CancellationToken>());
+        }
+        else
+        {
+            Assert.Equal(403, Assert.IsType<JsonHttpResult<SignInEndpoints.EmailNotConfirmedResponse>>(result).StatusCode);
+            await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+        }
+    }
+
     private static readonly JwtSettings Jwt = new("issuer", "audience", new string('k', 64));
     private static readonly DateTimeOffset Now = new(2026, 11, 1, 9, 0, 0, TimeSpan.Zero);
 

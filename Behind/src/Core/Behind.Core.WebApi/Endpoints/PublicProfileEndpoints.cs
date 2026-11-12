@@ -15,13 +15,23 @@ public sealed class PublicProfileEndpoints
 
     public sealed record DetailsRequest(DateOnly? Birthday, bool? HideEmail);
 
+    public sealed record ModerationDetails(
+        string DisplayName, DateOnly? Birthday, bool HideEmail, DateTimeOffset? UpdatedAt,
+        IReadOnlyList<IEmailQueries.Address> Emails,
+        IReadOnlyList<UserProfiles.BanRecord> Bans, IReadOnlyList<string> EffectiveGrants,
+        IReadOnlyList<string> DirectGrants, IReadOnlyList<string> DirectRestrictions,
+        bool TotpEnabled, int PasskeyCount, int RecoveryCodesRemaining);
+
     public sealed record ProfileResponse(
-        Guid Id, string DisplayName, Guid? PictureId, string? Email, BanInfo? Ban, ProfilePermissions Permissions);
+        Guid Id, string DisplayName, Guid? PictureId, string? Email, DateTimeOffset? RegisteredAt,
+        DateTimeOffset? LastLoginAt, IReadOnlyList<string> Roles, BanInfo? Ban, ProfilePermissions Permissions,
+        ModerationDetails? Moderation);
 
     [IgnoreETag]
     public static async Task<IResult> Get(
         Guid id, HttpContext http, UserProfiles profiles, UserManagementGate gate,
-        IUserManagementQueries users, IAccessQueries access, TimeProvider timeProvider)
+        IUserManagementQueries users, IAccessQueries access, IEmailQueries emails, ITwoFactorQueries twoFactor,
+        TimeProvider timeProvider)
     {
         http.Response.Headers.CacheControl = "no-store";
         var profile = await profiles.GetPublic(id, http.RequestAborted);
@@ -34,6 +44,7 @@ public sealed class PublicProfileEndpoints
         var canModerate = false;
         var canImpersonate = false;
         BanInfo? ban = null;
+        ModerationDetails? moderation = null;
         if (http.User.Identity?.IsAuthenticated == true)
         {
             var actor = await gate.FindActor(http);
@@ -54,15 +65,28 @@ public sealed class PublicProfileEndpoints
                         async user =>
                         {
                             canModerate = canManage && current.CanModerate(user);
+                            var targetAccess = await access.GetUserAccess(id, http.RequestAborted);
                             if (canManage)
                             {
                                 ban = user.Ban.Match<BanInfo?>(() => null,
                                     active => new BanInfo(active.Reason, active.Expires.Match<DateTimeOffset?>(() => null, value => value)));
+                                var details = await profiles.GetManagementProfile(id, http.RequestAborted);
+                                if (details is not null)
+                                {
+                                    var status = await twoFactor.GetStatus(id, http.RequestAborted);
+                                    moderation = new ModerationDetails(details.DisplayName, details.Birthday, details.HideEmail,
+                                        details.UpdatedAt,
+                                        await emails.Addresses(id, http.RequestAborted),
+                                        await profiles.GetBans(id, timeProvider.GetUtcNow(), http.RequestAborted),
+                                        targetAccess.CalculatedGrants.Select(grant => grant.Name).ToList(),
+                                        targetAccess.Grants.Select(grant => grant.Name).Order().ToList(),
+                                        targetAccess.Restrictions.Select(restriction => restriction.Name).Order().ToList(),
+                                        status.TotpEnabled, status.Passkeys.Count, status.RecoveryCodesRemaining);
+                                }
                             }
 
                             if (canActAs && current.CanImpersonate(user))
                             {
-                                var targetAccess = await access.GetUserAccess(id, http.RequestAborted);
                                 canImpersonate = current.CanGrant(targetAccess.CalculatedGrants);
                             }
                         });
@@ -70,7 +94,8 @@ public sealed class PublicProfileEndpoints
         }
 
         return Results.Json(new ProfileResponse(profile.Id, profile.DisplayName, profile.PictureId,
-            profile.PrimaryEmail, ban, new ProfilePermissions(canModerate, canImpersonate)));
+            profile.PrimaryEmail, profile.RegisteredAt, profile.LastLoginAt, profile.Roles, ban,
+            new ProfilePermissions(canModerate, canImpersonate), moderation));
     }
 
     [Authorize]

@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/user", "models/about", "models/usersettings", "models/i18n", "models/profilepicture", "models/profiles"], function (ko, auth, session, user, about, usersettings, i18n, profilepicture, profiles) {
+define(["ko", "models/auth", "models/session", "models/user", "models/about", "models/usersettings", "models/i18n", "models/profilepicture", "models/profiles", "models/profileemails"], function (ko, auth, session, user, about, usersettings, i18n, profilepicture, profiles, profileemails) {
     return function ProfileViewModel() {
         var self = this;
 
@@ -14,6 +14,13 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
             return user.href(self.userId());
         });
         self.emails = ko.observableArray([]);
+        self.emailsLoaded = ko.observable(false);
+        self.emailConfirmationRequired = ko.observable(false);
+        self.newEmail = ko.observable("");
+        self.impersonating = session.isImpersonating;
+        self.canManageEmails = ko.pureComputed(function () {
+            return !self.busy() && self.emailsLoaded() && !self.impersonating();
+        });
         self.locales = ko.observableArray([]);
         self.locale = ko.observable("");
         var savedLocale = "";
@@ -67,11 +74,103 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
                 if (result.ok) {
                     self.displayName(result.data.user.displayName);
                     self.userId(result.data.user.id);
-                    self.emails(result.data.user.emails);
                 }
 
                 return result;
             });
+        };
+
+        self.refreshEmails = function () {
+            return profileemails.load().then(function (result) {
+                if (!result.ok) {
+                    self.message(result.message);
+                    return result;
+                }
+
+                self.emails(result.data.items.map(function (item) {
+                    return {
+                        id: item.id,
+                        value: item.value,
+                        draft: ko.observable(item.value),
+                        confirmed: !!item.confirmedAt
+                    };
+                }));
+                self.emailConfirmationRequired(result.data.confirmationRequired);
+                self.emailsLoaded(true);
+                return result;
+            }).catch(function (error) {
+                self.message(error.message);
+                return { ok: false, message: error.message };
+            });
+        };
+
+        self.reloadEmails = function () {
+            if (self.busy() || self.impersonating()) {
+                return Promise.resolve();
+            }
+
+            self.busy(true);
+            return self.refreshEmails().finally(function () {
+                self.busy(false);
+            });
+        };
+
+        var emailAction = function (action, message) {
+            if (!self.canManageEmails()) {
+                return Promise.resolve();
+            }
+
+            self.busy(true);
+            return action().then(function (result) {
+                if (!result.ok) {
+                    self.message(result.message);
+                    return;
+                }
+
+                var key = result.data && result.data.confirmationRequired
+                    ? (result.data.emailSent ? "profile.emailConfirmationSent" : "profile.emailSavedSendFailed")
+                    : message;
+                return self.refreshEmails().then(function (refreshed) {
+                    if (refreshed.ok) {
+                        self.message(i18n.t(key));
+                    }
+                });
+            }).catch(function (error) {
+                self.message(error.message);
+            }).finally(function () {
+                self.busy(false);
+            });
+        };
+
+        self.addEmail = function () {
+            return emailAction(function () {
+                return profileemails.save(null, self.newEmail()).then(function (result) {
+                    if (result.ok) {
+                        self.newEmail("");
+                    }
+
+                    return result;
+                });
+            }, "profile.emailSaved");
+        };
+        self.saveEmail = function (item) {
+            return emailAction(function () {
+                return profileemails.save(item.id, item.draft());
+            }, "profile.emailSaved");
+        };
+        self.removeEmail = function (item) {
+            if (!window.confirm(i18n.t("profile.emailRemoveConfirm", [item.value]))) {
+                return Promise.resolve();
+            }
+
+            return emailAction(function () {
+                return profileemails.remove(item.id);
+            }, "profile.emailRemoved");
+        };
+        self.resendEmail = function (item) {
+            return emailAction(function () {
+                return profileemails.resend(item.id);
+            }, "profile.emailConfirmationSent");
         };
 
         self.submit = function () {
@@ -181,6 +280,7 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
 
                     return Promise.all([
                         loadLocales(),
+                        self.impersonating() ? Promise.resolve() : self.refreshEmails(),
                         profiles.details().then(function (details) {
                             if (!details.ok) {
                                 self.message(details.message);

@@ -36,9 +36,17 @@ public sealed class PublicProfileFrontendTests
         Assert.Contains("auth.impersonateUser(id)", model);
         Assert.Contains("permissions.canModerate", view);
         Assert.Contains("permissions.canImpersonate", view);
+        Assert.Contains("<table", view);
+        Assert.Contains("registeredAt", view);
+        Assert.Contains("lastLoginAt", view);
+        Assert.Contains("foreach: roles", view);
         Assert.Contains("window.confirm", model);
         Assert.DoesNotContain("html:", view);
-        Assert.DoesNotContain("birthday", view);
+        Assert.Contains("with: moderation", view);
+        Assert.Contains("foreach: emails", view);
+        Assert.Contains("confirmedAt", view);
+        Assert.Contains("foreach: bans", view);
+        Assert.Contains("birthday", view);
     }
 
     [Fact]

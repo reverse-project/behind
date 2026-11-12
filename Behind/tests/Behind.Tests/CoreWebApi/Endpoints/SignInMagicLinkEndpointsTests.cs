@@ -17,6 +17,25 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public class SignInMagicLinkEndpointsTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RequestMagicLink_UsesConfirmationOfTheRequestedAddress(bool confirmed)
+    {
+        var user = NewUser();
+        user.Emails = [new Email("primary@test.com", confirmed ? null : Now),
+            new Email("user@test.com", confirmed ? Now : null)];
+        Assert.IsType<NoContent>(await RequestLink(user, Some(Settings())));
+        if (confirmed)
+        {
+            await _magicLinks.Received(1).Issue(user.Id, Arg.Any<MagicLink>(), Arg.Any<CancellationToken>());
+        }
+        else
+        {
+            await _magicLinks.DidNotReceiveWithAnyArgs().Issue(default, default!, default);
+        }
+    }
+
     private static readonly DateTimeOffset Now = new(2026, 1, 10, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan Overlap = TimeSpan.FromDays(1);
     private static readonly TimeSpan Cooldown = TimeSpan.FromMinutes(1);

@@ -75,6 +75,12 @@ public sealed class SignInEndpoints
                     return Results.Unauthorized();
                 }
 
+                if (securityConfiguration.Value.EmailConfirmation && !ConfirmedAddress(user, request.Email))
+                {
+                    logger.LogWarning("Sign-in refused for user {UserId}: the requested email is not confirmed", () => [user.Id]);
+                    return Results.Json(new EmailNotConfirmedResponse(), statusCode: StatusCodes.Status403Forbidden);
+                }
+
                 return await StartSession(
                     user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
                     wallOfShameQueries, timeProvider.GetUtcNow(), httpContext, logger, Some(twoFactorGate));
@@ -105,6 +111,10 @@ public sealed class SignInEndpoints
                     if (user is null)
                     {
                         logger.LogDebug("Magic link requested for an unknown email, no link issued");
+                    }
+                    else if (securityConfiguration.Value.EmailConfirmation && !ConfirmedAddress(user, request.Email))
+                    {
+                        logger.LogWarning("Magic link for user {UserId} not issued: the requested email is not confirmed", () => [user.Id]);
                     }
                     else if (await magicLinkQueries.HasIssuedSince(
                                  user.Id,
@@ -203,6 +213,10 @@ public sealed class SignInEndpoints
                             redemption.Match(() => (MagicLinkFunction?)null, r => r.Function));
                 }));
     }
+
+    private static bool ConfirmedAddress(ApplicationUser user, string value) =>
+        user.Emails.Any(email => string.Equals(email.Value, value.Trim(), StringComparison.OrdinalIgnoreCase)
+            && email.ConfirmedAt is not null);
 
     internal static Task<IResult> NotConfigured(ILogger logger, string operation)
     {

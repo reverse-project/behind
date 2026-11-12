@@ -15,6 +15,22 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 public class SignUpEndpointsTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 1, 10, 0, 0, TimeSpan.Zero);
+    private static readonly Guid EmailId = Guid.NewGuid();
+
+    private static IEmailQueries Emails(bool confirmed = false)
+    {
+        var queries = Substitute.For<IEmailQueries>();
+        queries.Addresses(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new IEmailQueries.Address[] { new(EmailId, "ada@test.com", confirmed ? Now : null) });
+        return queries;
+    }
+
+    private static IEmailCommands ConfirmationCommands()
+    {
+        var commands = Substitute.For<IEmailCommands>();
+        commands.ConfirmAddress(Arg.Any<Guid>(), EmailId, "ada@test.com", Arg.Any<CancellationToken>()).Returns(true);
+        return commands;
+    }
 
     private readonly IEmailSender<ApplicationUser> _emailSender = Substitute.For<IEmailSender<ApplicationUser>>();
 
@@ -55,6 +71,7 @@ public class SignUpEndpointsTests
             Security(emailConfirmation),
             AccessSettingsOf(moderated),
             _emailSender,
+            Emails(),
             FrontendConfigurationOf(frontendUrl),
             new FixedTimeProvider(Now),
             NewHttpContext(),
@@ -67,7 +84,8 @@ public class SignUpEndpointsTests
             Substitute.For<IUserStore<ApplicationUser>>(),
             null, null, null, null, null, null, null, null);
         manager.FindByEmailAsync(Arg.Any<string>()).Returns((ApplicationUser?)null);
-        manager.GenerateEmailConfirmationTokenAsync(Arg.Any<ApplicationUser>()).Returns("the token");
+        manager.Options = new IdentityOptions();
+        manager.GenerateUserTokenAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>()).Returns("the token");
         manager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
             .Returns(call =>
             {
@@ -155,7 +173,7 @@ public class SignUpEndpointsTests
         await _emailSender.Received(1).SendConfirmationLinkAsync(
             created,
             "ada@test.com",
-            $"https://app.test/#/sign/up/confirm?userId={created.Id}&token=the%20token");
+            $"https://app.test/#/sign/up/confirm?userId={created.Id}&token=the%20token&emailId={EmailId}");
     }
 
     [Fact]
@@ -231,7 +249,9 @@ public class SignUpEndpointsTests
             Substitute.For<IUserStore<ApplicationUser>>(),
             null, null, null, null, null, null, null, null);
         manager.FindByIdAsync(Arg.Any<string>()).Returns(user);
-        manager.ConfirmEmailAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>()).Returns(result);
+        manager.Options = new IdentityOptions();
+        manager.VerifyUserTokenAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(result.Succeeded);
         return manager;
     }
 
@@ -244,11 +264,14 @@ public class SignUpEndpointsTests
 
         var result = await SignUpEndpoints.ConfirmEmail(
             manager,
+            Emails(),
+            ConfirmationCommands(),
             logger,
-            new SignUpEndpoints.ConfirmEmailRequest(user.Id, "token"));
+            new SignUpEndpoints.ConfirmEmailRequest(user.Id, "token", EmailId));
 
         Assert.IsType<NoContent>(result);
-        await manager.Received(1).ConfirmEmailAsync(user, "token");
+        await manager.Received(1).VerifyUserTokenAsync(user, manager.Options.Tokens.EmailConfirmationTokenProvider,
+            $"ConfirmEmail:{EmailId}:ada@test.com", "token");
         Assert.Equal(user.Id, logger.Single(LogLevel.Information).State["UserId"]);
     }
 
@@ -259,6 +282,8 @@ public class SignUpEndpointsTests
 
         var result = await SignUpEndpoints.ConfirmEmail(
             ManagerConfirming(null, IdentityResult.Success),
+            Emails(),
+            ConfirmationCommands(),
             logger,
             new SignUpEndpoints.ConfirmEmailRequest(Guid.NewGuid(), "token"));
 
@@ -267,7 +292,7 @@ public class SignUpEndpointsTests
     }
 
     [Fact]
-    public async Task ConfirmEmail_InvalidToken_ReturnsBadRequestAndLogsErrorCodes()
+    public async Task ConfirmEmail_InvalidToken_ReturnsBadRequestAndLogsRejection()
     {
         var user = new ApplicationUser { Emails = [new Email("ada@test.com")] };
         var manager = ManagerConfirming(user, IdentityResult.Failed(new IdentityError { Code = "InvalidToken" }));
@@ -275,11 +300,39 @@ public class SignUpEndpointsTests
 
         var result = await SignUpEndpoints.ConfirmEmail(
             manager,
+            Emails(),
+            ConfirmationCommands(),
             logger,
-            new SignUpEndpoints.ConfirmEmailRequest(user.Id, "bad"));
+            new SignUpEndpoints.ConfirmEmailRequest(user.Id, "bad", EmailId));
 
         Assert.IsType<BadRequest>(result);
-        Assert.Equal(["InvalidToken"], (string[])logger.Single(LogLevel.Warning).State["ErrorCodes"]!);
+        Assert.Contains("address or token is invalid", logger.Single(LogLevel.Warning).Message);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ConfirmEmail_MissingOrRemovedAddress_NeverConfirmsAnotherAddress(bool legacy)
+    {
+        var user = new ApplicationUser();
+        var manager = ManagerConfirming(user, IdentityResult.Success);
+        var commands = ConfirmationCommands();
+        var result = await SignUpEndpoints.ConfirmEmail(manager, Emails(), commands,
+            NullLogger<SignUpEndpoints>.Instance, new(user.Id, "token", legacy ? Guid.Empty : Guid.NewGuid()));
+        Assert.IsType<BadRequest>(result);
+        await manager.DidNotReceiveWithAnyArgs().VerifyUserTokenAsync(default!, default!, default!, default!);
+        await commands.DidNotReceiveWithAnyArgs().ConfirmAddress(default, default, default!, default);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_AddressChangedAfterTokenValidation_DoesNotReportSuccess()
+    {
+        var user = new ApplicationUser();
+        var commands = Substitute.For<IEmailCommands>();
+        var result = await SignUpEndpoints.ConfirmEmail(ManagerConfirming(user, IdentityResult.Success),
+            Emails(), commands, NullLogger<SignUpEndpoints>.Instance, new(user.Id, "token", EmailId));
+        Assert.IsType<BadRequest>(result);
+        await commands.Received(1).ConfirmAddress(user.Id, EmailId, "ada@test.com", Arg.Any<CancellationToken>());
     }
 
     private static UserManager<ApplicationUser> ManagerFinding(ApplicationUser? user, bool confirmed = false)
@@ -289,18 +342,21 @@ public class SignUpEndpointsTests
             null, null, null, null, null, null, null, null);
         manager.FindByEmailAsync(Arg.Any<string>()).Returns(user);
         manager.IsEmailConfirmedAsync(Arg.Any<ApplicationUser>()).Returns(confirmed);
-        manager.GenerateEmailConfirmationTokenAsync(Arg.Any<ApplicationUser>()).Returns("the token");
+        manager.Options = new IdentityOptions();
+        manager.GenerateUserTokenAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>()).Returns("the token");
         return manager;
     }
 
     private Task<IResult> Resend(
         UserManager<ApplicationUser> manager,
         bool emailConfirmation = true,
-        ILogger<SignUpEndpoints>? logger = null) =>
+        ILogger<SignUpEndpoints>? logger = null,
+        bool confirmed = false) =>
         SignUpEndpoints.ResendConfirmation(
             manager,
             Security(emailConfirmation),
             _emailSender,
+            Emails(confirmed),
             FrontendConfigurationOf("https://app.test/"),
             NewHttpContext(),
             logger ?? NullLogger<SignUpEndpoints>.Instance,
@@ -317,7 +373,7 @@ public class SignUpEndpointsTests
         await _emailSender.Received(1).SendConfirmationLinkAsync(
             user,
             "ada@test.com",
-            $"https://app.test/#/sign/up/confirm?userId={user.Id}&token=the%20token");
+            $"https://app.test/#/sign/up/confirm?userId={user.Id}&token=the%20token&emailId={EmailId}");
     }
 
     [Fact]
@@ -334,7 +390,7 @@ public class SignUpEndpointsTests
     {
         var user = new ApplicationUser { Emails = [new Email("ada@test.com", Now)] };
 
-        var result = await Resend(ManagerFinding(user, confirmed: true));
+        var result = await Resend(ManagerFinding(user, confirmed: true), confirmed: true);
 
         Assert.IsType<NoContent>(result);
         await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);

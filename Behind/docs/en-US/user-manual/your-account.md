@@ -17,9 +17,19 @@ Your birthday is optional and private. It is used to filter content by minimum a
 
 **Hide my email on my public profile** is enabled by default. Clear it only if you want your primary email address to be public. This does not change authorized account-management access.
 
+### Email addresses
+
+Under **Profile > Email addresses**, add an address or edit an existing one and choose its **Save** button. Changes save independently of your other profile details. You can remove addresses, but at least one must remain. Email changes are unavailable while impersonating another user.
+
+When `Security.EmailConfirmation` is enabled (the default), each new or changed address becomes unconfirmed. Follow the confirmation link sent to that exact address before using it to sign in. Other confirmed addresses remain usable. Use **Resend confirmation** if needed, then **Refresh** to update the status. When confirmation is disabled, new and changed addresses are confirmed immediately.
+
+Any confirmed address works with your existing password or email sign-in links. Confirmation links cannot confirm a different or replaced address. Older links issued before per-address confirmation was introduced are invalid; request a fresh link from the sign-in page or Profile.
+
 ### Public profiles and anonymous comments
 
-Choose **View public profile**, or follow a user's name from content, to see their public name, picture and any email address they chose to share. Administrators with the required permissions can ban, unban or impersonate the user from this page; impersonation follows the existing permission checks and audit rules.
+Choose **View public profile**, or follow a user's name from content, to see their public name, picture, roles, registration date, last login and any email address they chose to share. Administrators and moderators with the required permissions can ban or unban the user; authorized administrators can also impersonate them from this page. These actions follow the existing permission checks and audit rules.
+
+Visitors with `User.Manage` additionally see the private birthday and email privacy setting, all current addresses with their confirmation times, effective and direct access, two-factor status counts, and retained bans including their reason, issuer, dates and status. Removed or expired bans are shown when their records remain available; permanently deleted records cannot be recovered here. Passwords, authentication secrets and recovery codes are never displayed.
 
 When signed in, choose anonymous posting when adding a comment or forum message. Other readers do not see your profile or picture on that message. Authorized administrators and moderators can still identify the real author; anonymous posting is not anonymous to site staff.
 

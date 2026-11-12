@@ -8,6 +8,8 @@ define(["ko", "models/profiles", "models/auth", "models/i18n"], function (ko, pr
         self.profile = ko.observable(null);
         self.banning = ko.observable(false);
         self.banMessage = ko.observable("");
+        self.t = i18n.t;
+        self.dateTime = i18n.dateTime;
 
         self.refresh = function () {
             self.busy(true);

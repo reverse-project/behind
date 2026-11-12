@@ -9,7 +9,7 @@ define(["ko", "models/auth", "models/i18n"], function (ko, auth, i18n) {
         self.activate = function () {
             context.scrub("#/sign/up/confirm");
 
-            return auth.confirmEmail(context.params.userId, context.params.token).then(function (result) {
+            return auth.confirmEmail(context.params.userId, context.params.token, context.params.emailId).then(function (result) {
                 self.message(result.message);
                 self.confirmed(result.ok);
                 self.failed(!result.ok);

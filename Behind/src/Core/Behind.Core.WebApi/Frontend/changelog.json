@@ -3,6 +3,8 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "added", "text": "Public profiles show account managers private account details, each email's confirmation status, access and two-factor summaries, and retained ban history. Other visitors continue to see only public information." },
+      { "type": "added", "text": "Profile supports adding, editing and removing multiple email addresses with per-address confirmation status and resend controls. New and changed addresses require confirmation when enabled; any confirmed address can sign in. Confirmation links are bound to an exact address; older unbound links must be resent." },
       { "type": "changed", "text": "The Profile page combines display name, birthday and email privacy into one save action. Language changes are saved immediately, while password changes have a dedicated action." },
       { "type": "added", "text": "Content restrictions include a searchable, paged item-ID browser showing titles, filenames or other available labels, with the UUID as fallback. Selecting an item fills its ID, and existing rules display readable item labels." },
       { "type": "added", "text": "Global age restrictions are configurable under Backend.ContentRestrictions.Enabled and disabled by default. When enabled, per-item minimum-age rules filter content and related media across installed modules; viewers without a birthday cannot access restricted content. Rules support versioned management, deletion and developer restoration." },

@@ -17,9 +17,19 @@ A születési dátum nem kötelező és nem nyilvános. A tartalmak korhatár sz
 
 Az **E-mail-címem elrejtése a nyilvános profilomon** alapértelmezés szerint be van kapcsolva. Csak akkor kapcsolja ki, ha nyilvánossá szeretné tenni elsődleges e-mail-címét. Ez a jogosult fiókkezelők hozzáférését nem módosítja.
 
+### E-mail-címek
+
+A **Profil > E-mail-címek** részen adjon hozzá új címet, vagy módosítson egy meglévőt, és válassza az adott cím **Mentés** gombját. Ezek a módosítások a profil többi adatától függetlenül mentődnek. Címeket eltávolíthat, de legalább egynek maradnia kell. Másik felhasználó megszemélyesítése közben az e-mail-címek nem módosíthatók.
+
+Ha a `Security.EmailConfirmation` engedélyezett (ez az alapértelmezés), minden új vagy módosított cím megerősítetlen lesz. Bejelentkezés előtt nyissa meg a pontosan erre a címre küldött megerősítő hivatkozást. A többi megerősített cím továbbra is használható. Szükség esetén válassza a **Megerősítés újraküldése**, majd az állapot frissítéséhez a **Frissítés** gombot. Kikapcsolt megerősítésnél az új és módosított címek azonnal megerősítettek.
+
+Bármely megerősített címmel használhatja meglévő jelszavát vagy az e-mailes bejelentkezési hivatkozásokat. Egy megerősítő hivatkozás nem erősíthet meg másik vagy lecserélt címet. A címenkénti megerősítés bevezetése előtt kiadott hivatkozások érvénytelenek; kérjen újat a bejelentkezési vagy a Profil oldalon.
+
 ### Nyilvános profilok és névtelen hozzászólások
 
-A **Nyilvános profil megtekintése** hivatkozással vagy egy felhasználó nevére kattintva megtekintheti nyilvános nevét, képét és az általa megosztott e-mail-címét. A megfelelő jogosultságú adminisztrátorok ezen az oldalon kitilthatják, visszaengedhetik vagy megszemélyesíthetik a felhasználót; a megszemélyesítés a meglévő jogosultsági és auditálási szabályokat követi.
+A **Nyilvános profil megtekintése** hivatkozással vagy egy felhasználó nevére kattintva megtekintheti nyilvános nevét, képét, szerepköreit, regisztrációjának dátumát, utolsó bejelentkezését és az általa megosztott e-mail-címét. A megfelelő jogosultságú adminisztrátorok és moderátorok ezen az oldalon kitilthatják vagy visszaengedhetik a felhasználót; a jogosult adminisztrátorok meg is személyesíthetik. Ezek a műveletek a meglévő jogosultsági és auditálási szabályokat követik.
+
+A `User.Manage` jogosultsággal rendelkezők ezenfelül látják a nem nyilvános születési dátumot és e-mail-beállítást, az összes aktuális címet és megerősítésük idejét, az érvényes és közvetlen hozzáférést, a kétlépcsős hitelesítés összesített állapotát és a megőrzött kitiltásokat indokkal, kiadóval, dátumokkal és állapottal. A feloldott vagy lejárt kitiltások csak a megőrzött adatokból láthatók; a végleg törölt bejegyzések itt nem állíthatók helyre. Jelszavak, hitelesítési titkok és helyreállító kódok soha nem jelennek meg.
 
 Bejelentkezve névtelenül is küldhet hozzászólást vagy fórumüzenetet. Más olvasók ekkor nem látják az üzenet szerzőjének profilját és képét. A jogosult adminisztrátorok és moderátorok továbbra is azonosíthatják a valódi szerzőt; a névtelenség nem vonatkozik a webhely személyzetére.
 

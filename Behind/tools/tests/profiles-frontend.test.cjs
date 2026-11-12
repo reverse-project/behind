@@ -138,10 +138,11 @@ test("own profile loads and saves optional private details without putting email
     const user = load("models/user.js");
     const Model = load("viewmodels/profile.js", {
         ko, "models/user": user, "models/i18n": { t: key => key },
-        "models/auth": { loadSession: async () => ({ ok: true, message: "", data: {
+        "models/auth": { changeDisplayName: async () => ({ ok: true }), loadSession: async () => ({ ok: true, message: "", data: {
             user: { id: "019a7821-1234-7000-8000-012345678901", displayName: "", emails: ["private@example.test"] }
         } }) },
-        "models/session": { isSignedIn: () => true },
+        "models/session": { isSignedIn: () => true, isImpersonating: () => false },
+        "models/profileemails": { load: async () => ({ ok: true, data: { items: [], confirmationRequired: true } }) },
         "models/about": { loadLocales: async () => ({ items: [] }) },
         "models/usersettings": { locale: () => "" },
         "models/profilepicture": { get: async () => ({ url: null }) },
@@ -158,9 +159,9 @@ test("own profile loads and saves optional private details without putting email
     assert.equal(model.hideEmail(), true);
     model.birthday("");
     model.hideEmail(false);
-    await model.submitDetails();
+    await model.submit();
     assert.deepEqual(saved, { birthday: "", hideEmail: false });
-    assert.equal(model.message(), "profile.detailsSaved");
+    assert.equal(model.message(), "profile.saved");
 });
 
 test("failed own-profile loading cannot overwrite saved privacy preferences", async () => {
@@ -168,7 +169,8 @@ test("failed own-profile loading cannot overwrite saved privacy preferences", as
     const Model = load("viewmodels/profile.js", {
         ko, "models/user": { label: () => "", href: () => null }, "models/i18n": { t: key => key },
         "models/auth": { loadSession: async () => ({ ok: true, message: "", data: { user: {} } }) },
-        "models/session": { isSignedIn: () => true },
+        "models/session": { isSignedIn: () => true, isImpersonating: () => false },
+        "models/profileemails": { load: async () => ({ ok: true, data: { items: [], confirmationRequired: true } }) },
         "models/about": { loadLocales: async () => ({ items: [] }) },
         "models/usersettings": { locale: () => "" },
         "models/profilepicture": { get: async () => ({ url: null }) },
@@ -180,7 +182,151 @@ test("failed own-profile loading cannot overwrite saved privacy preferences", as
     const model = new Model();
     await model.activate();
     assert.equal(model.message(), "Failed to load");
-    await model.submitDetails();
+    await model.submit();
     assert.equal(saves, 0);
     assert.equal(model.busy(), false);
+});
+
+function emailModel(api = {}, impersonating = false, confirm = true) {
+    const Model = load("viewmodels/profile.js", {
+        ko, "models/user": { label: () => "", href: () => null }, "models/i18n": { t: key => key },
+        "models/auth": {}, "models/session": { isSignedIn: () => true, isImpersonating: () => impersonating },
+        "models/about": {}, "models/usersettings": {}, "models/profilepicture": {}, "models/profiles": {},
+        "models/profileemails": {
+            load: async () => ({ ok: true, data: { items: [
+                { id: "first", value: "first@test.com", confirmedAt: "2026-11-12T09:00:00Z" },
+                { id: "second", value: "second@test.com", confirmedAt: null }
+            ], confirmationRequired: true } }),
+            ...api
+        }
+    }, { confirm: () => confirm });
+    return new Model();
+}
+
+test("profile lists separate email drafts and confirmation status without enabling unloaded actions", async () => {
+    const model = emailModel();
+    assert.equal(model.canManageEmails(), false);
+    await model.refreshEmails();
+    assert.equal(model.canManageEmails(), true);
+    assert.equal(model.emails().length, 2);
+    assert.equal(model.emails()[0].confirmed, true);
+    assert.equal(model.emails()[1].confirmed, false);
+    model.emails()[1].draft("replacement@test.com");
+    assert.equal(model.emails()[1].value, "second@test.com");
+    assert.equal(model.emailConfirmationRequired(), true);
+});
+
+test("adding email clears input only after persistence and reports required confirmation", async () => {
+    const calls = [];
+    const model = emailModel({ save: async (id, value) => {
+        calls.push([id, value]);
+        return { ok: true, data: { confirmationRequired: true, emailSent: true } };
+    } });
+    await model.refreshEmails();
+    model.newEmail("new@test.com");
+    await model.addEmail();
+    assert.deepEqual(calls, [[null, "new@test.com"]]);
+    assert.equal(model.newEmail(), "");
+    assert.equal(model.message(), "profile.emailConfirmationSent");
+    assert.equal(model.busy(), false);
+});
+
+test("editing targets the address id and explicitly reports a persisted address whose mail failed", async () => {
+    const calls = [];
+    const model = emailModel({ save: async (id, value) => {
+        calls.push([id, value]);
+        return { ok: true, data: { confirmationRequired: true, emailSent: false } };
+    } });
+    await model.refreshEmails();
+    const item = model.emails()[1];
+    item.draft("new@test.com");
+    await model.saveEmail(item);
+    assert.deepEqual(calls, [["second", "new@test.com"]]);
+    assert.equal(model.message(), "profile.emailSavedSendFailed");
+});
+
+test("duplicate email failures preserve the draft and remain visible", async () => {
+    const model = emailModel({ save: async () => ({ ok: false, message: "Already in use" }) });
+    await model.refreshEmails();
+    model.newEmail("duplicate@test.com");
+    await model.addEmail();
+    assert.equal(model.newEmail(), "duplicate@test.com");
+    assert.equal(model.message(), "Already in use");
+    assert.equal(model.busy(), false);
+});
+
+test("email operations stay blocked when impersonating, busy or not loaded", async () => {
+    let calls = 0;
+    const api = { save: async () => { calls++; return { ok: true }; } };
+    for (const impersonating of [false, true]) {
+        const model = emailModel(api, impersonating);
+        await model.addEmail();
+        await model.refreshEmails();
+        if (!impersonating) {
+            model.busy(true);
+        }
+        await model.addEmail();
+    }
+    assert.equal(calls, 0);
+});
+
+test("email resend and removal target the saved address, with cancellable removal", async () => {
+    const calls = [];
+    const api = {
+        resend: async id => { calls.push(["resend", id]); return { ok: true }; },
+        remove: async id => { calls.push(["remove", id]); return { ok: true }; }
+    };
+    const cancelled = emailModel(api, false, false);
+    await cancelled.refreshEmails();
+    await cancelled.removeEmail(cancelled.emails()[0]);
+    assert.equal(calls.length, 0);
+    const model = emailModel(api);
+    await model.refreshEmails();
+    await model.resendEmail(model.emails()[1]);
+    assert.equal(model.message(), "profile.emailConfirmationSent");
+    await model.removeEmail(model.emails()[1]);
+    assert.equal(model.message(), "profile.emailRemoved");
+    assert.deepEqual(calls, [["resend", "second"], ["remove", "second"]]);
+});
+
+test("email refresh errors never become success feedback or unhandled rejections", async () => {
+    let loads = 0;
+    const model = emailModel({
+        load: async () => {
+            if (++loads > 1) {
+                throw new Error("Refresh failed");
+            }
+            return { ok: true, data: { items: [], confirmationRequired: true } };
+        },
+        save: async () => ({ ok: true, data: { confirmationRequired: false } })
+    });
+    await model.refreshEmails();
+    await model.addEmail();
+    assert.equal(model.message(), "Refresh failed");
+    assert.equal(model.busy(), false);
+});
+
+test("email API sends exact resource requests and translates last-address and mail failures", async () => {
+    const calls = [];
+    const api = load("models/profileemails.js", {
+        "models/i18n": { t: key => key },
+        "models/http": {
+            get: async url => { calls.push(["get", url]); return { ok: true, data: { items: [] } }; },
+            post: async (url, body) => { calls.push(["post", url, body]); return { ok: false, status: 503 }; },
+            put: async (url, body) => { calls.push(["put", url, body]); return { ok: false, status: 409, data: { code: "emailInUse" } }; },
+            delete: async url => { calls.push(["delete", url]); return { ok: false, status: 409, data: { code: "lastEmail" } }; }
+        }
+    });
+    assert.equal((await api.load()).ok, true);
+    assert.equal((await api.save(null, "new@test.com")).message, "profile.emailSendFailed");
+    assert.equal((await api.save("second", "edit@test.com")).message, "profile.emailInUse");
+    assert.equal((await api.remove("second")).message, "profile.emailLast");
+    assert.equal((await api.resend("second")).message, "profile.emailSendFailed");
+    assert.equal(calls[0][1], "/profile/emails");
+    assert.equal(calls[1][1], "/profile/emails");
+    assert.equal(calls[1][2].email, "new@test.com");
+    assert.equal(calls[2][1], "/profile/emails/second");
+    assert.equal(calls[2][2].email, "edit@test.com");
+    assert.equal(calls[3][1], "/profile/emails/second");
+    assert.equal(calls[4][1], "/profile/emails/second/confirmation");
 });

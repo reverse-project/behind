@@ -2,11 +2,43 @@
     <h1 class="mb-3" data-bind="t: 'profile.publicTitle'">Public profile</h1>
     <p class="alert alert-info" role="status" data-bind="visible: message, text: message"></p>
     <div data-bind="with: profile">
-        <div class="d-flex align-items-center gap-3 mb-3">
-            <img class="img-thumbnail" width="96" height="96" alt="" data-bind="visible: pictureId, attr: { src: pictureId ? '/profile/images/' + encodeURIComponent(pictureId) : null }">
-            <h2 class="h4 text-break" data-bind="text: displayName"></h2>
+        <h2 class="h4 text-break" data-bind="text: displayName"></h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <tbody>
+                    <tr>
+                        <th scope="row" data-bind="t: 'profile.picture'">Profile picture</th>
+                        <td>
+                            <img class="img-thumbnail" width="96" height="96" alt="" data-bind="visible: pictureId, attr: { src: pictureId ? '/profile/images/' + encodeURIComponent(pictureId) : null }">
+                            <span data-bind="visible: !pictureId, t: 'profile.noPicture'">No profile picture</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row" data-bind="t: 'profile.registered'">Registered</th>
+                        <td data-bind="text: registeredAt ? $root.dateTime(registeredAt) : $root.t('profile.notAvailable')"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row" data-bind="t: 'profile.lastLogin'">Last login</th>
+                        <td data-bind="text: lastLoginAt ? $root.dateTime(lastLoginAt) : $root.t('profile.neverLoggedIn')"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row" data-bind="t: 'profile.roles'">Roles</th>
+                        <td>
+                            <!-- ko if: roles.length -->
+                            <div class="d-flex flex-wrap gap-1" data-bind="foreach: roles">
+                                <span class="badge text-bg-info" data-bind="text: $data"></span>
+                            </div>
+                            <!-- /ko -->
+                            <span data-bind="visible: !roles.length, t: 'profile.noRoles'">No roles</span>
+                        </td>
+                    </tr>
+                    <tr data-bind="visible: email">
+                        <th scope="row" data-bind="t: 'profile.email'">Email</th>
+                        <td class="text-break" data-bind="text: email"></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-        <p data-bind="visible: email"><span data-bind="t: 'profile.email'">Email</span>: <span class="text-break" data-bind="text: email"></span></p>
         <span class="badge text-bg-danger mb-3" data-bind="visible: ban, t: 'users.banned'">Banned</span>
         <div class="d-flex flex-wrap gap-2">
             <button type="button" class="btn btn-outline-danger" data-bind="visible: permissions.canModerate && !ban && !$root.banning(), enable: !$root.busy(), click: $root.startBan, t: 'users.ban'">Ban</button>
@@ -19,5 +51,60 @@
             <button type="submit" class="btn btn-danger" data-bind="enable: !$root.busy(), t: 'users.ban'">Ban</button>
             <button type="button" class="btn btn-outline-secondary" data-bind="click: $root.cancelBan, enable: !$root.busy(), t: 'common.cancel'">Cancel</button>
         </form>
+        <section class="mt-4" data-bind="with: moderation">
+            <h2 class="h4" data-bind="t: 'profile.moderationDetails'">Account management details</h2>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <tbody>
+                        <tr><th scope="row" data-bind="t: 'profile.userId'">User ID</th><td class="text-break" data-bind="text: $parent.id"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.displayName'">Display name</th><td class="text-break" data-bind="text: displayName || $root.t('profile.none')"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.accountUpdated'">Account last updated</th><td data-bind="text: updatedAt ? $root.dateTime(updatedAt) : $root.t('profile.notAvailable')"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.birthday'">Birthday</th><td data-bind="text: birthday || $root.t('profile.notAvailable')"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.publicEmailVisibility'">Public email visibility</th><td data-bind="text: $root.t(hideEmail ? 'profile.hidden' : 'profile.shared')"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.emails'">Email addresses</th>
+                            <td>
+                                <span data-bind="visible: !emails.length, t: 'profile.noEmails'">No email addresses</span>
+                                <ul class="mb-0" data-bind="foreach: emails">
+                                    <li class="text-break"><span data-bind="text: value"></span> —
+                                        <span data-bind="text: $root.t(confirmedAt ? 'profile.emailConfirmed' : 'profile.emailUnconfirmed')"></span>
+                                        <span data-bind="visible: confirmedAt, text: confirmedAt ? $root.dateTime(confirmedAt) : ''"></span>
+                                    </li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr><th scope="row" data-bind="t: 'profile.effectiveGrants'">Effective grants</th><td class="text-break" data-bind="text: effectiveGrants.length ? effectiveGrants.join(', ') : $root.t('profile.none')"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.directGrants'">Direct grants</th><td class="text-break" data-bind="text: directGrants.length ? directGrants.join(', ') : $root.t('profile.none')"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.directRestrictions'">Direct restrictions</th><td class="text-break" data-bind="text: directRestrictions.length ? directRestrictions.join(', ') : $root.t('profile.none')"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.authenticatorStatus'">Authenticator</th><td data-bind="text: $root.t(totpEnabled ? 'profile.enabled' : 'profile.disabled')"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.passkeyCount'">Passkeys</th><td data-bind="text: passkeyCount"></td></tr>
+                        <tr><th scope="row" data-bind="t: 'profile.recoveryCodesRemaining'">Recovery codes remaining</th><td data-bind="text: recoveryCodesRemaining"></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <h3 class="h5" data-bind="t: 'profile.banHistory'">Ban history</h3>
+            <p data-bind="visible: !bans.length, t: 'profile.noBans'">No retained bans</p>
+            <div class="table-responsive" data-bind="visible: bans.length">
+                <table class="table table-sm">
+                    <thead><tr>
+                        <th scope="col" data-bind="t: 'profile.banStatus'">Status</th>
+                        <th scope="col" data-bind="t: 'profile.banReason'">Reason</th>
+                        <th scope="col" data-bind="t: 'profile.banGivenBy'">Given by</th>
+                        <th scope="col" data-bind="t: 'profile.banCreated'">Created</th>
+                        <th scope="col" data-bind="t: 'profile.banExpires'">Expires</th>
+                        <th scope="col" data-bind="t: 'profile.banRemoved'">Removed</th>
+                    </tr></thead>
+                    <tbody data-bind="foreach: bans">
+                        <tr>
+                            <td data-bind="text: $root.t(active ? 'profile.banActive' : removed ? 'profile.banLifted' : 'profile.banExpired')"></td>
+                            <td class="text-break" data-bind="text: reason || $root.t('profile.none')"></td>
+                            <td class="text-break"><a data-bind="text: givenBy, attr: { href: '#/user/' + encodeURIComponent(givenById) }"></a></td>
+                            <td data-bind="text: createdAt ? $root.dateTime(createdAt) : $root.t('profile.notAvailable')"></td>
+                            <td data-bind="text: expiresAt ? $root.dateTime(expiresAt) : $root.t('profile.never')"></td>
+                            <td data-bind="text: removedAt ? $root.dateTime(removedAt) : $root.t('profile.notAvailable')"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 </section>

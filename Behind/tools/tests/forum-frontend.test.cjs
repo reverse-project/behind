@@ -176,10 +176,11 @@ test("manager edits overrides and moderates and restores each resource", async (
 
 test("profile upload and removal update the visible picture", async () => {
     const Profile = load(path.join(core, "viewmodels/profile.js"), {
-        ko, "models/auth": {}, "models/session": session,
+        ko, "models/auth": {}, "models/session": { ...session, isImpersonating: () => false },
         "models/user": { href: id => id ? "#/user/" + encodeURIComponent(id) : null,
             label: user => (user.displayName || "user") + "#" + user.id },
         "models/profiles": {},
+        "models/profileemails": {},
         "models/about": {}, "models/usersettings": {}, "models/i18n": i18n,
         "models/profilepicture": {
             upload: async () => ({ url: "/profile/images/picture" }),

@@ -1,7 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Behind.Common;
 using Behind.Common.Logging;
-using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
@@ -23,7 +21,8 @@ public sealed class SignUpEndpoints
         [property: MaxLength(DisplayNameExtensions.MaxLength)] string? DisplayName = null,
         CaptchaResponse? Captcha = null) : ICaptchaRequest;
 
-    public sealed record ConfirmEmailRequest([property: Required] Guid UserId, [property: Required] string Token);
+    public sealed record ConfirmEmailRequest(
+        [property: Required] Guid UserId, [property: Required] string Token, Guid EmailId = default);
 
     public sealed record ResendConfirmationRequest(
         [property: Required, DataType(DataType.EmailAddress)] string Email,
@@ -38,6 +37,7 @@ public sealed class SignUpEndpoints
         IOptions<SecurityConfiguration> securityConfiguration,
         IAccessSettingsQueries accessSettings,
         IEmailSender<ApplicationUser> emailSender,
+        IEmailQueries emailQueries,
         IConfiguration configuration,
         TimeProvider timeProvider,
         HttpContext httpContext,
@@ -58,7 +58,7 @@ public sealed class SignUpEndpoints
         var user = new ApplicationUser
         {
             DisplayName = request.DisplayName.ToDisplayName(),
-            Emails = [new Email(request.Email, confirmationEnabled ? null : timeProvider.GetUtcNow())],
+            Emails = [new Email(request.Email.Trim().ToLowerInvariant(), confirmationEnabled ? null : timeProvider.GetUtcNow())],
             PendingApproval = moderated
         };
         
@@ -70,7 +70,9 @@ public sealed class SignUpEndpoints
 
             if (confirmationEnabled)
             {
-                await SendConfirmation(userManager, emailSender, configuration, httpContext, logger, user, request.Email);
+                var address = (await emailQueries.Addresses(user.Id, httpContext.RequestAborted))
+                    .Single(item => item.Value == request.Email.Trim().ToLowerInvariant());
+                await userManager.SendAddressConfirmation(user, address, emailSender, configuration, httpContext, logger);
             }
             else
             {
@@ -101,8 +103,11 @@ public sealed class SignUpEndpoints
     [IgnoreETag]
     public static async Task<IResult> ConfirmEmail(
         UserManager<ApplicationUser> userManager,
+        IEmailQueries emailQueries,
+        IEmailCommands emailCommands,
         ILogger<SignUpEndpoints> logger,
-        ConfirmEmailRequest request)
+        ConfirmEmailRequest request,
+        CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByIdAsync(request.UserId.ToString());
 
@@ -113,18 +118,19 @@ public sealed class SignUpEndpoints
             return Results.BadRequest();
         }
 
-        var result = await userManager.ConfirmEmailAsync(user, request.Token);
+        var address = (await emailQueries.Addresses(user.Id, cancellationToken)).SingleOrDefault(item => item.Id == request.EmailId);
+        var valid = address is not null && await userManager.VerifyUserTokenAsync(
+            user, userManager.Options.Tokens.EmailConfirmationTokenProvider, address.ConfirmationPurpose, request.Token);
 
-        if (result.Succeeded)
+        if (valid && address is not null
+            && await emailCommands.ConfirmAddress(user.Id, address.Id, address.Value, cancellationToken))
         {
             logger.LogInformation("Email of user {UserId} confirmed", () => [user.Id]);
 
             return Results.NoContent();
         }
 
-        logger.LogWarning(
-            "Email confirmation of user {UserId} failed with {ErrorCodes}",
-            () => [user.Id, result.Errors.Select(e => e.Code).ToArray()]);
+        logger.LogWarning("Email confirmation of user {UserId} rejected: address or token is invalid", () => [user.Id]);
 
         return Results.BadRequest();
     }
@@ -134,6 +140,7 @@ public sealed class SignUpEndpoints
         UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration,
         IEmailSender<ApplicationUser> emailSender,
+        IEmailQueries emailQueries,
         IConfiguration configuration,
         HttpContext httpContext,
         ILogger<SignUpEndpoints> logger,
@@ -152,45 +159,22 @@ public sealed class SignUpEndpoints
         {
             logger.LogDebug("Confirmation email requested for an unknown email, nothing sent");
         }
-        else if (await userManager.IsEmailConfirmedAsync(user))
-        {
-            logger.LogDebug(
-                "Confirmation email for user {UserId} not sent: the email is already confirmed",
-                () => [user.Id]);
-        }
         else
         {
-            await SendConfirmation(userManager, emailSender, configuration, httpContext, logger, user, request.Email);
+            var address = (await emailQueries.Addresses(user.Id, httpContext.RequestAborted))
+                .SingleOrDefault(item => string.Equals(item.Value, request.Email.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (address is not null && address.ConfirmedAt is null)
+            {
+                await userManager.SendAddressConfirmation(user, address, emailSender, configuration, httpContext, logger);
+            }
+            else
+            {
+                logger.LogDebug("Confirmation email for user {UserId} not sent: no unconfirmed address", () => [user.Id]);
+            }
         }
 
         return Results.NoContent();
     }
 
-    private static async Task SendConfirmation(
-        UserManager<ApplicationUser> userManager,
-        IEmailSender<ApplicationUser> emailSender,
-        IConfiguration configuration,
-        HttpContext httpContext,
-        ILogger<SignUpEndpoints> logger,
-        ApplicationUser user,
-        string email)
-    {
-        try
-        {
-            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-            var link = configuration.FrontendUri()
-                .GetOrElse(() => httpContext.BaseUri())
-                .ToFrontendLink(
-                    ConfirmEmailRoute,
-                    [new("userId", user.Id.ToString()), new("token", token)]);
-
-            await emailSender.SendConfirmationLinkAsync(user, email, link);
-
-            logger.LogInformation("Confirmation email sent to user {UserId}", () => [user.Id]);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            logger.LogError(exception, "Failed to send a confirmation email to user {UserId}", () => [user.Id]);
-        }
-    }
 }

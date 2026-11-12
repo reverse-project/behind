@@ -385,12 +385,12 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
             });
         },
 
-        confirmEmail: function (userId, token) {
+        confirmEmail: function (userId, token, emailId) {
             if (!userId || !token) {
                 return incomplete("auth.confirmEmail.incomplete");
             }
 
-            return http.post("/sign/up/confirm", { userId: userId, token: token }).then(function (response) {
+            return http.post("/sign/up/confirm", { userId: userId, token: token, emailId: emailId }).then(function (response) {
                 return response.ok
                     ? success("auth.confirmEmail.done")
                     : failure(response, {

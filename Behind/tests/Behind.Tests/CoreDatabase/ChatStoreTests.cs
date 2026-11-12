@@ -41,6 +41,8 @@ public sealed class ChatStoreTests : IDisposable
         Assert.Equal(205, all.Count);
         Assert.Equal(205, all.Select(message => message.Id).Distinct().Count());
         Assert.Equal(ids.Order(), all.Select(message => message.Id).Order());
+        Assert.Equal(all.OrderBy(message => message.CreatedAt).ThenBy(message => message.Id).Select(message => message.Id),
+            all.Select(message => message.Id));
         Assert.Equal(NewsTestBed.Now, all[0].CreatedAt);
         Assert.Equal(NewsTestBed.Now.AddSeconds(102), all[^1].CreatedAt);
         Assert.Null(await store.List(Guid.NewGuid(), 20, default));

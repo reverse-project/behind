@@ -21,6 +21,7 @@ public static class SettingsResponseExtensions
                 file.Name,
                 [
                     ..root.Fields().Select(field => field.ToResponse(file.Name, locales)),
+                    ..AccountModeSettings.Missing(root, file.Name),
                     ..file.Name.MissingActions(root).Select(action => action.ToMissingField())
                 ]);
         }
@@ -40,7 +41,8 @@ public static class SettingsResponseExtensions
         private SettingsFieldResponse ToResponse(string file, IReadOnlyList<LocaleInfo> locales)
         {
             var action = file.FindAction(field.Path);
-            var sensitive = field.Path.IsSensitiveConfigurationPath;
+            var sensitive = field.Path.IsSensitiveConfigurationPath
+                && !AccountModeSettings.IsPasswordSwitch(file, field.Path, field.Value);
 
             return new SettingsFieldResponse(
                 field.Path,

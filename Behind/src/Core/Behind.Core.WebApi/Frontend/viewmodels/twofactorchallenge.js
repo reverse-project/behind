@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
+define(["ko", "models/auth", "models/webauthn", "models/accounts", "models/i18n"], function (ko, auth, webauthn, accounts, i18n) {
     var compact = function (value) {
         return (value() || "").replace(/\s+/g, "");
     };
@@ -13,10 +13,23 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
         self.code = ko.observable("");
         self.recoveryCode = ko.observable("");
         self.recoveryChosen = ko.observable(false);
+        self.emailChosen = ko.observable(false);
+        self.emailSent = ko.observable(false);
+        self.emailCode = ko.observable("");
+        self.emailAddresses = ko.observableArray([]);
+        self.emailId = ko.observable("");
+        self.emailId.subscribe(function () {
+            self.emailSent(false);
+            self.emailCode("");
+        });
         self.enrollment = ko.observable(null);
         self.enrollmentCode = ko.observable("");
         self.passkeyName = ko.observable("");
         self.recoveryCodes = ko.observableArray([]);
+        self.canSetupTotp = accounts.twoFactor;
+        self.canSetupPasskey = ko.pureComputed(function () {
+            return accounts.twoFactor() && accounts.passkey() && self.passkeyAvailable();
+        });
         self.busy = ko.observable(false);
         self.message = ko.observable("");
 
@@ -56,16 +69,33 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
             return has("Recovery");
         });
 
+        self.hasEmail = ko.pureComputed(function () {
+            return options.allowEmail !== false && has("Email");
+        });
+
+        self.hasEmailAddresses = ko.pureComputed(function () {
+            return self.emailAddresses().length > 0;
+        });
+
+        self.chooseEmailLabel = ko.pureComputed(function () {
+            return i18n.t("twoFactor.challenge.chooseEmail");
+        });
+
         self.passkeyAvailable = ko.pureComputed(function () {
             return has("Passkey") && webauthn.supported();
         });
 
         self.usingRecovery = ko.pureComputed(function () {
-            return self.hasRecovery() && (self.recoveryChosen() || !self.hasTotp());
+            return self.hasRecovery() && (self.recoveryChosen() || (!self.hasTotp() && !self.hasEmail()));
         });
 
         self.showTotpForm = ko.pureComputed(function () {
-            return !self.setupRequired() && self.hasTotp() && !self.usingRecovery();
+            return !self.setupRequired() && self.hasTotp() && !self.usingRecovery() && !self.emailChosen();
+        });
+
+        self.showEmailForm = ko.pureComputed(function () {
+            return self.hasEmail() && !self.usingRecovery()
+                && (self.emailChosen() || (!self.setupRequired() && !self.hasTotp()));
         });
 
         self.showRecoveryForm = ko.pureComputed(function () {
@@ -73,7 +103,7 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
         });
 
         self.canSwitchCode = ko.pureComputed(function () {
-            return !self.setupRequired() && self.hasTotp() && self.hasRecovery();
+            return !self.setupRequired() && (self.hasTotp() || self.hasEmail()) && self.hasRecovery();
         });
 
         self.hasEnrollment = ko.pureComputed(function () {
@@ -88,6 +118,11 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
             self.code("");
             self.recoveryCode("");
             self.recoveryChosen(false);
+            self.emailChosen(false);
+            self.emailSent(false);
+            self.emailCode("");
+            self.emailAddresses([]);
+            self.emailId("");
             self.enrollment(null);
             self.enrollmentCode("");
             self.passkeyName("");
@@ -105,6 +140,10 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
             self.challenge(challenge);
             self.ticket(challenge.ticket);
             self.stage("challenge");
+
+            if (self.showEmailForm()) {
+                return self.loadEmailAddresses();
+            }
         };
 
         self.complete = function (result) {
@@ -120,14 +159,15 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
                 return;
             }
 
+            reset();
             options.done(signedIn);
         };
 
         self.proceed = function () {
             var result = finished;
 
+            reset();
             options.done(result);
-            self.recoveryCodes([]);
         };
 
         var run = function (action, onOk) {
@@ -148,6 +188,7 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
                         self.code("");
                         self.recoveryCode("");
                         self.enrollmentCode("");
+                        self.emailCode("");
                         self.message(result.message);
                         return undefined;
                     }
@@ -160,24 +201,81 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
         };
 
         self.verifyTotp = function () {
+            if (!self.showTotpForm() || self.busy()) {
+                return Promise.resolve();
+            }
+
             return run(function () {
                 return auth.twoFactor.verifyTotp(self.ticket(), compact(self.code));
             }, self.complete);
         };
 
         self.verifyRecovery = function () {
+            if (!self.showRecoveryForm() || self.busy()) {
+                return Promise.resolve();
+            }
+
             return run(function () {
                 return auth.twoFactor.verifyRecovery(self.ticket(), compact(self.recoveryCode));
             }, self.complete);
         };
 
         self.usePasskey = function () {
+            if (self.setupRequired() || !self.passkeyAvailable() || self.busy()) {
+                return Promise.resolve();
+            }
+
             return run(function () {
                 return auth.twoFactor.signInWithPasskey(self.ticket());
             }, self.complete);
         };
 
+        self.loadEmailAddresses = function () {
+            if (!self.showEmailForm() || self.busy()) {
+                return Promise.resolve();
+            }
+
+            return run(function () {
+                return auth.twoFactor.emailAddresses(self.ticket());
+            }, function (result) {
+                self.emailAddresses(result.data.addresses || []);
+            });
+        };
+
+        self.sendEmail = function () {
+            var emailId = self.emailId();
+            var available = self.emailAddresses().some(function (email) {
+                return email.id === emailId;
+            });
+
+            if (!self.showEmailForm() || !available || self.busy()) {
+                return Promise.resolve();
+            }
+
+            return run(function () {
+                return auth.twoFactor.sendEmail(self.ticket(), emailId);
+            }, function (result) {
+                self.emailSent(true);
+                self.emailCode("");
+                self.message(result.message);
+            });
+        };
+
+        self.verifyEmail = function () {
+            if (!self.showEmailForm() || !self.emailSent() || self.busy()) {
+                return Promise.resolve();
+            }
+
+            return run(function () {
+                return auth.twoFactor.verifyEmail(self.ticket(), compact(self.emailCode));
+            }, self.complete);
+        };
+
         self.startTotp = function () {
+            if (!self.canSetupTotp()) {
+                return Promise.resolve();
+            }
+
             return run(function () {
                 return auth.twoFactor.setupTotp(self.ticket());
             }, function (result) {
@@ -192,17 +290,55 @@ define(["ko", "models/auth", "models/webauthn"], function (ko, auth, webauthn) {
         };
 
         self.registerPasskey = function () {
+            if (!self.canSetupPasskey()) {
+                return Promise.resolve();
+            }
+
             return run(function () {
                 return auth.twoFactor.setupPasskey(self.ticket(), self.passkeyName());
             }, self.complete);
         };
 
         self.toggleRecovery = function () {
+            if (!self.canSwitchCode() || self.busy()) {
+                return;
+            }
+
             self.message("");
             self.recoveryChosen(!self.recoveryChosen());
         };
 
+        self.useEmail = function () {
+            if (!self.hasEmail() || self.busy()) {
+                return Promise.resolve();
+            }
+
+            self.message("");
+            self.recoveryChosen(false);
+            self.emailChosen(true);
+
+            if (!self.hasEmailAddresses()) {
+                return self.loadEmailAddresses();
+            }
+
+            return Promise.resolve();
+        };
+
+        self.useTotp = function () {
+            if (self.setupRequired() || !self.hasTotp() || self.busy()) {
+                return;
+            }
+
+            self.message("");
+            self.recoveryChosen(false);
+            self.emailChosen(false);
+        };
+
         self.back = function () {
+            if (self.busy()) {
+                return;
+            }
+
             restart("");
         };
     };

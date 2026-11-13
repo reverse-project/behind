@@ -1,8 +1,10 @@
+using Behind.Common.Logging;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.MagicLinks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -17,7 +19,8 @@ public interface ITwoFactorSignIn
         Guid userId,
         MagicLinkFunction? function,
         IReadOnlyList<string>? recoveryCodes,
-        HttpContext httpContext);
+        HttpContext httpContext,
+        TwoFactorTicket? ticket = null);
 }
 
 public sealed class TwoFactorSignIn(
@@ -25,6 +28,8 @@ public sealed class TwoFactorSignIn(
     IOptions<SecurityConfiguration> security,
     ISessionCommands sessionCommands,
     IWallOfShameQueries wallOfShameQueries,
+    IPasswordResetGrants passwordResetGrants,
+    IMagicLinkCommands magicLinkCommands,
     TimeProvider timeProvider,
     ILogger<TwoFactorSignIn> logger) : ITwoFactorSignIn
 {
@@ -32,8 +37,18 @@ public sealed class TwoFactorSignIn(
         Guid userId,
         MagicLinkFunction? function,
         IReadOnlyList<string>? recoveryCodes,
-        HttpContext httpContext)
+        HttpContext httpContext,
+        TwoFactorTicket? ticket = null)
     {
+        if (ticket?.Nonce is not { } nonce || ticket.UserId != userId || ticket.Function != function
+            || ticket.Stage is not (TwoFactorStage.Verify or TwoFactorStage.Setup)
+            || !await magicLinkCommands.ConsumeForFunction(nonce, userId, MagicLinkFunction.TwoFactorChallenge,
+                timeProvider.GetUtcNow(), httpContext.RequestAborted))
+        {
+            logger.LogWarning("Second-factor challenge rejected for user {UserId}: invalid or already used", () => [userId]);
+            return TwoFactorSignInEndpoints.TicketRejected();
+        }
+
         var user = await userManager.FindByIdAsync(userId.ToString());
 
         if (user is null)
@@ -54,6 +69,7 @@ public sealed class TwoFactorSignIn(
                 logger,
                 None,
                 function,
-                recoveryCodes is { Count: > 0 } ? recoveryCodes : null));
+                recoveryCodes is { Count: > 0 } ? recoveryCodes : null,
+                passwordResetGrants));
     }
 }

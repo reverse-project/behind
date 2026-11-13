@@ -18,7 +18,7 @@ public sealed class TwoFactorTestBed : IDisposable
 
     public static readonly DateTimeOffset Start = new(2026, 11, 2, 9, 0, 0, TimeSpan.Zero);
 
-    public TwoFactorTestBed(bool required = false)
+    public TwoFactorTestBed(bool required = false, AccountsConfiguration? accounts = null)
     {
         Time = new AdjustableTimeProvider(Start);
         Context = Factory.CreateContext();
@@ -30,7 +30,8 @@ public sealed class TwoFactorTestBed : IDisposable
         RecoveryCodes = new RecoveryCodes(Queries, Commands);
         Verification = new TwoFactorVerification(Queries, Commands, RecoveryCodes, Ceremonies, Time);
         Enrollment = new TwoFactorEnrollment(Queries, Commands, RecoveryCodes, Ceremonies, Tickets, Security, Time);
-        Gate = new TwoFactorGate(Queries, Tickets, Security);
+        Gate = new TwoFactorGate(Queries, new EmailQueries(Context), new MagicLinkCommands(Context), Time, Tickets, Security,
+            FixedOptionsSnapshot.Of(accounts ?? new AccountsConfiguration()));
     }
 
     public TestDbContextFactory Factory { get; } = new();
@@ -69,6 +70,7 @@ public sealed class TwoFactorTestBed : IDisposable
     {
         await using var seed = Factory.CreateContext();
         var id = await DatabaseSeedHelper.SeedHumanUserAsync(seed, email);
+        await new EmailCommands(seed, Time).ConfirmPrimary(id);
 
         return new ApplicationUser { Id = id, DisplayName = "Ada", Emails = [new Email(email, Start)] };
     }

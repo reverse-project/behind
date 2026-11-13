@@ -266,6 +266,7 @@ public static class WebApiExtensions
             builder.Services.AddScoped<UserManagementGate>();
             builder.Services.AddScoped<IMagicLinkCommands, MagicLinkCommands>();
             builder.Services.AddScoped<IMagicLinkQueries, MagicLinkQueries>();
+            builder.Services.AddScoped<IPasswordResetGrants, PasswordResetGrants>();
             builder.Services.AddScoped<ITwoFactorQueries, TwoFactorQueries>();
             builder.Services.AddScoped<ITwoFactorCommands, TwoFactorCommands>();
             builder.Services.AddScoped<IAuditActorProvider, HttpAuditActorProvider>();
@@ -1096,6 +1097,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/sign/in/password", SignInEndpoints.SignInPassword)
+                .RequireAccountMode(AccountMode.Password)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.PasswordRequest>>()
                 .RequireCaptcha<SignInEndpoints.PasswordRequest>()
                 .Produces(200)
@@ -1103,7 +1105,31 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(500);
 
+            application.MapPost("/sign/in/passkey/options", PrimaryPasskeyEndpoints.Options)
+                .RequireAccountMode(AccountMode.PrimaryPasskey)
+                .AddEndpointFilter<DataAnnotationValidationFilter<PrimaryPasskeyEndpoints.OptionsRequest>>()
+                .RequireCaptcha<PrimaryPasskeyEndpoints.OptionsRequest>()
+                .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy)
+                .Produces<PasskeyAssertionChallenge>()
+                .Produces(400)
+                .Produces(404)
+                .Produces(429)
+                .Produces(500);
+
+            application.MapPost("/sign/in/passkey", PrimaryPasskeyEndpoints.Verify)
+                .RequireAccountMode(AccountMode.PrimaryPasskey)
+                .AddEndpointFilter<DataAnnotationValidationFilter<PrimaryPasskeyEndpoints.AssertionRequest>>()
+                .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy)
+                .Produces(200)
+                .Produces(400)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404)
+                .Produces(429)
+                .Produces(500);
+
             application.MapPost("/sign/in/magiclink", SignInEndpoints.RequestMagicLink)
+                .RequireAccountMode(AccountMode.MagicLink)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkRequest>>()
                 .RequireCaptcha<SignInEndpoints.MagicLinkRequest>()
                 .RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy)
@@ -1117,6 +1143,16 @@ public static class WebApiExtensions
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkSignInRequest>>()
                 .RequireRateLimiting(MagicLinkExtensions.RedeemRateLimitPolicy)
                 .Produces(200)
+                .Produces(400)
+                .Produces(401)
+                .Produces(404)
+                .Produces(429)
+                .Produces(500);
+
+            application.MapPost(PasswordResetEndpoints.Route, PasswordResetEndpoints.Reset)
+                .AddEndpointFilter<DataAnnotationValidationFilter<PasswordResetEndpoints.PasswordResetRequest>>()
+                .RequireRateLimiting(MagicLinkExtensions.RedeemRateLimitPolicy)
+                .Produces(204)
                 .Produces(400)
                 .Produces(401)
                 .Produces(404)

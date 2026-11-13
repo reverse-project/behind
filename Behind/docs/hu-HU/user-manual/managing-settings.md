@@ -25,6 +25,20 @@ A **backend.json > Backend > ContentRestrictions** szakasz **Enabled** kapcsoló
 
 Válasszon tartalomtípust, majd az **Elemek böngészése** gombbal UUID-másolás nélkül kereshet elemet. Megjelenítési név vagy teljes azonosító alapján kereshet, az **Előző elemek** / **Következő elemek** gombokkal lapozhat. Az elem címe, fájlneve, neve vagy más elérhető szövege jelenik meg; címke hiányában az azonosítója. A kiválasztás kitölti a korlátozás azonosítóját. Az azonosító kézzel is megadható. A meglévő szabályok mellett is olvasható címke jelenik meg.
 
+## Fiók-bejelentkezési módok
+
+A **backend.json > Backend > Accounts** szakasz **Password**, **MagicLink**, **TwoFactor**, **Passkey** és **EmailTwoFactor** kapcsolói vezérlik a bejelentkezési és második hitelesítési módokat. Mindegyik alapértelmezett értéke **true**, a módosítások újraindítás nélkül érvénybe lépnek.
+
+- A **Password** engedélyezi vagy letiltja a jelszavas bejelentkezést.
+- A **MagicLink** engedélyezi vagy letiltja az e-mailes bejelentkezési hivatkozásokat. Az **LostPassword** jelszó-helyreállító hivatkozásokat **nem** tiltja le; ezek csak jelszó-visszaállítást tesznek lehetővé, teljes bejelentkezett munkamenetet nem adnak.
+- A **TwoFactor** engedélyezi vagy letiltja a kétlépcsős hitelesítést. Kikapcsolása nem kerüli meg a védelmet: a kétlépcsős hitelesítést már beállított felhasználók nem tudnak bejelentkezni, amíg az ki van kapcsolva; akkor sem lehet bejelentkezni, ha a kétlépcsős hitelesítés kötelező, de ki van kapcsolva.
+- A **Passkey** a hozzáférési kulcsokat bejelentkezési és második hitelesítési módként is engedélyezi vagy tiltja. A bejelentkezéshez használt kulcs ugyanannak a bejelentkezésnek a második lépéséhez nem használható. Kikapcsolva a helyreállító kódok továbbra is használhatók.
+- Az **EmailTwoFactor** az e-mailes második hitelesítési kódokat engedélyezi vagy tiltja. A felhasználó az első hitelesítés után választhat a fiók megerősített címei közül. E-mailes bejelentkezési vagy jelszó-helyreállító hivatkozás után nem használható e-mailes kód, mert ugyanazt a csatornát használná.
+
+Jelszó-helyreállítás után minden meglévő munkamenet, valamint a még érvényes bejelentkezési és helyreállítási hivatkozás érvényét veszti.
+
+Ha egy mód le van tiltva, a korábban kiadott hivatkozásokat és az adott módhoz tartozó aktív kihívásokat a rendszer elutasítja.
+
 ## E-mail beállítások
 
 Az `email.json` fül értéklista helyett űrlap:

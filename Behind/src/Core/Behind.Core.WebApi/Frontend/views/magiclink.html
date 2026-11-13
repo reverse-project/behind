@@ -1,7 +1,17 @@
 <section>
     <h1 class="mb-3" data-bind="t: 'magiclink.title'">Magic link</h1>
     <two-factor-challenge params="challenge: twoFactor"></two-factor-challenge>
-    <p role="status" data-bind="visible: !twoFactor.active(), text: message"></p>
+    <p role="status" data-bind="visible: !twoFactor.active() && !resettingPassword(), text: message"></p>
+    <form data-bind="visible: resettingPassword() && !twoFactor.active(), submit: submitPassword">
+        <p class="alert alert-info" role="status" data-bind="t: 'magiclink.resetPassword'">Set a new password for your account. This step expires in a few minutes and can be used only once.</p>
+        <div class="mb-3">
+            <label class="form-label" for="magiclink-new-password" data-bind="t: 'magiclink.newPassword'">New password</label>
+            <input id="magiclink-new-password" class="form-control" type="password" autocomplete="new-password" required data-bind="value: newPassword, hasFocus: resettingPassword">
+        </div>
+        <p class="text-danger" role="alert" data-bind="visible: resetMessage() !== '', text: resetMessage"></p>
+        <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'magiclink.setPassword'">Set password</button>
+    </form>
+    <p data-bind="visible: passwordChanged"><a href="#/sign-in" data-bind="t: 'signin.title'">Sign in</a></p>
     <p data-bind="visible: failed"><a href="#/sign-in" data-bind="t: 'magiclink.requestNew'">Request a new sign in link</a></p>
     <p data-bind="visible: emailNotConfirmed"><a href="#/sign-in" data-bind="t: 'magiclink.resendConfirmation'">Resend the confirmation email</a></p>
 </section>

@@ -26,6 +26,8 @@ public static class TwoFactorExtensions
             services.TryAddScoped<IRecoveryCodes, RecoveryCodes>();
             services.TryAddScoped<ITwoFactorVerification, TwoFactorVerification>();
             services.TryAddScoped<ITwoFactorEnrollment, TwoFactorEnrollment>();
+            services.TryAddScoped<ITwoFactorChallengeNonces, TwoFactorChallengeNonces>();
+            services.TryAddScoped<IEmailTwoFactor, EmailTwoFactor>();
 
             return services.AddRateLimiter(options =>
             {

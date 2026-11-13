@@ -225,6 +225,26 @@ public class TwoFactorFrontendTests
     }
 
     [Fact]
+    public void EnrollmentSettings_HideOnlyEnrollmentAndPreserveFactorManagementAndChallenges()
+    {
+        var view = Read("views/twofactor.html");
+        var viewModel = Read("viewmodels/twofactor.js");
+        var challenge = Read("components/twofactorchallenge.html");
+        var challengeViewModel = Read("viewmodels/twofactorchallenge.js");
+
+        Assert.Contains("visible: canEnrollTotp() && !totpEnabled()", view);
+        Assert.Contains("visible: passkeySupported && canEnrollPasskey()", view);
+        Assert.Contains("visible: totpEnabled, enable: !busy(), click: removeTotp", view);
+        Assert.Contains("click: $parent.removePasskey", view);
+        Assert.Contains("accounts.twoFactor() && accounts.passkey()", viewModel);
+        Assert.Contains("visible: canSetupTotp()", challenge);
+        Assert.Contains("visible: canSetupPasskey", challenge);
+        Assert.Contains("visible: passkeyAvailable() && !setupRequired()", challenge);
+        Assert.Contains("accounts.twoFactor() && accounts.passkey() && self.passkeyAvailable()", challengeViewModel);
+        Assert.Contains("auth.twoFactor.signInWithPasskey(", challengeViewModel);
+    }
+
+    [Fact]
     public void ChallengeViewModel_ShowsTheRecoveryCodesOnceBeforeContinuing()
     {
         var viewModel = Read("viewmodels/twofactorchallenge.js");

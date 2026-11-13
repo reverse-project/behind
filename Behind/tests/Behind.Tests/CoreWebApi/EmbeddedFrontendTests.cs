@@ -431,6 +431,23 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
+    public void LostPasswordMagicLink_SetsTheNewPasswordWithTheRestrictedResetGrantInsteadOfASession()
+    {
+        var view = Read(Provider.GetFileInfo("views/magiclink.html"));
+        var viewModel = Read(Provider.GetFileInfo("viewmodels/magiclink.js"));
+        var auth = Read(Provider.GetFileInfo("models/auth.js"));
+
+        Assert.Contains("if (data && data.resetToken && !data.accessToken)", auth);
+        Assert.Contains("passwordReset: { token: data.resetToken, expires: data.expires }", auth);
+        Assert.Contains("http.post(\"/sign/in/password/reset\", { token: token, password: password })", auth);
+        Assert.Contains("if (result.passwordReset)", viewModel);
+        Assert.Contains("auth.resetPassword(resetToken, self.newPassword())", viewModel);
+        Assert.Contains("submit: submitPassword", view);
+        Assert.Contains("autocomplete=\"new-password\"", view);
+        Assert.Contains("visible: passwordChanged", view);
+    }
+
+    [Fact]
     public void MagicLinkPage_OffersResendingTheConfirmationEmailWhenTheEmailIsNotConfirmed()
     {
         var view = Read(Provider.GetFileInfo("views/magiclink.html"));

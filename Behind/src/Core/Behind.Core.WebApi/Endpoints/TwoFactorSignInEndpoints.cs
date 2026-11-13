@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Buffers.Text;
 using Behind.Common;
 using Behind.Common.Logging;
 using Behind.Common.WebApi.Middleware;
@@ -38,7 +39,7 @@ public sealed class TwoFactorSignInEndpoints
         ILogger<TwoFactorSignInEndpoints> logger) =>
         WithTicket(request.Ticket, TwoFactorStage.Verify, tickets, logger, async ticket =>
             await verification.VerifyTotp(ticket.UserId, request.Code, httpContext.RequestAborted)
-                ? await signIn.Complete(ticket.UserId, ticket.Function, null, httpContext)
+                ? await signIn.Complete(ticket.UserId, ticket.Function, null, httpContext, ticket)
                 : Rejected(logger, ticket, "authenticator code"));
 
     [IgnoreETag]
@@ -61,7 +62,7 @@ public sealed class TwoFactorSignInEndpoints
                         "Recovery code used by user {UserId}, new codes issued: {Issued}",
                         () => [ticket.UserId, used.NewCodes.Count > 0]);
 
-                    return signIn.Complete(ticket.UserId, ticket.Function, used.NewCodes, httpContext);
+                    return signIn.Complete(ticket.UserId, ticket.Function, used.NewCodes, httpContext, ticket);
                 });
         });
 
@@ -82,9 +83,22 @@ public sealed class TwoFactorSignInEndpoints
 
             return options.Match<IResult>(
                 () => Results.NotFound(),
-                found => Results.Json(new PasskeyAssertionChallenge(
-                    tickets.Seal(tickets.Create(ticket.UserId, ticket.Stage, ticket.Function, found.ToJson())),
-                    found)));
+                found =>
+                {
+                    if (ticket.PrimaryCredentialId is not null)
+                    {
+                        found.AllowCredentials = found.AllowCredentials
+                            .Where(credential => Base64Url.EncodeToString(credential.Id) != ticket.PrimaryCredentialId)
+                            .ToList();
+                        if (found.AllowCredentials.Count == 0)
+                        {
+                            return Results.NotFound();
+                        }
+                    }
+
+                    return Results.Json(new PasskeyAssertionChallenge(
+                        tickets.Seal(ticket with { Ceremony = found.ToJson() }), found));
+                });
         });
 
     [IgnoreETag]
@@ -98,6 +112,17 @@ public sealed class TwoFactorSignInEndpoints
         ILogger<TwoFactorSignInEndpoints> logger) =>
         WithTicket(request.Ticket, TwoFactorStage.Verify, tickets, logger, async ticket =>
         {
+            if (request.Credential.RawId is null || request.Credential.RawId.Length == 0)
+            {
+                return Rejected(logger, ticket, "invalid passkey credential");
+            }
+
+            if (ticket.PrimaryCredentialId is not null
+                && Base64Url.EncodeToString(request.Credential.RawId) == ticket.PrimaryCredentialId)
+            {
+                return Rejected(logger, ticket, "passkey already used as primary authentication");
+            }
+
             var options = Try(() => AssertionOptions.FromJson(ticket.Ceremony ?? string.Empty))
                 .Run()
                 .Match<Option<AssertionOptions>>(_ => None, parsed => parsed.ToOption());
@@ -110,7 +135,7 @@ public sealed class TwoFactorSignInEndpoints
                     parsed,
                     request.Credential,
                     httpContext.RequestAborted)
-                    ? await signIn.Complete(ticket.UserId, ticket.Function, null, httpContext)
+                    ? await signIn.Complete(ticket.UserId, ticket.Function, null, httpContext, ticket)
                     : Rejected(logger, ticket, "passkey"));
         });
 
@@ -142,7 +167,7 @@ public sealed class TwoFactorSignInEndpoints
 
             return await enrolled.Match(
                 () => Task.FromResult(Rejected(logger, ticket, "authenticator code")),
-                done => signIn.Complete(user.Id, ticket.Function, done.RecoveryCodes, httpContext));
+                done => signIn.Complete(user.Id, ticket.Function, done.RecoveryCodes, httpContext, ticket));
         });
 
     [IgnoreETag]
@@ -155,12 +180,14 @@ public sealed class TwoFactorSignInEndpoints
         ITwoFactorEnrollment enrollment,
         ILogger<TwoFactorSignInEndpoints> logger) =>
         WithSetupUser(request.Ticket, tickets, userManager, logger, async (user, ticket) =>
-            Results.Json(await enrollment.BeginPasskey(
-                httpContext.PasskeyOrigin(configuration),
-                user,
-                TwoFactorStage.Setup,
-                ticket.Function,
-                httpContext.RequestAborted)));
+        {
+            var challenge = await enrollment.BeginPasskey(
+                httpContext.PasskeyOrigin(configuration), user, TwoFactorStage.Setup, ticket.Function, httpContext.RequestAborted);
+            return Results.Json(challenge with
+            {
+                Ticket = tickets.Seal(ticket with { Ceremony = challenge.Options.ToJson() })
+            });
+        });
 
     [IgnoreETag]
     public static Task<IResult> SetupPasskey(
@@ -182,7 +209,7 @@ public sealed class TwoFactorSignInEndpoints
 
             return await enrolled.Match(
                 () => Task.FromResult(Rejected(logger, ticket, "passkey")),
-                done => signIn.Complete(ticket.UserId, ticket.Function, done.RecoveryCodes, httpContext));
+                done => signIn.Complete(ticket.UserId, ticket.Function, done.RecoveryCodes, httpContext, ticket));
         });
 
     private static async Task<IResult> WithTicket(

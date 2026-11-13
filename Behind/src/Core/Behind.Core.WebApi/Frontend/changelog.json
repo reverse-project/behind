@@ -3,6 +3,9 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "added", "text": "Passkeys can be used for primary sign-in with a different second factor when required. Existing enrolled passkeys work for sign-in. Email-based time-limited codes can be sent to a selected confirmed address as a second factor, except after an email link. Backend:Accounts adds reloadable Password, MagicLink, TwoFactor, Passkey and EmailTwoFactor switches, all enabled by default. Disabling TwoFactor does not bypass enrolled or required protection. LostPassword links permit only password reset; a successful reset signs out existing sessions and revokes outstanding links." },
+      { "type": "fixed", "text": "Completed second-factor challenges cannot be replayed to change enrollment or consume recovery codes, including through concurrent requests." },
+      { "type": "fixed", "text": "The password sign-in switch in Settings now displays and saves its actual enabled state instead of masking it as a password." },
       { "type": "changed", "text": "Sport player lists and public profiles show age without exposing exact birth dates. Birth dates remain available only in authorized management." },
       { "type": "changed", "text": "Saving a layout applies the selected saved layout around the layout editor without losing the editor state. Other management pages keep their fixed shell." },
       { "type": "fixed", "text": "Content and forum widget changes refresh mounted widgets after successful edits, and layout saves no longer reuse an older in-flight layout request." },

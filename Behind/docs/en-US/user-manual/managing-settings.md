@@ -25,6 +25,20 @@ In **backend.json > Backend > ContentRestrictions**, **Enabled** turns global ag
 
 Choose a content type and **Browse items** to find an item without copying its UUID. Search by its display name or full ID and use **Previous items** / **Next items** to page through results. Each item shows its title, filename, name or other available text, falling back to its ID when no label exists. Choose the item to fill the restriction's ID. You can still enter an ID manually. Existing rules also show readable labels.
 
+## Account sign-in methods
+
+In **backend.json > Backend > Accounts**, **Password**, **MagicLink**, **TwoFactor**, **Passkey** and **EmailTwoFactor** control sign-in and second-factor methods. All default to **true**, and changes reload without restarting.
+
+- **Password** enables or disables password sign-in.
+- **MagicLink** enables or disables email sign-in links. It does **not** disable **LostPassword** recovery links, which permit a password reset only and do not grant a full signed-in session.
+- **TwoFactor** enables or disables two-factor authentication. Turning it off does not bypass protection: users who have enrolled in two-factor authentication cannot sign in while it is disabled, and users cannot sign in when two-factor authentication is required but disabled.
+- **Passkey** enables or disables passkeys both for sign-in and as a second factor. A passkey used to sign in cannot also satisfy that sign-in's second-factor challenge. When disabled, recovery codes remain usable.
+- **EmailTwoFactor** enables or disables email codes as a second factor. Users choose a confirmed account address after primary authentication. Email codes are not offered after an email sign-in or password recovery link, because both use the same channel.
+
+After a password recovery, all existing sessions and outstanding sign-in and recovery links are revoked.
+
+If a method is disabled, previously issued links and active challenges for that method are rejected.
+
 ## Email settings
 
 The `email.json` tab is a form instead of a list of values:

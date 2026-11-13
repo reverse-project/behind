@@ -11,7 +11,7 @@
             <h2 class="h4" data-bind="t: 'twoFactor.totp.title'">Authenticator app</h2>
             <p><span class="badge text-bg-secondary" data-bind="t: totpStatus">Not set up</span></p>
             <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-primary" data-bind="visible: !totpEnabled(), enable: !busy(), click: startTotp, t: 'twoFactor.totp.setUp'">Set up</button>
+                <button type="button" class="btn btn-primary" data-bind="visible: canEnrollTotp() && !totpEnabled(), enable: !busy(), click: startTotp, t: 'twoFactor.totp.setUp'">Set up</button>
                 <button type="button" class="btn btn-outline-danger" data-bind="visible: totpEnabled, enable: !busy(), click: removeTotp, t: 'twoFactor.totp.remove'">Remove</button>
             </div>
             <div class="mt-3" data-bind="if: hasEnrollment">
@@ -40,7 +40,7 @@
                 </table>
             </div>
             <p class="text-body-secondary" data-bind="visible: !passkeySupported, t: 'twoFactor.passkeys.unsupported'">This browser does not support passkeys.</p>
-            <form data-bind="visible: passkeySupported, submit: addPasskey">
+            <form data-bind="visible: passkeySupported && canEnrollPasskey(), submit: addPasskey">
                 <div class="mb-3">
                     <label class="form-label" for="two-factor-new-passkey-name" data-bind="t: 'twoFactor.passkeys.nameLabel'">Passkey name (optional)</label>
                     <input id="two-factor-new-passkey-name" class="form-control" type="text" maxlength="100" autocomplete="off" data-bind="value: passkeyName">

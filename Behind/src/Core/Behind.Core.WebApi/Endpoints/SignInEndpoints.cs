@@ -50,6 +50,7 @@ public sealed class SignInEndpoints
     public sealed record MagicLinkRequest(
         [property: Required, DataType(DataType.EmailAddress)]
         string Email,
+        [property: AllowedValues(MagicLinkFunction.SignIn, MagicLinkFunction.LostPassword)]
         MagicLinkFunction Function = MagicLinkFunction.SignIn,
         CaptchaResponse? Captcha = null) : ICaptchaRequest;
 
@@ -105,6 +106,13 @@ public sealed class SignInEndpoints
                 },
                 async settings =>
                 {
+                    if (request.Function is not (MagicLinkFunction.SignIn or MagicLinkFunction.LostPassword))
+                    {
+                        logger.LogWarning("Magic link request rejected: {Function} cannot be requested", () => [request.Function]);
+
+                        return Results.BadRequest();
+                    }
+
                     var user = await userManager.FindByEmailAsync(request.Email);
                     var now = timeProvider.GetUtcNow();
 
@@ -149,7 +157,8 @@ public sealed class SignInEndpoints
     public static async Task<IResult> SignInMagicLink(UserManager<ApplicationUser> userManager,
         IOptions<SecurityConfiguration> securityConfiguration, IMagicLinkSettingsStore settingsStore,
         IMagicLinkCommands magicLinkCommands, ISessionCommands sessionCommands,
-        IWallOfShameQueries wallOfShameQueries, ITwoFactorGate twoFactorGate, TimeProvider timeProvider,
+        IWallOfShameQueries wallOfShameQueries, ITwoFactorGate twoFactorGate,
+        IPasswordResetGrants passwordResetGrants, TimeProvider timeProvider,
         HttpContext httpContext, ILogger<SignInEndpoints> logger, MagicLinkSignInRequest request)
     {
         httpContext.Response.Headers.CacheControl = NoStore;
@@ -178,7 +187,8 @@ public sealed class SignInEndpoints
                         },
                         some: async c =>
                         {
-                            var consumed = await magicLinkCommands.Consume(c.Nonce, now, httpContext.RequestAborted);
+                            var consumed = (await magicLinkCommands.Consume(c.Nonce, now, httpContext.RequestAborted))
+                                .Where(r => r.Function is MagicLinkFunction.SignIn or MagicLinkFunction.LostPassword);
 
                             if (consumed == None)
                             {
@@ -210,7 +220,8 @@ public sealed class SignInEndpoints
                         : await StartSession(
                             user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
                             wallOfShameQueries, now, httpContext, logger, Some(twoFactorGate),
-                            redemption.Match(() => (MagicLinkFunction?)null, r => r.Function));
+                            redemption.Match(() => (MagicLinkFunction?)null, r => r.Function),
+                            passwordResetGrants: passwordResetGrants);
                 }));
     }
 
@@ -228,7 +239,9 @@ public sealed class SignInEndpoints
     internal static async Task<IResult> StartSession(ApplicationUser user, JwtSettings jwtSettings,
         bool emailConfirmationRequired, ISessionCommands sessionCommands, IWallOfShameQueries wallOfShameQueries,
         DateTimeOffset now, HttpContext httpContext, ILogger logger, Option<ITwoFactorGate> secondFactor,
-        MagicLinkFunction? function = null, IReadOnlyList<string>? recoveryCodes = null)
+        MagicLinkFunction? function = null, IReadOnlyList<string>? recoveryCodes = null,
+        IPasswordResetGrants? passwordResetGrants = null,
+        string? primaryCredentialId = null)
     {
         if (emailConfirmationRequired && !user.HasConfirmedEmail)
         {
@@ -251,13 +264,29 @@ public sealed class SignInEndpoints
             {
                 var challenge = await secondFactor.Match(
                     none: () => Task.FromResult<Option<TwoFactorChallengeResponse>>(None),
-                    gate => gate.Challenge(user.Id, function, httpContext.RequestAborted));
+                    gate => primaryCredentialId is null
+                        ? gate.Challenge(user.Id, function, httpContext.RequestAborted)
+                        : gate.ChallengePasskey(user.Id, primaryCredentialId, httpContext.RequestAborted));
 
                 return await challenge.Match(
-                    none: () => StartPermittedSession(
-                        user, jwtSettings, sessionCommands, httpContext, logger, function, recoveryCodes),
+                    none: () => function switch
+                    {
+                        null or MagicLinkFunction.SignIn => StartPermittedSession(
+                            user, jwtSettings, sessionCommands, httpContext, logger, function, recoveryCodes),
+                        MagicLinkFunction.LostPassword => StartPasswordReset(
+                            user, passwordResetGrants, httpContext, logger, recoveryCodes),
+                        _ => Task.FromResult<IResult>(Results.Unauthorized())
+                    },
                     pending =>
                     {
+                        if (pending.Unavailable)
+                        {
+                            logger.LogWarning("Sign-in refused for user {UserId}: an authentication method is disabled", () => [user.Id]);
+                            return Task.FromResult<IResult>(Results.Json(
+                                new TwoFactorFailure(TwoFactorFailure.Unavailable),
+                                statusCode: StatusCodes.Status403Forbidden));
+                        }
+
                         logger.LogInformation(
                             "Second factor required for user {UserId}, setup required: {SetupRequired}",
                             () => [user.Id, pending.SetupRequired]);
@@ -274,6 +303,39 @@ public sealed class SignInEndpoints
                 return Task.FromResult(Results.Json(
                     new BannedResponse(active.Reason),
                     statusCode: StatusCodes.Status403Forbidden));
+            });
+    }
+
+    private static async Task<IResult> StartPasswordReset(ApplicationUser user,
+        IPasswordResetGrants? passwordResetGrants, HttpContext httpContext, ILogger logger,
+        IReadOnlyList<string>? recoveryCodes)
+    {
+        httpContext.Response.Headers.CacheControl = NoStore;
+
+        if (passwordResetGrants is null)
+        {
+            logger.LogError("Password reset for user {UserId} rejected: no password reset grants available", () => [user.Id]);
+
+            return Results.InternalServerError();
+        }
+
+        var grant = await passwordResetGrants.Issue(user.Id, httpContext.RequestAborted);
+
+        return grant.Match<IResult>(
+            none: () =>
+            {
+                logger.LogError("Password reset for user {UserId} rejected: magic links are not configured", () => [user.Id]);
+
+                return Results.InternalServerError();
+            },
+            some: issued =>
+            {
+                logger.LogInformation(
+                    "Password reset grant issued for user {UserId} instead of a session, expires at {ExpiresAt}",
+                    () => [user.Id, issued.ExpiresAt]);
+
+                return Results.Json(new PasswordResetEndpoints.PasswordResetResponse(
+                    issued.Token, issued.ExpiresAt, RecoveryCodes: recoveryCodes));
             });
     }
 

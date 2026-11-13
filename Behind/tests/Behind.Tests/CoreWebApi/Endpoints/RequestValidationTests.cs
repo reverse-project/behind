@@ -21,9 +21,18 @@ public class RequestValidationTests
     {
         Assert.True(IsValid(new SignInEndpoints.MagicLinkRequest("user@test.com")));
         Assert.True(IsValid(new SignInEndpoints.MagicLinkRequest("user@test.com", MagicLinkFunction.LostPassword)));
+        Assert.False(IsValid(new SignInEndpoints.MagicLinkRequest("user@test.com", MagicLinkFunction.PasswordReset)));
         Assert.False(IsValid(new SignInEndpoints.MagicLinkRequest("")));
         Assert.True(IsValid(new SignInEndpoints.MagicLinkSignInRequest("token")));
         Assert.False(IsValid(new SignInEndpoints.MagicLinkSignInRequest("")));
+    }
+
+    [Fact]
+    public void PasswordResetRequest_RequiresTheGrantAndThePassword()
+    {
+        Assert.True(IsValid(new PasswordResetEndpoints.PasswordResetRequest("grant", "secret")));
+        Assert.False(IsValid(new PasswordResetEndpoints.PasswordResetRequest("", "secret")));
+        Assert.False(IsValid(new PasswordResetEndpoints.PasswordResetRequest("grant", "")));
     }
 
     [Fact]

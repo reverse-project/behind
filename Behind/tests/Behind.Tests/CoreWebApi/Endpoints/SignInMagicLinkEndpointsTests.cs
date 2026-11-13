@@ -48,6 +48,7 @@ public class SignInMagicLinkEndpointsTests
     private readonly ISessionCommands _sessions = Substitute.For<ISessionCommands>();
     private readonly IWallOfShameQueries _bans = Substitute.For<IWallOfShameQueries>();
     private readonly ITwoFactorGate _gate = Substitute.For<ITwoFactorGate>();
+    private readonly IPasswordResetGrants _grants = Substitute.For<IPasswordResetGrants>();
     private readonly IMagicLinkMailQueue _mailQueue = new MagicLinkMailQueue();
     private readonly TimeProvider _time = new FixedTimeProvider(Now);
     private readonly CapturingLogger<SignInEndpoints> _logger = new();
@@ -123,6 +124,7 @@ public class SignInMagicLinkEndpointsTests
             _sessions,
             _bans,
             _gate,
+            _grants,
             _time,
             NewHttpContext(),
             _logger,
@@ -446,21 +448,84 @@ public class SignInMagicLinkEndpointsTests
         Assert.Equal(sessionId.ToString(), access.Claims.Single(c => c.Type == SessionClaimTypes.SessionId).Value);
     }
 
-    [Theory]
-    [InlineData(MagicLinkFunction.SignIn)]
-    [InlineData(MagicLinkFunction.LostPassword)]
-    public async Task SignInMagicLink_ValidToken_ReportsTheFunctionOfTheLink(MagicLinkFunction function)
+    [Fact]
+    public async Task SignInMagicLink_ValidSignInToken_ReportsTheFunctionOfTheLink()
     {
         var user = NewUser();
         _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, function))));
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn))));
         _sessions.CreateForUserId(Arg.Any<Guid>(), Arg.Any<ValidSession>(), Arg.Any<CancellationToken>())
             .Returns(Guid.NewGuid());
 
         var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
 
         var json = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
-        Assert.Equal(function, json.Value!.Function);
+        Assert.Equal(MagicLinkFunction.SignIn, json.Value!.Function);
+        await _grants.DidNotReceiveWithAnyArgs().Issue(default, default);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_LostPasswordToken_IssuesOnlyAPasswordResetGrantAndStartsNoSession()
+    {
+        var user = NewUser();
+        var expires = Now.AddMinutes(10);
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.LostPassword))));
+        _grants.Issue(user.Id, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(new PasswordResetGrant("grant-token", expires))));
+        var httpContext = NewHttpContext();
+
+        var result = await SignInEndpoints.SignInMagicLink(
+            UserManagerFor(user), Security(Some(Jwt)), StoreOf(Some(Settings())), _magicLinks, _sessions, _bans,
+            _gate, _grants, _time, httpContext, _logger, new SignInEndpoints.MagicLinkSignInRequest(TokenFor(Actual)));
+
+        var json = Assert.IsType<JsonHttpResult<PasswordResetEndpoints.PasswordResetResponse>>(result);
+        Assert.Equal("grant-token", json.Value!.ResetToken);
+        Assert.Equal(expires, json.Value.Expires);
+        Assert.Equal(MagicLinkFunction.LostPassword, json.Value.Function);
+        Assert.Equal("no-store", httpContext.Response.Headers.CacheControl.ToString());
+        await _sessions.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_LostPasswordTokenWithoutMagicLinkSettingsForTheGrant_StartsNoSession()
+    {
+        var user = NewUser();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.LostPassword))));
+        _grants.Issue(user.Id, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Option<PasswordResetGrant>>(None));
+
+        var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        Assert.IsType<InternalServerError>(result);
+        await _sessions.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_PasswordResetRedemption_IsRejectedAndStartsNoSession()
+    {
+        var user = NewUser();
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.PasswordReset))));
+
+        var result = await Redeem(user, Some(Settings()), TokenFor(Actual));
+
+        Assert.IsType<UnauthorizedHttpResult>(result);
+        await _sessions.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+        await _grants.DidNotReceiveWithAnyArgs().Issue(default, default);
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_PasswordResetFunction_IsRejectedAndIssuesNothing()
+    {
+        var user = NewUser();
+
+        var result = await RequestLink(user, Some(Settings()), function: MagicLinkFunction.PasswordReset);
+
+        Assert.IsType<BadRequest>(result);
+        await _magicLinks.DidNotReceiveWithAnyArgs().Issue(default, default!, default);
+        Assert.Empty(QueuedMails());
     }
 
     [Fact]
@@ -575,6 +640,7 @@ public class SignInMagicLinkEndpointsTests
             _sessions,
             _bans,
             _gate,
+            _grants,
             _time,
             httpContext,
             NullLogger<SignInEndpoints>.Instance,

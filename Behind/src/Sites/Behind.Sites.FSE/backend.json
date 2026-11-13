@@ -12,7 +12,12 @@
     },
     "Accounts": {
       "SignIn": false,
-      "SignUp": false
+      "SignUp": false,
+      "Password": true,
+      "MagicLink": true,
+      "TwoFactor": true,
+      "Passkey": true,
+      "EmailTwoFactor": true
     }
   }
 }

@@ -11,15 +11,23 @@ public sealed record MagicLinkCredential(TokenNonce Nonce, string Random, string
 {
     private const char Separator = '.';
     private const string NonceFormat = "N";
-    private const string KeyPurpose = "magic-link";
+    public const string MagicLinkPurpose = "magic-link";
+    public const string PasswordResetPurpose = "password-reset";
 
     public string Token => $"{Payload(Nonce, Random)}{Separator}{Hash}";
 
-    public static MagicLinkCredential Create(TokenNonce nonce, Uuid secret, string pepper)
+    public static MagicLinkCredential Create(
+        TokenNonce nonce,
+        Uuid secret,
+        string pepper,
+        string purpose = MagicLinkPurpose)
     {
         var random = RandomNumberGenerator.CreateUrlSafeToken();
 
-        return new MagicLinkCredential(nonce, random, Payload(nonce, random).SignHmacSha256(KeyOf(secret, pepper)));
+        return new MagicLinkCredential(
+            nonce,
+            random,
+            Payload(nonce, random).SignHmacSha256(KeyOf(secret, pepper, purpose)));
     }
 
     public static Option<MagicLinkCredential> TryParse(string? token) =>
@@ -28,12 +36,13 @@ public sealed record MagicLinkCredential(TokenNonce Nonce, string Random, string
             ? Some(new MagicLinkCredential(parsedNonce, random, hash))
             : None;
 
-    public bool IsSignedBy(IEnumerable<Uuid> secrets, string pepper) =>
+    public bool IsSignedBy(IEnumerable<Uuid> secrets, string pepper, string purpose = MagicLinkPurpose) =>
         secrets.Aggregate(
             false,
-            (signed, secret) => Payload(Nonce, Random).VerifyHmacSha256(Hash, KeyOf(secret, pepper)) | signed);
+            (signed, secret) => Payload(Nonce, Random).VerifyHmacSha256(Hash, KeyOf(secret, pepper, purpose)) | signed);
 
-    private static byte[] KeyOf(Uuid secret, string pepper) => secret.Value.DeriveKey(pepper, KeyPurpose);
+    private static byte[] KeyOf(Uuid secret, string pepper, string purpose) =>
+        secret.Value.DeriveKey(pepper, purpose);
 
     private static string Payload(TokenNonce nonce, string random) =>
         $"{nonce.Nonce.ToString(NonceFormat)}{Separator}{random}";

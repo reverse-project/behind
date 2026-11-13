@@ -6,5 +6,9 @@ namespace Behind.Core.Domain;
 public enum MagicLinkFunction
 {
     SignIn,
-    LostPassword
+    LostPassword,
+    PasswordReset,
+    EmailTwoFactor,
+    PasskeyChallenge,
+    TwoFactorChallenge
 }

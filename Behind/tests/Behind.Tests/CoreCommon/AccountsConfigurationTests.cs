@@ -25,6 +25,11 @@ public class AccountsConfigurationTests
 
         Assert.True(configuration.SignIn);
         Assert.True(configuration.SignUp);
+        Assert.True(configuration.Password);
+        Assert.True(configuration.MagicLink);
+        Assert.True(configuration.TwoFactor);
+        Assert.True(configuration.Passkey);
+        Assert.True(configuration.EmailTwoFactor);
     }
 
     [Fact]
@@ -35,6 +40,23 @@ public class AccountsConfigurationTests
         Assert.True(configuration.SignIn);
         Assert.False(configuration.SignUp);
         Assert.False(Bind(new() { ["Backend:Accounts:SignIn"] = "false" }).SignIn);
+    }
+
+    [Theory]
+    [InlineData("Password")]
+    [InlineData("MagicLink")]
+    [InlineData("TwoFactor")]
+    [InlineData("Passkey")]
+    [InlineData("EmailTwoFactor")]
+    public void Binding_ReadsSignInModes(string mode)
+    {
+        var configuration = Bind(new() { [$"Backend:Accounts:{mode}"] = "false" });
+
+        Assert.Equal(mode != "Password", configuration.Password);
+        Assert.Equal(mode != "MagicLink", configuration.MagicLink);
+        Assert.Equal(mode != "TwoFactor", configuration.TwoFactor);
+        Assert.Equal(mode != "Passkey", configuration.Passkey);
+        Assert.Equal(mode != "EmailTwoFactor", configuration.EmailTwoFactor);
     }
 
     [Fact]

@@ -44,12 +44,17 @@ Ugyanez a captcha védi a bejelentkezési oldal többi gombját is (**Bejelentke
 
 A hivatkozás csak rövid ideig érvényes. Ha érvénytelen vagy lejárt, az oldal felajánlja egy új kérését. Ha a kérések túl gyorsan követik egymást, várakozásra kérjük.
 
+### Hozzáférési kulccsal
+
+Adja meg a fiók e-mail-címét és a captcha kódot, válassza a **Bejelentkezés hozzáférési kulccsal** lehetőséget, majd erősítse meg az eszközén. A profilban korábban regisztrált kulcsok használhatók. Ha második lépés szükséges, másik hitelesítési módot vagy másik kulcsot kell használni.
+
 ### Kétlépcsős hitelesítés
 
 Ha bekapcsolta a kétlépcsős hitelesítést (lásd [Kétlépcsős hitelesítés](./your-account.md#kétlépcsős-hitelesítés)), a jelszóval vagy e-mailes hivatkozással történő bejelentkezés egy második lépést kér, mielőtt bejelentkezne. Ez ugyanúgy működik jelszó, bejelentkezési hivatkozás és elfelejtett jelszó hivatkozás után.
 
 - Adja meg a **hitelesítő alkalmazás** hatjegyű kódját, vagy
 - válassza a **Hozzáférési kulcs használata** lehetőséget, és erősítse meg az eszközén, vagy
+- válasszon egy megerősített e-mail-címet és kérjen kódot, ha ez engedélyezett és az első lépés nem e-mailes hivatkozás volt, vagy
 - válassza a **Helyreállító kód használata** lehetőséget, és adja meg az egyik helyreállító kódját (8 betű és szám). Minden helyreállító kód egyszer használható. Amikor az utolsót is felhasználta, új, 20 darabos készletet kap.
 
 Ha a telepítés megköveteli a kétlépcsős hitelesítést, és Ön még nem állította be, a jelszava vagy a hivatkozása után végigvezetjük a beállításon: válasszon egy hitelesítő alkalmazást (olvassa be a QR-kódot, és adja meg az alkalmazás által mutatott kódot) vagy egy hozzáférési kulcsot. Ezután megkapja a helyreállító kódjait. Mentse el őket, csak egyszer jelennek meg.
@@ -59,8 +64,8 @@ A második lépést 5 percen belül be kell fejezni, és tíz percenként csak k
 ### Elfelejtett jelszó
 
 1. A bejelentkezési oldalon adja meg az e-mail-címét, és válassza az **Elfelejtette a jelszavát?** gombot. Ugyanúgy kap egy hivatkozást, mint a varázslink esetén.
-2. Kövesse a hivatkozást. Bejelentkezteti, és közvetlenül a **Profil** oldal **Új jelszó** mezőjéhez viszi.
-3. Adjon meg egy új jelszót, és válassza a **Mentés** gombot.
+2. Kövesse a hivatkozást, és végezze el a szükséges második hitelesítést. A hivatkozás csak egy rövid ideig érvényes jelszó-visszaállító űrlaphoz ad hozzáférést, bejelentkezett munkamenetet nem ad.
+3. Adjon meg és küldjön el egy új jelszót. A meglévő munkamenetek és a még érvényes hivatkozások érvényüket vesztik.
 
 ### Letiltott fiókok
 

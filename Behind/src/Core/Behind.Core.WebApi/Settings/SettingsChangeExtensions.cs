@@ -26,8 +26,13 @@ public static class SettingsChangeExtensions
         {
             var isEditable = file.FindAction(path) == None;
             var keepsSecret = path.IsSensitiveConfigurationPath && incoming.IsBlank;
+            var existing = root.FindValue(path);
+            if (existing is null && AccountModeSettings.CanAdd(root, file, path))
+            {
+                existing = JsonValue.Create(true);
+            }
 
-            return isEditable && !keepsSecret && root.FindValue(path) is { } existing
+            return isEditable && !keepsSecret && existing is not null
                 ? existing.Coerce(incoming).Map(node => KeyValuePair.Create(path, (JsonNode?)node))
                 : None;
         }

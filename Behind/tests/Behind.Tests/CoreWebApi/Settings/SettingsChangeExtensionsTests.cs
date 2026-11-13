@@ -90,4 +90,34 @@ public sealed class SettingsChangeExtensionsTests
     {
         Assert.Empty(Planned(Security));
     }
+
+    [Theory]
+    [InlineData("Password")]
+    [InlineData("MagicLink")]
+    [InlineData("TwoFactor")]
+    [InlineData("Passkey")]
+    [InlineData("EmailTwoFactor")]
+    public void MissingAccountModesCanBeDisplayedAndSaved(string mode)
+    {
+        var root = JsonNode.Parse("""{"Backend":{"Accounts":{"SignIn":true}}}""")!.AsObject();
+        var path = $"Backend:Accounts:{mode}";
+        var field = Assert.Single(AccountModeSettings.Missing(root, "backend.json"), field => field.Path == path);
+
+        Assert.Equal("boolean", field.Type);
+        Assert.Equal("true", field.Value);
+        Assert.True(field.Editable);
+        var changes = root.PlanChanges("backend.json", Values((path, "false")));
+        Assert.False((bool?)changes.Match(() => throw new InvalidOperationException(), found => found[path]));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values((path, "\"false\""))));
+        Assert.Equal(None, root.PlanChanges("other.json", Values((path, "false"))));
+    }
+
+    [Fact]
+    public void MissingAccountModesDoNotReplaceAnIncompatibleSection()
+    {
+        var root = JsonNode.Parse("""{"Backend":{"Accounts":"invalid"}}""")!.AsObject();
+
+        Assert.Empty(AccountModeSettings.Missing(root, "backend.json"));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Accounts:Password", "false"))));
+    }
 }

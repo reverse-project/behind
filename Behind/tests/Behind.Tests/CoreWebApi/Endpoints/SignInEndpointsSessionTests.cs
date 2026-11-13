@@ -311,6 +311,22 @@ public class SignInEndpointsSessionTests
     }
 
     [Fact]
+    public async Task SignInPassword_WhenSecondFactorIsUnavailable_DoesNotCreateASession()
+    {
+        var commands = Substitute.For<ISessionCommands>();
+        var gate = Substitute.For<ITwoFactorGate>();
+        gate.Challenge(Arg.Any<Guid>(), Arg.Any<MagicLinkFunction?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Some(Challenge with { Unavailable = true })));
+
+        var result = await SignInWithGate(NewUser("secret"), "secret", gate, commands);
+
+        var json = Assert.IsType<JsonHttpResult<TwoFactorFailure>>(result);
+        Assert.Equal(403, json.StatusCode);
+        Assert.Equal(TwoFactorFailure.Unavailable, json.Value!.Code);
+        await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
     public async Task SignInPassword_AsksTheGateAboutTheUserOfTheCredentials()
     {
         var user = NewUser("secret");

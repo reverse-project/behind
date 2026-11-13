@@ -5,14 +5,15 @@
             <label class="form-label" for="signin-email" data-bind="t: 'signin.email'">Email</label>
             <input id="signin-email" class="form-control" type="email" autocomplete="username" required data-bind="value: email">
         </div>
-        <div class="mb-3">
+        <div class="mb-3" data-bind="if: passwordSignInEnabled">
             <label class="form-label" for="signin-password" data-bind="t: 'signin.password'">Password</label>
             <input id="signin-password" class="form-control" type="password" autocomplete="current-password" data-bind="value: password">
         </div>
         <captcha params="captcha: captcha"></captcha>
         <div class="d-flex flex-wrap gap-2">
-            <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'signin.submit'">Sign in</button>
-            <button type="button" class="btn btn-outline-secondary" data-bind="enable: !busy(), click: requestMagicLink, t: 'signin.magicLink'">Email me a sign in link</button>
+            <button type="submit" class="btn btn-primary" data-bind="visible: passwordSignInEnabled, enable: !busy(), t: 'signin.submit'">Sign in</button>
+            <button type="button" class="btn btn-outline-secondary" data-bind="visible: passkeySignInEnabled, enable: !busy(), click: usePasskey, t: 'signin.passkey'">Sign in with a passkey</button>
+            <button type="button" class="btn btn-outline-secondary" data-bind="visible: magicLinkSignInEnabled, enable: !busy(), click: requestMagicLink, t: 'signin.magicLink'">Email me a sign in link</button>
             <button type="button" class="btn btn-link" data-bind="enable: !busy(), click: requestLostPassword, t: 'signin.lostPassword'">Lost your password?</button>
             <button type="button" class="btn btn-link" data-bind="enable: !busy(), click: resendConfirmation, t: 'signin.resendConfirmation'">Resend confirmation email</button>
         </div>

@@ -23,9 +23,41 @@ public class AccountsFrontendTests
         var model = Read("models/accounts.js");
 
         Assert.Contains("http.get(\"/accounts/settings\")", model);
+        Assert.Contains("var password = ko.observable(true)", model);
+        Assert.Contains("var magicLink = ko.observable(true)", model);
+        Assert.Contains("var twoFactor = ko.observable(true)", model);
+        Assert.Contains("var passkey = ko.observable(true)", model);
         Assert.Contains("signIn(response.data.signIn)", model);
         Assert.Contains("signUp(response.data.signUp)", model);
+        Assert.Contains("password(response.data.password !== false)", model);
+        Assert.Contains("magicLink(response.data.magicLink !== false)", model);
+        Assert.Contains("twoFactor(response.data.twoFactor !== false)", model);
+        Assert.Contains("passkey(response.data.passkey !== false)", model);
         Assert.Contains("accounts.load()", Read("app.js"));
+    }
+
+    [Fact]
+    public void SignIn_HidesDisabledMethodsAndKeepsLostPasswordAction()
+    {
+        var view = Read("views/signin.html");
+        var viewModel = Read("viewmodels/signin.js");
+
+        Assert.Contains("if: passwordSignInEnabled", view);
+        Assert.Contains("visible: passwordSignInEnabled", view);
+        Assert.Contains("visible: magicLinkSignInEnabled", view);
+        Assert.Contains("click: requestLostPassword", view);
+        Assert.Contains("self.passwordSignInEnabled = accounts.password", viewModel);
+        Assert.Contains("self.magicLinkSignInEnabled = accounts.magicLink", viewModel);
+        Assert.Contains("if (!accounts.password() || self.busy())", viewModel);
+    }
+
+    [Fact]
+    public void Profile_AlwaysOffersFactorManagement()
+    {
+        var view = Read("views/profile.html");
+
+        Assert.Contains("href=\"#/profile/two-factor\"", view);
+        Assert.Contains("profile.twoFactorManage", view);
     }
 
     [Fact]

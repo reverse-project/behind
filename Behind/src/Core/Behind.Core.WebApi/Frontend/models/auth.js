@@ -39,6 +39,10 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
     };
 
     var bannedMessage = function (response) {
+        if (response.data && response.data.code === "twoFactorUnavailable") {
+            return i18n.t("auth.twoFactor.unavailable");
+        }
+
         if (response.data && response.data.code === "emailNotConfirmed") {
             return i18n.t("auth.emailNotConfirmed");
         }
@@ -104,6 +108,16 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
     };
 
     var signedIn = function (data) {
+        if (data && data.resetToken && !data.accessToken) {
+            return {
+                ok: true,
+                message: "",
+                lostPassword: true,
+                passwordReset: { token: data.resetToken, expires: data.expires },
+                recoveryCodes: data.recoveryCodes || []
+            };
+        }
+
         var result = success("auth.signIn.done");
 
         session.start(data);
@@ -233,6 +247,26 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
     };
 
     var twoFactor = {
+        emailAddresses: function (ticket) {
+            return http.post("/sign/in/two-factor/email/addresses", { ticket: ticket }).then(function (response) {
+                return response.ok
+                    ? { ok: true, message: "", data: response.data }
+                    : stepFailed(response);
+            });
+        },
+
+        sendEmail: function (ticket, addressId) {
+            return http.post("/sign/in/two-factor/email", { ticket: ticket, addressId: addressId }).then(function (response) {
+                return response.ok
+                    ? Object.assign(success("auth.twoFactor.emailSent"), { ticket: response.data.ticket })
+                    : stepFailed(response, { 503: "auth.twoFactor.emailDeliveryFailed" });
+            });
+        },
+
+        verifyEmail: function (ticket, code) {
+            return signInStep("email/verify", { ticket: ticket, code: code });
+        },
+
         verifyTotp: function (ticket, code) {
             return signInStep("totp", { ticket: ticket, code: code });
         },
@@ -339,6 +373,34 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
     return {
         twoFactor: twoFactor,
 
+        signInWithPasskey: function (email, captcha) {
+            if (!email || !email.trim()) {
+                return incomplete("auth.passkey.invalidEmail");
+            }
+
+            var failed = function (response) {
+                return failure(response, {
+                    400: "auth.passkey.invalidEmail",
+                    401: "auth.passkey.invalid",
+                    403: bannedMessage,
+                    404: "auth.passkey.unavailable",
+                    429: "auth.tooManyAttempts"
+                });
+            };
+
+            return passkeyCeremony(
+                "/sign/in/passkey/options",
+                { email: email, captcha: captcha },
+                webauthn.get,
+                function (ticket, credential) {
+                    return http.post("/sign/in/passkey", { ticket: ticket, credential: credential }).then(function (response) {
+                        return response.ok ? completed(response) : failed(response);
+                    });
+                },
+                failed
+            );
+        },
+
         signIn: function (email, password, captcha) {
             return http.post("/sign/in/password", { email: email, password: password, captcha: captcha }).then(function (response) {
                 if (response.ok) {
@@ -374,6 +436,22 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
                 result.emailNotConfirmed = response.status === 403 && !!response.data && response.data.code === "emailNotConfirmed";
 
                 return result;
+            });
+        },
+
+        resetPassword: function (token, password) {
+            if (!token) {
+                return incomplete("auth.passwordReset.expired");
+            }
+
+            return http.post("/sign/in/password/reset", { token: token, password: password }).then(function (response) {
+                return response.ok
+                    ? success("auth.passwordReset.done")
+                    : failure(response, {
+                        401: "auth.passwordReset.expired",
+                        404: "auth.passwordReset.unavailable",
+                        429: "auth.tooManyAttempts"
+                    });
             });
         },
 

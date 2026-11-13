@@ -100,6 +100,58 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task PasswordSignInSwitch_DisplaysAndPersistsBothStatesWithoutExposingPasswords()
+    {
+        File.WriteAllText(Path.Combine(_directory, "backend.json"),
+            """{"Backend":{"Accounts":{"Password":false},"Database":{"Password":"actual-password"}}}""");
+
+        async Task<JsonNode> Field(string path)
+        {
+            var response = await _client.GetFromJsonAsync<JsonNode>("/settings");
+            return response!["files"]!.AsArray()
+                .Single(file => (string)file!["name"]! == "backend.json")!["fields"]!.AsArray()
+                .Single(field => (string)field!["path"]! == path)!;
+        }
+
+        async Task AssertSwitch(bool expected)
+        {
+            var field = await Field("Backend:Accounts:Password");
+            Assert.Equal("boolean", (string)field["type"]!);
+            Assert.Equal(expected ? "true" : "false", (string)field["value"]!);
+            Assert.False((bool)field["sensitive"]!);
+            Assert.True((bool)field["editable"]!);
+        }
+
+        await AssertSwitch(false);
+        var secret = await Field("Backend:Database:Password");
+        Assert.True((bool)secret["sensitive"]!);
+        Assert.DoesNotContain("actual-password", (string)secret["value"]!);
+
+        foreach (var enabled in new[] { true, false })
+        {
+            var update = await _client.PutAsJsonAsync("/settings/backend.json",
+                new { values = new Dictionary<string, object> { ["Backend:Accounts:Password"] = enabled } });
+            Assert.Equal(HttpStatusCode.NoContent, update.StatusCode);
+            Assert.Equal(enabled, (bool)Read("backend.json")["Backend"]!["Accounts"]!["Password"]!);
+            await AssertSwitch(enabled);
+        }
+    }
+
+    [Fact]
+    public async Task PasswordSignInSwitch_InvalidStringRemainsMasked()
+    {
+        File.WriteAllText(Path.Combine(_directory, "backend.json"),
+            """{"Backend":{"Accounts":{"Password":"invalid-password"}}}""");
+        var response = await _client.GetFromJsonAsync<JsonNode>("/settings");
+        var field = response!["files"]!.AsArray()
+            .Single(file => (string)file!["name"]! == "backend.json")!["fields"]!.AsArray()
+            .Single(field => (string)field!["path"]! == "Backend:Accounts:Password")!;
+
+        Assert.True((bool)field["sensitive"]!);
+        Assert.DoesNotContain("invalid-password", (string)field["value"]!);
+    }
+
+    [Fact]
     public async Task Put_WithoutValues_IsABadRequest()
     {
         var response = await _client.PutAsJsonAsync("/settings/backend.json", new { });

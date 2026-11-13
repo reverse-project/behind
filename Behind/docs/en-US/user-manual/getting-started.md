@@ -44,12 +44,17 @@ The same captcha protects the other buttons of the sign in page (**Email me a si
 
 A link works for a short time only. If it is invalid or expired, the page offers to request a new one. If requests come too quickly you are asked to wait.
 
+### With a passkey
+
+Enter your account email and captcha, choose **Sign in with a passkey** and confirm with your device. An existing passkey registered on your profile can be used. If a second step is required, use a different factor or a different passkey.
+
 ### Two-factor authentication
 
 If you turned on two-factor authentication (see [Two-factor authentication](./your-account.md#two-factor-authentication)), signing in with a password or an email link asks for a second step before you are signed in. It works the same after a password, a sign in link and a lost password link.
 
 - Type the six digit code of your **authenticator app**, or
 - choose **Use a passkey** and confirm with your device, or
+- choose a confirmed email address and request a code, when enabled and the first step was not an email link, or
 - choose **Use a recovery code** and type one of your recovery codes (8 letters and numbers). Every recovery code works once. When the last one is used you are shown a new set of 20.
 
 If the installation requires two-factor authentication and you have not set it up yet, you are led through the setup right after your password or link: choose an authenticator app (scan the QR code and type the code the app shows) or a passkey. You then get your recovery codes. Save them, they are shown only once.
@@ -59,8 +64,8 @@ The second step must be completed within 5 minutes and you can try only a limite
 ### Lost password
 
 1. On the sign in page enter your email and choose **Lost your password?**. You receive a link the same way as with a magic link.
-2. Follow the link. It signs you in and takes you straight to the **New password** field on the **Profile** page.
-3. Enter a new password and choose **Save**.
+2. Follow the link and complete any required second factor. It grants access only to a short-lived password-reset form, not a signed-in session.
+3. Enter a new password and submit it. Existing sessions and outstanding links are revoked.
 
 ### Banned accounts
 

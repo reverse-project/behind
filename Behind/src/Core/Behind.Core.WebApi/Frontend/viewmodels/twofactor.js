@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/webauthn", "models/i18n"], function (ko, auth, session, webauthn, i18n) {
+define(["ko", "models/auth", "models/session", "models/webauthn", "models/i18n", "models/accounts"], function (ko, auth, session, webauthn, i18n, accounts) {
     var presentPasskey = function (item) {
         return {
             id: item.id,
@@ -12,6 +12,10 @@ define(["ko", "models/auth", "models/session", "models/webauthn", "models/i18n"]
 
         self.isSignedIn = session.isSignedIn;
         self.passkeySupported = webauthn.supported();
+        self.canEnrollTotp = accounts.twoFactor;
+        self.canEnrollPasskey = ko.pureComputed(function () {
+            return accounts.twoFactor() && accounts.passkey();
+        });
         self.busy = ko.observable(false);
         self.message = ko.observable("");
         self.required = ko.observable(false);
@@ -92,6 +96,10 @@ define(["ko", "models/auth", "models/session", "models/webauthn", "models/i18n"]
         };
 
         self.startTotp = function () {
+            if (!self.canEnrollTotp()) {
+                return Promise.resolve();
+            }
+
             return run(auth.twoFactor.startTotp, function (result) {
                 self.enrollmentCode("");
                 self.enrollment(result.data);
@@ -123,6 +131,10 @@ define(["ko", "models/auth", "models/session", "models/webauthn", "models/i18n"]
         };
 
         self.addPasskey = function () {
+            if (!self.canEnrollPasskey()) {
+                return Promise.resolve();
+            }
+
             return run(function () {
                 return auth.twoFactor.addPasskey(self.passkeyName());
             }, function (result) {

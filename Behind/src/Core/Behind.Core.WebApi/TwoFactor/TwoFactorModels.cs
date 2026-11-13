@@ -8,7 +8,8 @@ public enum TwoFactorMethod
 {
     Totp,
     Passkey,
-    Recovery
+    Recovery,
+    Email
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<TwoFactorStage>))]
@@ -16,7 +17,8 @@ public enum TwoFactorStage
 {
     Verify,
     Setup,
-    Profile
+    Profile,
+    PrimaryPasskey
 }
 
 public sealed record TwoFactorTicket(
@@ -24,13 +26,20 @@ public sealed record TwoFactorTicket(
     TwoFactorStage Stage,
     DateTimeOffset Expires,
     MagicLinkFunction? Function = null,
-    string? Ceremony = null);
+    string? Ceremony = null,
+    string? PrimaryCredentialId = null,
+    Guid? Nonce = null,
+    string? Email = null);
 
 public sealed record TwoFactorChallengeResponse(
     string Ticket,
     IReadOnlyList<TwoFactorMethod> Methods,
     bool SetupRequired,
-    MagicLinkFunction? Function = null);
+    MagicLinkFunction? Function = null)
+{
+    [JsonIgnore]
+    public bool Unavailable { get; init; }
+}
 
 public sealed record TotpSetup(string Secret, string Uri, string QrCode);
 
@@ -49,6 +58,7 @@ public sealed record TwoFactorFailure(string Code)
     public const string AlreadyEnabled = "alreadyEnabled";
     public const string NotEnabled = "notEnabled";
     public const string Required = "required";
+    public const string Unavailable = "twoFactorUnavailable";
 }
 
 public enum TwoFactorRemoval

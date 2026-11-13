@@ -274,7 +274,6 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     return {
         start: function () {
             applyColorScheme();
-            accounts.load();
             branding.title.subscribe(function (title) {
                 document.title = title;
             });
@@ -287,7 +286,11 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
             }).catch(function () {
                 contentLocale.loadFailed(true);
             }).then(function () {
-                return Promise.all([branding.load(), modules.load()]);
+                return Promise.all([
+                    branding.load(),
+                    modules.load(),
+                    accounts.load().catch(function () {})
+                ]);
             })
                 .then(function () {
                     router = createRouter();

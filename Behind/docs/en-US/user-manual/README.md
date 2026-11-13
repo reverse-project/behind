@@ -4,12 +4,16 @@ This manual describes what you can do in the Behind web application today.
 
 ## For everyone
 
+- **[Contact](./managing-contact.md)** - submitting contact requests and using contact form widgets.
+
 - **[Forum](./managing-forum.md)** - boards, topics, replies, profile pictures and moderation settings.
 - **[Getting started](./getting-started.md)** - creating an account, signing in, signing out, and the navigation bar.
 - **[Your account](./your-account.md)** - profile, display name, current session, and all your sessions.
 - **[Wall of shame](./wall-of-shame.md)** - the public list of banned accounts.
 
 ## For administrators and developers
+
+- **[Contact forms and inbox](./managing-contact.md)** - configuring forms and recipients, marking requests read, retrying email delivery and deleting records.
 
 - **[Administration](./administration.md)** - the Administration page and who can see it.
 - **[Managing users](./managing-users.md)** - searching users, banning, deleting, restoring, signing users out, and editing a user's access.

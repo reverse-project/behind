@@ -1,5 +1,15 @@
 # Project Overview
 
+## Contact module
+
+The main `Behind.Web` installation loads Contact alongside its existing modules. Contact has its own Common, Domain, Database, SQLite, PostgreSQL and WebApi projects and contributes routes, administrator tools and the `contact.form` layout widget through its descriptor. Existing site installations retain their module selection; installing Contact there also requires flattening `IContactContext` into their database and registering its migrations.
+
+Flattened EF contexts cache models by context type, installed `ModuleCatalog` and design-time state through Common.Database `IModuleModelContext` and `ModuleModelCacheKeyFactory`, configured by `AbstractCoreContext`. Different module selections never reuse an incompatible cached model.
+
+Visitors use `#/contact` or a layout widget to choose an active form and submit a name, email address, subject, message and administrator-defined extra fields. Administrators configure forms and manage a shared request inbox at `#/administration/contact`. Requests persist before email delivery; SMTP failures remain visible for authorized retry. Read state records the administrator who marked the request read.
+
+Common.WebApi's `IModuleEmailSender` is implemented by Core `ModuleEmailSender`, using the reloadable configured email provider without a module-to-Core dependency. The Logger provider reports success after logging, without sending to a mailbox. All submitted data is HTML-encoded in email and rendered as text in the inbox.
+
 ## Optional content locales
 
 Content locales are part of the existing editors, not a separate administration application. Routes do not contain a locale; the selected locale is sent with content requests. The default comes from the signed-in user's profile, browser cache or site default. Content without a locale is shared with all selected locales; locale-assigned content is filtered for public feeds, widgets and installed modules. Locale choices use the available interface languages. Sites and route aliases have locale-scoped slug uniqueness, with shared slugs reserved across locales. Layouts expose `core.locale-switch` and an optional header switch. For signed-in users, changing the switch also saves the selected interface language to the profile.
@@ -16,7 +26,9 @@ Layouts also contain optional text or linked-image badges outside the grid. Thei
 
 Modules contribute widgets through `ModuleDescriptor.Widgets` (`ModuleWidget` in Common), exposed by `GET /modules`. Keys are module-prefixed and frontend loaders belong to that module. Core supplies latest content, menus, custom rich text/HTML and chat; Forum contributes posts and statistics only when installed. Widget endpoints apply their normal access rules. `models/invalidation` refreshes subscribed regions without a browser reload; menu mutations invalidate mounted menus, and layout saves invalidate the shell without replacing the current content.
 
-Module frontend models export `load(type, limit)` returning `{items?, stats?, content?, messages?}`. Descriptor fields are `key`, locale-key `name` and AMD `model`. Chronological module feeds inject `IModuleCreationOrder.NewestFirst` from Common.Database; Core implements it using audit creation times, so modules never sort UUIDs or depend on Core.
+Module frontend models export `load(type, limit)` returning `{items?, stats?, content?, messages?}`. Descriptor fields are `key`, locale-key `name` and AMD `model`. Chronological module feeds inject `IModuleCreationOrder.NewestFirst` from Common.Database; Core implements it using audit creation times, so modules never sort UUIDs or depend on Core. `CreatedAtAsync` batch-reads first-version creation times, returning null when an audit entry is missing.
+
+Interactive module widgets may accept a third `widget` placement argument and return `{component: {name, params}}` after registering a module-owned Knockout component. The shell mounts through the component binding, preserving component disposal and clearing it on identity changes or loading errors. Existing list/statistics models remain compatible; no module-specific Core dependency is needed.
 
 ## Forum and public profiles
 

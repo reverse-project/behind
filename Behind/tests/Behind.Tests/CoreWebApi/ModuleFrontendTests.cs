@@ -66,8 +66,11 @@ public class ModuleFrontendTests
         var app = ReadCore("app.js");
 
         Assert.Contains("\"models/modules\"", app);
-        Assert.Contains("Promise.all([branding.load(), modules.load()])", app);
+        Assert.Matches(@"Promise\.all\(\[\s*branding\.load\(\),\s*modules\.load\(\)", app);
         Assert.Contains("router = createRouter();", app);
+        Assert.True(
+            app.IndexOf("modules.load()", StringComparison.Ordinal)
+            < app.IndexOf("router = createRouter();", StringComparison.Ordinal));
         Assert.True(
             app.IndexOf("[routes, moduleRouteTable(), siteRoutes]", StringComparison.Ordinal)
             < app.IndexOf("app.get(aliasRoute", StringComparison.Ordinal));

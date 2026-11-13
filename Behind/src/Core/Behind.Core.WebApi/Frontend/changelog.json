@@ -3,6 +3,11 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "added", "text": "Contact module: multiple customizable contact forms on a public page and layout widget, fixed or visitor-entered subjects, additional fields and optional per-form email recipients. Submissions persist in an administrator inbox, with optional delivery through the configured email provider, shared read tracking, failed-delivery retry, soft deletion and developer restore/permanent deletion." },
+      { "type": "changed", "text": "Contact email sent through the Logger provider is marked as sent after logging; Logger does not send to a mailbox." },
+      { "type": "added", "text": "The Contact inbox supports search, pagination and an optional filter to hide read requests." },
+      { "type": "added", "text": "The Contact inbox shows each request's audit-derived creation time in its list and details." },
+      { "type": "changed", "text": "Contact request details show the administrator who marked a request read as a linked public profile label." },
       { "type": "added", "text": "Passkeys can be used for primary sign-in with a different second factor when required. Existing enrolled passkeys work for sign-in. Email-based time-limited codes can be sent to a selected confirmed address as a second factor, except after an email link. Backend:Accounts adds reloadable Password, MagicLink, TwoFactor, Passkey and EmailTwoFactor switches, all enabled by default. Disabling TwoFactor does not bypass enrolled or required protection. LostPassword links permit only password reset; a successful reset signs out existing sessions and revokes outstanding links." },
       { "type": "fixed", "text": "Completed second-factor challenges cannot be replayed to change enrollment or consume recovery codes, including through concurrent requests." },
       { "type": "fixed", "text": "The password sign-in switch in Settings now displays and saves its actual enabled state instead of masking it as a password." },

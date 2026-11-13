@@ -14,6 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="../../Contact/Behind.Contact.WebApi/Behind.Contact.WebApi.csproj" />
       <ProjectReference Include="../../Forum/Behind.Forum.WebApi/Behind.Forum.WebApi.csproj" />
       <ProjectReference Include="..\..\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
       <ProjectReference Include="..\..\MarkdownViewer\Behind.MarkdownViewer.WebApi\Behind.MarkdownViewer.WebApi.csproj" />

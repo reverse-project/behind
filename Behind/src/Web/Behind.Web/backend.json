@@ -13,7 +13,7 @@
     "Accounts": {
       "SignIn": true,
       "SignUp": true,
-      "Password": false,
+      "Password": true,
       "MagicLink": true,
       "TwoFactor": true,
       "Passkey": true,

@@ -1,5 +1,15 @@
 # Database Architecture
 
+## Contact persistence
+
+`IContactContext` adds versioned contact forms and requests to the main installation's single SQLite/PostgreSQL database. Contact migrations have their own `__contactMigrationsHistory` table and run through the web project migrator after Core. Apply migrations before starting the updated host.
+
+Common.Database's `ModuleModelCacheKeyFactory` keys EF models by context type, the installed catalog exposed through `IModuleModelContext`, and design-time state. `AbstractCoreContext` registers this factory so contexts with different installed modules cannot reuse an incompatible model.
+
+Both entity types use append-only `(Key, Version)` identities, audit-derived creation/update times, audit deletion state, soft delete and developer restore/permanent deletion. Module audit labels and raw database discovery include both entities; personal submission data and recipient settings are sensitive fields.
+
+A request snapshots its form name, destination, subject and submitted field labels/values. Saving it precedes the SMTP attempt, so delivery failure does not discard the inbox record. Delivery and shared read state are versioned changes; editing a form does not alter existing submissions or their retry destination. Deleting an inbox record cannot retract an already-delivered email.
+
 ## Content locale persistence
 
 Optional content-locale assignments are persisted with the shared database and participate in public content filtering across installed modules. The unlocalized content space remains the default for existing records and is shared with selected locales; no migration assigns the interface's default language to legacy content. Site and route-alias slug checks include shared slugs when checking a selected locale. Apply the updated Core migrations through the installation's existing migrator before starting the host, including flattened SQLite and PostgreSQL installations. Back up locale assignments with the content database and locale-aware layout settings with `layouts.json`.
@@ -18,7 +28,7 @@ Layouts are configuration, not database entities: `<Backend:DataDirectory>/layou
 
 Chat history is stored in the shared database's `ChatMessages` table with a composite `(Key, Version)` primary key and indexes on `AuthorId` and `ReplyToId`. SQLite and PostgreSQL migrations add it to the Core chain, including flattened site databases. Edits insert versions; moderation soft deletes all versions through the audit log. Serializable write transactions protect reply validation and edits. The raw editor discovers the table automatically, and audit labels identify messages by author. History uses descending audit creation time and key as a deterministic cursor; it has no retention cap. The old `<Backend:DataDirectory>/widget-chat.json` file is not read, modified or imported: database chat starts fresh. Apply the database migrator before starting the updated host and include the database in backups.
 
-Module feeds reuse audit-derived creation ordering through Common.Database's `IModuleCreationOrder`, implemented by Core's `ModuleCreationOrder`; they do not introduce timestamp columns.
+Module feeds reuse audit-derived creation ordering through Common.Database's `IModuleCreationOrder`, implemented by Core's `ModuleCreationOrder`; they do not introduce timestamp columns. Its `CreatedAtAsync` batch-reads first-version audit creation times and returns null for missing entries.
 
 ## Forum persistence and profile pictures
 

@@ -1,5 +1,15 @@
 # Domain Model Design
 
+## Contact domain
+
+Contact forms define a display name, description, private recipient address, fixed subject choices or a visitor-entered subject, and optional additional field definitions. Soft-deleted forms are unavailable publicly. Visitors always provide name, email and message. Field keys, text/textarea/email types, required flags, maximum lengths and subjects are validated by the server, not trusted from the browser.
+
+Contact requests are immutable versioned inbox entities, not public content. They preserve submitted data and the original form/destination snapshot, an explicit delivery state and shared read state with an administrator reference. Creation and last modification times come from auditing; entities do not have their own timestamp columns. Public endpoints return form schemas and acceptance/delivery status, never stored private request data.
+
+Modules read original creation times through Common.Database `IModuleCreationOrder.CreatedAtAsync`, backed by Core auditing; a missing audit entry is represented as null.
+
+The installed module catalog determines which module entities belong to a flattened EF model. `IModuleModelContext` exposes that catalog to `ModuleModelCacheKeyFactory`; model caching preserves this domain boundary rather than reusing models from other module selections.
+
 ## Content locale semantics
 
 A content locale is optional visibility metadata. Content without a locale is shared by every selected locale; a request without a selected locale sees only content without a locale. Locale-assigned content is visible only in its selected locale, alongside shared content. This lets sites localize only the content that differs rather than duplicate shared content. Changing interface language alone does not reassign content. Slugs identify sites and route aliases within a locale, while shared slugs are reserved across locales. Authorization, publication, scheduling, age restrictions and deletion still apply in addition to locale visibility.

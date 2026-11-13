@@ -1,0 +1,74 @@
+@host = http://localhost:5000
+@formId = 00000000-0000-0000-0000-000000000001
+@requestId = 00000000-0000-0000-0000-000000000002
+
+GET {{host}}/contact/forms
+
+###
+GET {{host}}/contact/forms/{{formId}}
+
+###
+POST {{host}}/contact/forms/{{formId}}/requests
+Content-Type: application/json
+
+{"name":"Visitor","email":"visitor@example.org","subject":"Question","message":"Hello","fields":{"account":"Example"}}
+
+###
+GET {{host}}/contact/manage/forms
+
+###
+GET {{host}}/contact/manage/forms/{{formId}}?deleted=true
+
+###
+POST {{host}}/contact/manage/forms
+Content-Type: application/json
+
+{"name":"Contact","description":"Get in touch","recipient":"admin@example.org","subjectMode":"choices","subjects":["Question"],"fields":[{"key":"account","label":"Account","type":"text","required":false,"maxLength":100}]}
+
+###
+POST {{host}}/contact/manage/forms
+Content-Type: application/json
+
+{"name":"Inbox only","description":"Get in touch","recipient":"","subjectMode":"freeText","subjects":[],"fields":[]}
+
+###
+POST {{host}}/contact/manage/forms/{{formId}}
+Content-Type: application/json
+
+{"version":1,"name":"Contact","description":"Get in touch","recipient":"admin@example.org","subjectMode":"freeText","subjects":[],"fields":[]}
+
+###
+DELETE {{host}}/contact/manage/forms/{{formId}}
+
+###
+POST {{host}}/contact/manage/forms/{{formId}}/restore
+
+###
+DELETE {{host}}/contact/manage/forms/{{formId}}/hard
+
+###
+GET {{host}}/contact/manage/requests?page=1&pageSize=10&search=question&unreadOnly=true
+
+###
+GET {{host}}/contact/manage/requests?deleted=true&page=1&pageSize=10
+
+###
+GET {{host}}/contact/manage/requests/{{requestId}}?deleted=true
+
+###
+POST {{host}}/contact/manage/requests/{{requestId}}/read
+Content-Type: application/json
+
+{"read":true}
+
+###
+POST {{host}}/contact/manage/requests/{{requestId}}/retry
+
+###
+DELETE {{host}}/contact/manage/requests/{{requestId}}
+
+###
+POST {{host}}/contact/manage/requests/{{requestId}}/restore
+
+###
+DELETE {{host}}/contact/manage/requests/{{requestId}}/hard

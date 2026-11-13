@@ -1,4 +1,6 @@
 using Behind.Common.Modules;
+using Behind.Contact.Database;
+using Behind.Contact.Domain;
 using Behind.Core.Database;
 using Behind.Forum.Database;
 using Behind.Forum.Domain;
@@ -11,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Behind.Web.Database.Postgres;
 
 public sealed class WebContextPostgres(DbContextOptions<WebContextPostgres> options, ModuleCatalog modules)
-    : AbstractCoreContext(options, modules), IQuotesContext, ISportContext, IForumContext
+    : AbstractCoreContext(options, modules), IQuotesContext, ISportContext, IForumContext, IContactContext
 {
     public DbSet<ForumBoardCategory> ForumBoardCategories => Set<ForumBoardCategory>();
 
@@ -20,6 +22,10 @@ public sealed class WebContextPostgres(DbContextOptions<WebContextPostgres> opti
     public DbSet<ForumPost> ForumPosts => Set<ForumPost>();
 
     public DbSet<ForumUserModeration> ForumUserModerations => Set<ForumUserModeration>();
+
+    public DbSet<ContactForm> ContactForms => Set<ContactForm>();
+
+    public DbSet<ContactRequest> ContactRequests => Set<ContactRequest>();
 
     public DbSet<Quote> Quotes => Set<Quote>();
 
@@ -41,6 +47,11 @@ public sealed class WebContextPostgres(DbContextOptions<WebContextPostgres> opti
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        if (!Modules.Modules.Any(module => module.Key == "contact"))
+        {
+            modelBuilder.Ignore<ContactForm>();
+            modelBuilder.Ignore<ContactRequest>();
+        }
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyCoreProviderConventions();

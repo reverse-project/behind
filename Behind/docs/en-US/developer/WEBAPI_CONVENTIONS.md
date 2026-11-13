@@ -1,5 +1,25 @@
 # WebApi Conventions
 
+## Contact and module email delivery
+
+Contact public APIs expose active form schemas and accept submissions, never administrator inbox data or recipient settings. The public submission endpoint is client-rate-limited and validates the selected subject and configured additional fields. Management APIs require the Contact module's administration grants; deleted listings, restore and permanent deletion additionally require `RawDatabase.Manage`. Read marking resolves the current administrator through `IModuleIdentity`, not a client-supplied user id.
+
+Modules send email through Common.WebApi `IModuleEmailSender`; Core's adapter uses the currently configured email provider and propagates delivery failures. It forwards cancellation to providers that support it; for the standard non-cancellable email interface it cancels only the wait, so the delivery outcome remains uncertain. The Logger provider reports success after logging without sending email to a mailbox. Contact saves a request before attempting delivery and retains a failed state for authorized retry; public responses distinguish persistence from delivery without leaking private records.
+
+Hosts use `AbstractCoreContext`'s `IModuleModelContext` and Common.Database `ModuleModelCacheKeyFactory` registration to isolate EF models by installed catalog. Module catalogs are installation metadata, not client-selectable API parameters.
+
+Installed interactive widget models may return a registered `{component: {name, params}}` from `load(type, limit, widget)`; this is a frontend contract, not an API response containing executable markup. Core mounts through Knockout's component binding and rejects stale responses on disposal and identity changes.
+
+Contact routes:
+
+- `GET /contact/forms` and `GET /contact/forms/{id}` return public schemas without recipients. `POST /contact/forms/{id}/requests` accepts `{name,email,subject,message,fields:{key:value}}`, with limits of 200/320/200/10,000 characters respectively. Public submission is limited to five requests per client IP per ten minutes. Success returns 201 with `{deliveryStatus}` and an authorized-management resource Location; `sent`, `failed` and `sending` distinguish server acceptance from the email outcome.
+- `GET /contact/manage/forms` returns an administration array under `Contact.Read`. `GET /contact/manage/requests` returns a page response (`total`, `page`, `pageCount`, `pageSize`, `items`) and accepts `page`, `pageSize`, `search` and `unreadOnly`. Search matches sender name or email, form name, subject and message. Single management reads use the same resource paths with `/{id}`. `?deleted=true` selects deleted records only with `RawDatabase.Manage`.
+- Contact request list items and detail responses include `createdAt` from the first-version audit entry, or null when that entry is unavailable. Modules obtain these times in batches via Common.Database `IModuleCreationOrder.CreatedAtAsync`.
+- Request responses retain the nullable reader ID in `readBy` and include its public profile label in `readByName`. Unread requests have null for both; missing profiles use the stable `user#tag` fallback. Labels are resolved in batches through `IModuleUsers`.
+- `POST /contact/manage/forms` and `/contact/manage/forms/{id}` require `Contact.Write`, accepting `{name,description,recipient,subjectMode,subjects,fields}`. Updates additionally require `version`; stale versions return 409. `subjectMode` is `choices` (1–30 unique subjects) or `freeText` (empty subjects). Up to 30 extra fields use `{key,label,type,required,maxLength}`, with `text`, `textarea` or `email` types and maximum lengths of 1–2,000.
+- `POST /contact/manage/requests/{id}/read` accepts `{read:boolean}` and `/retry` retries failed delivery; both require `Contact.Write`. Read state resolves the current administrator. Sending or sent requests are not retryable. Sending is claimed durably before SMTP to avoid concurrent duplicate delivery; an interrupted unknown outcome remains sending, not automatically failed.
+- `DELETE /contact/manage/{forms|requests}/{id}` soft deletes under `Contact.Delete`. `POST .../{id}/restore` and `DELETE .../{id}/hard` require `RawDatabase.Manage`. Inbox deletion cannot retract email.
+
 ## Content locales
 
 Public content requests select an optional locale through `X-Content-Locale`; content without a locale is shared with every selected locale, while an absent locale selects only unlocalized content. Locale-assigned content is visible only for its selected locale. The locale is request context, never part of a route. The frontend defaults it from the signed-in user's setting, browser cache or site default and sends it with content requests. Unknown locale codes are invalid rather than an instruction to fall back to unlocalized content. Locale filtering complements existing access, publication, age and deletion checks, including feeds, counts and widgets. Authorized management requests may edit all locales; having an edit grant does not bypass filtering on ordinary public reads.

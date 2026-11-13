@@ -7,6 +7,14 @@
     <Project Path="src/Common/Behind.Common.WebApi/Behind.Common.WebApi.csproj" />
     <Project Path="src/Common/Behind.Common/Behind.Common.csproj" />
   </Folder>
+  <Folder Name="/src/Contact/">
+    <Project Path="src/Contact/Behind.Contact.Common/Behind.Contact.Common.csproj" />
+    <Project Path="src/Contact/Behind.Contact.Domain/Behind.Contact.Domain.csproj" />
+    <Project Path="src/Contact/Behind.Contact.Database/Behind.Contact.Database.csproj" />
+    <Project Path="src/Contact/Behind.Contact.Database.Sqlite/Behind.Contact.Database.Sqlite.csproj" />
+    <Project Path="src/Contact/Behind.Contact.Database.Postgres/Behind.Contact.Database.Postgres.csproj" />
+    <Project Path="src/Contact/Behind.Contact.WebApi/Behind.Contact.WebApi.csproj" />
+  </Folder>
   <Folder Name="/src/Core/">
     <Project Path="src/Core/Behind.Core.Common/Behind.Core.Common.csproj" />
     <Project Path="src/Core/Behind.Core.Database.Migrator/Behind.Core.Database.Migrator.csproj" />

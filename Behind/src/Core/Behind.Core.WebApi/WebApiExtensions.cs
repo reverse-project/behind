@@ -107,6 +107,7 @@ public static class WebApiExtensions
             builder.Services.AddTransient<IEmailSender>(EmailSenderExtensions.CurrentInstance);
             builder.Services.AddTransient<IEmailSender<ApplicationUser>>(EmailSenderExtensions.CurrentInstance);
             builder.Services.AddTransient<IMagicLinkEmailSender>(EmailSenderExtensions.CurrentInstance);
+            builder.Services.AddTransient<IModuleEmailSender, ModuleEmailSender>();
 
             return builder;
         }

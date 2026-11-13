@@ -1,5 +1,15 @@
 # Adatbázis-architektúra
 
+## Kapcsolatadatok tárolása
+
+Az `IContactContext` verziózott kapcsolatűrlapokat és kéréseket ad a fő telepítés egyetlen SQLite/PostgreSQL adatbázisához. A Contact migrációinak saját `__contactMigrationsHistory` táblája van; a webprojekt migrátora a Core után alkalmazza őket. A frissített gazda indítása előtt futtassa a migrációkat.
+
+A Common.Database `ModuleModelCacheKeyFactory` az EF-modellt a kontextustípus, az `IModuleModelContext` által adott telepített katalógus és a tervezési idejű állapot alapján azonosítja. Az `AbstractCoreContext` regisztrálja, így eltérő telepített modulok kontextusai nem osztozhatnak inkompatibilis modellen.
+
+Mindkét entitástípus új sorral történő `(Key, Version)` verziózást, auditból származó létrehozási/módosítási időt és törlési állapotot, átmeneti törlést, fejlesztői visszaállítást és végleges törlést használ. A modul auditfeliratai és a nyers adatbázis-felderítés mindkét entitást kezelik; a beküldött személyes adatok és a címzettbeállítások érzékeny mezők.
+
+A kérés megőrzi az űrlap nevét, célcímét, tárgyát és a beküldött mezők feliratát/értékét. Az SMTP-próbálkozás előtt mentés történik, ezért a kézbesítési hiba nem veszíti el a beérkezett rekordot. A kézbesítési és közös olvasási állapot verziózott módosítás; az űrlap szerkesztése nem változtatja meg a meglévő beküldést vagy az újrapróbálás címzettjét. A rekord törlése nem vonja vissza a már elküldött e-mailt.
+
 ## Tartalmi nyelvek tárolása
 
 Az opcionális tartalmi nyelvhozzárendelések a közös adatbázisban maradnak meg, és részt vesznek a telepített modulok nyilvános tartalmának szűrésében. A meglévő rekordok nyelv nélküli alapértéke minden kiválasztott nyelvvel megosztott; migráció nem rendeli hozzájuk a felület alapnyelvét. Az oldal- és útvonalálnév-slug ellenőrzése a kiválasztott nyelvnél a megosztott slugokat is figyelembe veszi. A gazda indítása előtt a telepítés meglévő migrátorával alkalmazza a frissített Core-migrációkat, az egyesített SQLite- és PostgreSQL-telepítésekben is. A nyelvhozzárendeléseket a tartalmi adatbázissal, a nyelvhez kötött elrendezésbeállításokat a `layouts.json` fájllal együtt mentse.
@@ -18,7 +28,7 @@ Az elrendezés konfiguráció, nem adatbázis-entitás: a `<Backend:DataDirector
 
 A csevegés a közös adatbázis `ChatMessages` táblájában tárolódik, összetett `(Key, Version)` elsődleges kulccsal és `AuthorId`, illetve `ReplyToId` indexekkel. Az SQLite- és PostgreSQL-migrációk a Core láncához adják, az egyesített webhely-adatbázisokban is. A szerkesztés új verziót szúr be; a moderálás az auditnaplóval az összes verziót átmenetileg törli. A válasz ellenőrzését és a szerkesztést sorosítható írási tranzakció védi. A nyers szerkesztő automatikusan felismeri a táblát, az auditfelirat a szerzővel azonosítja az üzenetet. Az előzmény csökkenő audit-létrehozási időt és kulcsot használ determinisztikus kurzorként; nincs megőrzési korlát. A régi `<Backend:DataDirectory>/widget-chat.json` fájl nem kerül beolvasásra, módosításra vagy importálásra: az adatbázisos csevegés üres előzménnyel indul. Az új gazdaalkalmazás indítása előtt futtassa az adatbázis-migrátort; az adatbázist mentse.
 
-A modul-adatfolyamok a Common.Database `IModuleCreationOrder` felületén használják az auditból származó létrehozási sorrendet, amelyet a Core `ModuleCreationOrder` típusa valósít meg; nem vezetnek be időbélyegoszlopokat.
+A modul-adatfolyamok a Common.Database `IModuleCreationOrder` felületén használják az auditból származó létrehozási sorrendet, amelyet a Core `ModuleCreationOrder` típusa valósít meg; nem vezetnek be időbélyegoszlopokat. A `CreatedAtAsync` kötegelve olvassa az első verzió auditált létrehozási idejét, hiányzó bejegyzésnél null értéket ad.
 
 ## Fórumadatok és profilképek
 

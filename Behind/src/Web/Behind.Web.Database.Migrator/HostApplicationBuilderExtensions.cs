@@ -1,4 +1,8 @@
 using Behind.Common.Modules;
+using Behind.Contact.Database;
+using Behind.Contact.Database.Sqlite;
+using Behind.Contact.Database.Postgres;
+using Behind.Contact.WebApi;
 using Behind.Core.Database.Migrator;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Sqlite;
@@ -32,6 +36,8 @@ public static class HostApplicationBuilderExtensions
         {
             builder.Services
                 .AddScoped<IModuleUsers, UserProfiles>()
+                .AddModule(ContactModule.Descriptor)
+                .AddContactDatabase()
                 .AddModule(ForumModule.Descriptor)
                 .AddForumDatabase()
                 .AddModule(MarkdownViewerModule.Descriptor)
@@ -43,6 +49,8 @@ public static class HostApplicationBuilderExtensions
             return builder.AddMigrator((database, host) =>
             {
                 database.Register<WebContextSqlite, WebContextPostgres>(host);
+                database.RegisterSqliteModule<ContactContextSqlite>(host, ContactModule.Descriptor);
+                database.RegisterPostgresModule<ContactContextPostgres>(host, ContactModule.Descriptor);
                 database.RegisterSqliteModule<ForumContextSqlite>(host, ForumModule.Descriptor);
                 database.RegisterPostgresModule<ForumContextPostgres>(host, ForumModule.Descriptor);
                 database.RegisterSqliteModule<QuotesContextSqlite>(host, QuotesModule.Descriptor);

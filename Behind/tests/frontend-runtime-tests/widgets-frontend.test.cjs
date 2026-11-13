@@ -35,12 +35,17 @@ async function settle() {
 }
 
 function chatFixture(http, grants = ["Chat.Read", "Chat.Write"], signedIn = true,
-    widgetConfig = { type: "core.chat" }, storage) {
+    widgetConfig = { type: "core.chat" }, storage, moduleModel) {
     const access = ko.observableArray(grants);
     const token = ko.observable(signedIn ? "token" : null);
     const dependencies = {
-        require() {}, ko,
-        "models/widgets": { catalog: () => [] },
+        require(names, resolve) {
+            assert.deepEqual(Array.from(names), ["modules/notes/models/widget"]);
+            resolve(moduleModel);
+        }, ko,
+        "models/widgets": { catalog: () => moduleModel
+            ? [{ key: "notes.form", model: "modules/notes/models/widget" }]
+            : [] },
         "models/articles": {}, "models/menus": {},
         "models/http": http,
         "models/session": {
@@ -61,6 +66,73 @@ function chatFixture(http, grants = ["Chat.Read", "Chat.Write"], signedIn = true
 function messageFixture(http, storage = { getItem: () => null, setItem() {} }) {
     return chatFixture(http, [], false, { type: "core.message", message: "notice" }, storage);
 }
+
+test("installed module widgets mount their component and receive placement settings", async () => {
+    const placement = { type: "notes.form", title: "Contact", limit: 3 };
+    const component = { name: "notes-form", params: { formId: "form" } };
+    const { widget } = chatFixture({}, [], false, placement, undefined, {
+        load(type, limit, settings) {
+            assert.equal(type, "notes.form");
+            assert.equal(limit, 3);
+            assert.equal(settings, placement);
+            return { component };
+        }
+    });
+
+    await settle();
+    assert.equal(widget.moduleComponent(), component);
+    assert.match(fs.readFileSync(path.join(core, "components/sitewidget.html"), "utf8"),
+        /data-bind="component: moduleComponent"/);
+    widget.dispose();
+});
+
+test("module widget failures clear mounted components and display an error", async () => {
+    let fail = false;
+    const { widget } = chatFixture({}, [], false, { type: "notes.form" }, undefined, {
+        load() {
+            if (fail) {
+                return Promise.reject(new Error("Module unavailable"));
+            }
+            return { component: { name: "notes-form", params: {} } };
+        }
+    });
+    await settle();
+    assert.ok(widget.moduleComponent());
+    fail = true;
+    await widget.refresh();
+    assert.equal(widget.moduleComponent(), null);
+    assert.equal(widget.error(), "Module unavailable");
+    widget.dispose();
+});
+
+test("missing modules and late disposed module responses cannot mount components", async () => {
+    const missing = chatFixture({}, [], false, { type: "absent.form" }).widget;
+    await settle();
+    assert.equal(missing.moduleComponent(), null);
+    missing.dispose();
+
+    let finish;
+    const { widget } = chatFixture({}, [], false, { type: "notes.form" }, undefined, {
+        load: () => new Promise(resolve => { finish = resolve; })
+    });
+    await settle();
+    widget.dispose();
+    finish({ component: { name: "notes-form", params: {} } });
+    await settle();
+    assert.equal(widget.moduleComponent(), null);
+});
+
+test("module component registration failures are surfaced instead of hanging refresh", async () => {
+    const { widget } = chatFixture({}, [], false, { type: "notes.form" }, undefined, {
+        load() {
+            throw new Error("Component registration failed");
+        }
+    });
+    await settle();
+    assert.equal(widget.moduleComponent(), null);
+    assert.equal(widget.error(), "Component registration failed");
+    widget.dispose();
+});
 
 test("message widgets follow schedule availability through polling and clear their timer", async () => {
     let response = { ok: false, status: 404 };

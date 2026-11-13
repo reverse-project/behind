@@ -4,12 +4,16 @@ Ez a kézikönyv azt ismerteti, hogy a Behind webalkalmazásban jelenleg mit teh
 
 ## Mindenkinek
 
+- **[Kapcsolat](./managing-contact.md)** - kapcsolatkérelmek beküldése és kapcsolatűrlap-widgetek használata.
+
 - **[Fórum](./managing-forum.md)** - fórumtáblák, témák, válaszok, profilképek és moderálási beállítások.
 - **[Első lépések](./getting-started.md)** - fiók létrehozása, bejelentkezés, kijelentkezés és a navigációs sáv.
 - **[Az Ön fiókja](./your-account.md)** - profil, megjelenítendő név, az aktuális munkamenet és az összes munkamenete.
 - **[Szégyenfal](./wall-of-shame.md)** - a letiltott fiókok nyilvános listája.
 
 ## Adminisztrátoroknak és fejlesztőknek
+
+- **[Kapcsolatűrlapok és beérkezett kérések](./managing-contact.md)** - űrlapok és címzettek beállítása, olvasottnak jelölés, e-mail-újrapróbálás és rekordok törlése.
 
 - **[Adminisztráció](./administration.md)** - az Adminisztráció oldal és az, hogy kik láthatják.
 - **[Felhasználók kezelése](./managing-users.md)** - felhasználók keresése, kitiltása, törlése, visszaállítása, kijelentkeztetése és hozzáférésük szerkesztése.

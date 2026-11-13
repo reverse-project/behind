@@ -1,0 +1,171 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'contact.manager.title'">Manage contact</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'contact.back'">Back to administration</a>
+    </div>
+    <p role="status" data-bind="text: message"></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: !canRead(), t: 'contact.manager.denied'">You need contact access to manage forms and requests.</div>
+    <div data-bind="visible: canRead">
+        <nav class="nav nav-tabs mb-3" aria-label="Contact management">
+            <button type="button" class="nav-link" data-bind="css: { active: activeSection() === 'forms' }, click: function () { switchSection('forms'); }, enable: !busy(), t: 'contact.manager.forms'">Forms</button>
+            <button type="button" class="nav-link" data-bind="css: { active: activeSection() === 'requests' }, click: function () { switchSection('requests'); }, enable: !busy(), t: 'contact.manager.requests'">Inbox</button>
+        </nav>
+        <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+            <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy(), event: { change: deletedChanged }"> <span data-bind="t: 'contact.manager.showDeleted'">Show deleted</span></label>
+        </div>
+        <section data-bind="visible: activeSection() === 'forms'">
+            <form class="card card-body mb-4" data-bind="visible: canWrite() &amp;&amp; !showDeleted(), submit: saveForm">
+                <h2 class="h5" data-bind="text: formHeading"></h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="contact-form-name" data-bind="t: 'contact.manager.form.name'">Form name</label>
+                        <input id="contact-form-name" class="form-control" required maxlength="200" data-bind="value: formName, valueUpdate: 'input', enable: !busy()">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="contact-form-recipient" data-bind="t: 'contact.manager.form.recipient'">Email recipient (optional)</label>
+                        <input id="contact-form-recipient" class="form-control" type="email" maxlength="320" aria-describedby="contact-form-recipient-hint" data-bind="value: recipient, valueUpdate: 'input', enable: !busy()">
+                        <div id="contact-form-recipient-hint" class="form-text" data-bind="t: 'contact.manager.form.recipientHint'">Leave empty to only keep submissions in the inbox without sending email.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="contact-form-description" data-bind="t: 'contact.manager.form.description'">Description</label>
+                        <textarea id="contact-form-description" class="form-control" rows="2" maxlength="1000" data-bind="value: description, valueUpdate: 'input', enable: !busy()"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="contact-form-subject-mode" data-bind="t: 'contact.manager.form.subjectMode'">Subject mode</label>
+                        <select id="contact-form-subject-mode" class="form-select" data-bind="value: subjectMode, enable: !busy()">
+                            <option value="choices" data-bind="t: 'contact.manager.form.subjectChoices'">Choose from fixed subjects</option>
+                            <option value="freeText" data-bind="t: 'contact.manager.form.subjectFreeText'">Enter a free subject</option>
+                        </select>
+                    </div>
+                    <div class="col-12" data-bind="visible: subjectMode() === 'choices'">
+                        <label class="form-label" for="contact-form-subjects" data-bind="t: 'contact.manager.form.subjects'">Subject choices (one per line)</label>
+                        <textarea id="contact-form-subjects" class="form-control" rows="3" data-bind="value: subjectsText, valueUpdate: 'input', enable: !busy()"></textarea>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <h3 class="h6 mb-0" data-bind="t: 'contact.manager.form.extraFields'">Extra fields</h3>
+                        <button class="btn btn-sm btn-outline-primary ms-auto" type="button" data-bind="click: addField, enable: !busy() &amp;&amp; formFields().length &lt; 30, t: 'contact.manager.form.addField'">Add field</button>
+                    </div>
+                    <p class="form-text" data-bind="t: 'contact.manager.form.fieldsHelp'">Submitted values are stored and shown as plain text in the inbox.</p>
+                    <div data-bind="foreach: formFields">
+                        <fieldset class="border rounded p-3 mb-2">
+                            <legend class="float-none w-auto px-2 fs-6" data-bind="text: label() || $index() + 1"></legend>
+                            <div class="row g-2">
+                                <label class="col-md-3"><span data-bind="t: 'contact.manager.form.fieldKey'">Key</span><input class="form-control" required maxlength="50" pattern="[a-zA-Z][a-zA-Z0-9_-]{0,49}" data-bind="value: key, valueUpdate: 'input', enable: !$root.busy()"></label>
+                                <label class="col-md-3"><span data-bind="t: 'contact.manager.form.fieldLabel'">Label</span><input class="form-control" required maxlength="200" data-bind="value: label, valueUpdate: 'input', enable: !$root.busy()"></label>
+                                <label class="col-md-2"><span data-bind="t: 'contact.manager.form.fieldType'">Type</span><select class="form-select" data-bind="options: $root.fieldTypes, optionsText: 'label', optionsValue: 'value', value: type, enable: !$root.busy()"></select></label>
+                                <label class="col-md-2"><span data-bind="t: 'contact.manager.form.fieldMaxLength'">Maximum length</span><input class="form-control" type="number" min="1" max="2000" data-bind="value: maxLength, enable: !$root.busy()"></label>
+                                <label class="col-md-1 form-check mt-4"><input class="form-check-input" type="checkbox" data-bind="checked: required, enable: !$root.busy()"> <span class="form-check-label" data-bind="t: 'contact.manager.form.fieldRequired'">Required</span></label>
+                                <div class="col-md-1 d-flex align-items-end"><button class="btn btn-outline-danger" type="button" data-bind="click: function () { $root.removeField($data); }, enable: !$root.busy(), t: 'common.remove'">Remove</button></div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary" type="submit" data-bind="enable: !busy(), t: 'common.save'">Save</button>
+                    <button class="btn btn-outline-secondary" type="button" data-bind="click: resetForm, enable: !busy(), t: 'common.cancel'">Cancel</button>
+                </div>
+            </form>
+            <h2 class="h4" data-bind="t: 'contact.manager.forms'">Forms</h2>
+            <p class="text-body-secondary" data-bind="visible: forms().length === 0, t: 'contact.manager.formsEmpty'">No forms found.</p>
+            <ul class="list-group" data-bind="foreach: forms">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <content-locale params="entityType: 'ContactForm', id: id, allowed: $root.canWrite"></content-locale>
+                    <div class="me-auto">
+                        <strong class="d-block text-break" data-bind="text: name"></strong>
+                        <span class="small text-body-secondary text-break" data-bind="text: $root.recipientLabel(recipient)"></span>
+                    </div>
+                    <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-bind="visible: !isDeleted &amp;&amp; $root.canWrite(), click: function () { $root.editForm($data); }, enable: !$root.busy(), t: 'common.edit'">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" type="button" data-bind="visible: !isDeleted &amp;&amp; $root.canDelete(), click: function () { $root.removeForm($data); }, enable: !$root.busy(), t: 'common.delete'">Delete</button>
+                    <button class="btn btn-sm btn-outline-success" type="button" data-bind="visible: isDeleted &amp;&amp; $root.canViewDeleted(), click: function () { $root.restoreForm($data); }, enable: !$root.busy(), t: 'common.restore'">Restore</button>
+                    <button class="btn btn-sm btn-danger" type="button" data-bind="visible: isDeleted &amp;&amp; $root.canViewDeleted(), click: function () { $root.hardDeleteForm($data); }, enable: !$root.busy(), t: 'common.deletePermanently'">Delete permanently</button>
+                </li>
+            </ul>
+        </section>
+        <section data-bind="visible: activeSection() === 'requests'">
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <h2 class="h4" data-bind="t: 'contact.manager.inbox'">Inbox</h2>
+                    <form class="d-flex gap-2 mb-3" data-bind="submit: searchRequests">
+                        <input class="form-control" type="search" data-bind="value: search, enable: !busy(), tAttr: { placeholder: 'contact.manager.searchPlaceholder', 'aria-label': 'contact.manager.searchLabel' }">
+                        <button class="btn btn-primary" type="submit" data-bind="enable: !busy(), t: 'common.search'">Search</button>
+                    </form>
+                    <div class="form-check form-switch mb-3">
+                        <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: hideRead, enable: !busy(), event: { change: searchRequests }"> <span data-bind="t: 'contact.manager.hideRead'">Hide read requests</span></label>
+                    </div>
+                    <p class="text-body-secondary" data-bind="visible: requests().length === 0, t: 'contact.manager.requestsEmpty'">No requests found.</p>
+                    <div class="list-group" data-bind="foreach: requests">
+                        <button type="button" class="list-group-item list-group-item-action text-start" data-bind="click: function () { $root.selectRequest($data); }, enable: !$root.busy()">
+                            <span class="d-flex justify-content-between gap-2">
+                                <strong class="text-break" data-bind="text: name"></strong>
+                                <span class="badge" data-bind="text: $root.statusLabel(deliveryStatus), css: $root.statusClass(deliveryStatus)"></span>
+                            </span>
+                            <span class="d-block text-break" data-bind="text: subject"></span>
+                            <span class="small text-body-secondary" data-bind="text: formName"></span>
+                            <span class="badge text-bg-secondary ms-1" data-bind="visible: readBy, t: 'contact.manager.read'">Read</span>
+                            <span class="badge text-bg-warning ms-1" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                            <span class="d-block small text-body-secondary">
+                                <span data-bind="t: 'contact.manager.createdAt'">Created</span>:
+                                <!-- ko if: $data.createdAt -->
+                                <time data-bind="attr: { datetime: $data.createdAt }, text: $root.createdAtLabel($data.createdAt)"></time>
+                                <!-- /ko -->
+                                <!-- ko ifnot: $data.createdAt -->
+                                <span data-bind="text: $root.createdAtLabel($data.createdAt)"></span>
+                                <!-- /ko -->
+                            </span>
+                        </button>
+                    </div>
+                    <fieldset class="mt-3" data-bind="disable: busy">
+                        <pager class="d-block" params="pager: pager"></pager>
+                    </fieldset>
+                </div>
+                <div class="col-lg-7" data-bind="with: requestDetails, visible: requestDetails()">
+                    <article class="card card-body">
+                        <div class="d-flex flex-wrap align-items-start gap-2">
+                            <div class="me-auto">
+                                <h2 class="h4 text-break" data-bind="text: subject"></h2>
+                                <p class="mb-1"><span data-bind="t: 'contact.manager.from'">From</span>: <span data-bind="text: name"></span> &lt;<span data-bind="text: email"></span>&gt;</p>
+                                <p class="text-body-secondary text-break" data-bind="text: formName"></p>
+                            </div>
+                            <span class="badge" data-bind="text: $root.statusLabel(deliveryStatus), css: $root.statusClass(deliveryStatus)"></span>
+                        </div>
+                        <p class="mb-1"><span data-bind="t: 'contact.manager.recipient'">Recipient</span>: <span data-bind="text: $root.recipientLabel(recipient)"></span></p>
+                        <p class="mb-1">
+                            <span data-bind="t: 'contact.manager.createdAt'">Created</span>:
+                            <!-- ko if: $data.createdAt -->
+                            <time data-bind="attr: { datetime: $data.createdAt }, text: $root.createdAtLabel($data.createdAt)"></time>
+                            <!-- /ko -->
+                            <!-- ko ifnot: $data.createdAt -->
+                            <span data-bind="text: $root.createdAtLabel($data.createdAt)"></span>
+                            <!-- /ko -->
+                        </p>
+                        <h3 class="h6 mt-3" data-bind="t: 'contact.message'">Message</h3>
+                        <p class="text-break" style="white-space: pre-wrap" data-bind="text: message"></p>
+                        <div data-bind="visible: fields &amp;&amp; fields.length">
+                            <h3 class="h6 mt-3" data-bind="t: 'contact.manager.extraFields'">Submitted fields</h3>
+                            <dl class="row" data-bind="foreach: fields">
+                                <dt class="col-sm-4 text-break" data-bind="text: label"></dt>
+                                <dd class="col-sm-8 text-break" style="white-space: pre-wrap" data-bind="text: value"></dd>
+                            </dl>
+                        </div>
+                        <p class="small text-body-secondary text-break" data-bind="visible: readBy">
+                            <span data-bind="t: 'contact.manager.readBy'">Read by administrator</span>:
+                            <a data-bind="attr: { href: readBy ? '#/user/' + encodeURIComponent(readBy) : null }, text: $data.readByName"></a>
+                        </p>
+                        <p class="small text-body-secondary" data-bind="visible: !readBy, t: 'contact.manager.unread'">Unread</p>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <button class="btn btn-sm btn-outline-primary" type="button" data-bind="visible: !isDeleted &amp;&amp; !readBy &amp;&amp; $root.canWrite(), click: function () { $root.setRead(true); }, enable: !$root.busy(), t: 'contact.manager.markRead'">Mark as read</button>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="visible: !isDeleted &amp;&amp; readBy &amp;&amp; $root.canWrite(), click: function () { $root.setRead(false); }, enable: !$root.busy(), t: 'contact.manager.markUnread'">Mark as unread</button>
+                            <button class="btn btn-sm btn-warning" type="button" data-bind="visible: $root.canRetry($data) &amp;&amp; $root.canWrite(), click: $root.retryRequest, enable: !$root.busy(), t: 'contact.manager.retry'">Retry delivery</button>
+                            <button class="btn btn-sm btn-outline-danger" type="button" data-bind="visible: !isDeleted &amp;&amp; $root.canDelete(), click: $root.removeRequest, enable: !$root.busy(), t: 'common.delete'">Delete</button>
+                            <button class="btn btn-sm btn-outline-success" type="button" data-bind="visible: isDeleted &amp;&amp; $root.canViewDeleted(), click: $root.restoreRequest, enable: !$root.busy(), t: 'common.restore'">Restore</button>
+                            <button class="btn btn-sm btn-danger" type="button" data-bind="visible: isDeleted &amp;&amp; $root.canViewDeleted(), click: $root.hardDeleteRequest, enable: !$root.busy(), t: 'common.deletePermanently'">Delete permanently</button>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+    </div>
+</section>

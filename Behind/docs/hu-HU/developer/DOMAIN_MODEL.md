@@ -1,5 +1,15 @@
 # Tartományi modell tervezése
 
+## Kapcsolat tartomány
+
+A kapcsolatűrlap megjelenítendő nevet, leírást, privát címzettcímet, rögzített tárgyakat vagy látogató által megadott tárgyat, valamint opcionális kiegészítő meződefiníciókat ad meg. Az átmenetileg törölt űrlap nyilvánosan nem érhető el. A látogató mindig nevet, e-mail-címet és üzenetet küld. A mezőkulcsokat, szöveg/többsoros szöveg/e-mail típusokat, kötelezőséget, legnagyobb hosszt és tárgyakat a kiszolgáló ellenőrzi, nem bízik a böngészőben.
+
+A kapcsolatkérelmek változtathatatlan, verziózott beérkezett entitások, nem nyilvános tartalmak. Megőrzik a beküldött adatokat, az eredeti űrlap/címzett pillanatképét, a kifejezett kézbesítési állapotot és a közös olvasási állapotot adminisztrátor-hivatkozással. A létrehozási és módosítási idő auditból származik, nincs saját időbélyegoszlop. A nyilvános végpontok az űrlapsémát és az elfogadás/kézbesítés állapotát adják vissza, a tárolt privát kéréstartalmat soha.
+
+A modulok az eredeti létrehozási időt a Common.Database `IModuleCreationOrder.CreatedAtAsync` felületén olvassák a Core auditjából; a hiányzó auditbejegyzést null jelzi.
+
+A telepített modulkatalógus határozza meg, mely modulentitások tartoznak az egyesített EF-modellhez. Az `IModuleModelContext` ezt a katalógust adja a `ModuleModelCacheKeyFactory` számára; a gyorsítótárazás megőrzi ezt a tartományhatárt, nem használ más modulválasztáshoz tartozó modellt.
+
 ## A tartalmi nyelv jelentése
 
 A tartalom nyelve opcionális láthatósági metaadat. A nyelv nélküli tartalom minden kiválasztott nyelven megjelenik; nyelvválasztás nélkül csak a nyelv nélküli tartalom látható. A nyelvhez rendelt tartalom kizárólag a kiválasztott nyelven, a megosztott tartalom mellett jelenik meg. Így csak az eltérő tartalmat kell nyelvenként megadni. A felületi nyelv módosítása önmagában nem rendeli át a tartalmat. A slug az oldalt és útvonalálnevet nyelven belül azonosítja, a megosztott slug azonban minden nyelven foglalt. A jogosultság, közzététel, időzítés, korhatár és törlési állapot továbbra is a nyelvi láthatóság mellett érvényesül.

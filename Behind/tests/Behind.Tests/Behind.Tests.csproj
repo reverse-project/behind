@@ -18,6 +18,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Contact/Behind.Contact.WebApi/Behind.Contact.WebApi.csproj" />
+    <ProjectReference Include="../../src/Contact/Behind.Contact.Database.Sqlite/Behind.Contact.Database.Sqlite.csproj" />
+    <ProjectReference Include="../../src/Contact/Behind.Contact.Database.Postgres/Behind.Contact.Database.Postgres.csproj" />
     <ProjectReference Include="../../src/Forum/Behind.Forum.WebApi/Behind.Forum.WebApi.csproj" />
     <ProjectReference Include="../../src/Forum/Behind.Forum.Database.Sqlite/Behind.Forum.Database.Sqlite.csproj" />
     <ProjectReference Include="../../src/Forum/Behind.Forum.Database.Postgres/Behind.Forum.Database.Postgres.csproj" />

@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="../../Contact/Behind.Contact.Database/Behind.Contact.Database.csproj" />
       <ProjectReference Include="../../Forum/Behind.Forum.Database/Behind.Forum.Database.csproj" />
       <ProjectReference Include="..\..\Core\Behind.Core.Database.Postgres\Behind.Core.Database.Postgres.csproj" />
       <ProjectReference Include="..\..\Quotes\Behind.Quotes.Database\Behind.Quotes.Database.csproj" />

@@ -1,5 +1,8 @@
 <!-- ko if: type === 'core.message' -->
 <p class="alert alert-danger" role="alert" data-bind="visible: error, text: error"></p>
+<!-- ko if: moduleComponent -->
+<div data-bind="component: moduleComponent"></div>
+<!-- /ko -->
 <!-- ko if: messageVisible -->
 <div role="alert" data-bind="attr: { class: messageClass }">
     <h2 class="alert-heading h5" data-bind="visible: message().title, text: message().title"></h2>

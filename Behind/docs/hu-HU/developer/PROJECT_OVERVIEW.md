@@ -1,5 +1,17 @@
 # Projekt áttekintés
 
+## Kapcsolat modul
+
+A fő `Behind.Web` telepítés a meglévő modulok mellett a Contact modult is betölti. Saját Common, Domain, Database, SQLite, PostgreSQL és WebApi projektjei vannak; az útvonalakat, adminisztrációs eszközöket és a `contact.form` elrendezéswidgetet a modul leírója adja. A meglévő webhelytelepítések modulválasztása változatlan; a Contact telepítéséhez az `IContactContext` felületet a közös adatbázisba kell egyesíteni, és regisztrálni kell a migrációkat.
+
+Az egyesített EF-kontextusok a kontextustípus, a telepített `ModuleCatalog` és a tervezési idejű állapot alapján gyorsítótárazzák a modellt a Common.Database `IModuleModelContext` és `ModuleModelCacheKeyFactory` használatával, az `AbstractCoreContext` beállításából. Eltérő modulválasztás nem használ inkompatibilis gyorsítótárazott modellt.
+
+A látogatók a `#/contact` oldalon vagy egy widgetben aktív űrlapot választanak, majd nevet, e-mail-címet, tárgyat, üzenetet és adminisztrátor által meghatározott kiegészítő mezőket küldenek be. Az adminisztrátorok a `#/administration/contact` oldalon állítják be az űrlapokat és kezelik a közös beérkezett kéréseket. A kérések az e-mail-küldés előtt megmaradnak; SMTP-hiba esetén engedélyezett újrapróbálás érhető el. Az olvasási állapot rögzíti az olvasottnak jelölő adminisztrátort.
+
+A Common.WebApi `IModuleEmailSender` felületét a Core `ModuleEmailSender` valósítja meg az újratölthető e-mail-szolgáltató beállításával, modul–Core függőség nélkül. A Logger szolgáltató naplózás után sikert jelez, de nem küld e-mailt postaládába. A beküldött adatok az e-mailben HTML-kódolva, a kezelőfelületen szövegként jelennek meg.
+
+Az interaktív modulwidgetek harmadik `widget` elhelyezési argumentumot is fogadhatnak, és saját Knockout-komponens regisztrálása után `{component: {name, params}}` eredményt adhatnak. A keret komponenskötéssel jelenít meg, megőrzi a felszabadítást, és identitásváltozáskor vagy betöltési hibánál eltávolítja a komponenst. A meglévő lista- és statisztikamodellek változatlanul működnek, modulspecifikus Core-függőség nélkül.
+
 ## Opcionális tartalmi nyelvek
 
 A tartalom nyelve a meglévő szerkesztők része, nem külön adminisztrációs alkalmazás. Az útvonalak nem tartalmaznak nyelvet; a kiválasztott nyelvet a tartalomkérések kapják meg. Az alapértelmezés a bejelentkezett felhasználó profiljából, a böngésző gyorsítótárából vagy a webhely alapértelmezéséből származik. A nyelv nélküli tartalom minden kiválasztott nyelvvel megosztott; a nyelvhez rendelt tartalom nyelve szerint szűrődik a nyilvános adatfolyamokban, widgetekben és telepített modulokban. A választék a felület elérhető nyelveit használja. Az oldalak és útvonalálnevek slug-egyedisége nyelvhez kötött, a megosztott slug minden nyelven foglalt. Az elrendezésekben `core.locale-switch` és opcionális fejlécváltó érhető el. Bejelentkezett felhasználónál a váltó a profil felületi nyelvét is elmenti.
@@ -16,7 +28,7 @@ Az elrendezések a rácson kívül opcionális szöveges vagy hivatkozással ell
 
 A modulok a `ModuleDescriptor.Widgets` mezőben adnak widgeteket (Common: `ModuleWidget`), amelyeket a `GET /modules` közzétesz. A kulcs modul-előtagos, a felületi betöltő a modulhoz tartozik. A Core friss tartalmakat, menüket, egyéni formázott szöveget/HTML-t és csevegést biztosít; a Fórum csak telepített állapotban ad üzenet- és statisztikawidgeteket. A végpontok megtartják a szokásos jogosultsági szabályokat. A `models/invalidation` böngésző-újratöltés nélkül frissíti a feliratkozott régiókat: a menümódosítások a menüket, az elrendezésmentés a keretet, a tartalom lecserélése nélkül.
 
-A modul felületi modellje `load(type, limit)` függvényt ad, `{items?, stats?, content?, messages?}` eredménnyel. A leíró mezői: `key`, fordításkulcsot tartalmazó `name` és AMD `model`. Az időrendi modul-adatfolyamok a Common.Database `IModuleCreationOrder.NewestFirst` felületét kérik; ezt a Core audit-létrehozási időpontokkal valósítja meg, így a modul nem UUID-t rendez és nem függ a Core-tól.
+A modul felületi modellje `load(type, limit)` függvényt ad, `{items?, stats?, content?, messages?}` eredménnyel. A leíró mezői: `key`, fordításkulcsot tartalmazó `name` és AMD `model`. Az időrendi modul-adatfolyamok a Common.Database `IModuleCreationOrder.NewestFirst` felületét kérik; ezt a Core audit-létrehozási időpontokkal valósítja meg, így a modul nem UUID-t rendez és nem függ a Core-tól. A `CreatedAtAsync` kötegelve olvassa az első verzió létrehozási idejét, hiányzó auditbejegyzésnél null értéket ad.
 
 ## Fórum és nyilvános profilok
 

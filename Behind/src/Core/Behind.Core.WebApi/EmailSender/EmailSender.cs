@@ -58,6 +58,12 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>,
         SendPasswordResetLinkAsync(user, email, magicLink);
 
     public abstract Task SendEmailAsync(string email, string subject, string htmlMessage);
+
+    public virtual Task SendDeliveryEmailAsync(string email, string subject, string htmlMessage, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return SendEmailAsync(email, subject, htmlMessage).WaitAsync(cancellationToken);
+    }
 }
 
 public sealed class LoggerEmailSender : EmailSender
@@ -82,6 +88,7 @@ public sealed class LoggerEmailSender : EmailSender
 
         return Task.CompletedTask;
     }
+
 }
 
 public sealed class SmtpEmailSender : EmailSender
@@ -147,8 +154,16 @@ public sealed class SmtpEmailSender : EmailSender
         return SendEmailAsync(email, "Your sign in link", template);
     }
 
-    public override async Task SendEmailAsync(string email, string subject, string htmlMessage)
+    public override Task SendEmailAsync(string email, string subject, string htmlMessage) =>
+        SendEmailAsync(email, subject, htmlMessage, CancellationToken.None);
+
+    public override Task SendDeliveryEmailAsync(string email, string subject, string htmlMessage, CancellationToken cancellationToken) =>
+        SendEmailAsync(email, subject, htmlMessage, cancellationToken);
+
+    public async Task SendEmailAsync(
+        string email, string subject, string htmlMessage, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         using var client = new SmtpClient(_emailOptions.Value.SmtpServer, _emailOptions.Value.Port);
         
         var authentication = _emailOptions.Value.Authentication.Match(
@@ -168,7 +183,7 @@ public sealed class SmtpEmailSender : EmailSender
                 "The SMTP sender address is not configured. Set Email:From or use basic authentication with the mailbox address as the username."),
             address => address);
 
-        var mailMessage = new MailMessage
+        using var mailMessage = new MailMessage
         {
             From = new MailAddress(sender),
             Subject = subject,
@@ -177,7 +192,6 @@ public sealed class SmtpEmailSender : EmailSender
         };
         mailMessage.To.Add(email);
 
-        // System.Net.Mail does not generate a Message-ID, and some receiving servers reject messages without one.
         mailMessage.Headers.Add("Message-ID", $"<{Guid.NewGuid():N}@{mailMessage.From.Host}>");
 
         _logger.LogDebug(
@@ -192,7 +206,7 @@ public sealed class SmtpEmailSender : EmailSender
                 _emailOptions.Value.Ssl.Enabled
             ]);
 
-        await client.SendMailAsync(mailMessage);
+        await client.SendMailAsync(mailMessage, cancellationToken);
 
         _logger.LogInformation("Email sent successfully to {Email} with subject {Subject}", () => [email, subject]);
     }

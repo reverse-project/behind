@@ -24,6 +24,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     stats: ko.observableArray([]),
                     messages: ko.observableArray([]),
                     content: ko.observable(""),
+                    moduleComponent: ko.observable(null),
                     message: ko.observable(null),
                     messageDismissed: ko.observable(false),
                     text: ko.observable(""),
@@ -122,7 +123,9 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
 
                     return new Promise(function (resolve, reject) {
                         require([descriptor.model], function (model) {
-                            Promise.resolve(model.load(type, limit)).then(resolve, reject);
+                            Promise.resolve().then(function () {
+                                return model.load(type, limit, widget);
+                            }).then(resolve, reject);
                         }, reject);
                     });
                 };
@@ -248,6 +251,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                         if (!disposed && ticket === sequence && owner === session.accessToken()) {
                             self.items(data.items || []);
                             self.stats(data.stats || []);
+                            self.moduleComponent(data.component || null);
                             var history = historyElement();
                             var previousHeight = history ? history.scrollHeight : 0;
                             var previousTop = history ? history.scrollTop : 0;
@@ -286,6 +290,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                         if (!disposed && ticket === sequence && owner === session.accessToken()) {
                             self.items([]);
                             self.stats([]);
+                            self.moduleComponent(null);
                             if (type !== "core.chat" || error.status === 401 || error.status === 403) {
                                 self.messages([]);
                             }
@@ -441,6 +446,7 @@ function (require, ko, widgets, articles, menus, http, session, i18n, invalidati
                     sequence++;
                     self.items([]);
                     self.stats([]);
+                    self.moduleComponent(null);
                     self.messages([]);
                     self.content("");
                     self.message(null);

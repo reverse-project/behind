@@ -13,6 +13,7 @@
 | Downloads | the `Download.Read` grant (`Download.Write` to change them) | [Downloads](./managing-downloads.md) |
 | Menus | the `Menu.Read` grant (`Menu.Write` to change them) | [Menus](./managing-menus.md) |
 | Quotes (module) | the `Quotes.Read` grant (`Quotes.Write` to change them) | [Quotes](./managing-quotes.md) |
+| Contact (module) | the `Contact.Read` grant (`Contact.Write` to configure forms, mark read or retry; `Contact.Delete` to delete) | [Contact forms and inbox](./managing-contact.md) |
 | Sport (module) | the `Sport.Read` grant (`Sport.Write` to change them) | [Sport](./managing-sport.md) |
 | Documentation (module) | the `MarkdownViewer.Read` grant (`MarkdownViewer.Write` to generate the static pages) | [Documentation](./managing-markdown-viewer.md) |
 | Messages | the `Message.Read` grant (`Message.Write` to change them) | [Messages](./managing-messages.md) |

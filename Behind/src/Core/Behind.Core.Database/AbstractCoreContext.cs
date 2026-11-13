@@ -6,12 +6,13 @@ using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 
 namespace Behind.Core.Database;
 
 public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog modules)
-    : DbContext(options), IUnitOfWork, IModuleContext, IContentRestrictionContext, IContentLocaleStore
+    : DbContext(options), IUnitOfWork, IModuleContext, IModuleModelContext, IContentRestrictionContext, IContentLocaleStore
 {
     protected AbstractCoreContext(DbContextOptions options) : this(options, ModuleCatalog.Empty)
     {
@@ -167,6 +168,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ReplaceService<IModelCacheKeyFactory, ModuleModelCacheKeyFactory>();
 
         optionsBuilder.ConfigureWarnings(warnings =>
             warnings.Ignore(

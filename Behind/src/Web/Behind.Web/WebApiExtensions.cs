@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Behind.Common.Configuration;
 using Behind.Common.Logging;
 using Behind.Common.WebApi;
+using Behind.Contact.WebApi;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Sqlite;
@@ -26,6 +27,7 @@ public static class WebApiExtensions
             .AddOpenTelemetry()
             .AddCore()
             .AddWebDatabase()
+            .AddContact()
             .AddQuotes()
             .AddSport()
             .AddForum()
@@ -48,6 +50,7 @@ public static class WebApiExtensions
         public WebApplication UseWeb()
         {
             application.UseCore();
+            application.UseContact();
             application.UseQuotes();
             application.UseSport();
             application.UseForum();

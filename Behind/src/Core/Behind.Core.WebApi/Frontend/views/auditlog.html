@@ -15,9 +15,29 @@
             </div>
             <div class="col-12 col-md-4">
                 <label class="form-label" for="audit-search" data-bind="t: 'common.search'">Search</label>
-                <input id="audit-search" class="form-control" type="search" maxlength="200" placeholder="Entity or key" data-bind="value: search, tAttr: { placeholder: 'audit.searchPlaceholder' }">
+                <input id="audit-search" class="form-control" type="search" maxlength="200" placeholder="Entity, person or change" data-bind="value: search, tAttr: { placeholder: 'audit.searchPlaceholder' }">
             </div>
-            <div class="col-12 col-md-2">
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="audit-entity" data-bind="t: 'audit.entityFilter'">Entity type</label>
+                <select id="audit-entity" class="form-select" data-bind="options: entityTypes, optionsText: 'label', optionsValue: 'value', value: entity, enable: !busy()"></select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="audit-action" data-bind="t: 'audit.action'">Action</label>
+                <select id="audit-action" class="form-select" data-bind="options: actions, optionsText: 'label', optionsValue: 'value', value: action"></select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="audit-actor" data-bind="t: 'audit.actorFilter'">Actor</label>
+                <input id="audit-actor" class="form-control" type="search" maxlength="200" data-bind="value: actor">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="audit-behalf" data-bind="t: 'audit.onBehalfOf'">On behalf of</label>
+                <input id="audit-behalf" class="form-control" type="search" maxlength="200" data-bind="value: behalfOf">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="audit-sort" data-bind="t: 'audit.sortBy'">Sort by</label>
+                <select id="audit-sort" class="form-select" data-bind="options: sortFields, optionsText: 'label', optionsValue: 'value', value: sortBy"></select>
+            </div>
+            <div class="col-12 col-md-3">
                 <label class="form-label" for="audit-order" data-bind="t: 'audit.order'">Order</label>
                 <select id="audit-order" class="form-select" data-bind="options: orders, optionsText: 'label', optionsValue: 'oldestFirst', value: oldestFirst"></select>
             </div>

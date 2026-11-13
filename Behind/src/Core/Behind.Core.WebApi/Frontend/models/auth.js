@@ -721,11 +721,24 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
         loadAuditLog: function (query) {
             var url = "/auditLog?fromDate=" + encodeURIComponent(query.fromDate) + "&toDate=" + encodeURIComponent(query.toDate)
                 + "&search=" + encodeURIComponent(query.search) + "&oldestFirst=" + query.oldestFirst
+                + "&entity=" + encodeURIComponent(query.entity) + "&action=" + encodeURIComponent(query.action)
+                + "&entityExact=true"
+                + "&actor=" + encodeURIComponent(query.actor) + "&behalfOf=" + encodeURIComponent(query.behalfOf)
+                + "&sortBy=" + encodeURIComponent(query.sortBy) + "&descending=" + query.descending
                 + "&page=" + query.page + "&pageSize=" + query.pageSize;
 
             return http.get(url).then(function (response) {
                 return loaded(response, {
                     400: "auth.auditLog.invalidRange",
+                    401: sessionExpired,
+                    403: "auth.auditLog.forbidden"
+                });
+            });
+        },
+
+        loadAuditEntityTypes: function () {
+            return http.get("/auditLog/entityTypes").then(function (response) {
+                return loaded(response, {
                     401: sessionExpired,
                     403: "auth.auditLog.forbidden"
                 });

@@ -26,55 +26,15 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
         ImpersonationEnded: "audit.actions.ImpersonationEnded"
     };
 
-    var entityKeys = {
-        HumanUser: "audit.entities.HumanUser",
-        User: "audit.entities.User",
-        UserRole: "audit.entities.UserRole",
-        Role: "audit.entities.Role",
-        Grant: "audit.entities.Grant",
-        Restriction: "audit.entities.Restriction",
-        Email: "audit.entities.Email",
-        Password: "audit.entities.Password",
-        ValidSession: "audit.entities.ValidSession",
-        Session: "audit.entities.Session",
-        UserAgent: "audit.entities.UserAgent",
-        MagicLink: "audit.entities.MagicLink",
-        WallOfShameEntry: "audit.entities.WallOfShameEntry",
-        Site: "audit.entities.Site",
-        News: "audit.entities.News",
-        NewsCategory: "audit.entities.NewsCategory",
-        NewsComment: "audit.entities.NewsComment",
-        ChatMessage: "audit.entities.ChatMessage",
-        PrivateConversation: "audit.entities.PrivateConversation",
-        PrivateConversationRecipient: "audit.entities.PrivateConversationRecipient",
-        PrivateMessage: "audit.entities.PrivateMessage",
-        PrivateMailbox: "audit.entities.PrivateMailbox",
-        PrivateMessageRead: "audit.entities.PrivateMessageRead",
-        PrivateUserBlock: "audit.entities.PrivateUserBlock",
-        UserReport: "audit.entities.UserReport",
-        ReportEmailDelivery: "audit.entities.ReportEmailDelivery",
-        PrivateMessageEmailDelivery: "audit.entities.PrivateMessageEmailDelivery",
-        Article: "audit.entities.Article",
-        ArticleCategory: "audit.entities.ArticleCategory",
-        Menu: "audit.entities.Menu",
-        MenuItem: "audit.entities.MenuItem",
-        RouteAlias: "audit.entities.RouteAlias",
-        Message: "audit.entities.Message",
-        AccessSettings: "audit.entities.AccessSettings",
-        PendingUserApprovals: "audit.entities.PendingUserApprovals",
-        Gallery: "audit.entities.Gallery",
-        GalleryItem: "audit.entities.GalleryItem",
-        Carousel: "audit.entities.Carousel",
-        CarouselSlide: "audit.entities.CarouselSlide",
-        SiteSection: "audit.entities.SiteSection",
-        VfsFile: "audit.entities.VfsFile",
-        DownloadFolder: "audit.entities.DownloadFolder",
-        Download: "audit.entities.Download"
-    };
-
     var known = function (keys, name) {
         return ko.pureComputed(function () {
             return i18n.tOr(keys[name], name);
+        });
+    };
+
+    var entityName = function (name) {
+        return ko.pureComputed(function () {
+            return i18n.tOr("audit.entities." + name, name);
         });
     };
 
@@ -115,7 +75,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
             behalfOfHref: item.onBehalfOf ? user.href(item.onBehalfOf.id) : null,
             action: known(actionKeys, item.action),
             actionClass: actionClasses[item.action] || "text-bg-secondary",
-            entityName: known(entityKeys, item.entityName),
+            entityName: entityName(item.entityName),
             entityKey: item.entityKey,
             entityLabel: item.entityLabel,
             changes: item.changes.map(function (change) {
@@ -130,6 +90,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
 
     return function AuditLogViewModel() {
         var self = this;
+        var entityTypesLoaded = false;
 
         self.isSignedIn = session.isSignedIn;
         self.canView = ko.pureComputed(function () {
@@ -143,17 +104,38 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
         self.fromDate = ko.observable(defaultFrom());
         self.toDate = ko.observable(defaultTo());
         self.search = ko.observable("");
+        self.entity = ko.observable("");
+        self.entityTypes = ko.observableArray([{ value: "", label: ko.pureComputed(function () {
+            return i18n.t("audit.allEntities");
+        }) }]);
+        self.action = ko.observable("");
+        self.actor = ko.observable("");
+        self.behalfOf = ko.observable("");
+        self.sortBy = ko.observable("timestamp");
         self.oldestFirst = ko.observable(false);
+        self.actions = [{ value: "", label: ko.pureComputed(function () {
+            return i18n.t("audit.allActions");
+        }) }].concat(Object.keys(actionKeys).map(function (name) {
+            return { value: name, label: known(actionKeys, name) };
+        }));
+        self.sortFields = ["timestamp", "entity", "key", "action", "actor"].map(function (name) {
+            return {
+                value: name,
+                label: ko.pureComputed(function () {
+                    return i18n.t("audit.sort." + name);
+                })
+            };
+        });
         self.orders = [
             {
                 label: ko.pureComputed(function () {
-                    return i18n.t("audit.newestFirst");
+                    return i18n.t("audit.descending");
                 }),
                 oldestFirst: false
             },
             {
                 label: ko.pureComputed(function () {
-                    return i18n.t("audit.oldestFirst");
+                    return i18n.t("audit.ascending");
                 }),
                 oldestFirst: true
             }
@@ -197,6 +179,12 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
                 fromDate: self.fromDate(),
                 toDate: self.toDate(),
                 search: self.search().trim(),
+                entity: self.entity().trim(),
+                action: self.action(),
+                actor: self.actor().trim(),
+                behalfOf: self.behalfOf().trim(),
+                sortBy: self.sortBy(),
+                descending: !self.oldestFirst(),
                 oldestFirst: self.oldestFirst(),
                 page: self.pager.page(),
                 pageSize: pageSize
@@ -216,7 +204,24 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
 
                     self.pager.update(result.data);
                     self.entries(result.data.items.map(present));
-                    return undefined;
+                    if (entityTypesLoaded) {
+                        return undefined;
+                    }
+
+                    return auth.loadAuditEntityTypes().then(function (types) {
+                        if (!self.canView()) {
+                            return;
+                        }
+                        if (!types.ok) {
+                            self.message(types.message);
+                            return;
+                        }
+                        self.entityTypes.splice(1, self.entityTypes().length - 1);
+                        types.data.forEach(function (name) {
+                            self.entityTypes.push({ value: name, label: entityName(name) });
+                        });
+                        entityTypesLoaded = true;
+                    });
                 })
                 .finally(function () {
                     self.busy(false);
@@ -232,6 +237,11 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
             self.fromDate(defaultFrom());
             self.toDate(defaultTo());
             self.search("");
+            self.entity("");
+            self.action("");
+            self.actor("");
+            self.behalfOf("");
+            self.sortBy("timestamp");
             self.oldestFirst(false);
             return self.find();
         };
@@ -240,6 +250,11 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/i18n", "m
             self.canView.subscribe(function (allowed) {
                 if (allowed) {
                     self.refresh();
+                } else {
+                    entityTypesLoaded = false;
+                    self.entity("");
+                    self.entityTypes.splice(1, self.entityTypes().length - 1);
+                    self.entries([]);
                 }
             });
 

@@ -1,6 +1,8 @@
 {
   "name": "Magyar",
   "messages": {
+    "audit.entities.ContactForm": "Kapcsolatfelvételi űrlap",
+    "audit.entities.ContactRequest": "Kapcsolatfelvételi kérés",
     "menu.item.contact": "Kapcsolat",
     "contact.administration": "Kapcsolat",
     "contact.widget": "Kapcsolatfelvételi űrlap",

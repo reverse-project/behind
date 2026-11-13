@@ -1,6 +1,7 @@
 {
   "name": "Magyar",
   "messages": {
+    "audit.entities.Quote": "Idézet",
     "menu.item.quotes": "Idézetek",
     "quotes.administration": "Idézetek",
     "quotes.title": "Idézetek",

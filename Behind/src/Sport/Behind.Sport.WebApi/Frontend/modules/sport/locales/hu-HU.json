@@ -1,6 +1,14 @@
 {
   "name": "Magyar",
   "messages": {
+    "audit.entities.Discipline": "Sportág",
+    "audit.entities.Position": "Sportposzt",
+    "audit.entities.StatType": "Statisztika típusa",
+    "audit.entities.Season": "Idény",
+    "audit.entities.Team": "Csapat",
+    "audit.entities.Player": "Játékos",
+    "audit.entities.PlayerSeason": "Játékos idénye",
+    "audit.entities.Stat": "Statisztika",
     "menu.item.sport": "Sport",
     "sport.administration": "Sport",
     "sport.title": "Sport",

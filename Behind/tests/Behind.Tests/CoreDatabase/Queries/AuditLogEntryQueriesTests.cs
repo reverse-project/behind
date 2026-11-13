@@ -10,6 +10,19 @@ public sealed class AuditLogEntryQueriesTests : IDisposable
 
     public void Dispose() => _factory.Dispose();
 
+    [Fact]
+    public async Task GetEntityTypes_ReturnsAllDistinctRecordedTypes()
+    {
+        await using var seed = _factory.CreateContext();
+        await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, entityName: "UserRole");
+        await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, entityName: "User");
+        await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, entityName: "User", timestamp: DateTimeOffset.UtcNow.AddYears(-1));
+        await DatabaseSeedHelper.SeedAuditLogEntryAsync(seed, entityName: "ModuleEntry");
+
+        await using var context = _factory.CreateContext();
+        Assert.Equal(["ModuleEntry", "User", "UserRole"], await new AuditLogEntryQueries(context, []).GetEntityTypes());
+    }
+
     private static IAuditLogEntryQueries.RequestAuditLog TodayRequest(
         Flipper? flipper = null,
         Filter<AuditLogEntry>? filter = null,

@@ -1,6 +1,8 @@
 {
   "name": "English (International)",
   "messages": {
+    "audit.entities.ContactForm": "Contact form",
+    "audit.entities.ContactRequest": "Contact request",
     "menu.item.contact": "Contact",
     "contact.administration": "Contact",
     "contact.widget": "Contact form",

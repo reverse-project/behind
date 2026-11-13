@@ -10,6 +10,13 @@ namespace Behind.Core.Database.Queries;
 public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerable<IAuditLabelSource> labelSources)
     : IAuditLogEntryQueries
 {
+    public async Task<IReadOnlyList<string>> GetEntityTypes(CancellationToken cancellationToken = default) =>
+        await context.AuditLogEntries.AsNoTracking()
+            .Select(entry => entry.EntityName)
+            .Distinct()
+            .OrderBy(name => name)
+            .ToListAsync(cancellationToken);
+
     public async Task<AuditLabels> ResolveLabels(
         IReadOnlyCollection<Guid> ids,
         CancellationToken cancellationToken = default)
@@ -55,6 +62,7 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerabl
             select new
             {
                 Audit = audit,
+                Id = EF.Property<Guid>(audit, "Id"),
                 UserId = EF.Property<Guid?>(audit, "UserId"),
                 dbUser.DisplayName,
                 BehalfOfId = EF.Property<Guid?>(audit, "BehalfOfId"),
@@ -73,8 +81,11 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerabl
             request = request with { OrderByCollection = new OrderByCollection([new OrderBy("audit.Timestamp")]) };
         }
 
+        var stableOrder = new OrderByCollection(
+            request.OrderByCollection.Collection.Concat([new OrderBy("Id")]));
+
         var items = await request.Flipper.Apply(
-            request.OrderByCollection.Apply(projectionQuery)
+            stableOrder.Apply(projectionQuery)
         ).ToListAsync(cancellationToken);
 
         var populatedItems = items.Select(item =>

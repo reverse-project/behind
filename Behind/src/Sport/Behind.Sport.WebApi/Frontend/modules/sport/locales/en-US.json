@@ -1,6 +1,14 @@
 {
   "name": "English (International)",
   "messages": {
+    "audit.entities.Discipline": "Sport discipline",
+    "audit.entities.Position": "Sport position",
+    "audit.entities.StatType": "Statistic type",
+    "audit.entities.Season": "Season",
+    "audit.entities.Team": "Team",
+    "audit.entities.Player": "Player",
+    "audit.entities.PlayerSeason": "Player season",
+    "audit.entities.Stat": "Statistic",
     "menu.item.sport": "Sport",
     "sport.administration": "Sport",
     "sport.title": "Sport",

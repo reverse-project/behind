@@ -1,6 +1,7 @@
 {
   "name": "English (International)",
   "messages": {
+    "audit.entities.ForumBoardCategory": "Forum board category",
     "widgets.forumPosts": "Latest forum posts",
     "widgets.forumStats": "Forum statistics",
     "widgets.forumBoards": "Boards",

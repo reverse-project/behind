@@ -46,6 +46,8 @@ public class AuditLogFrontendTests
         Assert.Contains("http.get(url)", auth);
         Assert.Contains("\"/auditLog?fromDate=\"", auth);
         Assert.Contains("\"&oldestFirst=\" + query.oldestFirst", auth);
+        Assert.Contains("http.get(\"/auditLog/entityTypes\")", auth);
+        Assert.Contains("\"&entityExact=true\"", auth);
     }
 
     [Fact]
@@ -57,11 +59,14 @@ public class AuditLogFrontendTests
             new[]
             {
                 "submit: find", "value: fromDate", "value: toDate", "value: search", "value: oldestFirst",
+                "value: entity", "value: action", "value: actor", "value: behalfOf", "value: sortBy",
                 "click: reset", "foreach: entries", "foreach: changes", "text: entityLabel", "visible: canView", "visible: isDenied",
                 "<pager class=\"d-block\" params=\"pager: pager\">"
             },
             binding => Assert.Contains(binding, view));
         Assert.DoesNotContain("<!--", view);
+        Assert.Contains("<select id=\"audit-entity\"", view);
+        Assert.Contains("options: entityTypes", view);
     }
 
     [Fact]

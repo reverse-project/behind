@@ -1,6 +1,7 @@
 {
   "name": "Magyar",
   "messages": {
+    "audit.entities.ForumBoardCategory": "Fórumtábla-kategória",
     "widgets.forumPosts": "Legfrissebb fórumüzenetek",
     "widgets.forumStats": "Fórumstatisztika",
     "widgets.forumBoards": "Fórumtáblák",

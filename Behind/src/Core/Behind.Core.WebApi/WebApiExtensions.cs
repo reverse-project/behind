@@ -413,6 +413,15 @@ public static class WebApiExtensions
                 .Produces(403)
                 .Produces(500);
 
+            application.MapGet("/auditLog/entityTypes", AuditLogEntryEndpoints.GetEntityTypes)
+                .RequireAuthorization(GrantName.Of(GrantArea.AuditLog, GrantAction.Read))
+                .WithSummary("List recorded audit entity types")
+                .WithDescription("Returns the distinct entity types recorded in the audit log.")
+                .Produces<IReadOnlyList<string>>()
+                .Produces(401)
+                .Produces(403)
+                .Produces(500);
+
             application.UseDownloadUploadLimit();
             application.UseRateLimiter();
             application.UseAuthentication();

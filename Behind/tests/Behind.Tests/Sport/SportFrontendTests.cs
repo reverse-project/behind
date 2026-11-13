@@ -256,6 +256,7 @@ public class SportFrontendTests
 
         var unused = english.Keys
             .Where(key => key != "menu.item.sport" && key != SportModuleNames.AdministrationNameKey)
+            .Where(key => !key.StartsWith("audit.entities.", StringComparison.Ordinal))
             .Where(key => !all.Any(source => source.Contains($"\"{key}\"") || source.Contains($"'{key}'")))
             .ToList();
 

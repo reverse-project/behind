@@ -3,6 +3,8 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "changed", "text": "Audit log entity types are translated in the selector and entries, including installed module entities." },
+      { "type": "added", "text": "Audit logs support filtering by entity type (selected from recorded types), action, actor and on-behalf-of user; searching names, emails, entity labels and changes; and sorting by time, entity type or key, action and actor." },
       { "type": "changed", "text": "Requests use the selected content locale for formatting, falling back to the signed-in user's language and then the site default. OpenTelemetry logs include the request locale and validated session, user and impersonation identifiers." },
       { "type": "added", "text": "Public profiles offer Send private message to authorized users viewing another human account, opening visual composition with that recipient selected." },
       { "type": "changed", "text": "Visual editing is the default and primary option in private-message composition and replies, consistent with Forum and rich HTML editors. BBCode and HTML source editing remain secondary options." },

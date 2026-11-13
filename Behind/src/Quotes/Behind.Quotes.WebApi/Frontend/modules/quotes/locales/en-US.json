@@ -1,6 +1,7 @@
 {
   "name": "English (International)",
   "messages": {
+    "audit.entities.Quote": "Quote",
     "menu.item.quotes": "Quotes",
     "quotes.administration": "Quotes",
     "quotes.title": "Quotes",

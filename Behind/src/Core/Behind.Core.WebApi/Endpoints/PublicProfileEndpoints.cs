@@ -11,7 +11,7 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public sealed class PublicProfileEndpoints
 {
-    public sealed record ProfilePermissions(bool CanModerate, bool CanImpersonate);
+    public sealed record ProfilePermissions(bool CanModerate, bool CanImpersonate, bool CanSendPrivateMessage = false);
 
     public sealed record DetailsRequest(DateOnly? Birthday, bool? HideEmail);
 
@@ -43,6 +43,7 @@ public sealed class PublicProfileEndpoints
 
         var canModerate = false;
         var canImpersonate = false;
+        var canSendPrivateMessage = false;
         BanInfo? ban = null;
         ModerationDetails? moderation = null;
         if (http.User.Identity?.IsAuthenticated == true)
@@ -52,6 +53,10 @@ public sealed class PublicProfileEndpoints
                 () => Task.CompletedTask,
                 async current =>
                 {
+                    canSendPrivateMessage = current.UserId != id
+                        && id != DomainConstants.SystemUserId && id != DomainConstants.GuestUserId
+                        && current.Access.Holds(GrantName.Of(GrantArea.PrivateMessage, GrantAction.Read))
+                        && current.Access.Holds(GrantName.Of(GrantArea.PrivateMessage, GrantAction.Write));
                     var canManage = current.Access.Holds(GrantName.Of(GrantArea.User, GrantAction.Manage));
                     var canActAs = current.Access.Holds(GrantName.Of(GrantArea.Impersonation, GrantAction.Manage));
                     if (!canManage && !canActAs)
@@ -95,7 +100,7 @@ public sealed class PublicProfileEndpoints
 
         return Results.Json(new ProfileResponse(profile.Id, profile.DisplayName, profile.PictureId,
             profile.PrimaryEmail, profile.RegisteredAt, profile.LastLoginAt, profile.Roles, ban,
-            new ProfilePermissions(canModerate, canImpersonate), moderation));
+            new ProfilePermissions(canModerate, canImpersonate, canSendPrivateMessage), moderation));
     }
 
     [Authorize]

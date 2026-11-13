@@ -237,6 +237,14 @@ public static class WebApiExtensions
             builder.Services.AddScoped<INewsCommentQueries, NewsCommentQueries>();
             builder.Services.AddScoped<INewsCommentCommands, NewsCommentCommands>();
             builder.Services.AddScoped<IChatStore, ChatStore>();
+            builder.Services.AddPrivateMessagingServices();
+            builder.Services.AddScoped<PrivateMessageEmailStore>();
+            builder.Services.AddScoped<PrivateMessageEmailDispatcher>();
+            builder.Services.AddHostedService<PrivateMessageEmailService>();
+            builder.Services.AddScoped<IReportEvidenceSource, PrivateMessageReportEvidenceSource>();
+            builder.Services.AddScoped<ReportStore>();
+            builder.Services.AddScoped<CoreReportEvidenceQueries>();
+            builder.Services.AddScoped<ReportEmailDispatcher>();
             builder.Services.AddScoped<IArticleQueries, ArticleQueries>();
             builder.Services.AddScoped<IArticleCommands, ArticleCommands>();
             builder.Services.AddScoped<IArticleCategoryQueries, ArticleCategoryQueries>();
@@ -964,6 +972,8 @@ public static class WebApiExtensions
             application.MapWidgetEndpoints();
             application.MapRouteAliasEndpoints();
             application.MapMessageEndpoints();
+            application.MapPrivateMessageEndpoints();
+            application.MapReportEndpoints();
             application.MapAccessEndpoints();
             application.MapRawDatabaseEndpoints();
             application.MapContentRestrictionEndpoints();

@@ -1,0 +1,136 @@
+@baseUrl = http://localhost:5000
+@token = replace-with-access-token
+@conversation = 18fdcc69-269d-4c1a-9123-56f83cd36d50
+@message = 28fdcc69-269d-4c1a-9123-56f83cd36d50
+@peer = 38fdcc69-269d-4c1a-9123-56f83cd36d50
+@role = 40000000-0000-0000-0000-000000000000
+@report = 48fdcc69-269d-4c1a-9123-56f83cd36d50
+
+### Mailbox; folder is inbox, read, sent, deleted or left
+GET {{baseUrl}}/private-messages?folder=inbox&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Conversation details
+GET {{baseUrl}}/private-messages/{{conversation}}
+Authorization: Bearer {{token}}
+
+### Recipient lookup
+GET {{baseUrl}}/private-messages/recipients?search=
+Authorization: Bearer {{token}}
+
+### Compose; all chats are groups and role recipients require PrivateMessageModeration.Manage
+POST {{baseUrl}}/private-messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"subject":"Discussion","content":"[b]Hello[/b]","userIds":["{{peer}}"],"roleIds":[],"bccUserIds":[],"bccRoleIds":[],"isSystem":false}
+
+### System message; dedicated moderation grant required
+POST {{baseUrl}}/private-messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"subject":"System notice","content":"Please reply privately.","userIds":[],"roleIds":["{{role}}"],"bccUserIds":[],"bccRoleIds":[],"isSystem":true}
+
+### Reply; replyToId must be a visible message in this conversation
+POST {{baseUrl}}/private-messages/{{conversation}}/reply
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"content":"[quote]Hello[/quote]Reply","replyToId":"{{message}}"}
+
+### Invite additional peers to an ordinary group
+POST {{baseUrl}}/private-messages/{{conversation}}/participants
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"userIds":["{{peer}}"],"roleIds":[],"bccUserIds":[],"bccRoleIds":[]}
+
+### Read
+POST {{baseUrl}}/private-messages/{{conversation}}/read
+Authorization: Bearer {{token}}
+
+### Delete only from your mailbox
+POST {{baseUrl}}/private-messages/{{conversation}}/delete
+Authorization: Bearer {{token}}
+
+### Restore
+POST {{baseUrl}}/private-messages/{{conversation}}/restore
+Authorization: Bearer {{token}}
+
+### Leave an ordinary group
+POST {{baseUrl}}/private-messages/{{conversation}}/leave
+Authorization: Bearer {{token}}
+
+### Rejoin an invited group
+POST {{baseUrl}}/private-messages/{{conversation}}/join
+Authorization: Bearer {{token}}
+
+### Your block list
+GET {{baseUrl}}/private-messages/blocks?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Block ordinary direct messaging in both directions
+POST {{baseUrl}}/private-messages/blocks/{{peer}}
+Authorization: Bearer {{token}}
+
+### Unblock
+POST {{baseUrl}}/private-messages/blocks/{{peer}}/delete
+Authorization: Bearer {{token}}
+
+### Report accessible evidence; sourceType may also be profile, forumPost, chatMessage or newsComment
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"userIds":[],"reason":"Misconduct","sourceType":"privateMessage","sourceId":"{{message}}"}
+
+### Report multiple users without a content source
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"userIds":["{{peer}}"],"reason":"Misconduct","sourceType":null,"sourceId":null}
+
+### Report management
+GET {{baseUrl}}/reports?status=open&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Report details and evidence
+GET {{baseUrl}}/reports/{{report}}
+Authorization: Bearer {{token}}
+
+### Dedicated report conversation access
+GET {{baseUrl}}/reports/{{report}}/conversation
+Authorization: Bearer {{token}}
+
+### Resolve; action is dismiss, resolve or ban, null banUntil means permanent
+POST {{baseUrl}}/reports/{{report}}/resolve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"action":"resolve","banUntil":null,"reporterMessage":"Thank you for your report.","reportedEmail":"Please follow the community rules."}
+
+### Retry only pending or failed notifications
+POST {{baseUrl}}/reports/{{report}}/retry-email
+Authorization: Bearer {{token}}
+
+### Soft delete a report
+POST {{baseUrl}}/reports/{{report}}/delete
+Authorization: Bearer {{token}}
+
+### Developer deleted report listing
+GET {{baseUrl}}/reports?deleted=true&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Developer restore
+POST {{baseUrl}}/reports/{{report}}/restore
+Authorization: Bearer {{token}}
+
+### Developer permanent deletion
+POST {{baseUrl}}/reports/{{report}}/hard/delete
+Authorization: Bearer {{token}}
+
+### Inaccessible content is not disclosed
+GET {{baseUrl}}/private-messages/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}

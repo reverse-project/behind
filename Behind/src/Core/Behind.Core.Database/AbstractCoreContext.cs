@@ -143,6 +143,15 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         typeof(MenuItem),
         typeof(RouteAlias),
         typeof(Message),
+        typeof(PrivateConversation),
+        typeof(PrivateConversationRecipient),
+        typeof(PrivateMessage),
+        typeof(PrivateMailbox),
+        typeof(PrivateMessageRead),
+        typeof(PrivateUserBlock),
+        typeof(UserReport),
+        typeof(ReportEmailDelivery),
+        typeof(PrivateMessageEmailDelivery),
         typeof(AccessSettings)
     ];
 

@@ -4,6 +4,8 @@ This manual describes what you can do in the Behind web application today.
 
 ## For everyone
 
+- **[Private messaging and reports](./private-messaging.md)** - private conversations, recipients, groups, blocks and misconduct reports.
+
 - **[Contact](./managing-contact.md)** - submitting contact requests and using contact form widgets.
 
 - **[Forum](./managing-forum.md)** - boards, topics, replies, profile pictures and moderation settings.

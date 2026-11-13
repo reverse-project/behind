@@ -249,6 +249,46 @@ public static class AuditLabelExtensions
                 .Select(message => new Named(EF.Property<Guid>(message, VersionedColumns.Key), message.Name))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken),
+            .. await context.UserReports
+                .Where(report => ids.Contains(EF.Property<Guid>(report, VersionedColumns.Key)))
+                .Select(report => new Named(EF.Property<Guid>(report, VersionedColumns.Key), "User report"))
+                .Distinct()
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.PrivateConversations
+                .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key), "Private conversation"))
+                .Distinct().AsNoTracking().ToListAsync(cancellationToken),
+            .. await context.PrivateConversationRecipients
+                .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key), "Private recipient"))
+                .Distinct().AsNoTracking().ToListAsync(cancellationToken),
+            .. await context.PrivateMessages
+                .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key), "Private message"))
+                .Distinct().AsNoTracking().ToListAsync(cancellationToken),
+            .. await context.PrivateMailboxes
+                .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key), "Private mailbox"))
+                .Distinct().AsNoTracking().ToListAsync(cancellationToken),
+            .. await context.PrivateMessageReads
+                .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key), "Private read state"))
+                .Distinct().AsNoTracking().ToListAsync(cancellationToken),
+            .. await context.PrivateUserBlocks
+                .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key), "Private user block"))
+                .Distinct().AsNoTracking().ToListAsync(cancellationToken),
+            .. await context.ReportEmailDeliveries
+                .Where(delivery => ids.Contains(EF.Property<Guid>(delivery, VersionedColumns.Key)))
+                .Select(delivery => new Named(EF.Property<Guid>(delivery, VersionedColumns.Key), "Report notification"))
+                .Distinct()
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.Set<PrivateMessageEmailDelivery>()
+                .Where(delivery => ids.Contains(EF.Property<Guid>(delivery, VersionedColumns.Key)))
+                .Select(delivery => new Named(EF.Property<Guid>(delivery, VersionedColumns.Key), "Private message notification"))
+                .Distinct().AsNoTracking().ToListAsync(cancellationToken),
             .. await context.AccessSettings
                 .Where(settings => ids.Contains(EF.Property<Guid>(settings, VersionedColumns.Key)))
                 .Select(settings => new Named(EF.Property<Guid>(settings, VersionedColumns.Key), AccessSettingsKind))

@@ -18,7 +18,7 @@ public class BuiltInAccessTests
     [Fact]
     public void Grants_CoverReadWriteDeleteAndManageForEveryAreaPlusRawDatabaseManage()
     {
-        Assert.Equal(64, BuiltInAccess.Grants.Count);
+        Assert.Equal(70, BuiltInAccess.Grants.Count);
         Assert.Equal(
             AreaGrantNames.Append(RawDatabaseManage).Order(),
             BuiltInAccess.Grants.Select(grant => grant.Grant.Name).Order());
@@ -51,6 +51,9 @@ public class BuiltInAccessTests
                                && GrantArea.ActionsOf(area).Contains(GrantAction.Read))
                 .Select(area => GrantName.Of(area, GrantAction.Read))
                 .Append("Chat.Write")
+                .Append("PrivateMessage.Write")
+                .Append("PrivateMessage.Delete")
+                .Append("Report.Write")
                 .Order(),
             GrantNames(BuiltInAccess.Users));
     }
@@ -103,6 +106,18 @@ public class BuiltInAccessTests
             BuiltInAccess.Administrators.Grants.Where(grant => grant.Area == GrantArea.Chat).Select(grant => grant.Grant.Name));
         Assert.All(BuiltInAccess.Grants.Where(grant => grant.Area == GrantArea.Chat),
             grant => Assert.Contains(BuiltInAccess.Restrictions, restriction => restriction.Restriction.Name == grant.Grant.Name));
+    }
+
+    [Fact]
+    public void PrivateMessagingAndReports_SeparateUserActionsFromModeration()
+    {
+        Assert.Equal(["PrivateMessage.Read", "PrivateMessage.Write", "PrivateMessage.Delete"],
+            BuiltInAccess.Users.Grants.Where(grant => grant.Area == GrantArea.PrivateMessage).Select(grant => grant.Grant.Name));
+        Assert.Contains("Report.Write", GrantNames(BuiltInAccess.Users));
+        Assert.DoesNotContain("Report.Manage", GrantNames(BuiltInAccess.Users));
+        Assert.DoesNotContain("PrivateMessageModeration.Manage", GrantNames(BuiltInAccess.Users));
+        Assert.Contains("Report.Manage", GrantNames(BuiltInAccess.Administrators));
+        Assert.Contains("PrivateMessageModeration.Manage", GrantNames(BuiltInAccess.Administrators));
     }
 
     [Fact]

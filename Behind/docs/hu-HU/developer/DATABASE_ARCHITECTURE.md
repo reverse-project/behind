@@ -1,5 +1,13 @@
 # Adatbázis-architektúra
 
+## Privát üzenetek és jelentések tárolása
+
+A privát üzenetek és jelentések a Core meglévő migrációs láncát használják a közös SQLite/PostgreSQL adatbázisban. A gazda indítása előtt futtassa a telepítés migrátorát. Az új entitások `(Key, Version)` kulcsot és audit-időbélyeget használnak. A postaláda állapota felhasználónként különböző; a törlés más résztvevő előzményeit nem távolítja el.
+
+A `UserReports` az indoklás/bizonyíték pillanatképét és döntést tárolja. A `ReportEmailDeliveries` a kézbesítési célcímet és állapotot őrzi az újrapróbáláshoz. A jelentéskezelés átmeneti törlést és fejlesztői visszaállítást/végleges törlést támogat. A nyers adatbázis-felderítés felismeri a táblákat és maszkolja az érzékeny tartalmat; az auditfelirat nem árulja el a privát tárgyat vagy bizonyítékot.
+
+A `PrivateMessageEmailDeliveries` verziózott értesítési kimenő sor, amelyet mindkét szolgáltatón az `AddPrivateMessageEmails` migráció hoz létre. Az új üzenet és címzettcím-pillanatképek mentése atomi. SMTP előtt a függő/sikertelen rekord tartósan küldés alatt álló állapotba kerül, majd elküldött vagy sikertelen verzió követi. Ismert SMTP-elutasítás legfeljebb három próbálkozást enged; bizonytalan küldés nem ismétlődik automatikusan. A hivatkozási azonosító és cím érzékeny a nyers szerkesztőben; az auditfelirat nem fed fel privát adatot, az idő auditból származik.
+
 ## Kapcsolatadatok tárolása
 
 Az `IContactContext` verziózott kapcsolatűrlapokat és kéréseket ad a fő telepítés egyetlen SQLite/PostgreSQL adatbázisához. A Contact migrációinak saját `__contactMigrationsHistory` táblája van; a webprojekt migrátora a Core után alkalmazza őket. A frissített gazda indítása előtt futtassa a migrációkat.

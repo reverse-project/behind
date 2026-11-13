@@ -1,5 +1,13 @@
 # Domain Model Design
 
+## Private conversations and user reports
+
+Private content and mailbox/block state are separate immutable versioned records. Reading or deleting affects only the current user's mailbox. User and role recipients may be hidden; hidden identities and private replies must be excluded before projection, counting and paging. A system reply is private to its author, original sender and dedicated moderators. Group membership can change without rewriting history.
+
+`UserReport` associates a reporter with a private report conversation, up to twenty reported users, a reason, an authorized evidence snapshot and a versioned decision. Source authors are resolved server-side even for anonymous content. `ReportEmailDelivery` retains the original email destination, body and delivery status. Sensitive fields are masked in raw editing and auditing; timestamps come from audit entries.
+
+`PrivateMessageEmailDelivery` snapshots a confirmed recipient address, message/conversation references, delivery state and attempt count. It never stores message text. New messages stage notifications in the same transaction; visible user/role recipients and the sender are selected according to actual reply visibility, excluding authors, built-in users and departed participants.
+
 ## Contact domain
 
 Contact forms define a display name, description, private recipient address, fixed subject choices or a visitor-entered subject, and optional additional field definitions. Soft-deleted forms are unavailable publicly. Visitors always provide name, email and message. Field keys, text/textarea/email types, required flags, maximum lengths and subjects are validated by the server, not trusted from the browser.

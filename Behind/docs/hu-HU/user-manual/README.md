@@ -4,6 +4,8 @@ Ez a kézikönyv azt ismerteti, hogy a Behind webalkalmazásban jelenleg mit teh
 
 ## Mindenkinek
 
+- **[Privát üzenetek és jelentések](./private-messaging.md)** - privát beszélgetések, címzettek, csoportok, tiltólisták és szabálysértési jelentések.
+
 - **[Kapcsolat](./managing-contact.md)** - kapcsolatkérelmek beküldése és kapcsolatűrlap-widgetek használata.
 
 - **[Fórum](./managing-forum.md)** - fórumtáblák, témák, válaszok, profilképek és moderálási beállítások.

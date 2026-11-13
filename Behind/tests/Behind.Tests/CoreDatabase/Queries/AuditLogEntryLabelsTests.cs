@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
@@ -21,6 +22,39 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
         var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([]);
 
         Assert.Empty(labels.Values);
+    }
+
+    [Fact]
+    public async Task ResolveLabels_PrivateEntitiesUseNonDisclosingLabels()
+    {
+        await using var context = _factory.CreateContext();
+        var conversation = Guid.NewGuid();
+        var user = Guid.NewGuid();
+        var message = Guid.NewGuid();
+        (object Entity, string Label)[] entities =
+        [
+            (new PrivateConversation(user, "Secret subject", true, false, false), "Private conversation"),
+            (new PrivateConversationRecipient(conversation, user, false, true), "Private recipient"),
+            (new PrivateMessage(conversation, user, "Secret body", null, null, true), "Private message"),
+            (new PrivateMailbox(conversation, user, false, false), "Private mailbox"),
+            (new PrivateMessageRead(message, user), "Private read state"),
+            (new PrivateUserBlock(user, Guid.NewGuid(), true), "Private user block"),
+            (new PrivateMessageEmailDelivery(new(Guid.Empty), conversation, message, user, "secret@example.test", "pending", 0), "Private message notification")
+        ];
+        var expected = new Dictionary<Guid, string>();
+        foreach (var entity in entities)
+        {
+            var id = Guid.NewGuid();
+            context.Add(entity.Entity).StampVersionedKey(id, 1);
+            expected.Add(id, entity.Label);
+        }
+
+        await context.SaveChangesAsync();
+        var labels = await new AuditLogEntryQueries(context, []).ResolveLabels(expected.Keys.ToArray());
+        foreach (var label in expected)
+        {
+            Assert.Equal(label.Value, labels.Label(label.Key.ToString()));
+        }
     }
 
     [Fact]

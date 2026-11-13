@@ -19,8 +19,8 @@ public class BuiltInMenusTests
     {
         var userItems = BuiltInMenus.Main.Items.Where(item => item.Kind == MenuItemKind.User).OrderBy(item => item.Position).ToList();
 
-        Assert.Equal(["Profile", "Session", "Sessions", "Administration"], userItems.Select(item => item.Title));
-        Assert.Equal(["#/profile", "#/session", "#/sessions", "#/administration"], userItems.Select(item => item.Url));
+        Assert.Equal(["Profile", "Session", "Sessions", "Private messages", "Administration"], userItems.Select(item => item.Title));
+        Assert.Equal(["#/profile", "#/session", "#/sessions", "#/private-messages", "#/administration"], userItems.Select(item => item.Url));
     }
 
     [Fact]

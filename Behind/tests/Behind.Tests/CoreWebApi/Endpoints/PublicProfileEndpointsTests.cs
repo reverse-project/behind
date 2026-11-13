@@ -71,6 +71,33 @@ public sealed class PublicProfileEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task PrivateMessageActionRequiresBothGrantsAndAnotherHumanProfile()
+    {
+        await using var context = _factory.CreateContext();
+        var viewer = await DatabaseSeedHelper.SeedHumanUserAsync(context, "viewer@test.com");
+        var target = await DatabaseSeedHelper.SeedHumanUserAsync(context, "target@test.com");
+        foreach (var grants in new[]
+        {
+            Array.Empty<Grant>(),
+            new[] { new Grant("PrivateMessage.Read") },
+            new[] { new Grant("PrivateMessage.Write") },
+            new[] { new Grant("PrivateMessage.Read"), new Grant("PrivateMessage.Write") }
+        })
+        {
+            _access.GetUserAccess(viewer, Arg.Any<CancellationToken>()).Returns(new UserAccess([], grants, []));
+            var response = Assert.IsType<JsonHttpResult<PublicProfileEndpoints.ProfileResponse>>(
+                await GetProfile(target, SignedIn(viewer), context));
+            Assert.Equal(grants.Length == 2, response.Value!.Permissions.CanSendPrivateMessage);
+        }
+        var own = Assert.IsType<JsonHttpResult<PublicProfileEndpoints.ProfileResponse>>(
+            await GetProfile(viewer, SignedIn(viewer), context));
+        Assert.False(own.Value!.Permissions.CanSendPrivateMessage);
+        var anonymous = Assert.IsType<JsonHttpResult<PublicProfileEndpoints.ProfileResponse>>(
+            await GetProfile(target, new DefaultHttpContext(), context));
+        Assert.False(anonymous.Value!.Permissions.CanSendPrivateMessage);
+    }
+
+    [Fact]
     public async Task PrivateDetails_DefaultHiddenAndOnlyPublicEmailIsOptIn()
     {
         Guid id;

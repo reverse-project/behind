@@ -23,6 +23,7 @@ public static class ForumWebApiExtensions
                 .ValidateOnStart();
             builder.Services.AddModule(ForumModule.Descriptor).AddForumDatabase();
             builder.Services.AddScoped<IContentLocalePermission, ForumPostLocalePermission>();
+            builder.Services.AddScoped<IReportEvidenceSource, ForumReportEvidenceSource>();
 
             return builder;
         }

@@ -89,7 +89,9 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 roles: item.roles,
                 isCurrent: item.isCurrent,
                 isBanned: item.ban !== null,
-                banReason: item.ban ? item.ban.reason : "",
+                banReason: ko.pureComputed(function () {
+                    return i18n.banReason(item.ban ? item.ban.reason : "");
+                }),
                 canModerate: item.permissions.canModerate,
                 isDeleted: item.isDeleted,
                 canDelete: item.permissions.canDelete,

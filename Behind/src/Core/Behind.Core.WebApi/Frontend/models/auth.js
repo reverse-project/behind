@@ -53,7 +53,7 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
 
         var reason = response.data && response.data.reason ? response.data.reason : "";
 
-        return reason ? i18n.t("auth.bannedReason", [reason]) : i18n.t("auth.banned");
+        return reason ? i18n.t("auth.bannedReason", [i18n.banReason(reason)]) : i18n.t("auth.banned");
     };
 
     var userActionFailures = {

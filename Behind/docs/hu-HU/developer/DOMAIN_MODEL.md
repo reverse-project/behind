@@ -1,5 +1,13 @@
 # Tartományi modell tervezése
 
+## Privát beszélgetések és felhasználói jelentések
+
+A privát tartalom, a postaláda állapota és a tiltólista külön változtathatatlan, verziózott rekordok. Az olvasás és törlés csak az aktuális felhasználó postaládáját érinti. A felhasználók és szerepkörök titkos címzettek is lehetnek; a titkos személyazonosságot és privát válaszokat vetítés, számolás és lapozás előtt kell kiszűrni. A rendszerválaszt csak a szerző, az eredeti feladó és az erre jogosult moderátor látja. A csoporttagság az előzmények átírása nélkül változhat.
+
+A `UserReport` a bejelentőt privát beszélgetéssel, legfeljebb húsz jelentett felhasználóval, indoklással, engedélyezett bizonyíték-pillanatképpel és verziózott döntéssel kapcsolja össze. A névtelen szerzőt is a kiszolgáló azonosítja. A `ReportEmailDelivery` az eredeti e-mail-célcímet, tartalmat és kézbesítési állapotot őrzi. Az érzékeny mezők a nyers szerkesztőben és auditban maszkoltak; az időbélyegek auditból származnak.
+
+A `PrivateMessageEmailDelivery` megerősített címzettcímet, üzenet/beszélgetés-hivatkozást, kézbesítési állapotot és próbálkozásszámot őriz. Üzenetszöveget nem tárol. Az új üzenet ugyanabban a tranzakcióban menti az értesítést; a felhasználó-/szerepkörcímzett és feladó kiválasztása a válasz tényleges láthatóságát követi, a szerző, beépített felhasználó és kilépett résztvevő kizárásával.
+
 ## Kapcsolat tartomány
 
 A kapcsolatűrlap megjelenítendő nevet, leírást, privát címzettcímet, rögzített tárgyakat vagy látogató által megadott tárgyat, valamint opcionális kiegészítő meződefiníciókat ad meg. Az átmenetileg törölt űrlap nyilvánosan nem érhető el. A látogató mindig nevet, e-mail-címet és üzenetet küld. A mezőkulcsokat, szöveg/többsoros szöveg/e-mail típusokat, kötelezőséget, legnagyobb hosszt és tárgyakat a kiszolgáló ellenőrzi, nem bízik a böngészőben.

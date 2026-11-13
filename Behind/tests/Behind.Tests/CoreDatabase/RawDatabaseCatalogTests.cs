@@ -93,6 +93,20 @@ public sealed class RawDatabaseCatalogTests : IDisposable
         Assert.False(raw.FindColumn("UserId").Match(() => true, found => found.IsSensitive));
     }
 
+    [Theory]
+    [InlineData("Email")]
+    [InlineData("ConversationId")]
+    [InlineData("MessageId")]
+    [InlineData("UserId")]
+    public void PrivateMessageEmailDeliveriesAreEditableWithSensitiveMetadata(string column)
+    {
+        using var context = _factory.CreateContext();
+        var raw = context.FindRawTable("PrivateMessageEmailDeliveries").Match(
+            () => throw new InvalidOperationException(), found => found);
+        Assert.True(raw.FindColumn(column).Match(() => false, found => found.IsSensitive));
+        Assert.Equal(new[] { "Key", "Version" }, raw.KeyColumns.Select(key => key.Name));
+    }
+
     [Fact]
     public void RawTables_ListThePasskeysOfTheUsers()
     {

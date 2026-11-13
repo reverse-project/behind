@@ -259,6 +259,36 @@
     margin-top: 0.75rem;
 }
 
+.behind-bbcode {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.behind-bbcode a[data-forum-url] {
+    color: var(--bs-link-color, #0d6efd);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.behind-bbcode a[data-forum-url]:hover {
+    color: var(--bs-link-hover-color, #0a58ca);
+}
+
+.behind-bbcode blockquote {
+    border-inline-start: .25rem solid var(--bs-primary, #0d6efd);
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    padding: .75rem 1rem;
+    margin: .75rem 0;
+}
+
+.behind-bbcode pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    padding: 1rem;
+    border-radius: .35rem;
+}
+
 @media (max-width: 767.98px) {
     .behind-layout .behind-layout-section {
         display: flex;

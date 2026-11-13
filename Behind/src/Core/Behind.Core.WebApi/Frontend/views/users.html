@@ -26,7 +26,7 @@
                 <div class="d-flex flex-wrap gap-1 my-2" data-bind="foreach: roles">
                     <span class="badge text-bg-info" data-bind="text: $data"></span>
                 </div>
-                <p class="text-danger mb-2" data-bind="visible: isBanned && banReason !== ''"><span data-bind="t: 'users.banMessage'">Ban message:</span> <span class="text-break" data-bind="text: banReason"></span></p>
+                <p class="text-danger mb-2" data-bind="visible: isBanned && banReason() !== ''"><span data-bind="t: 'users.banMessage'">Ban message:</span> <span class="text-break" data-bind="text: banReason"></span></p>
                 <div class="d-flex flex-wrap gap-2">
                     <div class="d-flex flex-wrap gap-2" data-bind="foreach: roleActions">
                         <button type="button" class="btn btn-sm" data-bind="css: granted ? 'btn-outline-warning' : 'btn-outline-primary', text: label, enable: !$root.busy(), visible: allowed, click: run"></button>

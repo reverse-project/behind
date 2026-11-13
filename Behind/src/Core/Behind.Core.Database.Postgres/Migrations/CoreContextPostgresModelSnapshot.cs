@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261113120001_ContentAgeOptionNames";
+    public override string LastMigrationId => "20261113150946_AddPrivateMessageEmails";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -889,6 +889,271 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.PrivateConversation", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<bool>("IsGroup")
+                    .HasColumnType("boolean");
+
+                b.Property<bool>("IsReport")
+                    .HasColumnType("boolean");
+
+                b.Property<bool>("IsSystem")
+                    .HasColumnType("boolean");
+
+                b.Property<Guid>("SenderId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("Subject")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("SenderId");
+
+                b.ToTable("PrivateConversations");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.PrivateConversationRecipient", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<Guid>("ConversationId")
+                    .HasColumnType("uuid");
+
+                b.Property<bool>("IsHidden")
+                    .HasColumnType("boolean");
+
+                b.Property<bool>("IsRole")
+                    .HasColumnType("boolean");
+
+                b.Property<Guid>("RecipientId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("RecipientId");
+
+                b.HasIndex("ConversationId", "RecipientId", "IsRole", "Version")
+                    .IsUnique();
+
+                b.ToTable("PrivateConversationRecipients");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.PrivateMailbox", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<Guid>("ConversationId")
+                    .HasColumnType("uuid");
+
+                b.Property<bool>("Deleted")
+                    .HasColumnType("boolean");
+
+                b.Property<bool>("Left")
+                    .HasColumnType("boolean");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("ConversationId", "UserId", "Version")
+                    .IsUnique();
+
+                b.ToTable("PrivateMailboxes");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.PrivateMessage", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<Guid>("AuthorId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("Content")
+                    .IsRequired()
+                    .HasMaxLength(100000)
+                    .HasColumnType("character varying(100000)");
+
+                b.Property<Guid>("ConversationId")
+                    .HasColumnType("uuid");
+
+                b.Property<bool>("IsInitial")
+                    .HasColumnType("boolean");
+
+                b.Property<Guid?>("PrivateRecipientId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid?>("ReplyToId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("ConversationId");
+
+                b.HasIndex("ReplyToId");
+
+                b.ToTable("PrivateMessages");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.PrivateMessageEmailDelivery", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<int>("Attempts")
+                    .HasColumnType("integer");
+
+                b.Property<Guid>("ConversationId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("Email")
+                    .IsRequired()
+                    .HasMaxLength(320)
+                    .HasColumnType("character varying(320)");
+
+                b.Property<Guid>("MessageId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("MessageId");
+
+                b.HasIndex("Status");
+
+                b.ToTable("PrivateMessageEmailDeliveries");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.PrivateMessageRead", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<Guid>("MessageId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("MessageId", "UserId", "Version")
+                    .IsUnique();
+
+                b.ToTable("PrivateMessageReads");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.PrivateUserBlock", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<bool>("Active")
+                    .HasColumnType("boolean");
+
+                b.Property<Guid>("BlockedUserId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("UserId", "BlockedUserId", "Version")
+                    .IsUnique();
+
+                b.ToTable("PrivateUserBlocks");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.ReportEmailDelivery", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("Body")
+                    .IsRequired()
+                    .HasMaxLength(10000)
+                    .HasColumnType("character varying(10000)");
+
+                b.Property<string>("Email")
+                    .IsRequired()
+                    .HasMaxLength(320)
+                    .HasColumnType("character varying(320)");
+
+                b.Property<Guid>("ReportId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("ReportId");
+
+                b.ToTable("ReportEmailDeliveries");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.Restriction", b =>
             {
                 b.Property<Guid>("Id")
@@ -1145,6 +1410,82 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasIndex("UserId");
 
                 b.ToTable("UserRecoveryCodes");
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.UserReport", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<Guid>("ConversationId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("EvidenceContent")
+                    .IsRequired()
+                    .HasMaxLength(100000)
+                    .HasColumnType("character varying(100000)");
+
+                b.Property<string>("Reason")
+                    .IsRequired()
+                    .HasMaxLength(10000)
+                    .HasColumnType("character varying(10000)");
+
+                b.Property<string>("ReportedEmail")
+                    .IsRequired()
+                    .HasMaxLength(10000)
+                    .HasColumnType("character varying(10000)");
+
+                b.Property<Guid>("ReporterId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("ReporterMessage")
+                    .IsRequired()
+                    .HasMaxLength(10000)
+                    .HasColumnType("character varying(10000)");
+
+                b.Property<string>("Resolution")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<Guid?>("ResolvedById")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid?>("SourceAuthorId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid>("SourceId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("SourceType")
+                    .IsRequired()
+                    .HasMaxLength(40)
+                    .HasColumnType("character varying(40)");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<string>("TargetIds")
+                    .IsRequired()
+                    .HasMaxLength(740)
+                    .HasColumnType("character varying(740)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("ConversationId");
+
+                b.HasIndex("ReporterId");
+
+                b.HasIndex("Status");
+
+                b.ToTable("UserReports");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>

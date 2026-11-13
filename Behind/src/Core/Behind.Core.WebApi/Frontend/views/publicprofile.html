@@ -3,6 +3,8 @@
     <p class="alert alert-info" role="status" data-bind="visible: message, text: message"></p>
     <div data-bind="with: profile">
         <h2 class="h4 text-break" data-bind="text: displayName"></h2>
+        <a class="btn btn-outline-primary mb-2" data-bind="visible: permissions.canSendPrivateMessage, attr: { href: '#/private-messages/new/' + encodeURIComponent($root.profileId) }, t: 'privateMessages.sendToUser'">Send private message</a>
+        <report-button params="sourceType: 'profile', sourceId: $root.profileId, userIds: [$root.profileId]"></report-button>
         <div class="table-responsive">
             <table class="table table-sm align-middle">
                 <tbody>
@@ -96,7 +98,7 @@
                     <tbody data-bind="foreach: bans">
                         <tr>
                             <td data-bind="text: $root.t(active ? 'profile.banActive' : removed ? 'profile.banLifted' : 'profile.banExpired')"></td>
-                            <td class="text-break" data-bind="text: reason || $root.t('profile.none')"></td>
+                            <td class="text-break" data-bind="text: $root.banReason(reason) || $root.t('profile.none')"></td>
                             <td class="text-break"><a data-bind="text: givenBy, attr: { href: '#/user/' + encodeURIComponent(givenById) }"></a></td>
                             <td data-bind="text: createdAt ? $root.dateTime(createdAt) : $root.t('profile.notAvailable')"></td>
                             <td data-bind="text: expiresAt ? $root.dateTime(expiresAt) : $root.t('profile.never')"></td>

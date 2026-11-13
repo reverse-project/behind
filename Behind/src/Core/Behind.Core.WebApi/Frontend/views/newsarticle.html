@@ -28,6 +28,7 @@
                         <span class="ms-auto d-flex gap-2">
                             <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: canEdit && !isEditing(), enable: !$root.busy(), click: startEdit, t: 'common.edit'">Edit</button>
                             <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canDelete, enable: !$root.busy(), click: remove, t: 'common.delete'">Delete</button>
+                            <report-button params="sourceType: 'newsComment', sourceId: id"></report-button>
                         </span>
                     </div>
                     <div class="text-break news-comment" data-bind="visible: !isEditing(), text: content"></div>

@@ -84,7 +84,7 @@ public class UserManagementFrontendTests
         var auth = Read("models/auth.js");
 
         Assert.Contains("403: bannedMessage", auth);
-        Assert.Contains("i18n.t(\"auth.bannedReason\", [reason])", auth);
+        Assert.Contains("i18n.t(\"auth.bannedReason\", [i18n.banReason(reason)])", auth);
     }
 
     [Fact]

@@ -1,5 +1,25 @@
 # WebApi konvenciók
 
+## Privát üzenetek és felhasználói jelentések
+
+A privát API aktív munkamenetet követel és ETag nélkül `Cache-Control: no-store` fejlécet használ. A `PrivateMessage.Read/Write/Delete` a postaládaműveleteket szabályozza; a tagság és az üzenetek láthatósága külön ellenőrzött. A `PrivateMessageModeration.Manage` csak a rendszerválaszokat teszi elérhetővé, nem ad korlátlan privát hozzáférést.
+
+A `GET /private-messages` mappát/lapozást fogad; az írás, válasz, tagság, postaláda és tiltólista a `/private-messages` útvonalat használja. A `POST /reports` felhasználóazonosítókat, indoklást és hozzáférhető forrást fogad. A kiszolgáló megőrzi a bizonyítékot és azonosítja a szerzőt, a névtelen személy bejelentőnek való felfedése nélkül. A `Report.Manage` védi a listázást, ellenőrzést és lezárást; a fejlesztői visszaállítás/végleges törlés `RawDatabase.Manage` jogosultságot igényel. A kézbesítés küldés előtt megmarad; megszakított küldés ismeretlen eredmény, nem automatikus újrapróbálás.
+
+A `GET /private-messages/blocks` `page` (1–1 000 000) és `pageSize` (1–100, alapérték 20) paramétert fogad, és `{items,total,page,pageSize,pageCount}` választ ad, nyilvános megjelenítési címke és felhasználóazonosító szerint rendezve. A jelentés részletei tartalmazzák az opcionális `resolvedById` és `resolvedByName` mezőt, a kezelő adminisztrátor nyilvános profilcímkéjével.
+
+A jelentés célpontválasztója a `GET /private-messages/recipients?reportTargets=true&search=...` útvonalat használja: csak emberi fiókot ad vissza, a beépített System és Guest azonosító nélkül, szerepkörök nélkül. A jelentés beküldése a beépített azonosítókat explicit és forrásból származó célpontként is elutasítja.
+
+Minden címzettkeresés kizárja a System, Guest és bejelentkezett felhasználó azonosítóját az eredménykorlát alkalmazása előtt, üzenetírás, meghívás, tiltás és jelentés esetén is.
+
+A címzettkeresés kérésenként legfeljebb 10 felhasználót és 10 szerepkört ad vissza, a korlátozás előtt megjelenítési név/név és azonosító szerint rendezve.
+
+Minden privát beszélgetés csoportként jelenik meg és működik, a régi `IsGroup=false` sor is; az új beszélgetés `IsGroup=true` értéket tárol. A régi `isGroup` kérésmező elfogadott, de nem változtatja meg a működést. Legalább egy, a feladótól különböző címzett szükséges. Látható és rejtett szerepkör címzéséhez és meghívásához `PrivateMessageModeration.Manage` kell; e jogosultság nélkül a címzettkeresés nem ad szerepköröket. A kétszemélyes közvetlen válasz továbbra is ellenőrzi a tiltólistát. A rendszer- és jelentésbeszélgetések megőrzik korlátozott tagságukat és válaszláthatóságukat.
+
+A gazda regisztrálja a `PrivateMessageEmailService` szolgáltatást, amely percenként dolgozza fel a függő/ismerten sikertelen kézbesítést az `IModuleEmailSender` használatával, eredeti megerősített címenként legfeljebb három próbálkozással. Abszolút HTTP(S) `Frontend:Url` kell; a hiányzó/hibás URL naplózott hiba, az értesítés függő marad. Az e-mail a `#/private-messages/<beszélgetés-azonosító>` útvonalat nyitja meg, a szokásos hitelesített beszélgetéshozzáféréssel. Tárgy/tartalom/résztvevőazonosság nincs az e-mailben. A tagságot küldés előtt újra ellenőrzi; megszűnt hozzáférés törli a kézbesítést. Az ismeretlen megszakítás küldés alatt hagyja a rekordot, a szolgáltatói/beállítási hiba naplózott.
+
+A modulok Core-függőség nélkül a Common.WebApi `IReportEvidenceSource` megvalósításával adnak bizonyítékot. Minden forrás megtartja az eredeti láthatóságot, és nem hozzáférhető tartalomnál null értéket ad.
+
 ## Kapcsolat és modulok e-mail-küldése
 
 A Contact nyilvános API-ja az aktív űrlapsémákat adja és beküldést fogad, soha nem adminisztrátori beérkezett adatot vagy címzettbeállítást. A nyilvános beküldési végpont kliensenként korlátozott, és ellenőrzi a választott tárgyat és a beállított kiegészítő mezőket. A kezelési API-hoz a Contact adminisztrációs engedélyei szükségesek; a törölt lista, visszaállítás és végleges törlés ezenfelül `RawDatabase.Manage` engedélyt igényel. Az olvasottnak jelölés az `IModuleIdentity` felületen azonosítja az aktuális adminisztrátort, nem kliens által megadott felhasználóazonosítóval.

@@ -97,6 +97,7 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
         "Profile": "menu.item.profile",
         "Session": "menu.item.session",
         "Sessions": "menu.item.sessions",
+        "Private messages": "menu.item.privateMessages",
         "Administration": "menu.item.administration"
     };
 

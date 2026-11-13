@@ -246,6 +246,9 @@ test("public layouts may omit either chrome widget without leaving fixed or hidd
     assert.equal(fixture.bindings.length, 2);
     assert.ok(fixture.shell.isManagementRoute("#/manage/layouts"));
     assert.ok(fixture.shell.isManagementRoute("#/profile"));
+    assert.ok(fixture.shell.isManagementRoute("#/private-messages"));
+    assert.ok(fixture.shell.isManagementRoute("#/manage/reports"));
+    assert.ok(!fixture.shell.isManagementRoute("#/private-messages-public"));
     assert.ok(fixture.shell.isManagementRoute("#/audit-log"));
     assert.ok(fixture.shell.isManagementRoute("#/session/renew"));
     assert.ok(fixture.shell.isManagementRoute("#/sign/in/magiclink"));

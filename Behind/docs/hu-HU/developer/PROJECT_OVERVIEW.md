@@ -1,5 +1,13 @@
 # Projekt áttekintés
 
+## Privát üzenetek és jelentések
+
+A privát üzenetküldés a Core része, külön az ütemezett értesítésektől és a nyilvános csevegéstől. A postaláda olvasott, elküldött és törölt mappákat, BBCode-beszélgetéseket, felhasználó- és szerepkörcímzetteket, titkos címzetteket, változó csoportokat és tiltólistát kezel. A szerepkörtagság élő ellenőrzése a korábbi előzményekhez is hozzáférést ad. A rendszerválaszt csak a válaszoló, az eredeti feladó és a `PrivateMessageModeration.Manage` jogosult adminisztrátor látja.
+
+A jelentések privát beszélgetést hoznak létre a bejelentő és a moderátorok között. A `Report.Manage` a jelentéseket és bizonyítékaikat teszi elérhetővé, nem a többi privát üzenetet. A modulok a Common.WebApi `IReportEvidenceSource` felületén adnak hozzáférhető bizonyítékot; a Fórum a nyilvános bejegyzés lekérdezését használja. A lezárás elutasítást, ideiglenes vagy végleges kitiltást, bejelentőnek küldött választ és opcionális e-mailt támogat, látható kézbesítési állapottal és újrapróbálással.
+
+A privát üzenetek e-mail-értesítése a Core tartós kimenő sorát és az `IModuleEmailSender` felületet használja. A gazda percenként dolgozza fel az értesítéseket; a beállított `Frontend:Url` alapján közvetlenül a `#/private-messages/<beszélgetés-azonosító>` útvonalra mutat, üzenettartalom közzététele nélkül. A megerősített cím, BCC-titkosság, élő szerepkörtagság és válaszláthatóság érvényesül.
+
 ## Kapcsolat modul
 
 A fő `Behind.Web` telepítés a meglévő modulok mellett a Contact modult is betölti. Saját Common, Domain, Database, SQLite, PostgreSQL és WebApi projektjei vannak; az útvonalakat, adminisztrációs eszközöket és a `contact.form` elrendezéswidgetet a modul leírója adja. A meglévő webhelytelepítések modulválasztása változatlan; a Contact telepítéséhez az `IContactContext` felületet a közös adatbázisba kell egyesíteni, és regisztrálni kell a migrációkat.

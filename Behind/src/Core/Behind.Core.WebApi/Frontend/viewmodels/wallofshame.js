@@ -7,7 +7,9 @@ define(["ko", "models/auth", "models/pager", "models/i18n", "models/user"], func
             name: ko.pureComputed(function () {
                 return (item.displayName || "").trim() || i18n.t("wallofshame.anonymous");
             }),
-            reason: item.reason,
+            reason: ko.pureComputed(function () {
+                return i18n.banReason(item.reason);
+            }),
             expiresAt: ko.pureComputed(function () {
                 return i18n.dateTime(item.expiresAt);
             }),

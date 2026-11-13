@@ -5,7 +5,12 @@ namespace Behind.Core.Database.Commands;
 
 public sealed class WallOfShameCommands(AbstractCoreContext context) : IWallOfShameCommands
 {
-    public async Task Ban(Guid userId, Guid givenBy, Reason reason, CancellationToken cancellationToken = default)
+    public Task Ban(Guid userId, Guid givenBy, Reason reason, CancellationToken cancellationToken = default) =>
+        BanUntil(userId, givenBy, reason, null, cancellationToken);
+
+    public async Task BanUntil(
+        Guid userId, Guid givenBy, Reason reason, DateTimeOffset? expiresAt,
+        CancellationToken cancellationToken = default)
     {
         context.WallOfShameEntries.RemoveRange(await EntriesOf(userId, cancellationToken));
 
@@ -15,6 +20,7 @@ public sealed class WallOfShameCommands(AbstractCoreContext context) : IWallOfSh
         var tracked = context.Entry(entry);
         tracked.Property<Guid>("UserId").CurrentValue = userId;
         tracked.Property<Guid>("GivenById").CurrentValue = givenBy;
+        tracked.Property<DateTimeOffset?>("ExpiresAt").CurrentValue = expiresAt;
 
         await context.SaveChangesAsync(cancellationToken);
     }

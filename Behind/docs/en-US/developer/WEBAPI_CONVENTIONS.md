@@ -1,5 +1,25 @@
 # WebApi Conventions
 
+## Private messaging and user reports
+
+Private APIs require an active session and `Cache-Control: no-store`, without ETags. `PrivateMessage.Read/Write/Delete` control mailbox actions; membership and message visibility are checked independently of grants. `PrivateMessageModeration.Manage` grants system-response access only, never unrestricted private-message access.
+
+`GET /private-messages` accepts folder/paging parameters; compose, reply, membership, mailbox and block actions use `/private-messages`. `POST /reports` accepts user IDs, a reason and an accessible source reference. The server snapshots evidence and resolves authors without exposing anonymous identities to the reporter. `Report.Manage` protects listing, review and resolution; developer restore/permanent deletion requires `RawDatabase.Manage`. Email delivery is persisted before sending; interrupted sending is an unknown outcome, not an automatic retry.
+
+`GET /private-messages/blocks` accepts `page` (1–1,000,000) and `pageSize` (1–100, default 20), returning `{items,total,page,pageSize,pageCount}` ordered by public display label and user ID. Report details include nullable `resolvedById` and `resolvedByName`, the handling administrator's public profile label.
+
+Report selectors use `GET /private-messages/recipients?reportTargets=true&search=...`: only human accounts are returned, excluding the built-in System and Guest IDs, with no role results. Report submission rejects those built-in IDs as explicit or source-derived targets.
+
+All recipient lookups exclude System, Guest and the authenticated user's ID before applying the search result limit, for composition, invitations, blocking and reports.
+
+Recipient lookup returns at most 10 users and 10 roles per query, ordered by display name/name and ID before limiting.
+
+All private conversations are presented and handled as groups, including legacy rows with `IsGroup=false`; new conversations persist `IsGroup=true`. The legacy compose `isGroup` field is accepted but no longer changes behavior. At least one non-sender recipient is required. `PrivateMessageModeration.Manage` is required for visible/hidden role recipients during composition and invitations; recipient lookup omits roles without this grant. Two-person direct replies still enforce block lists. System and report discussions retain their restricted membership and reply visibility.
+
+The host registers `PrivateMessageEmailService`, which processes pending/known-failed deliveries every minute through `IModuleEmailSender`, up to three attempts per original confirmed address. Configure an absolute HTTP(S) `Frontend:Url`; a missing/invalid URL logs an error and leaves notifications pending. Email links open `#/private-messages/<conversation-id>` and require the same authenticated conversation access as ordinary navigation. Subject/body/participant identities are not included in the email. Membership is rechecked when claiming delivery; revoked access cancels it. Unknown interruption leaves sending untouched, and provider/configuration failures are logged.
+
+Modules register Common.WebApi `IReportEvidenceSource` to contribute evidence without Core dependencies. Each source enforces the original content visibility and returns null for inaccessible content.
+
 ## Contact and module email delivery
 
 Contact public APIs expose active form schemas and accept submissions, never administrator inbox data or recipient settings. The public submission endpoint is client-rate-limited and validates the selected subject and configured additional fields. Management APIs require the Contact module's administration grants; deleted listings, restore and permanent deletion additionally require `RawDatabase.Manage`. Read marking resolves the current administrator through `IModuleIdentity`, not a client-supplied user id.

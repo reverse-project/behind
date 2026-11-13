@@ -16,7 +16,7 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
     var generation = 0;
     var activeRefresh = 0;
     var fixedBindings = false;
-    var managementRoute = /^#\/(?:manage(?:\/|$)|administration$|settings$|sites(?:\/|$)|users$|roles$|audit-log$|profile(?:\/|$)|session|sign(?:[-/]|$))/;
+    var managementRoute = /^#\/(?:manage(?:\/|$)|administration$|settings$|sites(?:\/|$)|users$|roles$|audit-log$|profile(?:\/|$)|private-messages(?:\/|$)|session|sign(?:[-/]|$))/;
 
     var addTokens = function (element, value) {
         if (typeof value !== "string") {

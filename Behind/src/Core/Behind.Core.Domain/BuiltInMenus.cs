@@ -30,6 +30,7 @@ public static class BuiltInMenus
             User(5, "Profile", "#/profile", 10),
             User(6, "Session", "#/session", 20),
             User(7, "Sessions", "#/sessions", 30),
+            User(11, "Private messages", "#/private-messages", 35),
             User(
                 8,
                 "Administration",

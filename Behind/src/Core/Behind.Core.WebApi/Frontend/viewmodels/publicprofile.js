@@ -2,6 +2,7 @@ define(["ko", "models/profiles", "models/auth", "models/i18n"], function (ko, pr
     return function PublicProfileViewModel(context) {
         var self = this;
         var id = context.params.id;
+        self.profileId = id;
 
         self.busy = ko.observable(false);
         self.message = ko.observable("");
@@ -10,6 +11,7 @@ define(["ko", "models/profiles", "models/auth", "models/i18n"], function (ko, pr
         self.banMessage = ko.observable("");
         self.t = i18n.t;
         self.dateTime = i18n.dateTime;
+        self.banReason = i18n.banReason;
 
         self.refresh = function () {
             self.busy(true);

@@ -83,6 +83,7 @@
                         <!-- ko if: canDelete -->
                         <button class="btn btn-sm btn-outline-danger" type="button" data-bind="click: $component.remove, disable: $component.busy, text: $component.t('widgets.chatRemove')"></button>
                         <!-- /ko -->
+                        <report-button params="sourceType: 'chatMessage', sourceId: id"></report-button>
                     </div>
                 </li>
             </ul>

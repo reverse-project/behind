@@ -1,5 +1,13 @@
 # Database Architecture
 
+## Private messaging and report persistence
+
+Private messaging/report tables use Core's existing migration chain in the shared SQLite/PostgreSQL database. Apply migrations with the installation migrator before starting the host. New entities use `(Key, Version)` keys and audit timestamps. Mailbox state is per user; deletion does not remove other participants' history.
+
+`UserReports` stores reason/evidence snapshots and decisions. `ReportEmailDeliveries` preserves delivery destinations and status for retries. Report management supports soft delete and developer restore/permanent deletion. Raw database discovery includes the tables, masks sensitive content and audit labels avoid exposing private subjects or evidence.
+
+`PrivateMessageEmailDeliveries` is a versioned notification outbox added by `AddPrivateMessageEmails` on both providers. Saving a new message and its recipient-address snapshots is atomic. Delivery durably claims a pending/failed record as sending before SMTP, then appends sent or failed. Known SMTP rejections retry up to three attempts; uncertain sending is never automatically retried. Reference IDs and email addresses are sensitive in raw editing, with non-disclosing audit labels and audit-derived timestamps.
+
 ## Contact persistence
 
 `IContactContext` adds versioned contact forms and requests to the main installation's single SQLite/PostgreSQL database. Contact migrations have their own `__contactMigrationsHistory` table and run through the web project migrator after Core. Apply migrations before starting the updated host.

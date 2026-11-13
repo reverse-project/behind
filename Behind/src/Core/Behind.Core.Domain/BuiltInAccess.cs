@@ -44,7 +44,10 @@ public static class BuiltInAccess
     public static readonly BuiltInRole Users = NewRole(
         4,
         DomainConstants.UsersRole,
-        AreaGrants.Where(grant => (grant.Action == GrantAction.Read || grant.Area == GrantArea.Chat && grant.Action == GrantAction.Write)
+        AreaGrants.Where(grant => (grant.Action == GrantAction.Read
+            || grant.Area == GrantArea.Chat && grant.Action == GrantAction.Write
+            || grant.Area == GrantArea.PrivateMessage
+            || grant.Area == GrantArea.Report && grant.Action == GrantAction.Write)
             && !grant.IsDeveloperOnly && !grant.IsAdministrationOnly).ToList(),
         false);
 
@@ -79,7 +82,7 @@ public static class BuiltInAccess
     {
         private bool IsDeveloperOnly => grant.Area == GrantArea.Configuration;
 
-        private bool IsAdministrationOnly => grant.Area is GrantArea.AuditLog or GrantArea.Impersonation or GrantArea.Site or GrantArea.News or GrantArea.Article or GrantArea.Menu or GrantArea.Gallery or GrantArea.Download or GrantArea.RouteAlias or GrantArea.Access or GrantArea.Message;
+        private bool IsAdministrationOnly => grant.Area is GrantArea.AuditLog or GrantArea.Impersonation or GrantArea.Site or GrantArea.News or GrantArea.Article or GrantArea.Menu or GrantArea.Gallery or GrantArea.Download or GrantArea.RouteAlias or GrantArea.Access or GrantArea.Message or GrantArea.PrivateMessageModeration;
     }
 
     private static BuiltInGrant NewGrant(int number, string area, string action) =>

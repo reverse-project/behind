@@ -176,6 +176,9 @@ define(["ko", "models/http", "models/modules"], function (ko, http, modules) {
         },
         t: translate,
         tOr: translateOr,
+        banReason: function (reason) {
+            return reason === "Misconduct" ? translate("wallofshame.reason.misconduct") : reason;
+        },
         dateTime: function (value) {
             return formatDate(value, function (date, code) {
                 return date.toLocaleString(code);

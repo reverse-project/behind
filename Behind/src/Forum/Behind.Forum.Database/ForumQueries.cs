@@ -58,6 +58,10 @@ public sealed class ForumQueries(IForumContext context)
     public async Task<Keyed<ForumPost>?> Post(Guid id, CancellationToken cancellationToken) =>
         (await context.ForumPosts.LatestOf(context.ForumPosts).OfKey(id).ToKeyedAsync(cancellationToken)).SingleOrDefault();
 
+    public async Task<Keyed<ForumPost>?> PublicPost(Guid id, CancellationToken cancellationToken) =>
+        (await PublicPosts(context.ForumPosts.LatestOf(context.ForumPosts)).OfKey(id)
+            .ToKeyedAsync(cancellationToken)).SingleOrDefault();
+
     public async Task<Page<ForumPost>> Posts(
         Flipper page,
         Guid? boardId,

@@ -5,6 +5,8 @@ description: 'Add a new module to Behind end to end: its own Common, Domain, Web
 
 # Add a new module
 
+Modules with reportable content register Common.WebApi `IReportEvidenceSource` in their own WebApi extension. Its `Find(HttpContext, sourceId, cancellationToken)` returns `ReportEvidence` only when the reporter can access the source under the existing grant, publication, parent, age, locale and deletion rules. Core snapshots evidence and uses the server-resolved author; anonymous authors are not exposed to reporters. Do not reference Core to contribute evidence.
+
 Load `csharp-code-standards` first. Reference module: `Core` (`src/Core/Behind.Core.*`), loaded by the host project `src/Web/Behind.Web`. Smallest complete example: `Quotes` (`src/Quotes/Behind.Quotes.*`, project side `src/Web/Behind.Web.Database.*`): copy its structure for a new module.
 
 ## Rules

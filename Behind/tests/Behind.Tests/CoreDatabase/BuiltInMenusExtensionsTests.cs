@@ -19,7 +19,7 @@ public sealed class BuiltInMenusExtensionsTests : IDisposable
         Assert.Equal(
             ["Index", "News", "Articles", "Galleries", "Downloads", "Wall of shame"],
             main.Items.Where(item => item.Kind == MenuItemKind.Link).Select(item => item.Title));
-        Assert.Equal(9, main.Items.Count);
+        Assert.Equal(10, main.Items.Count);
         Assert.DoesNotContain(main.Items, item => item.Title == "Administration");
     }
 
@@ -34,10 +34,10 @@ public sealed class BuiltInMenusExtensionsTests : IDisposable
         var forUser = (await _bed.ResolveMenusAsync(user, BuiltInMenus.MainName))[0].Items;
 
         Assert.Equal(
-            ["Profile", "Session", "Sessions", "Administration"],
+            ["Profile", "Session", "Sessions", "Private messages", "Administration"],
             forAdministrator.Where(item => item.Kind == MenuItemKind.User).Select(item => item.Title));
         Assert.Equal(
-            ["Profile", "Session", "Sessions"],
+            ["Profile", "Session", "Sessions", "Private messages"],
             forUser.Where(item => item.Kind == MenuItemKind.User).Select(item => item.Title));
     }
 

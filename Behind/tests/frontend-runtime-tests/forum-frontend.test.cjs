@@ -196,7 +196,7 @@ test("profile upload and removal update the visible picture", async () => {
     assert.equal(view.busy(), false);
 });
 
-const bbcode = load(path.join(forum, "models/bbcode.js"), {});
+const bbcode = load(path.join(core, "models/bbcode.js"), {});
 
 test("BBCode renders nested formatting, lists, quotes, code and safe links", () => {
     assert.equal(bbcode.render("[b]Bold [i]italic[/i][/b]"), "<strong>Bold <em>italic</em></strong>");
@@ -303,6 +303,7 @@ test("forum links always confirm their destination and only open a protected new
         removeAttribute: name => attributes.delete(name)
     };
     const element = {
+        classList: { add(name) { assert.equal(name, "behind-bbcode"); } },
         contains: node => node === link,
         addEventListener: (name, callback, capture) => {
             assert.equal(capture, true);
@@ -316,13 +317,13 @@ test("forum links always confirm their destination and only open a protected new
         querySelectorAll: () => [link]
     };
     const bindings = {};
-    load(path.join(forum, "bindings/bbcode.js"), {
+    load(path.join(core, "bindings/bbcode.js"), {
         ko: {
             bindingHandlers: bindings,
             unwrap: value => value,
             utils: { domNodeDisposal: { addDisposeCallback: (node, callback) => disposed.push(callback) } }
         },
-        "modules/forum/models/bbcode": bbcode,
+        "models/bbcode": bbcode,
         "models/i18n": i18n,
         "bindings/richeditor": {}
     }, {
@@ -345,7 +346,7 @@ test("forum links always confirm their destination and only open a protected new
     };
     assert.equal(trigger("click"), true);
     assert.equal(opened.length, 0);
-    assert.equal(prompts[0], "forum.openLink\n\nhttps://example.com/?a=1&b=2");
+    assert.equal(prompts[0], "privateMessages.openLink\n\nhttps://example.com/?a=1&b=2");
     confirmed = true;
     assert.equal(trigger("click", { ctrlKey: true }), true);
     assert.equal(trigger("auxclick", { button: 1 }), true);

@@ -1,5 +1,13 @@
 # Project Overview
 
+## Private messaging and reports
+
+Private messaging is Core functionality, separate from scheduled notices and public chat. The account inbox supports read, sent and deleted folders, BBCode conversations, user/role recipients, hidden recipients, evolving groups and block lists. Role membership is evaluated live, including earlier history. System responses are visible only to the replying user, original sender and administrators with `PrivateMessageModeration.Manage`.
+
+Reports create private reporter/moderator conversations. `Report.Manage` permits reviewing reports and their evidence, not unrelated private messages. Modules contribute accessible evidence through Common.WebApi `IReportEvidenceSource`; Forum reuses its public-post visibility query. Resolution supports dismissal, temporary/permanent bans, reporter replies and optional email to reported users, with explicit delivery status and retry.
+
+Private-message email notifications use Core's durable outbox and `IModuleEmailSender`. The host processes notifications every minute, using the configured `Frontend:Url` to link directly to `#/private-messages/<conversation-id>` without publishing message content. Confirmed addresses, BCC privacy, live role membership and reply visibility are respected.
+
 ## Contact module
 
 The main `Behind.Web` installation loads Contact alongside its existing modules. Contact has its own Common, Domain, Database, SQLite, PostgreSQL and WebApi projects and contributes routes, administrator tools and the `contact.form` layout widget through its descriptor. Existing site installations retain their module selection; installing Contact there also requires flattening `IContactContext` into their database and registering its migrations.

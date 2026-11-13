@@ -179,34 +179,6 @@
     overflow-wrap: anywhere;
 }
 
-.forum-body {
-    white-space: pre-wrap;
-}
-
-.forum-body a[data-forum-url] {
-    color: var(--bs-link-color, #0d6efd);
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-.forum-body a[data-forum-url]:hover {
-    color: var(--bs-link-hover-color, #0a58ca);
-}
-
-.forum-body blockquote {
-    border-inline-start: .25rem solid var(--bs-primary, #0d6efd);
-    background: var(--bs-tertiary-bg, #f8f9fa);
-    padding: .75rem 1rem;
-    margin: .75rem 0;
-}
-
-.forum-body pre {
-    white-space: pre-wrap;
-    background: var(--bs-tertiary-bg, #f8f9fa);
-    padding: 1rem;
-    border-radius: .35rem;
-}
-
 .forum-topic-title,
 .forum-replies-heading {
     margin-block: 1.5rem 1rem;

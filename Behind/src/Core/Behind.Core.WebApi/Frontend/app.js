@@ -42,6 +42,10 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
         "#/manage/menus/:id": "controllers/menuitems",
         "#/manage/route-aliases": "controllers/routealiases",
         "#/manage/messages": "controllers/messages",
+        "#/private-messages": "controllers/privatemessages",
+        "#/private-messages/new/:recipientId": "controllers/privatemessages",
+        "#/private-messages/:id": "controllers/privatemessages",
+        "#/manage/reports": "controllers/reports",
         "#/manage/access-settings": "controllers/accesssettings",
         "#/manage/raw-database": "controllers/rawdatabase",
         "#/manage/content-ages": "controllers/contentageoptions",
@@ -95,6 +99,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     ko.components.register("site-footer", { require: "components/sitefooter" });
     ko.components.register("content-locale", { require: "components/contentlocale" });
     ko.components.register("locale-switch", { require: "components/localeswitch" });
+    ko.components.register("report-button", { require: "components/reportbutton" });
+    ko.components.register("private-recipients", { require: "components/privaterecipients" });
 
     var container = function () {
         return $("#main-container");

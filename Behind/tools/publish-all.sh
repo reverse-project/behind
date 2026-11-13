@@ -6,6 +6,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 for script in publish-*.sh; do
     if [ "$script" != "$(basename "${BASH_SOURCE[0]}")" ]; then
-        bash "$script"
+        bash "$script" "$@"
     fi
 done

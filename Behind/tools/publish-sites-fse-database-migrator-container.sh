@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+REPOSITORY=${1:-ghcr.io/reverse-project/behind}
+
 cd ../src/Sites/Behind.Sites.FSE.Database.Migrator
 
 APP_VERSION=$(dotnet msbuild Behind.Sites.FSE.Database.Migrator.csproj -getProperty:Version)
@@ -9,6 +11,6 @@ dotnet publish /t:PublishContainer -r linux-arm64 -c Release -p:ContainerImageTa
 podman manifest create behind-sites-fse-database-migrator-manifest
 podman manifest add behind-sites-fse-database-migrator-manifest reverse-project/behind/sites/fse-database-migrator:x64
 podman manifest add behind-sites-fse-database-migrator-manifest reverse-project/behind/sites/fse-database-migrator:arm64
-podman manifest push behind-sites-fse-database-migrator-manifest docker://git.prod.zwebnt.hu/reverse-project/behind/sites/fse-database-migrator:latest
-podman manifest push behind-sites-fse-database-migrator-manifest docker://git.prod.zwebnt.hu/reverse-project/behind/sites/fse-database-migrator:${APP_VERSION}
+podman manifest push behind-sites-fse-database-migrator-manifest "docker://${REPOSITORY}/sites/fse-database-migrator:latest"
+podman manifest push behind-sites-fse-database-migrator-manifest "docker://${REPOSITORY}/sites/fse-database-migrator:${APP_VERSION}"
 podman manifest rm behind-sites-fse-database-migrator-manifest

@@ -113,6 +113,13 @@ public sealed class SignInEndpoints
                         return Results.BadRequest();
                     }
 
+                    var frontend = configuration.FrontendUri().Match<Uri?>(() => null, uri => uri);
+                    if (frontend is null)
+                    {
+                        logger.LogError("Magic link request rejected: Frontend:Url must be an absolute HTTP(S) URL without credentials, query or fragment");
+                        return Results.InternalServerError();
+                    }
+
                     var user = await userManager.FindByEmailAsync(request.Email);
                     var now = timeProvider.GetUtcNow();
 
@@ -139,7 +146,7 @@ public sealed class SignInEndpoints
                         await magicLinkCommands.Issue(user.Id, magicLink, httpContext.RequestAborted);
 
                         var link = MagicLinkCredential.Create(magicLink.Nonce, settings.ActualSecret, jwtSettings.SigningKey)
-                            .ToLink(configuration.FrontendUri().GetOrElse(() => httpContext.BaseUri()));
+                            .ToLink(frontend);
 
                         var queued = mailQueue.TryEnqueue(new MagicLinkMail(user, request.Email, link, request.Function));
 

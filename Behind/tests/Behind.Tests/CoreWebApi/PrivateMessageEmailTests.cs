@@ -31,10 +31,6 @@ public sealed class PrivateMessageEmailTests : IDisposable
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(
             new Dictionary<string, string?> { ["Frontend:Url"] = url }).Build();
-        if (url is not null)
-        {
-            Assert.Equal(url, configuration.FrontendUri().Match(() => "", uri => uri.AbsoluteUri));
-        }
         return new(context, new(context), new(context), sender, configuration,
             Substitute.For<ILogger<PrivateMessageEmailDispatcher>>());
     }
@@ -127,8 +123,14 @@ public sealed class PrivateMessageEmailTests : IDisposable
             delivery => delivery.Status == "sending");
     }
 
-    [Fact]
-    public async Task MissingFrontendUrlLeavesPendingAndLeavingBeforeDeliveryCancelsNotification()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("invalid")]
+    [InlineData("/relative")]
+    [InlineData("https://user:password@example.test/")]
+    [InlineData("https://example.test/?query=1")]
+    [InlineData("https://example.test/#fragment")]
+    public async Task InvalidFrontendUrlLeavesPendingAndLeavingBeforeDeliveryCancelsNotification(string? url)
     {
         await using var context = _factory.CreateAuditedContext(AuditActor.Anonymous);
         var author = await User(context, "author@example.test");
@@ -136,7 +138,7 @@ public sealed class PrivateMessageEmailTests : IDisposable
         var store = new PrivateMessageStore(context);
         var id = (await store.Create(author, "Chat", "Body", [recipient], [], [], [], true, false)).Id!.Value;
         var sender = Substitute.For<IModuleEmailSender>();
-        await Dispatcher(context, sender, null).Deliver(default);
+        await Dispatcher(context, sender, url).Deliver(default);
         Assert.Single(await new PrivateMessageEmailStore(context).Pending(default));
         await store.Leave(recipient, id);
         await Dispatcher(context, sender).Deliver(default);

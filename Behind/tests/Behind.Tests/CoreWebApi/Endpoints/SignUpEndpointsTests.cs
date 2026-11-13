@@ -55,7 +55,8 @@ public class SignUpEndpointsTests
     {
         var context = new DefaultHttpContext();
         context.Request.Scheme = "https";
-        context.Request.Host = new HostString("api.test");
+        context.Request.Host = new HostString("attacker.invalid");
+        context.Request.Headers["X-Forwarded-Host"] = "forwarded-attacker.invalid";
         return context;
     }
 
@@ -64,7 +65,7 @@ public class SignUpEndpointsTests
         SignUpEndpoints.PasswordRequest request,
         ILogger<SignUpEndpoints>? logger = null,
         bool emailConfirmation = true,
-        string? frontendUrl = null,
+        string? frontendUrl = "https://app.test/",
         bool moderated = false) =>
         SignUpEndpoints.SignUpPassword(
             manager,
@@ -159,32 +160,46 @@ public class SignUpEndpointsTests
         Assert.Equal(string.Empty, created!.DisplayName);
     }
 
-    [Fact]
-    public async Task SignUpPassword_ConfirmationEnabled_LeavesEmailUnconfirmedAndSendsLink()
+    [Theory]
+    [InlineData("https://app.test/")]
+    [InlineData("https://app.test/frontend/")]
+    [InlineData("http://localhost:5000/")]
+    public async Task SignUpPassword_ConfirmationEnabled_LeavesEmailUnconfirmedAndSendsLink(string url)
     {
         ApplicationUser? created = null;
 
         await SignUp(
             ManagerCapturing(user => created = user),
             new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"),
-            frontendUrl: "https://app.test/");
+            frontendUrl: url);
 
         Assert.Null(Assert.Single(created!.Emails).ConfirmedAt);
         await _emailSender.Received(1).SendConfirmationLinkAsync(
             created,
             "ada@test.com",
-            $"https://app.test/#/sign/up/confirm?userId={created.Id}&token=the%20token&emailId={EmailId}");
+            $"{url}#/sign/up/confirm?userId={created.Id}&token=the%20token&emailId={EmailId}");
     }
 
-    [Fact]
-    public async Task SignUpPassword_ConfirmationEnabledWithoutFrontendUrl_UsesRequestBaseUri()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("not a URL")]
+    [InlineData("/relative")]
+    [InlineData("//attacker.invalid")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("file:///tmp/frontend")]
+    [InlineData("https://user:password@app.test/")]
+    [InlineData("https://app.test/?redirect=attacker.invalid")]
+    [InlineData("https://app.test/#/other")]
+    public async Task SignUpPassword_InvalidFrontendUrl_NeverGeneratesOrSendsConfirmationToken(string? url)
     {
-        await SignUp(ManagerCapturing(_ => { }), new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"));
+        var manager = ManagerCapturing(_ => { });
+        var logger = new CapturingLogger<SignUpEndpoints>();
+        await SignUp(manager, new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"), logger, frontendUrl: url);
 
-        await _emailSender.Received(1).SendConfirmationLinkAsync(
-            Arg.Any<ApplicationUser>(),
-            "ada@test.com",
-            Arg.Is<string>(link => link.StartsWith("https://api.test/#/sign/up/confirm?")));
+        await manager.DidNotReceiveWithAnyArgs().GenerateUserTokenAsync(default!, default!, default!);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+        Assert.Contains("Frontend:Url", logger.Single(LogLevel.Error).Message);
     }
 
     [Fact]
@@ -351,13 +366,14 @@ public class SignUpEndpointsTests
         UserManager<ApplicationUser> manager,
         bool emailConfirmation = true,
         ILogger<SignUpEndpoints>? logger = null,
-        bool confirmed = false) =>
+        bool confirmed = false,
+        string? frontendUrl = "https://app.test/") =>
         SignUpEndpoints.ResendConfirmation(
             manager,
             Security(emailConfirmation),
             _emailSender,
             Emails(confirmed),
-            FrontendConfigurationOf("https://app.test/"),
+            FrontendConfigurationOf(frontendUrl),
             NewHttpContext(),
             logger ?? NullLogger<SignUpEndpoints>.Instance,
             new SignUpEndpoints.ResendConfirmationRequest("ada@test.com"));
@@ -374,6 +390,22 @@ public class SignUpEndpointsTests
             user,
             "ada@test.com",
             $"https://app.test/#/sign/up/confirm?userId={user.Id}&token=the%20token&emailId={EmailId}");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("/relative")]
+    public async Task ResendConfirmation_InvalidFrontendUrl_NeverGeneratesOrSendsToken(string? url)
+    {
+        var manager = ManagerFinding(new ApplicationUser { Emails = [new Email("ada@test.com")] });
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        var result = await Resend(manager, logger: logger, frontendUrl: url);
+
+        Assert.IsType<NoContent>(result);
+        await manager.DidNotReceiveWithAnyArgs().GenerateUserTokenAsync(default!, default!, default!);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+        Assert.Contains("Frontend:Url", logger.Single(LogLevel.Error).Message);
     }
 
     [Fact]

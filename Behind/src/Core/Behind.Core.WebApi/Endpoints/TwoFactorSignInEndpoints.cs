@@ -77,7 +77,7 @@ public sealed class TwoFactorSignInEndpoints
         WithTicket(request.Ticket, TwoFactorStage.Verify, tickets, logger, async ticket =>
         {
             var options = await verification.BeginPasskey(
-                httpContext.PasskeyOrigin(configuration),
+                configuration.PasskeyOrigin(),
                 ticket.UserId,
                 httpContext.RequestAborted);
 
@@ -130,7 +130,7 @@ public sealed class TwoFactorSignInEndpoints
             return await options.Match(
                 () => Task.FromResult(Rejected(logger, ticket, "passkey")),
                 async parsed => await verification.VerifyPasskey(
-                    httpContext.PasskeyOrigin(configuration),
+                    configuration.PasskeyOrigin(),
                     ticket.UserId,
                     parsed,
                     request.Credential,
@@ -182,7 +182,7 @@ public sealed class TwoFactorSignInEndpoints
         WithSetupUser(request.Ticket, tickets, userManager, logger, async (user, ticket) =>
         {
             var challenge = await enrollment.BeginPasskey(
-                httpContext.PasskeyOrigin(configuration), user, TwoFactorStage.Setup, ticket.Function, httpContext.RequestAborted);
+                configuration.PasskeyOrigin(), user, TwoFactorStage.Setup, ticket.Function, httpContext.RequestAborted);
             return Results.Json(challenge with
             {
                 Ticket = tickets.Seal(ticket with { Ceremony = challenge.Options.ToJson() })
@@ -201,7 +201,7 @@ public sealed class TwoFactorSignInEndpoints
         WithTicket(request.Ticket, TwoFactorStage.Setup, tickets, logger, async ticket =>
         {
             var enrolled = await enrollment.CompletePasskey(
-                httpContext.PasskeyOrigin(configuration),
+                configuration.PasskeyOrigin(),
                 ticket,
                 request.Name,
                 request.Credential,

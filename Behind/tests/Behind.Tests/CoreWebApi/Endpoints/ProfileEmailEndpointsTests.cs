@@ -117,6 +117,22 @@ public sealed class ProfileEmailEndpointsTests
     }
 
     [Theory]
+    [InlineData(null)]
+    [InlineData("/relative")]
+    [InlineData("javascript:alert(1)")]
+    public async Task InvalidFrontendUrl_NeverGeneratesOrSendsConfirmationToken(string? url)
+    {
+        _configuration["Frontend:Url"] = url;
+
+        var response = Assert.IsType<Created<ProfileEmailEndpoints.SavedAddress>>(await Save()).Value!;
+        Assert.True(response.ConfirmationRequired);
+        Assert.False(response.EmailSent);
+        Assert.Equal(503, Assert.IsType<StatusCodeHttpResult>(await Resend()).StatusCode);
+        await _manager.DidNotReceiveWithAnyArgs().GenerateUserTokenAsync(default!, default!, default!);
+        await _sender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, true)]
     public async Task InvalidOrImpersonatedSession_CannotManageEmails(bool valid, bool impersonated)

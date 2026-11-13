@@ -23,9 +23,9 @@ public sealed class PrivateMessageEmailDispatcher(
             return;
         }
         var frontend = configuration.FrontendUri().Match<Uri?>(() => null, uri => uri);
-        if (frontend is null || !frontend.IsAbsoluteUri || frontend.Scheme is not ("https" or "http"))
+        if (frontend is null)
         {
-            logger.LogError("Private message emails remain pending: Frontend:Url must be an absolute HTTP(S) URL");
+            logger.LogError("Private message emails remain pending: Frontend:Url must be an absolute HTTP(S) URL without credentials, query or fragment");
             return;
         }
         foreach (var delivery in pending)

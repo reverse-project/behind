@@ -88,7 +88,8 @@ public class SignInMagicLinkEndpointsTests
         context.Connection.RemoteIpAddress = IPAddress.Parse("10.1.2.3");
         context.Request.Headers.UserAgent = "unit-test";
         context.Request.Scheme = "https";
-        context.Request.Host = new HostString("api.test");
+        context.Request.Host = new HostString("attacker.invalid");
+        context.Request.Headers["X-Forwarded-Host"] = "forwarded-attacker.invalid";
         return context;
     }
 
@@ -105,7 +106,7 @@ public class SignInMagicLinkEndpointsTests
             _magicLinks,
             _queries,
             _mailQueue,
-            configuration ?? FrontendConfigurationOf(null),
+            configuration ?? FrontendConfigurationOf("https://app.test/"),
             _time,
             NewHttpContext(),
             _logger,
@@ -212,7 +213,7 @@ public class SignInMagicLinkEndpointsTests
             _magicLinks,
             _queries,
             queue,
-            FrontendConfigurationOf(null),
+            FrontendConfigurationOf("https://app.test/"),
             _time,
             NewHttpContext(),
             _logger,
@@ -344,13 +345,73 @@ public class SignInMagicLinkEndpointsTests
         Assert.True(credential.IsSignedBy([Actual], Jwt.SigningKey));
     }
 
-    [Fact]
-    public async Task RequestMagicLink_WithoutFrontendUrl_UsesRequestBaseUri()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("not a URL")]
+    [InlineData("/relative")]
+    [InlineData("//attacker.invalid")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("file:///tmp/frontend")]
+    [InlineData("https://user:password@app.test/")]
+    [InlineData("https://app.test/?redirect=attacker.invalid")]
+    [InlineData("https://app.test/#/other")]
+    public async Task RequestMagicLink_InvalidFrontendUrl_NeverIssuesOrQueuesCredentials(string? url)
     {
-        await RequestLink(NewUser(), Some(Settings()));
+        foreach (var function in new[] { MagicLinkFunction.SignIn, MagicLinkFunction.LostPassword })
+        {
+            var result = await RequestLink(NewUser(), Some(Settings()), FrontendConfigurationOf(url), function: function);
 
+            Assert.IsType<InternalServerError>(result);
+        }
+
+        await _magicLinks.DidNotReceiveWithAnyArgs().Issue(default, default!, default);
+        Assert.Empty(QueuedMails());
+        Assert.All(_logger.Entries, entry => Assert.Equal(LogLevel.Error, entry.Level));
+        Assert.Equal(2, _logger.Entries.Count);
+    }
+
+    [Theory]
+    [InlineData(MagicLinkFunction.SignIn, "https://app.test/frontend/")]
+    [InlineData(MagicLinkFunction.LostPassword, "https://app.test/frontend/")]
+    [InlineData(MagicLinkFunction.SignIn, "http://localhost:5000/")]
+    [InlineData(MagicLinkFunction.LostPassword, "http://localhost:5000/")]
+    public async Task RequestMagicLink_UsesOnlyConfiguredOriginAndPath(MagicLinkFunction function, string url)
+    {
+        var result = await RequestLink(NewUser(), Some(Settings()),
+            FrontendConfigurationOf(url), function: function);
+
+        Assert.IsType<NoContent>(result);
         var mail = Assert.Single(QueuedMails());
-        Assert.StartsWith($"https://api.test/#{MagicLinkExtensions.SignInRoute}?", mail.Link);
+        Assert.Equal(function, mail.Function);
+        Assert.StartsWith($"{url}#{MagicLinkExtensions.SignInRoute}?", mail.Link);
+        Assert.DoesNotContain("attacker.invalid", mail.Link);
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_UsesReloadedCanonicalUrl()
+    {
+        var configuration = FrontendConfigurationOf("https://app.test/");
+        await RequestLink(NewUser(), Some(Settings()), configuration);
+        configuration["Frontend:Url"] = "https://new-app.test/frontend/";
+        await RequestLink(NewUser(), Some(Settings()), configuration);
+        configuration["Frontend:Url"] = null;
+        Assert.IsType<InternalServerError>(await RequestLink(NewUser(), Some(Settings()), configuration));
+
+        var mails = QueuedMails();
+        Assert.Equal(2, mails.Count);
+        Assert.StartsWith("https://app.test/#", mails[0].Link);
+        Assert.StartsWith("https://new-app.test/frontend/#", mails[1].Link);
+    }
+
+    [Fact]
+    public async Task RequestMagicLink_MissingFrontendUrl_UnknownEmailAlsoReturnsServerError()
+    {
+        var result = await RequestLink(null, Some(Settings()), FrontendConfigurationOf(null));
+
+        Assert.IsType<InternalServerError>(result);
+        Assert.Empty(QueuedMails());
+        Assert.Single(_logger.Entries, entry => entry.Level == LogLevel.Error);
     }
 
     [Fact]

@@ -52,7 +52,7 @@ public sealed class ProfileEmailEndpoints
 
             var needsConfirmation = required && address.ConfirmedAt is null;
             var sent = needsConfirmation
-                && await manager.SendAddressConfirmation(user, address, sender, configuration, httpContext, logger);
+                && await manager.SendAddressConfirmation(user, address, sender, configuration, logger);
             logger.LogInformation("User {UserId} saved email {EmailId}", () => [user.Id, address.Id]);
             var response = new SavedAddress(address, needsConfirmation, sent);
 
@@ -100,7 +100,7 @@ public sealed class ProfileEmailEndpoints
                 return Results.NoContent();
             }
 
-            return await manager.SendAddressConfirmation(user, address, sender, configuration, httpContext, logger)
+            return await manager.SendAddressConfirmation(user, address, sender, configuration, logger)
                 ? Results.NoContent()
                 : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
         });

@@ -113,7 +113,7 @@ public sealed class TwoFactorProfileEndpoints
         ILogger<TwoFactorProfileEndpoints> logger) =>
         ForSession(httpContext, sessionQueries, userManager, logger, async user =>
             Results.Json(await enrollment.BeginPasskey(
-                httpContext.PasskeyOrigin(configuration),
+                configuration.PasskeyOrigin(),
                 user,
                 TwoFactorStage.Profile,
                 null,
@@ -142,7 +142,7 @@ public sealed class TwoFactorProfileEndpoints
                     user,
                     "passkey",
                     await enrollment.CompletePasskey(
-                        httpContext.PasskeyOrigin(configuration),
+                        configuration.PasskeyOrigin(),
                         opened,
                         request.Name,
                         request.Credential,

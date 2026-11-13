@@ -43,7 +43,7 @@ public sealed class PrimaryPasskeyEndpoints
     {
         context.Response.Headers.CacheControl = "no-store";
         var user = await users.FindByEmailAsync(request.Email);
-        var origin = context.PasskeyOrigin(configuration);
+        var origin = configuration.PasskeyOrigin();
         var available = user is null
             ? None
             : await verification.BeginPasskey(origin, user.Id, context.RequestAborted);
@@ -98,7 +98,7 @@ public sealed class PrimaryPasskeyEndpoints
                     .Run().Match<Option<AssertionOptions>>(_ => None, parsed => parsed.ToOption());
                 var verified = await options.Match(
                     () => Task.FromResult(false),
-                    parsed => verification.VerifyPasskey(context.PasskeyOrigin(configuration), ticket.UserId,
+                    parsed => verification.VerifyPasskey(configuration.PasskeyOrigin(), ticket.UserId,
                         parsed, request.Credential, context.RequestAborted));
                 if (!verified || !await commands.ConsumeForFunction(ticket.Nonce!.Value, ticket.UserId,
                         MagicLinkFunction.PasskeyChallenge, timeProvider.GetUtcNow(), context.RequestAborted))

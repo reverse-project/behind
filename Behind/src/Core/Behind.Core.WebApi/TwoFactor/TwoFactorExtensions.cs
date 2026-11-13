@@ -37,9 +37,12 @@ public static class TwoFactorExtensions
         }
     }
 
-    extension(HttpContext httpContext)
+    extension(IConfiguration configuration)
     {
-        public Uri PasskeyOrigin(IConfiguration configuration) =>
-            configuration.FrontendUri().GetOrElse(() => httpContext.BaseUri());
+        public Uri PasskeyOrigin() =>
+            configuration.FrontendUri().Match(
+                () => throw new InvalidOperationException(
+                    "Frontend:Url must be an absolute HTTP(S) URL without credentials, query or fragment"),
+                uri => uri);
     }
 }

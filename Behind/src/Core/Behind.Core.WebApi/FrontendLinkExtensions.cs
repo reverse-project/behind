@@ -11,8 +11,12 @@ public static class FrontendLinkExtensions
     extension(IConfiguration configuration)
     {
         public Option<Uri> FrontendUri() =>
-            configuration.GetSection(FrontendConfiguration.SectionName).GetValue<Uri>(nameof(FrontendConfiguration.Url))
-                is { } url
+            Uri.TryCreate(configuration[$"{FrontendConfiguration.SectionName}:{nameof(FrontendConfiguration.Url)}"],
+                UriKind.Absolute, out var url)
+            && url.Scheme is "https" or "http"
+            && string.IsNullOrEmpty(url.UserInfo)
+            && string.IsNullOrEmpty(url.Query)
+            && string.IsNullOrEmpty(url.Fragment)
                 ? Some(url)
                 : None;
     }

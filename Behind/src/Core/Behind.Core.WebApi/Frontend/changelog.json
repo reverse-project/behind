@@ -3,6 +3,7 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "fixed", "text": "Generated frontend links and passkey origins use only the explicitly configured absolute HTTP(S) Frontend:Url, never request Host headers. Missing or invalid URLs prevent credential generation and authentication email delivery, leave notification emails pending, and reject passkey operations; use HTTPS in production." },
       { "type": "changed", "text": "Container publishing scripts accept a destination repository prefix, defaulting to ghcr.io/reverse-project/behind." },
       { "type": "changed", "text": "Audit log entity types are translated in the selector and entries, including installed module entities." },
       { "type": "added", "text": "Audit logs support filtering by entity type (selected from recorded types), action, actor and on-behalf-of user; searching names, emails, entity labels and changes; and sorting by time, entity type or key, action and actor." },

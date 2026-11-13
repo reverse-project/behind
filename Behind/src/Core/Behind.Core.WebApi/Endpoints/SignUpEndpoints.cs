@@ -72,7 +72,7 @@ public sealed class SignUpEndpoints
             {
                 var address = (await emailQueries.Addresses(user.Id, httpContext.RequestAborted))
                     .Single(item => item.Value == request.Email.Trim().ToLowerInvariant());
-                await userManager.SendAddressConfirmation(user, address, emailSender, configuration, httpContext, logger);
+                await userManager.SendAddressConfirmation(user, address, emailSender, configuration, logger);
             }
             else
             {
@@ -166,7 +166,7 @@ public sealed class SignUpEndpoints
 
             if (address is not null && address.ConfirmedAt is null)
             {
-                await userManager.SendAddressConfirmation(user, address, emailSender, configuration, httpContext, logger);
+                await userManager.SendAddressConfirmation(user, address, emailSender, configuration, logger);
             }
             else
             {

@@ -1,5 +1,4 @@
 using Behind.Core.WebApi.TwoFactor;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,15 +10,6 @@ public class TwoFactorExtensionsTests
         new ConfigurationBuilder()
             .AddInMemoryCollection(url is null ? [] : new Dictionary<string, string?> { ["Frontend:Url"] = url })
             .Build();
-
-    private static DefaultHttpContext Request()
-    {
-        var context = new DefaultHttpContext();
-        context.Request.Scheme = "https";
-        context.Request.Host = new HostString("api.test", 8443);
-
-        return context;
-    }
 
     [Theory]
     [InlineData(typeof(ITwoFactorTickets), typeof(TwoFactorTickets), ServiceLifetime.Singleton)]
@@ -53,16 +43,35 @@ public class TwoFactorExtensionsTests
     [Fact]
     public void PasskeyOrigin_IsTheConfiguredFrontendAddress()
     {
-        var origin = Request().PasskeyOrigin(Frontend("https://www.example.test/app/"));
+        var origin = Frontend("https://www.example.test/app/").PasskeyOrigin();
 
         Assert.Equal("https://www.example.test", origin.GetLeftPart(UriPartial.Authority));
     }
 
-    [Fact]
-    public void PasskeyOrigin_FallsBackToTheAddressOfTheRequest()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("invalid")]
+    [InlineData("/relative")]
+    [InlineData("file:///tmp/frontend")]
+    [InlineData("https://user:password@app.test/")]
+    [InlineData("https://app.test/?query=1")]
+    [InlineData("https://app.test/#fragment")]
+    public void PasskeyOrigin_RequiresValidConfiguredFrontendAddress(string? url)
     {
-        var origin = Request().PasskeyOrigin(Frontend(null));
+        var exception = Assert.Throws<InvalidOperationException>(() => Frontend(url).PasskeyOrigin());
 
-        Assert.Equal("https://api.test:8443", origin.GetLeftPart(UriPartial.Authority));
+        Assert.Contains("Frontend:Url", exception.Message);
+    }
+
+    [Fact]
+    public void PasskeyOrigin_UsesCurrentConfigurationAndFailsWhenRemoved()
+    {
+        var configuration = Frontend("https://app.test/");
+        Assert.Equal("https://app.test/", configuration.PasskeyOrigin().AbsoluteUri);
+        configuration["Frontend:Url"] = "https://new-app.test/frontend/";
+        Assert.Equal("https://new-app.test/frontend/", configuration.PasskeyOrigin().AbsoluteUri);
+        configuration["Frontend:Url"] = null;
+        Assert.Throws<InvalidOperationException>(() => configuration.PasskeyOrigin());
     }
 }

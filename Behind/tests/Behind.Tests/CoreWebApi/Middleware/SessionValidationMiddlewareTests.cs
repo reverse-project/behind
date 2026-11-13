@@ -1,10 +1,14 @@
 using System.Security.Claims;
+using System.Globalization;
+using Behind.Common.Logging;
+using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
 using Behind.Core.Database.Sqlite;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.Middleware;
 using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace Behind.Tests.CoreWebApi.Middleware;
 
@@ -49,19 +53,144 @@ public sealed class SessionValidationMiddlewareTests : IDisposable
         new(SessionClaimTypes.TokenNonce, nonce)
     ];
 
-    private async Task<bool> InvokeAsync(DefaultHttpContext context)
+    private async Task<bool> InvokeAsync(DefaultHttpContext context, RequestDelegate? endpoint = null)
     {
         var reachedEndpoint = false;
-        var middleware = new SessionValidationMiddleware(_ =>
+        var middleware = new SessionValidationMiddleware(async http =>
         {
             reachedEndpoint = true;
-            return Task.CompletedTask;
+            if (endpoint is not null)
+            {
+                await endpoint(http);
+            }
         }, TimeProvider.System, _logger);
 
         await using var db = _factory.CreateContext();
-        await middleware.InvokeAsync(context, new SessionQueries(db));
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Frontend:Site:DefaultLocale"] = "en-US"
+        }).Build();
+        await middleware.InvokeAsync(context, new SessionQueries(db), new UserSettingQueries(db), TestLocales.Embedded, configuration);
 
         return reachedEndpoint;
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ContentLocaleOverridesUserSettingAndRestoresCulture()
+    {
+        var session = NewSession();
+        var id = await SeedAsync(session);
+        await using (var seed = _factory.CreateContext())
+        {
+            await new UserSettingCommands(seed).Set(DomainConstants.SystemUserId, UserSettingKeys.Locale, "en-US");
+        }
+        var context = ContextFor(ClaimsFor(id, session.AccessToken.Nonce));
+        context.Request.Headers[ContentLocaleMiddleware.Header] = "hu-HU";
+        var original = CultureInfo.CurrentCulture;
+        var originalUi = CultureInfo.CurrentUICulture;
+        SessionLogInformation? captured = null;
+
+        await InvokeAsync(context, async _ =>
+        {
+            await Task.Yield();
+            Assert.Equal("hu-HU", CultureInfo.CurrentCulture.Name);
+            Assert.Equal("hu-HU", CultureInfo.CurrentUICulture.Name);
+            Assert.Equal("1,5", 1.5m.ToString());
+            captured = SessionLogContext.Current;
+        });
+
+        Assert.Equal(new SessionLogInformation("hu-HU", id, DomainConstants.SystemUserId, null), captured);
+        Assert.Equal(original, CultureInfo.CurrentCulture);
+        Assert.Equal(originalUi, CultureInfo.CurrentUICulture);
+        Assert.Null(SessionLogContext.Current);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_UsesUserPreferenceThenSiteDefault()
+    {
+        var session = NewSession();
+        var id = await SeedAsync(session);
+        await using (var seed = _factory.CreateContext())
+        {
+            await new UserSettingCommands(seed).Set(DomainConstants.SystemUserId, UserSettingKeys.Locale, "hu-HU");
+        }
+
+        await InvokeAsync(ContextFor(ClaimsFor(id, session.AccessToken.Nonce)), _ =>
+        {
+            Assert.Equal("hu-HU", CultureInfo.CurrentCulture.Name);
+            return Task.CompletedTask;
+        });
+        await InvokeAsync(new DefaultHttpContext(), _ =>
+        {
+            Assert.Equal("en-US", CultureInfo.CurrentCulture.Name);
+            Assert.Equal(new SessionLogInformation("en-US", null, null, null), SessionLogContext.Current);
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task InvokeAsync_QueryLocaleAndImpersonatorAreIncluded()
+    {
+        var session = NewSession();
+        var id = await SeedAsync(session);
+        Guid impersonator;
+        await using (var seed = _factory.CreateContext())
+        {
+            impersonator = await DatabaseSeedHelper.SeedHumanUserAsync(seed);
+            var stored = await seed.Sessions.FindAsync(id);
+            seed.Entry(stored!).Property("ImpersonatorId").CurrentValue = impersonator;
+            await seed.SaveChangesAsync();
+        }
+        var context = ContextFor(ClaimsFor(id, session.AccessToken.Nonce));
+        context.Request.QueryString = new QueryString("?contentLocale=hu-HU");
+
+        await InvokeAsync(context, _ =>
+        {
+            Assert.Equal(new SessionLogInformation("hu-HU", id, DomainConstants.SystemUserId, impersonator), SessionLogContext.Current);
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task InvokeAsync_RestoresContextWhenEndpointThrows()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Headers[ContentLocaleMiddleware.Header] = "hu-HU";
+        var original = CultureInfo.CurrentCulture;
+        var originalUi = CultureInfo.CurrentUICulture;
+        using var outer = SessionLogContext.Begin(new SessionLogInformation("outer", null, null, null));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => InvokeAsync(context, _ =>
+            throw new InvalidOperationException("test")));
+
+        Assert.Equal(original, CultureInfo.CurrentCulture);
+        Assert.Equal(originalUi, CultureInfo.CurrentUICulture);
+        Assert.Equal("outer", SessionLogContext.Current?.Locale);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ConcurrentRequestsKeepCulturesAndContextsSeparate()
+    {
+        var first = new DefaultHttpContext();
+        first.Request.Headers[ContentLocaleMiddleware.Header] = "hu-HU";
+        var second = new DefaultHttpContext();
+        second.Request.Headers[ContentLocaleMiddleware.Header] = "en-US";
+        var firstReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task Check(TaskCompletionSource ready, Task other, string expected)
+        {
+            ready.SetResult();
+            await other;
+            Assert.Equal(expected, CultureInfo.CurrentCulture.Name);
+            Assert.Equal(expected, CultureInfo.CurrentUICulture.Name);
+            Assert.Equal(expected, SessionLogContext.Current?.Locale);
+        }
+
+        await Task.WhenAll(
+            InvokeAsync(first, _ => Check(firstReady, secondReady.Task, "hu-HU")),
+            InvokeAsync(second, _ => Check(secondReady, firstReady.Task, "en-US")));
+        Assert.Null(SessionLogContext.Current);
     }
 
     [Fact]

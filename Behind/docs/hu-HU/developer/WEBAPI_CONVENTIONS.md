@@ -1,5 +1,9 @@
 # WebApi konvenciók
 
+## Kéréskultúra és naplókontextus
+
+A kérés formázási és felületi kultúrája először a kiválasztott érvényes tartalmi nyelv, majd az ellenőrzött munkamenet felhasználójának mentett nyelve, végül a `Frontend:Site:DefaultLocale` (ennek hiányában `en-US`). Mindkét kultúra csak a kérés idejére érvényes, utána visszaáll. Az ezen belül keletkező OpenTelemetry napló tartalmazza a `session.locale` mezőt, ellenőrzött munkamenetnél pedig a `session.id`, `user.id`, `session.impersonated` és adott esetben `session.impersonator.id` mezőt. Ezek nem függenek az OpenTelemetry `IncludeScopes` beállításától; hitelesítési adat, IP-cím és böngészőazonosító nem kerül hozzájuk.
+
 ## Privát üzenetek és felhasználói jelentések
 
 A privát API aktív munkamenetet követel és ETag nélkül `Cache-Control: no-store` fejlécet használ. A `PrivateMessage.Read/Write/Delete` a postaládaműveleteket szabályozza; a tagság és az üzenetek láthatósága külön ellenőrzött. A `PrivateMessageModeration.Manage` csak a rendszerválaszokat teszi elérhetővé, nem ad korlátlan privát hozzáférést.

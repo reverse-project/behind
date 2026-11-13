@@ -75,6 +75,21 @@ public sealed class ContentLocaleTests : IDisposable
     }
 
     [Theory]
+    [InlineData("?contentLocale=en-US", "hu-HU")]
+    [InlineData("?contentLocale=hu-HU&contentLocale=hu-HU", "hu-HU")]
+    public async Task ConflictingOrRepeatedLocaleInputsAreRejected(string query, string header)
+    {
+        await using var context = factory.CreateContext();
+        var http = new DefaultHttpContext();
+        http.Request.QueryString = new QueryString(query);
+        http.Request.Headers[ContentLocaleMiddleware.Header] = header;
+
+        await Invoke(context, http);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, http.Response.StatusCode);
+    }
+
+    [Theory]
     [InlineData(null, null, 0)]
     [InlineData("hu-HU", "Hungarian", 1)]
     [InlineData("HU-hu", "Hungarian", 1)]

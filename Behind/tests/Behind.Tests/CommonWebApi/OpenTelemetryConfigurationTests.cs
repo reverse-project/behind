@@ -3,7 +3,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
+using System.Text;
 using Behind.Common.WebApi;
+using Behind.Common.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -83,6 +85,36 @@ public class OpenTelemetryConfigurationTests
         Assert.Contains(new Uri("http://otel.test/v1/logs"), requests);
     }
 
+    [Fact]
+    public async Task AddOpenTelemetry_ExportsSessionAttributesWhenScopesAreDisabled()
+    {
+        var payloads = new ConcurrentQueue<byte[]>();
+        var builder = CreateBuilder();
+        builder.Configuration["OpenTelemetry:Logging:IncludeScopes"] = "false";
+        builder.AddOpenTelemetry();
+        builder.Services.Configure<OtlpExporterOptions>(options =>
+            options.HttpClientFactory = () => new HttpClient(new PayloadHandler(payloads)));
+        await using var application = builder.Build();
+        var provider = application.Services.GetRequiredService<LoggerProvider>();
+        var sessionId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        using (SessionLogContext.Begin(new SessionLogInformation("hu-HU", sessionId, userId, null)))
+        {
+            application.Services.GetRequiredService<ILoggerFactory>().CreateLogger("session-test")
+                .LogWarning("Session export test");
+        }
+
+        Assert.True(provider.ForceFlush(5000));
+        var payload = Encoding.UTF8.GetString(Assert.Single(payloads));
+        Assert.Contains("session.locale", payload);
+        Assert.Contains("hu-HU", payload);
+        Assert.Contains("session.id", payload);
+        Assert.Contains(sessionId.ToString(), payload);
+        Assert.Contains("user.id", payload);
+        Assert.Contains(userId.ToString(), payload);
+        Assert.Contains("session.impersonated", payload);
+    }
+
     private static WebApplicationBuilder CreateBuilder()
     {
         var builder = WebApplication.CreateSlimBuilder();
@@ -124,5 +156,20 @@ public class OpenTelemetryConfigurationTests
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(Send(request, cancellationToken));
+    }
+
+    private sealed class PayloadHandler(ConcurrentQueue<byte[]> payloads) : HttpMessageHandler
+    {
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            payloads.Enqueue(request.Content!.ReadAsByteArrayAsync(cancellationToken).GetAwaiter().GetResult());
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([]) };
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            payloads.Enqueue(await request.Content!.ReadAsByteArrayAsync(cancellationToken));
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([]) };
+        }
     }
 }

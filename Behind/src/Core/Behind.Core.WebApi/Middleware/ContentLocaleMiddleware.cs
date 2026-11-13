@@ -20,20 +20,9 @@ public sealed class ContentLocaleMiddleware(RequestDelegate next)
     {
         context.IncludeAllContentLocales = true;
         context.HiddenLocaleContentKeys = [];
-        var requested = http.Request.Headers[Header];
-        var query = http.Request.Query["contentLocale"];
-        if (requested.Count > 1 || query.Count > 1
-            || requested.Count > 0 && query.Count > 0 && requested.ToString() != query.ToString())
-        {
-            http.Response.StatusCode = StatusCodes.Status400BadRequest;
-            return;
-        }
-
-        var raw = requested.Count > 0 ? requested.ToString() : query.Count > 0 ? query.ToString() : null;
         var available = await locales.ListAsync(http.RequestAborted);
-        var selected = raw is null ? null : available.FirstOrDefault(item =>
-            string.Equals(item.Code, raw, StringComparison.OrdinalIgnoreCase))?.Code;
-        if (raw is not null && selected is null)
+        var (valid, selected) = SelectLocale(http, available);
+        if (!valid)
         {
             http.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
@@ -89,6 +78,26 @@ public sealed class ContentLocaleMiddleware(RequestDelegate next)
         {
             http.Response.Headers.CacheControl = "private, no-store";
         }
+    }
+
+    public static (bool Valid, string? Locale) SelectLocale(HttpContext http, IReadOnlyList<LocaleInfo> available)
+    {
+        var requested = http.Request.Headers[Header];
+        var query = http.Request.Query["contentLocale"];
+        if (requested.Count > 1 || query.Count > 1
+            || requested.Count > 0 && query.Count > 0 && requested.ToString() != query.ToString())
+        {
+            return (false, null);
+        }
+
+        var raw = requested.Count > 0 ? requested.ToString() : query.Count > 0 ? query.ToString() : null;
+        if (raw is null)
+        {
+            return (true, null);
+        }
+        var selected = available.FirstOrDefault(item =>
+            string.Equals(item.Code, raw, StringComparison.OrdinalIgnoreCase))?.Code;
+        return (selected is not null, selected);
     }
 
     public static async Task<bool> IsManagement(HttpContext http, IAuthorizationService authorization)

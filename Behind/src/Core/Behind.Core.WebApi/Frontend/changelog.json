@@ -3,6 +3,7 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "changed", "text": "Requests use the selected content locale for formatting, falling back to the signed-in user's language and then the site default. OpenTelemetry logs include the request locale and validated session, user and impersonation identifiers." },
       { "type": "added", "text": "Public profiles offer Send private message to authorized users viewing another human account, opening visual composition with that recipient selected." },
       { "type": "changed", "text": "Visual editing is the default and primary option in private-message composition and replies, consistent with Forum and rich HTML editors. BBCode and HTML source editing remain secondary options." },
       { "type": "added", "text": "New private messages and replies enqueue email notifications to recipients' confirmed addresses, including hidden recipients and current role members, respecting private reply audiences and departed participants. Emails contain only a direct conversation link. A durable versioned queue retries known SMTP rejections up to three times; uncertain interrupted sends are not repeated. Requires Frontend:Url and the configured email provider." },

@@ -1,5 +1,9 @@
 # WebApi Conventions
 
+## Request culture and log context
+
+Request formatting and UI culture use the selected valid content locale, then the validated session user's saved language, then `Frontend:Site:DefaultLocale` (or `en-US`). Both cultures are scoped to the request and restored afterwards. OpenTelemetry logs emitted within this scope include `session.locale` and, for validated sessions, `session.id`, `user.id`, `session.impersonated`, and `session.impersonator.id` when applicable. These attributes do not depend on the OpenTelemetry `IncludeScopes` option; credentials, IP addresses and user agents are not added.
+
 ## Private messaging and user reports
 
 Private APIs require an active session and `Cache-Control: no-store`, without ETags. `PrivateMessage.Read/Write/Delete` control mailbox actions; membership and message visibility are checked independently of grants. `PrivateMessageModeration.Manage` grants system-response access only, never unrestricted private-message access.

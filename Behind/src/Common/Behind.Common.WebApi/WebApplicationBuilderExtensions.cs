@@ -89,6 +89,7 @@ public static class WebApplicationBuilderExtensions
                                 loggingConfiguration.Apply(_ => openTelemetry.WithLogging(loggingBuilder =>
                                     {
                                         loggingBuilder.AddProcessor<CorrelationIdLogRecordProcessor>();
+                                        loggingBuilder.AddProcessor<SessionLogRecordProcessor>();
                                         Instrumentation.OtlpExporter.Apply(
                                             instrumentation,
                                             () => loggingConfiguration.Endpoint.NotNull(e =>

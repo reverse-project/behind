@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261112195911_ContentLocales";
+    public override string LastMigrationId => "20261113120001_ContentAgeOptionNames";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -215,10 +215,10 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Carousels");
 
-                b.HasAnnotation("Behind:LocaleOwnerType", "Site");
                 b
                     .HasAnnotation("Behind:AgeRestricted", true)
                     .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:LocaleOwnerType", "Site")
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
@@ -300,6 +300,31 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.ContentAgeOption", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<int>("Age")
+                    .HasColumnType("integer");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("Age");
+
+                b.ToTable("ContentAgeOptions");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.ContentLocale", b =>
             {
                 b.Property<Guid>("Key")
@@ -323,7 +348,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasKey("Key", "Version");
 
                 b.HasIndex("EntityType", "EntityId", "Locale");
-                b.HasIndex("EntityType", "EntityId", "Version").IsUnique();
+
+                b.HasIndex("EntityType", "EntityId", "Version")
+                    .IsUnique();
 
                 b.ToTable("ContentLocales");
 
@@ -969,8 +996,9 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
                 b.ToTable("Sites");
 
-                b.HasAnnotation("Behind:ContentLocale", true);
-                b.HasAnnotation("Behind:SoftDeletable", true);
+                b
+                    .HasAnnotation("Behind:ContentLocale", true)
+                    .HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.SiteSection", b =>

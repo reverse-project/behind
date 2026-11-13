@@ -1,6 +1,5 @@
 using Behind.Common.WebApi;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,10 +17,10 @@ public class ReloadableMiddlewareTests
     {
         var configuration = new ReloadableMemoryConfiguration(new Dictionary<string, string?> { ["Greeting:Text"] = "hello" });
         var builder = WebApplication.CreateSlimBuilder();
-        builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddSingleton<IConfiguration>(configuration);
         builder.Services.AddReloadableOptions(c => new Greeting(c["Greeting:Text"]!));
         await using var app = builder.Build();
+        app.Urls.Add("http://127.0.0.1:0");
         var builds = 0;
         app.UseReloadable<Greeting>((branch, greeting) =>
         {
@@ -35,7 +34,9 @@ public class ReloadableMiddlewareTests
         });
         app.MapGet("/", () => Results.Ok());
         await app.StartAsync();
-        using var client = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+        var address = new Uri(Assert.Single(app.Urls));
+        Assert.NotEqual(0, address.Port);
+        using var client = new HttpClient { BaseAddress = address };
 
         var first = (await client.GetAsync("/")).Headers.GetValues("X-Greeting").Single();
         var again = (await client.GetAsync("/")).Headers.GetValues("X-Greeting").Single();

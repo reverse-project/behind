@@ -967,6 +967,7 @@ public static class WebApiExtensions
             application.MapAccessEndpoints();
             application.MapRawDatabaseEndpoints();
             application.MapContentRestrictionEndpoints();
+            application.MapContentAgeOptionEndpoints();
             application.MapContentLocaleEndpoints();
 
             application.MapGet("/users/profiles/{id:guid}", PublicProfileEndpoints.Get)

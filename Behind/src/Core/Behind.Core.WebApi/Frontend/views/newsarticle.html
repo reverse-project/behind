@@ -31,6 +31,7 @@
                         </span>
                     </div>
                     <div class="text-break news-comment" data-bind="visible: !isEditing(), text: content"></div>
+                    <content-age params="entityType: 'NewsComment', id: id, allowed: canEdit"></content-age>
                     <form class="mt-2" data-bind="visible: isEditing, submit: saveEdit">
                         <textarea class="form-control mb-2" rows="3" maxlength="2000" aria-label="Edit comment" data-bind="value: draft, valueUpdate: 'input', tAttr: { 'aria-label': 'news.editComment' }"></textarea>
                         <label class="form-check mb-2">

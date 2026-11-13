@@ -101,6 +101,13 @@ public static class AuditLabelExtensions
 
         private async Task<IReadOnlyList<Named>> NamedAsync(List<Guid> ids, CancellationToken cancellationToken) =>
         [
+            .. await context.ContentAgeOptions
+                .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
+                .OrderByDescending(item => EF.Property<long>(item, VersionedColumns.Version))
+                .Select(item => new Named(EF.Property<Guid>(item, VersionedColumns.Key),
+                    item.Name + " (minimum age " + item.Age + ")"))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
             .. await context.ContentLocales
                 .Where(item => ids.Contains(EF.Property<Guid>(item, VersionedColumns.Key)))
                 .OrderByDescending(item => EF.Property<long>(item, VersionedColumns.Version))

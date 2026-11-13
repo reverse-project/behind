@@ -72,6 +72,7 @@
                     </blockquote>
                     <!-- /ko -->
                     <p class="chat-text" data-bind="text: text"></p>
+                    <content-age params="entityType: 'ChatMessage', id: id, allowed: $component.canEdit($data)"></content-age>
                     <div class="chat-actions">
                         <!-- ko if: $component.chatWritable -->
                         <button class="btn btn-sm btn-outline-primary" type="button" data-bind="click: $component.reply, disable: $component.busy, text: $component.t('widgets.chatReply')"></button>

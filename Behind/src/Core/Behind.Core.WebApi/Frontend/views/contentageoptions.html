@@ -1,0 +1,43 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'contentAgeOptions.title'">Predefined minimum ages</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'contentAgeOptions.back'">Back to administration</a>
+    </div>
+    <p data-bind="t: 'contentAgeOptions.description'">Manage the minimum ages available when restricting content.</p>
+    <div class="alert alert-info" role="status" data-bind="t: 'contentAgeOptions.removalWarning'">Deleting an age removes it from the available choices. Existing content keeps its minimum age.</div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: !canManage(), t: 'contentAgeOptions.denied'">You need permission to manage predefined minimum ages.</div>
+    <div data-bind="visible: canManage">
+        <div class="alert alert-danger" role="alert" data-bind="visible: message, text: message"></div>
+        <p role="status" data-bind="visible: loading, t: 'contentAgeOptions.loading'">Loading minimum ages…</p>
+        <p role="status" data-bind="visible: saving, t: 'contentAgeOptions.saving'">Saving changes…</p>
+        <form class="card card-body mb-4" data-bind="submit: save, visible: !showDeleted()">
+            <label class="form-label" for="content-age-option-name" data-bind="t: 'contentAgeOptions.name'">Display name</label>
+            <input id="content-age-option-name" class="form-control mb-2" type="text" maxlength="200" required data-bind="value: name, valueUpdate: 'input', enable: !busy()">
+            <label class="form-label" for="content-age-option-age" data-bind="t: 'contentAgeOptions.age'">Minimum age</label>
+            <input id="content-age-option-age" class="form-control mb-2" type="number" min="1" max="150" step="1" required aria-describedby="content-age-option-help" data-bind="value: age, valueUpdate: 'input', enable: !busy() &amp;&amp; !editingId()">
+            <p id="content-age-option-help" class="form-text" data-bind="t: 'contentAgeOptions.ageHelp'">Enter a whole number from 1 to 150.</p>
+            <div>
+                <button class="btn btn-primary" type="submit" data-bind="enable: canSave, t: editingId() ? 'common.save' : 'contentAgeOptions.add'">Add age</button>
+                <button class="btn btn-outline-secondary" type="button" data-bind="visible: editingId, click: cancelEdit, enable: !busy(), t: 'common.cancel'">Cancel</button>
+            </div>
+        </form>
+        <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+            <label class="form-check-label">
+                <input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()">
+                <span data-bind="t: 'contentAgeOptions.showDeleted'">Show deleted ages</span>
+            </label>
+        </div>
+        <p class="text-body-secondary" data-bind="visible: !busy() &amp;&amp; !message() &amp;&amp; !items().length, t: 'contentAgeOptions.empty'">No minimum ages found.</p>
+        <ul class="list-group mb-3" data-bind="foreach: items">
+            <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                <strong data-bind="text: name"></strong>
+                <span class="me-auto" data-bind="text: age"></span>
+                <span class="badge text-bg-dark" data-bind="visible: $parent.showDeleted, t: 'contentAgeOptions.deleted'">Deleted</span>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bind="visible: !$parent.showDeleted(), enable: !$parent.busy(), click: $parent.edit, t: 'common.edit'">Edit</button>
+                <button class="btn btn-sm btn-outline-danger" type="button" data-bind="visible: !$parent.showDeleted(), enable: !$parent.busy(), click: $parent.remove, t: 'contentAgeOptions.delete'">Delete</button>
+                <button class="btn btn-sm btn-outline-success" type="button" data-bind="visible: $parent.showDeleted, enable: !$parent.busy(), click: $parent.restore, t: 'contentAgeOptions.restore'">Restore</button>
+                <button class="btn btn-sm btn-danger" type="button" data-bind="visible: $parent.showDeleted, enable: !$parent.busy(), click: $parent.hardDelete, t: 'contentAgeOptions.hardDelete'">Delete permanently</button>
+            </li>
+        </ul>
+    </div>
+</section>

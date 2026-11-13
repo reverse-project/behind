@@ -21,9 +21,13 @@ A `frontend.json` **DefaultLocale** beállítása (`Frontend › Site`) az elér
 
 ## Korhatárszűrés
 
-A **backend.json > Backend > ContentRestrictions** szakasz **Enabled** kapcsolója vezérli a globális korhatárszűrést. **Alapértelmezés szerint kikapcsolt**, és újraindítás nélkül frissül. Kikapcsolva a tárolt korhatárok nem korlátozzák a hozzáférést. Bekapcsolva az olvasó privát születési dátumának meg kell felelnie az elem korhatárának; ismeretlen dátummal a korlátozott elem, kapcsolódó tartalma és fájljai nem érhetők el. A szabályok a **Tartalomkorlátozások** oldalon `RawDatabase.Manage` engedéllyel vagy a támogatott elemszerkesztők korhatármezőjével kezelhetők. A nulla megszünteti a korhatárt. A fejlesztők listázhatják, visszaállíthatják vagy végleg törölhetik a törölt szabályokat.
+A **backend.json > Backend > ContentRestrictions** szakasz **Enabled** kapcsolója vezérli a globális korhatárszűrést. **Alapértelmezés szerint kikapcsolt**, és újraindítás nélkül frissül. Kikapcsolva a tárolt korhatárok nem korlátozzák a hozzáférést. Bekapcsolva az olvasó privát születési dátumának meg kell felelnie az elem korhatárának; ismeretlen dátummal a korlátozott elem, kapcsolódó tartalma és fájljai nem érhetők el.
 
-Válasszon tartalomtípust, majd az **Elemek böngészése** gombbal UUID-másolás nélkül kereshet elemet. Megjelenítési név vagy teljes azonosító alapján kereshet, az **Előző elemek** / **Következő elemek** gombokkal lapozhat. Az elem címe, fájlneve, neve vagy más elérhető szövege jelenik meg; címke hiányában az azonosítója. A kiválasztás kitölti a korlátozás azonosítóját. Az azonosító kézzel is megadható. A meglévő szabályok mellett is olvasható címke jelenik meg.
+Az egyes elemek korhatára a saját szerkesztőjükben állítható be. Ehhez a `ContentRestriction.Write` és az elem meglévő szerkesztési jogosultsága szükséges, ideértve a tulajdonosi ellenőrzést is. A korhatár megszüntetéséhez válassza a **Korlátozás nélkül** lehetőséget.
+
+A választható korhatárok a `ContentAge.Manage` jogosultságot igénylő **Korhatárok** adminisztrációs oldalon kezelhetők. Kezdetben a meglévő korhatárok, valamint a 12, 16 és 18 éves értékek érhetők el. Egy korhatár eltávolítása csak a választható értékek közül törli azt; a meglévő elemek megtartják és alkalmazzák a számmal tárolt korhatárt. A szerkesztő megtarthatja vagy kifejezetten módosíthatja ezt az értéket. Az eltávolított korhatárok listázásához, visszaállításához és végleges törléséhez `RawDatabase.Manage` is szükséges.
+
+Hozzáadáskor minden korhatárhoz adjon meg egy megjelenített nevet, például **Felnőtt**. A név később módosítható a korhatár és a meglévő korlátozások megváltoztatása nélkül. A meglévő korhatárok kezdetben a számukat használják névként.
 
 ## Fiók-bejelentkezési módok
 

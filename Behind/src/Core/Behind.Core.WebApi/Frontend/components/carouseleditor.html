@@ -7,7 +7,7 @@
     </div>
     <p class="text-body-secondary" data-bind="t: 'carousels.editor.help'">Optional for every site. Without images the page stays as it is. With images they are shown above the page content as a slider that moves on by itself.</p>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
-    <content-age params="entityType: 'Carousel', id: siteId"></content-age>
+    <div data-bind="if: version() !== null"><content-age params="entityType: 'Carousel', id: siteId, allowed: canWrite"></content-age></div>
     <div data-bind="if: version() !== null"><content-locale params="entityType: 'Carousel', id: siteId, allowed: canWrite"></content-locale></div>
     <div data-bind="visible: isDeleted">
         <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2" role="status">
@@ -26,7 +26,8 @@
         <li class="list-group-item">
             <div class="d-flex flex-wrap gap-3">
                 <img class="carousel-editor-preview rounded" alt="" data-bind="attr: { src: imageUrl }">
-                <content-age params="entityType: 'VfsFile', id: imageId"></content-age>
+                <content-age params="entityType: 'CarouselSlide', id: id, allowed: $parent.canWrite"></content-age>
+                <content-age params="entityType: 'VfsFile', id: imageId, allowed: $parent.canWrite"></content-age>
                 <content-locale params="entityType: 'CarouselSlide', id: id, allowed: $parent.canWrite"></content-locale>
                 <div class="flex-grow-1">
                     <label class="form-label small" data-bind="t: 'carousels.editor.caption'">Caption (optional)</label>

@@ -51,6 +51,10 @@ define(["ko", "models/session", "models/i18n", "models/modules"], function (ko, 
         return session.hasGrant("RawDatabase.Manage");
     };
 
+    var canManageContentAges = function () {
+        return session.hasGrant("ContentAge.Manage");
+    };
+
     var canReadConfiguration = function () {
         return session.hasGrant("Configuration.Read");
     };
@@ -72,7 +76,7 @@ define(["ko", "models/session", "models/i18n", "models/modules"], function (ko, 
         { name: "administration.pages.accessSettings", icon: "fa-lock", href: "#/manage/access-settings", allowed: canReadAccessSettings },
         { name: "administration.pages.auditLog", icon: "fa-clipboard-list", href: "#/audit-log", allowed: canReadAuditLog },
         { name: "administration.pages.rawDatabase", icon: "fa-database", href: "#/manage/raw-database", allowed: canManageRawDatabase },
-        { name: "contentRestrictions.title", icon: "fa-lock", href: "#/manage/content-restrictions", allowed: canManageRawDatabase },
+        { name: "contentAgeOptions.title", icon: "fa-lock", href: "#/manage/content-ages", allowed: canManageContentAges },
         { name: "administration.pages.settings", icon: "fa-sliders", href: "#/settings", allowed: canReadConfiguration }
     ];
 

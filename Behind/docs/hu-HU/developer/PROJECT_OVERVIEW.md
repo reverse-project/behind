@@ -32,7 +32,7 @@ A modul felületi modellje `load(type, limit)` függvényt ad, `{items?, stats?,
 
 ## Fórum és nyilvános profilok
 
-A globális korhatárszűrést az újratölthető `Backend.ContentRestrictions.Enabled` vezérli (alapértéke false). A verziózott elemszabályok a közös szűrt kontextust használják, a tranzitív szülőhivatkozásokra, médiára, adatfolyamokra és darabszámokra is. A modulleírók `ModuleDatabase.ContentRestrictedEntities` és `ContentRestrictionParentProperties` mezői Core-függőség nélkül biztosítják az integrációt.
+A globális korhatárszűrést az újratölthető `Backend.ContentRestrictions.Enabled` vezérli (alapértéke false). A verziózott elemszabályok a közös szűrt kontextust használják, a tranzitív szülőhivatkozásokra, médiára, adatfolyamokra és darabszámokra is. A modulleírók `ModuleDatabase.ContentRestrictedEntities` és `ContentRestrictionParentProperties` mezői Core-függőség nélkül biztosítják az integrációt. A modulszerkesztők a közös korhatárvezérlőt és a nyelvi szerkesztési/tulajdonosi jogosultságokat használják a `ContentRestriction.Write` jogosultsággal együtt; a választható korhatárok kezeléséhez `ContentAge.Manage` szükséges.
 
 A fő `Behind.Web` telepítés a Core, Quotes és Sport mellett betölti a `Behind.Forum.*` modult; a meglévő webhelyek nem töltik be a Fórumot. A Common, Domain, Database, SQLite, PostgreSQL és WebApi projektek a `ForumModule.Descriptor` segítségével csatlakoznak. A felület fórumtáblák, témák és válaszok böngészését, valamint moderálással kiegészített adminisztrációt biztosít. A `forum.json` újratölthető, és megjelenik a Beállítások oldalon.
 

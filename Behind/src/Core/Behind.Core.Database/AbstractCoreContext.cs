@@ -24,6 +24,8 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
 
     public DbSet<ContentRestriction> ContentRestrictions => Set<ContentRestriction>();
 
+    public DbSet<ContentAgeOption> ContentAgeOptions => Set<ContentAgeOption>();
+
     public DbSet<ContentLocale> ContentLocales => Set<ContentLocale>();
 
     public bool IncludeAllContentLocales { get; set; } = true;
@@ -116,6 +118,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
 
     private static readonly Type[] CoreSoftDeletedEntities =
     [
+        typeof(ContentAgeOption),
         typeof(ContentRestriction),
         typeof(ContentLocale),
         typeof(User),

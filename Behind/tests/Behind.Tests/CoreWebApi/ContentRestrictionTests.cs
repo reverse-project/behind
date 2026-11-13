@@ -6,10 +6,13 @@ using Behind.Core.Database.Auditing;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Middleware;
 using Behind.Common.Database.Raw;
+using Behind.Common.WebApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace Behind.Tests.CoreWebApi;
 
@@ -21,6 +24,14 @@ public sealed class ContentRestrictionTests : IDisposable
         Substitute.For<IOptionsMonitor<ContentRestrictionsConfiguration>>();
 
     public void Dispose() => _factory.Dispose();
+
+    private static IAuthorizationService Authorization(params string[] grants)
+    {
+        var authorization = Substitute.For<IAuthorizationService>();
+        authorization.AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(call => grants.Contains(call.ArgAt<string>(2)) ? AuthorizationResult.Success() : AuthorizationResult.Failed());
+        return authorization;
+    }
 
     private async Task<(Guid User, Guid Category, Guid Restricted, Guid Public)> Seed(DateOnly? birthday = null)
     {
@@ -220,10 +231,12 @@ public sealed class ContentRestrictionTests : IDisposable
         var ids = await Seed();
         await using var context = _factory.CreateContext();
         var http = new DefaultHttpContext();
+        Assert.IsType<Created<ContentAgeOptionEndpoints.AgeOptionResponse>>(
+            await ContentAgeOptionEndpoints.Create(new(21, "21"), http, context));
         Assert.IsType<NoContent>(await ContentRestrictionEndpoints.Save(
-            new(nameof(NewsCategory), ids.Category, 21), http, context));
+            new(nameof(NewsCategory), ids.Category, 21), http, context, Authorization("ContentRestriction.Write", "News.Write"), []));
         Assert.IsType<NoContent>(await ContentRestrictionEndpoints.Save(
-            new(nameof(NewsCategory), ids.Category, 0), http, context));
+            new(nameof(NewsCategory), ids.Category, 0), http, context, Authorization("ContentRestriction.Write", "News.Write"), []));
 
         var rows = await context.ContentRestrictions.OrderBy(item => EF.Property<long>(item, VersionedColumns.Version))
             .Select(item => item.MinimumAge).ToListAsync();
@@ -240,7 +253,160 @@ public sealed class ContentRestrictionTests : IDisposable
     {
         await using var context = _factory.CreateContext();
         Assert.IsType<BadRequest>(await ContentRestrictionEndpoints.Save(
-            new(nameof(News), Guid.NewGuid(), age), new DefaultHttpContext(), context));
+            new(nameof(News), Guid.NewGuid(), age), new DefaultHttpContext(), context, Authorization(), []));
         Assert.Empty(await context.ContentRestrictions.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task Save_RequiresRestrictionAndEntityGrants(bool restrictionGrant, bool entityGrant)
+    {
+        var ids = await Seed();
+        await using var context = _factory.CreateContext();
+        var grants = new List<string>();
+        if (restrictionGrant)
+        {
+            grants.Add("ContentRestriction.Write");
+        }
+        if (entityGrant)
+        {
+            grants.Add("News.Write");
+        }
+        var result = await ContentRestrictionEndpoints.Save(
+            new(nameof(NewsCategory), ids.Category, 0), new DefaultHttpContext(), context, Authorization([..grants]), []);
+        Assert.Equal(403, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode);
+        Assert.Single(await context.ContentRestrictions.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Save_RejectsMissingEntity()
+    {
+        await using var context = _factory.CreateContext();
+        var result = await ContentRestrictionEndpoints.Save(
+            new(nameof(NewsCategory), Guid.NewGuid(), 0), new DefaultHttpContext(), context,
+            Authorization("ContentRestriction.Write", "News.Write"), []);
+        Assert.IsType<NotFound>(result);
+    }
+
+    [Fact]
+    public async Task Save_RejectsAgesOutsideTheActiveOptions()
+    {
+        var ids = await Seed();
+        await using var context = _factory.CreateContext();
+        var result = await ContentRestrictionEndpoints.Save(
+            new(nameof(NewsCategory), ids.Category, 21), new DefaultHttpContext(), context,
+            Authorization("ContentRestriction.Write", "News.Write"), []);
+        Assert.IsType<BadRequest>(result);
+        Assert.Single(await context.ContentRestrictions.ToListAsync());
+    }
+
+    [Fact]
+    public async Task RemovedAgeRemainsEnforcedAndCanOnlyBeRetainedByItsExistingEntity()
+    {
+        var ids = await Seed();
+        var http = new DefaultHttpContext();
+        var authorization = Authorization("ContentRestriction.Write", "News.Write");
+        Guid optionId;
+        await using (var context = _factory.CreateAuditedContext(AuditActor.Anonymous))
+        {
+            optionId = Assert.IsType<Created<ContentAgeOptionEndpoints.AgeOptionResponse>>(
+                await ContentAgeOptionEndpoints.Create(new(18, "Adult"), http, context)).Value!.Id;
+            Assert.IsType<Created<ContentAgeOptionEndpoints.AgeOptionResponse>>(
+                await ContentAgeOptionEndpoints.Create(new(12, "Child"), http, context));
+            Assert.IsType<NoContent>(await ContentAgeOptionEndpoints.Delete(optionId, http, context));
+        }
+
+        _configuration.CurrentValue.Returns(new ContentRestrictionsConfiguration { Enabled = true });
+        await using (var context = _factory.CreateContext())
+        {
+            await Invoke(context, new DefaultHttpContext());
+            Assert.Equal("Public", Assert.Single(await context.NewsEntries.ToListAsync()).Title);
+        }
+
+        await using (var context = _factory.CreateAuditedContext(AuditActor.Anonymous))
+        {
+            Assert.IsType<NoContent>(await ContentRestrictionEndpoints.Save(
+                new(nameof(NewsCategory), ids.Category, 18), http, context, authorization, []));
+            Assert.IsType<BadRequest>(await ContentRestrictionEndpoints.Save(
+                new(nameof(News), ids.Public, 18), http, context, authorization, []));
+            Assert.IsType<NoContent>(await ContentRestrictionEndpoints.Save(
+                new(nameof(NewsCategory), ids.Category, 12), http, context, authorization, []));
+            Assert.IsType<BadRequest>(await ContentRestrictionEndpoints.Save(
+                new(nameof(NewsCategory), ids.Category, 18), http, context, authorization, []));
+            Assert.IsType<NoContent>(await ContentRestrictionEndpoints.Save(
+                new(nameof(NewsCategory), ids.Category, 0), http, context, authorization, []));
+            var ages = await context.ContentRestrictions
+                .OrderBy(item => EF.Property<long>(item, VersionedColumns.Version))
+                .Select(item => item.MinimumAge).ToArrayAsync();
+            Assert.Equal([18, 18, 12, 0], ages);
+            Assert.IsType<NoContent>(await ContentAgeOptionEndpoints.HardDelete(optionId, http, context));
+        }
+    }
+
+    [Fact]
+    public async Task HardDeletedOptionStillEnforcesItsStoredNumericAge()
+    {
+        var ids = await Seed();
+        await using (var context = _factory.CreateAuditedContext(AuditActor.Anonymous))
+        {
+            var http = new DefaultHttpContext();
+            var id = Assert.IsType<Created<ContentAgeOptionEndpoints.AgeOptionResponse>>(
+                await ContentAgeOptionEndpoints.Create(new(18, "Adult"), http, context)).Value!.Id;
+            Assert.IsType<NoContent>(await ContentAgeOptionEndpoints.Delete(id, http, context));
+            Assert.IsType<NoContent>(await ContentAgeOptionEndpoints.HardDelete(id, http, context));
+            Assert.IsType<NoContent>(await ContentRestrictionEndpoints.Save(
+                new(nameof(NewsCategory), ids.Category, 18), http, context,
+                Authorization("ContentRestriction.Write", "News.Write"), []));
+        }
+        _configuration.CurrentValue.Returns(new ContentRestrictionsConfiguration { Enabled = true });
+        await using var read = _factory.CreateContext();
+        await Invoke(read, new DefaultHttpContext());
+        Assert.Equal("Public", Assert.Single(await read.NewsEntries.ToListAsync()).Title);
+    }
+
+    [Theory]
+    [InlineData(false, 403)]
+    [InlineData(true, 204)]
+    public async Task Save_EnforcesOwnershipSensitiveEntityPermission(bool ownerAllowed, int status)
+    {
+        var ids = await Seed();
+        await using var context = _factory.CreateContext();
+        var permission = Substitute.For<IContentLocalePermission>();
+        permission.EntityType.Returns(nameof(NewsCategory));
+        permission.CanEdit(Arg.Any<HttpContext>(), ids.Category).Returns(ownerAllowed);
+        var result = await ContentRestrictionEndpoints.Save(
+            new(nameof(NewsCategory), ids.Category, 0), new DefaultHttpContext(), context,
+            Authorization("ContentRestriction.Write", "News.Write"), [permission]);
+        Assert.Equal(status, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode);
+    }
+
+    [Theory]
+    [InlineData(false, false, false, false, 403)]
+    [InlineData(true, false, false, false, 200)]
+    [InlineData(true, false, false, true, 403)]
+    [InlineData(false, true, false, true, 403)]
+    [InlineData(false, true, true, true, 200)]
+    public async Task AgeOptionListing_RequiresTheAppropriateGrant(
+        bool canEdit, bool canManage, bool canViewDeleted, bool deleted, int status)
+    {
+        await using var context = _factory.CreateContext();
+        var grants = new List<string>();
+        if (canEdit)
+        {
+            grants.Add("ContentRestriction.Write");
+        }
+        if (canManage)
+        {
+            grants.Add("ContentAge.Manage");
+        }
+        if (canViewDeleted)
+        {
+            grants.Add("RawDatabase.Manage");
+        }
+        var result = await ContentAgeOptionEndpoints.ListAuthorized(
+            new DefaultHttpContext(), context, Authorization([..grants]), deleted);
+        Assert.Equal(status, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode ?? StatusCodes.Status200OK);
     }
 }

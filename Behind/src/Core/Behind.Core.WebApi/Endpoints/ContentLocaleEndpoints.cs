@@ -160,7 +160,7 @@ public static class ContentLocaleEndpoints
     public static async Task<string?> Normalize(string? locale, LocaleCatalog locales, CancellationToken cancellationToken) =>
         await locales.NormalizeContentLocale(locale, cancellationToken);
 
-    private static async Task<IResult?> Check(
+    internal static async Task<IResult?> Check(
         string entityType, Guid id, HttpContext http, AbstractCoreContext context,
         IAuthorizationService authorization, IEnumerable<IContentLocalePermission> permissions)
     {

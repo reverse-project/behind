@@ -16,6 +16,8 @@ A content locale is optional visibility metadata. Content without a locale is sh
 
 `ContentLocale` is a versioned assignment to an entity's logical key. A null assignment makes a root unlocalized; an owned child without its own assignment inherits the parent's effective locale. `SiteLayout.Locale` selects the layout's content locale, and `LayoutWidget.ShowLocaleSwitch` enables the optional header control.
 
+`ContentRestriction` assigns a numeric minimum age to a content entity, not an option ID. New positive ages are selected from versioned `ContentAgeOption` records with an editable display name; zero means unrestricted. Renaming or removing an option preserves existing numeric restrictions.
+
 ## Layout configuration model
 
 `LayoutConfiguration` contains a revision, default layout id, layouts and route assignments. `SiteLayout` contains named grid sections and a deletion flag; `LayoutSection` defines 1–12 rows and columns and a `Width` (`"site"`, the default, or `"full"`; stored layouts without it load as `"site"`, any other value is invalid). Its `Overlap` moves it upward by 0–2000 pixels relative to the preceding section, and `Layer` (-100–100) controls section stacking. Each `LayoutWidget` has a unique placement id, catalog type, title, 1-based position, row/column spans, its own `Layer` (-100–100) and type-specific settings (menu name, custom content/editor, item limit). Widgets must fit within the grid but may overlap; every layout must contain exactly one `core.content`. Missing overlap and layer fields default to zero. Exact routes beat equally specific prefix patterns; the longest matching route wins. Assignments may only reference active layouts. Custom HTML is sanitized on save and read.

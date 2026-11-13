@@ -1,5 +1,5 @@
 <section class="behind-wide" data-bind="contentLocaleScope: { entityType: 'Site', id: siteId, allowed: canWrite, revision: localeRevision }">
-    <content-age params="entityType: 'Site', id: siteId"></content-age>
+    <content-age params="entityType: 'Site', id: siteId, allowed: canWrite"></content-age>
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <h1 class="mb-0" data-bind="text: heading"></h1>
         <a class="btn btn-outline-secondary ms-auto" href="#/sites" data-bind="t: 'sites.back'">Back to sites</a>

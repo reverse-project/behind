@@ -2,11 +2,14 @@ using System.ComponentModel.DataAnnotations;
 using Behind.Common;
 using Behind.Common.Database;
 using Behind.Common.Database.Modules;
+using Behind.Common.WebApi;
+using Behind.Common.WebApi.Filters;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Database;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -125,11 +128,14 @@ public static class ContentRestrictionEndpoints
         Guid id,
         HttpContext httpContext,
         AbstractCoreContext context,
-        IOptionsMonitor<ContentRestrictionsConfiguration> configuration)
+        IOptionsMonitor<ContentRestrictionsConfiguration> configuration,
+        IAuthorizationService authorization,
+        IEnumerable<IContentLocalePermission> permissions)
     {
-        if (!context.RestrictedContentTypes.Any(type => type.Name == entityType))
+        var error = await Check(entityType, id, httpContext, context, authorization, permissions);
+        if (error is not null)
         {
-            return Results.BadRequest();
+            return error;
         }
 
         var minimumAge = await context.ContentRestrictions.LatestOf(context.ContentRestrictions)
@@ -139,45 +145,72 @@ public static class ContentRestrictionEndpoints
     }
 
     [IgnoreETag]
-    public static async Task<IResult> Save(SaveRequest request, HttpContext httpContext, AbstractCoreContext context)
+    public static async Task<IResult> Save(
+        SaveRequest request, HttpContext httpContext, AbstractCoreContext context,
+        IAuthorizationService authorization, IEnumerable<IContentLocalePermission> permissions)
     {
-        if (request.EntityId == Guid.Empty || request.MinimumAge is < 0 or > ContentAgePolicy.MaximumAge
-            || !context.RestrictedContentTypes.Any(type => type.Name == request.EntityType))
+        if (request.MinimumAge is < 0 or > ContentAgePolicy.MaximumAge)
         {
             return Results.BadRequest();
         }
 
-        var previous = await context.ContentRestrictions
-            .Where(item => item.EntityType == request.EntityType && item.EntityId == request.EntityId)
-            .OrderByDescending(item => EF.Property<long>(item, VersionedColumns.Version))
-            .Select(item => new
+        var error = await Check(request.EntityType, request.EntityId, httpContext, context, authorization, permissions);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        return await ContentAgeOptionEndpoints.ExecuteMutation(context, httpContext.RequestAborted, async () =>
+        {
+            var previous = await context.ContentRestrictions
+                .Where(item => item.EntityType == request.EntityType && item.EntityId == request.EntityId)
+                .OrderByDescending(item => EF.Property<long>(item, VersionedColumns.Version))
+                .Select(item => new
+                {
+                    Key = EF.Property<Guid>(item, VersionedColumns.Key),
+                    Version = EF.Property<long>(item, VersionedColumns.Version),
+                    item.MinimumAge
+                }).FirstOrDefaultAsync(httpContext.RequestAborted);
+            if (request.MinimumAge > 0 && request.MinimumAge != previous?.MinimumAge
+                && !await context.IsActiveContentAgeOption(request.MinimumAge, httpContext.RequestAborted))
             {
-                Key = EF.Property<Guid>(item, VersionedColumns.Key),
-                Version = EF.Property<long>(item, VersionedColumns.Version)
-            }).FirstOrDefaultAsync(httpContext.RequestAborted);
-        var key = previous?.Key ?? Guid.NewGuid();
-        var version = (previous?.Version ?? 0) + 1;
-        var restriction = new ContentRestriction(new VersionedKey<Guid>(key, version),
-            request.EntityType, request.EntityId, request.MinimumAge);
-        context.ContentRestrictions.Add(restriction);
-        context.Entry(restriction).StampVersionedKey(key, version);
-        await context.SaveChangesAsync(httpContext.RequestAborted);
-        return Results.NoContent();
+                return Results.BadRequest();
+            }
+            var key = previous?.Key ?? Guid.NewGuid();
+            var version = (previous?.Version ?? 0) + 1;
+            var restriction = new ContentRestriction(new VersionedKey<Guid>(key, version),
+                request.EntityType, request.EntityId, request.MinimumAge);
+            context.ContentRestrictions.Add(restriction);
+            context.Entry(restriction).StampVersionedKey(key, version);
+            await context.SaveChangesAsync(httpContext.RequestAborted);
+            return Results.NoContent();
+        });
+    }
+
+    private static async Task<IResult?> Check(
+        string entityType, Guid id, HttpContext httpContext, AbstractCoreContext context,
+        IAuthorizationService authorization, IEnumerable<IContentLocalePermission> permissions)
+    {
+        if (id == Guid.Empty || !context.RestrictedContentTypes.Any(type => type.Name == entityType))
+        {
+            return Results.BadRequest();
+        }
+
+        if (!await authorization.HoldsGrantAsync(httpContext.User, "ContentRestriction.Write"))
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        return await ContentLocaleEndpoints.Check(entityType, id, httpContext, context, authorization, permissions);
     }
 
     extension(IEndpointRouteBuilder application)
     {
         public void MapContentRestrictionEndpoints()
         {
-            var group = application.MapGroup("/content-restrictions")
-                .RequireAuthorization("RawDatabase.Manage");
-            group.MapGet("", List);
-            group.MapGet("/browse/{entityType}", Browse);
-            group.MapGet("/{entityType}/{id:guid}", Get);
-            group.MapPost("", Save);
-            group.MapPost("/{id:guid}/delete", Delete);
-            group.MapPost("/{id:guid}/restore", Restore);
-            group.MapPost("/{id:guid}/hard/delete", HardDelete);
+            application.MapGet("/content-restrictions/{entityType}/{id:guid}", Get).RequireAuthorization();
+            application.MapPost("/content-restrictions", Save).RequireAuthorization()
+                .AddEndpointFilter<DataAnnotationValidationFilter<SaveRequest>>();
         }
     }
 }

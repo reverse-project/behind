@@ -20,13 +20,20 @@ public static class GrantArea
     public const string Access = nameof(Access);
     public const string Chat = nameof(Chat);
     public const string Message = nameof(Message);
+    public const string ContentRestriction = nameof(ContentRestriction);
+    public const string ContentAge = nameof(ContentAge);
 
     public const string RawDatabase = nameof(RawDatabase);
 
-    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download, RouteAlias, Access, Chat, Message];
+    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download, RouteAlias, Access, Chat, Message, ContentRestriction, ContentAge];
 
     public static IReadOnlyList<string> ActionsOf(string area) =>
-        area == Impersonation ? [GrantAction.Manage] : GrantAction.All;
+        area switch
+        {
+            Impersonation or ContentAge => [GrantAction.Manage],
+            ContentRestriction => [GrantAction.Write],
+            _ => GrantAction.All
+        };
 }
 
 public static class GrantAction

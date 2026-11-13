@@ -13,6 +13,7 @@
                 <strong data-bind="t: { key: 'sections.editor.section', args: [$index() + 1] }">Section</strong>
                 <span class="badge text-bg-primary" data-bind="visible: isAccented, t: 'sections.editor.theme.accented'">Accented</span>
                 <content-locale params="entityType: 'SiteSection', id: id, allowed: $parent.canWrite"></content-locale>
+                <content-age params="entityType: 'SiteSection', id: id, allowed: $parent.canWrite"></content-age>
                 <div class="ms-auto d-flex gap-1">
                     <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Move earlier" data-bind="click: $parent.moveUp, enable: $parent.canMoveUp($data), tAttr: { 'aria-label': 'sections.editor.moveEarlier' }"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Move later" data-bind="click: $parent.moveDown, enable: $parent.canMoveDown($data), tAttr: { 'aria-label': 'sections.editor.moveLater' }"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>

@@ -3,6 +3,8 @@
     "version": "1.0.1",
     "date": "2026-11-10",
     "changes": [
+      { "type": "changed", "text": "Predefined content ages have editable display names, shown alongside the minimum age in content editors." },
+      { "type": "changed", "text": "Content age restrictions are edited with the relevant content using ContentRestriction.Write and the item's editing permission. Administrators manage selectable ages with ContentAge.Manage; removing an age preserves existing numeric restrictions." },
       { "type": "added", "text": "Contact module: multiple customizable contact forms on a public page and layout widget, fixed or visitor-entered subjects, additional fields and optional per-form email recipients. Submissions persist in an administrator inbox, with optional delivery through the configured email provider, shared read tracking, failed-delivery retry, soft deletion and developer restore/permanent deletion." },
       { "type": "changed", "text": "Contact email sent through the Logger provider is marked as sent after logging; Logger does not send to a mailbox." },
       { "type": "added", "text": "The Contact inbox supports search, pagination and an optional filter to hide read requests." },

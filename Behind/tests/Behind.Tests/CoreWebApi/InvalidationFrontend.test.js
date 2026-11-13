@@ -210,7 +210,9 @@ async function main() {
     failing.dispose();
 
     const requests = [];
-    let saveResponse = { ok: true, data: { layouts: [] } };
+    let saveResponse = { ok: true, data: {
+        schemaVersion: 1, revision: 2, defaultLayout: "main", layouts: [{ id: "main" }], assignments: []
+    } };
     const layoutHttp = {
         get: () => {
             const request = deferred();
@@ -243,6 +245,7 @@ async function main() {
     await Promise.all([saved, coalesced]);
     assert.equal(layouts.current().revision, 2);
     const old = layouts.load();
+    saveResponse = layout(4);
     const secondSave = layouts.save({});
     await Promise.resolve();
     await Promise.resolve();

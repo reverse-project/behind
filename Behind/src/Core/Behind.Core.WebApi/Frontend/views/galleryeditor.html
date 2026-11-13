@@ -7,6 +7,7 @@
     <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'gallerymanager.denied'">You need gallery access to manage galleries.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div data-bind="visible: canRead">
+        <content-age params="entityType: 'Gallery', id: galleryId, allowed: canWrite"></content-age>
         <form data-bind="submit: saveDraft">
             <div class="mb-3">
                 <label class="form-label" for="gallery-title" data-bind="t: 'galleryeditor.title'">Title</label>
@@ -49,7 +50,8 @@
                     <div class="col">
                         <div class="card h-100">
                             <img class="card-img-top gallery-editor-image" data-bind="attr: { src: thumbnailUrl, alt: description() }">
-                            <content-age params="entityType: 'VfsFile', id: imageId"></content-age>
+                            <content-age params="entityType: 'GalleryItem', id: id, allowed: $root.canWrite"></content-age>
+                            <content-age params="entityType: 'VfsFile', id: imageId, allowed: $root.canWrite"></content-age>
                             <content-locale params="entityType: 'GalleryItem', id: id, allowed: $root.canWrite"></content-locale>
                             <div class="card-body">
                                 <label class="form-label small" data-bind="t: 'galleryeditor.imageDescription'">Description (optional)</label>

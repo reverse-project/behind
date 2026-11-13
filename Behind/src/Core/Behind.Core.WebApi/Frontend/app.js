@@ -44,7 +44,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
         "#/manage/messages": "controllers/messages",
         "#/manage/access-settings": "controllers/accesssettings",
         "#/manage/raw-database": "controllers/rawdatabase",
-        "#/manage/content-restrictions": "controllers/contentrestrictions",
+        "#/manage/content-ages": "controllers/contentageoptions",
         "#/changelog": "controllers/changelog",
         "#/licenses": "controllers/licenses",
         "#/sign/in/magiclink": "controllers/magiclink",

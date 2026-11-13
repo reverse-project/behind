@@ -7,6 +7,7 @@
     <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'news.denied'">You need news access to manage news.</div>
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div data-bind="visible: canRead">
+        <content-age params="entityType: 'News', id: newsId, allowed: canWrite"></content-age>
         <form data-bind="submit: saveDraft">
             <div class="mb-3">
                 <label class="form-label" for="news-title" data-bind="t: 'content.title'">Title</label>

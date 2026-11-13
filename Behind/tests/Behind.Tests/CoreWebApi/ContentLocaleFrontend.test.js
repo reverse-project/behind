@@ -183,7 +183,7 @@ async function main() {
     window.location.hash = "#/news/123";
     const app = load("app.js", {
         jquery: $, "jquery-migrate": {}, ko, sammy: Sammy,
-        "models/accounts": { load() {} },
+        "models/accounts": { load: () => Promise.resolve() },
         "models/branding": { title: observable(""), locale: () => "en-US", load: () => { startupLocales.push(contentLocale.current()); return Promise.resolve(); } },
         "models/session": session,
         "models/usersettings": { locale: observable(""), load: () => Promise.resolve({ ok: true }), clear: () => Promise.resolve({ ok: true }) },

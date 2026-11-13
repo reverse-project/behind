@@ -35,7 +35,7 @@
                 <span class="small text-body-secondary" data-bind="text: version"></span>
                 <span class="small text-body-secondary" data-bind="text: schedule"></span>
                 <span class="small text-body-secondary" data-bind="text: stamp"></span>
-                <content-age params="entityType: 'News', id: id"></content-age>
+                <content-age params="entityType: 'News', id: id, allowed: $root.canWrite"></content-age>
                 <content-locale params="entityType: 'News', id: id, allowed: $root.canWrite"></content-locale>
                 <a class="btn btn-sm btn-outline-secondary" data-bind="visible: !isDeleted, attr: { href: '#/news/' + id }, t: 'content.view'">View</a>
                 <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>

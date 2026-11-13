@@ -187,6 +187,22 @@ public sealed class ContentLocaleTests : IDisposable
     }
 
     [Theory]
+    [InlineData("/content-restrictions/{entityType}/{id:guid}")]
+    [InlineData("/content-restrictions")]
+    public async Task RestrictionAssignmentEndpointsResolveEntityPermissionsAcrossLocales(string route)
+    {
+        await Seed();
+        await using var context = factory.CreateContext();
+        var http = new DefaultHttpContext();
+        http.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "editor")], "test"));
+        http.SetEndpoint(new RouteEndpoint(_ => Task.CompletedTask, RoutePatternFactory.Parse(route), 0,
+            new EndpointMetadataCollection(new AuthorizeAttribute()), "test"));
+        await Invoke(context, http);
+        Assert.True(context.IncludeAllContentLocales);
+        Assert.Equal(3, await context.Sites.CountAsync());
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("xx-XX")]
     [InlineData("*")]

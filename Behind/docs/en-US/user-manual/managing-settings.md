@@ -21,9 +21,13 @@ The **DefaultLocale** setting of `frontend.json` (`Frontend › Site`) is a drop
 
 ## Age restrictions
 
-In **backend.json > Backend > ContentRestrictions**, **Enabled** turns global age filtering on or off. It is **off by default** and reloads without restarting. While disabled, stored age rules do not limit access. When enabled, readers need a private birthday meeting each item's minimum age; unknown birthdays cannot access restricted items or their related content and files. Manage rules through **Content restrictions** with `RawDatabase.Manage`, or use the minimum-age control on supported item editors. Setting zero removes the age requirement. Developers can list deleted rules, restore them or permanently delete them.
+In **backend.json > Backend > ContentRestrictions**, **Enabled** turns global age filtering on or off. It is **off by default** and reloads without restarting. While disabled, stored age rules do not limit access. When enabled, readers need a private birthday meeting each item's minimum age; unknown birthdays cannot access restricted items or their related content and files.
 
-Choose a content type and **Browse items** to find an item without copying its UUID. Search by its display name or full ID and use **Previous items** / **Next items** to page through results. Each item shows its title, filename, name or other available text, falling back to its ID when no label exists. Choose the item to fill the restriction's ID. You can still enter an ID manually. Existing rules also show readable labels.
+Set each item's minimum age in its editor. This requires `ContentRestriction.Write` and the item's existing editing permission, including ownership checks where applicable. Choose **Unrestricted** to remove its age requirement.
+
+The **Content ages** administration page requires `ContentAge.Manage` and manages the selectable ages. Existing ages and 12, 16 and 18 are initially available. Removing an age only removes it from the available choices; existing items retain and enforce their numeric minimum age. An editor can retain that age or explicitly change it. Listing, restoring and permanently deleting removed ages also requires `RawDatabase.Manage`.
+
+Give each age a display name, such as **Adult**, when adding it. The name can be changed later without changing the age or affecting existing restrictions. Existing ages initially use their number as their name.
 
 ## Account sign-in methods
 

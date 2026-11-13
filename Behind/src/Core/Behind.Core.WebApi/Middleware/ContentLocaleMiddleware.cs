@@ -97,7 +97,8 @@ public sealed class ContentLocaleMiddleware(RequestDelegate next)
         var policies = endpoint?.Metadata.GetOrderedMetadata<IAuthorizeData>()
             .Where(item => !string.IsNullOrEmpty(item.Policy)).Select(item => item.Policy!).Distinct().ToArray() ?? [];
         var route = (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? "";
-        if (route is "/content-locales/{entityType}/{id:guid}" or "/content-locales" or "/content-locales/query")
+        if (route is "/content-locales/{entityType}/{id:guid}" or "/content-locales" or "/content-locales/query"
+            or "/content-restrictions/{entityType}/{id:guid}" or "/content-restrictions")
         {
             return true;
         }

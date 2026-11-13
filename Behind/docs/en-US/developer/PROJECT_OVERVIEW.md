@@ -32,7 +32,7 @@ Interactive module widgets may accept a third `widget` placement argument and re
 
 ## Forum and public profiles
 
-Global age enforcement is controlled by reloadable `Backend.ContentRestrictions.Enabled` (false by default). Versioned per-item rules use the shared filtered context, including transitive parent references, media, feeds and counts. Module descriptors declare `ModuleDatabase.ContentRestrictedEntities` and `ContentRestrictionParentProperties`, avoiding dependencies on Core.
+Global age enforcement is controlled by reloadable `Backend.ContentRestrictions.Enabled` (false by default). Versioned per-item rules use the shared filtered context, including transitive parent references, media, feeds and counts. Module descriptors declare `ModuleDatabase.ContentRestrictedEntities` and `ContentRestrictionParentProperties`, avoiding dependencies on Core. Module editors use the shared age control and the locale edit/ownership permissions together with `ContentRestriction.Write`; selectable ages are administered separately with `ContentAge.Manage`.
 
 The main `Behind.Web` installation loads `Behind.Forum.*` beside Core, Quotes and Sport; the existing sites do not load Forum. Its Common, Domain, Database, SQLite, PostgreSQL and WebApi projects contribute through `ForumModule.Descriptor`. The frontend includes board/topic/reply browsing and forum administration with moderation. `forum.json` is reloadable and appears on Settings.
 

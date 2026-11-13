@@ -72,6 +72,7 @@
             <ul class="list-group" data-bind="foreach: forms">
                 <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                     <content-locale params="entityType: 'ContactForm', id: id, allowed: $root.canWrite"></content-locale>
+                    <content-age params="entityType: 'ContactForm', id: id, allowed: $root.canWrite"></content-age>
                     <div class="me-auto">
                         <strong class="d-block text-break" data-bind="text: name"></strong>
                         <span class="small text-body-secondary text-break" data-bind="text: $root.recipientLabel(recipient)"></span>

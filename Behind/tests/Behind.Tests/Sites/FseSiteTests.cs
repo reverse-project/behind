@@ -64,12 +64,26 @@ public class FseSiteTests
     [Fact]
     public void Header_OffersOptionalLocaleSwitchWithSkinStyling()
     {
-        Assert.Contains("data-bind=\"visible: localeSwitch\"><locale-switch></locale-switch>", Read("wwwroot/index.html"));
+        var index = Read("wwwroot/index.html");
+
+        Assert.Contains("<li class=\"nav-item py-2\" data-bind=\"visible: localeSwitch\">", index);
+        Assert.Contains("<locale-switch class=\"d-flex align-items-center\" params=\"view: localeSwitchView\"></locale-switch>", index);
         Assert.Contains(":is(#header-container, .behind-page-header) locale-switch", Read("wwwroot/css/fse.css"));
     }
 
+    [Fact]
+    public void Skin_KeepsFullWidthChromeOutsideContentPanelStyling()
+    {
+        Assert.Contains("<header id=\"header-container\" class=\"behind-page-header\">", Read("wwwroot/index.html"));
+        Assert.Contains("<footer id=\"footer-container\" class=\"behind-page-footer mt-auto\">", Read("wwwroot/index.html"));
+        var css = Read("wwwroot/css/fse.css");
+
+        Assert.Contains(".behind-layout-section-full:not(:has(> .behind-layout-cell > :is(.behind-page-header, .behind-page-footer))) {", css);
+        Assert.DoesNotContain(".behind-layout-section-full {", css);
+    }
+
     [Theory]
-    [InlineData("<header id=\"header-container\">")]
+    [InlineData("<header id=\"header-container\" class=\"behind-page-header\">")]
     [InlineData("<main id=\"main-container\"")]
     [InlineData("<footer id=\"footer-container\"")]
     [InlineData("libraries/require.min.js")]

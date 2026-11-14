@@ -20,7 +20,7 @@
     <script src="libraries/require.min.js" data-main="bootloader.js"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
-<header id="header-container">
+<header id="header-container" class="behind-page-header">
     <div class="fse-brand">
         <div class="container">
             <a class="fse-brand-link" href="#/">
@@ -37,7 +37,7 @@
             <div class="collapse navbar-collapse" id="navigation">
                 <menu-items params="items: links, variant: 'navbar', hover: true"></menu-items>
                 <ul class="navbar-nav ms-auto mb-2 mb-xxl-0">
-                    <li class="nav-item d-flex align-items-center py-2" data-bind="visible: localeSwitch"><locale-switch></locale-switch></li>
+                    <li class="nav-item py-2" data-bind="visible: localeSwitch"><locale-switch class="d-flex align-items-center" params="view: localeSwitchView"></locale-switch></li>
                     <li class="nav-item dropdown" data-bind="visible: isSignedIn">
                         <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: label"></button>
                         <div class="dropdown-menu">
@@ -66,7 +66,7 @@
         </div>
     </div>
 </main>
-<footer id="footer-container" class="mt-auto">
+<footer id="footer-container" class="behind-page-footer mt-auto">
     <div class="fse-contact">
         <div class="container">
             <h2 class="fse-contact-title">Elérhetőségek</h2>

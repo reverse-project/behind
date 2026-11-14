@@ -8,6 +8,8 @@ Routes do not contain a locale. The selected locale is sent with content request
 
 Add a **Locale switch** widget in the layout editor, or enable the switch in a **Page header** widget. The switch changes the locale used for content requests without changing the route. For signed-in users, selecting a locale also saves it as the profile's interface language.
 
+The RPDotHu and FSE headers respect the switch's enabled state and its selected presentation (view, flag-only, flag-and-text or text-only). Full-width header and footer sections retain the same site branding and edge-to-edge appearance as the fixed management shell, without the content panels' extra border or padding.
+
 Owned content, such as site sections, gallery items and carousel slides, inherits its parent's locale when no own assignment is set. Assign a locale to a layout only when its header, navigation or widgets need to differ; layouts without a locale are shared. Menus without a locale are shared with localized pages too.
 
 ## Page layouts and widgets

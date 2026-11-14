@@ -8,6 +8,8 @@ Az útvonalak nem tartalmaznak nyelvet. A kiválasztott nyelvet a tartalomkéré
 
 Az elrendezésszerkesztőben adjon hozzá **Nyelvváltó** widgetet, vagy kapcsolja be a váltót egy **Oldalfejléc** widgetben. A váltó módosítja a tartalomkérések nyelvét az útvonal megváltoztatása nélkül. Bejelentkezett felhasználónál a kiválasztott nyelv a profil felületi nyelveként is mentésre kerül.
 
+Az RPDotHu és FSE fejléce figyelembe veszi a váltó bekapcsolt állapotát és a kiválasztott megjelenítést (nézet, csak zászló, zászló és szöveg vagy csak szöveg). A teljes szélességű fejléc- és láblécszakaszok a rögzített kezelési kerettel azonos arculattal, széltől szélig jelennek meg, a tartalmi panelek extra szegélye és belső térköze nélkül.
+
 A gyermek tartalom, például oldalszakasz, galériaelem vagy képforgó dia, saját hozzárendelés nélkül a szülő nyelvét örökli. Csak akkor rendeljen nyelvet az elrendezéshez, ha a fejlécnek, navigációnak vagy widgeteknek el kell térniük; a nyelv nélküli elrendezések és menük a nyelvhez rendelt oldalakon is megosztottak.
 
 ## Oldalelrendezések és widgetek

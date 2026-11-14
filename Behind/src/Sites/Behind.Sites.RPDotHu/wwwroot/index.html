@@ -20,7 +20,7 @@
     <script src="libraries/require.min.js" data-main="bootloader.js"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
-<header id="header-container">
+<header id="header-container" class="behind-page-header">
     <nav class="navbar navbar-expand-lg rp-menu">
         <div class="container">
             <a class="navbar-brand rp-brand" href="#/">
@@ -33,7 +33,7 @@
             <div class="collapse navbar-collapse" id="navigation">
                 <menu-items params="items: links, variant: 'navbar', hover: true"></menu-items>
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item d-flex align-items-center py-2" data-bind="visible: localeSwitch"><locale-switch></locale-switch></li>
+                    <li class="nav-item py-2" data-bind="visible: localeSwitch"><locale-switch class="d-flex align-items-center" params="view: localeSwitchView"></locale-switch></li>
                     <li class="nav-item dropdown" data-bind="visible: isSignedIn">
                         <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bind="text: label"></button>
                         <div class="dropdown-menu dropdown-menu-end">
@@ -62,7 +62,7 @@
         </div>
     </div>
 </main>
-<footer id="footer-container" class="mt-auto">
+<footer id="footer-container" class="behind-page-footer mt-auto">
     <div class="rp-contact">
         <div class="container">
             <div class="row g-4">

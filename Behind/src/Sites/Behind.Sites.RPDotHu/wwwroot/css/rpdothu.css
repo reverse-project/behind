@@ -251,7 +251,7 @@ h4, .h4, h5, .h5, h6, .h6 {
     border-bottom-color: var(--rp-blue);
 }
 
-.behind-layout-section-full {
+.behind-layout-section-full:not(:has(> .behind-layout-cell > :is(.behind-page-header, .behind-page-footer))) {
     background-color: var(--bs-primary-bg-subtle);
     border-top: 3px solid var(--rp-blue);
     padding: 1rem;

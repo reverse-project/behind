@@ -284,6 +284,29 @@ test("management routes use a layout only when an assignment targets them explic
     assert.equal(fixture.header.parentNode, fixture.application);
 });
 
+test("account routes stay on the fixed shell even with an exact assignment", async () => {
+    const data = configuration([
+        { rows: 1, columns: 1, width: "full", widgets: [widget("core.content", "content")] }
+    ]);
+    data.assignments = [
+        { route: "#/profile", layout: "default" },
+        { route: "#/private-messages", layout: "default" },
+        { route: "#/manage/*", layout: "default" }
+    ];
+    const fixture = setup(data);
+    await fixture.shell.start(fixture.context);
+    const hasLayout = () => fixture.application.children.some(element => element.classList.contains("behind-layout"));
+
+    for (const route of ["#/profile", "#/private-messages"]) {
+        fixture.shell.route(route);
+        assert.equal(hasLayout(), false, route);
+        assert.equal(fixture.header.parentNode, fixture.application, route);
+    }
+
+    fixture.shell.route("#/manage/auditor");
+    assert.equal(hasLayout(), true);
+});
+
 test("cell appearance options are independent and do not leak across invalidation", async () => {
     const data = configuration([
         { rows: 1, columns: 4, width: "site", widgets: [

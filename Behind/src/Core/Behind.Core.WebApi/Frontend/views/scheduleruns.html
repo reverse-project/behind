@@ -8,7 +8,7 @@
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div data-bind="visible: canRead">
         <form class="row g-2 mb-3" data-bind="submit: find">
-            <div class="col-md-6"><label class="form-label" for="run-schedule-filter" data-bind="t: 'schedules.filter.schedule'">Schedule</label><select id="run-schedule-filter" class="form-select" data-bind="options: schedules, optionsText: 'name', optionsValue: 'id', optionsCaption: $root.i18n.t('schedules.filter.allSchedules'), value: scheduleId"></select></div>
+            <div class="col-md-6"><label class="form-label" for="run-schedule-filter" data-bind="t: 'schedules.filter.schedule'">Schedule</label><select id="run-schedule-filter" class="form-select" data-bind="options: schedules, optionsText: 'name', optionsValue: 'id', optionsCaption: $root.i18n.t('schedules.filter.allSchedules'), value: scheduleId, valueAllowUnset: true"></select></div>
             <div class="col-md-4"><label class="form-label" for="run-status-filter" data-bind="t: 'schedules.filter.status'">Status</label><select id="run-status-filter" class="form-select" data-bind="options: statuses, optionsText: 'label', optionsValue: 'value', optionsCaption: $root.i18n.t('schedules.filter.allStatuses'), value: status"></select></div>
             <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit" data-bind="enable: !busy(), t: 'common.search'">Filter</button></div>
         </form>

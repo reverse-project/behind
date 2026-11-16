@@ -140,7 +140,9 @@ define(["ko", "models/session", "models/schedules", "models/managedlist", "model
         };
 
         self.cron.subscribe(function (expression) {
-            readCalculator(expression);
+            if (!suppressCron) {
+                readCalculator(expression);
+            }
             validateCron();
         });
         self.fields.forEach(function (field) {
@@ -204,11 +206,12 @@ define(["ko", "models/session", "models/schedules", "models/managedlist", "model
         });
 
         self.insertPlaceholder = function (field, placeholder, event) {
-            var input = event.currentTarget;
+            var input = event.currentTarget.closest(".behind-schedule-parameter").querySelector(".behind-schedule-template");
             var token = "{{" + placeholder + "}}";
-            var start = input.selectionStart || 0;
-            var end = input.selectionEnd || start;
-            field.value(input.value.slice(0, start) + token + input.value.slice(end));
+            var current = String(field.value() || "");
+            var start = Math.min(input.selectionStart === null ? current.length : input.selectionStart, current.length);
+            var end = Math.max(start, Math.min(input.selectionEnd === null ? start : input.selectionEnd, current.length));
+            field.value(current.slice(0, start) + token + current.slice(end));
             window.setTimeout(function () {
                 input.focus();
                 input.setSelectionRange(start + token.length, start + token.length);

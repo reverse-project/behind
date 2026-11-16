@@ -22,7 +22,7 @@ public sealed class SessionCleanupScheduledAction(
             Array.AsReadOnly<ScheduledActionParameter>([
                 new(AgeParameter, "schedules.sessionCleanup.invalidatedAgeDays", ScheduledActionParameterKind.Number, false)
                 {
-                    DefaultValue = SchedulerConfiguration.DefaultSessionCleanupAgeDays.ToString(CultureInfo.InvariantCulture),
+                    DefaultValue = DefaultAgeDays.ToString(CultureInfo.InvariantCulture),
                     Minimum = 1,
                     Maximum = configuration.CurrentValue.SessionCleanupAgeLimit
                 }
@@ -48,9 +48,12 @@ public sealed class SessionCleanupScheduledAction(
                     None);
             });
 
+    private int DefaultAgeDays =>
+        Math.Min(SchedulerConfiguration.DefaultSessionCleanupAgeDays, configuration.CurrentValue.SessionCleanupAgeLimit);
+
     private Option<int> AgeDays(IReadOnlyDictionary<string, string> parameters) =>
         !parameters.TryGetValue(AgeParameter, out var value) || string.IsNullOrWhiteSpace(value)
-            ? Some(SchedulerConfiguration.DefaultSessionCleanupAgeDays)
+            ? Some(DefaultAgeDays)
             : int.TryParse(value.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var days)
               && days >= 1 && days <= configuration.CurrentValue.SessionCleanupAgeLimit
                 ? Some(days)

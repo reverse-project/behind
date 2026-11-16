@@ -62,6 +62,8 @@ public sealed class OidcSignInService(
                     logger.LogWarning("OIDC account resolution rejected: verified-email linking is not permitted");
                     return null;
                 }
+
+                await accounts.Link(user.Id, identity.ProviderId, identity.Issuer, identity.Subject, cancellationToken);
             }
             else
             {
@@ -71,22 +73,32 @@ public sealed class OidcSignInService(
                     return null;
                 }
 
-                user = new ApplicationUser
+                var newUser = new ApplicationUser
                 {
                     DisplayName = identity.DisplayName.ToDisplayName(),
                     Emails = [new Email(email, timeProvider.GetUtcNow())],
                     PendingApproval = (await accessSettings.Current(cancellationToken)).ModeratedSignUp
                 };
-                var created = await users.CreateAsync(user);
-                if (!created.Succeeded)
+                var linked = await accounts.CreateAndLink(
+                    async () =>
+                    {
+                        var created = await users.CreateAsync(newUser);
+                        if (!created.Succeeded)
+                        {
+                            logger.LogWarning("OIDC account creation failed ({ErrorCodes})",
+                                string.Join(", ", created.Errors.Select(error => error.Code)));
+                        }
+
+                        return created.Succeeded;
+                    },
+                    newUser.Id, identity.ProviderId, identity.Issuer, identity.Subject, cancellationToken);
+                if (!linked)
                 {
-                    logger.LogWarning("OIDC account creation failed ({ErrorCodes})",
-                        string.Join(", ", created.Errors.Select(error => error.Code)));
                     return null;
                 }
-            }
 
-            await accounts.Link(user.Id, identity.ProviderId, identity.Issuer, identity.Subject, cancellationToken);
+                user = newUser;
+            }
         }
 
         var mappedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

@@ -33,6 +33,14 @@ public sealed class OidcSignInTests
         Substitute.For<UserManager<ApplicationUser>>(
             Substitute.For<IUserStore<ApplicationUser>>(), null, null, null, null, null, null, null, null);
 
+    private static IOidcAccountStore Store()
+    {
+        var store = Substitute.For<IOidcAccountStore>();
+        store.CreateAndLink(default!, default, default!, default!, default!, default)
+            .ReturnsForAnyArgs(call => call.Arg<Func<Task<bool>>>()());
+        return store;
+    }
+
     private static OidcSignInService Service(IOidcAccountStore store, UserManager<ApplicationUser> users,
         OidcProviderConfiguration? provider = null, AccountsConfiguration? accounts = null,
         IAccessSettingsQueries? access = null) =>
@@ -43,7 +51,7 @@ public sealed class OidcSignInTests
     [Fact]
     public async Task LinksVerifiedEmailAndSynchronizesMappedAndPrefixedRoles()
     {
-        var store = Substitute.For<IOidcAccountStore>();
+        var store = Store();
         var users = Users();
         var user = User;
         users.FindByEmailAsync("user@example.test").Returns(user);
@@ -60,7 +68,7 @@ public sealed class OidcSignInTests
     [InlineData(true, true, false)]
     public async Task LinkingRequiresProviderOptInAndBothAddressesVerified(bool optIn, bool externalVerified, bool localConfirmed)
     {
-        var store = Substitute.For<IOidcAccountStore>();
+        var store = Store();
         var users = Users();
         var user = User;
         user.Emails = [new Email("user@example.test", localConfirmed ? Now : null)];
@@ -73,7 +81,7 @@ public sealed class OidcSignInTests
     [Fact]
     public async Task BoundIdentityUsesSubjectNotChangedEmailAndDeletedUserCannotRelink()
     {
-        var store = Substitute.For<IOidcAccountStore>();
+        var store = Store();
         var users = Users();
         var user = User;
         store.FindUser("company", Identity.Issuer, Identity.Subject, default).Returns(user.Id);
@@ -90,7 +98,7 @@ public sealed class OidcSignInTests
     [InlineData(true, false)]
     public async Task AccountCreationRequiresProviderAndGlobalSignUp(bool autoCreate, bool signUp)
     {
-        var store = Substitute.For<IOidcAccountStore>();
+        var store = Store();
         var users = Users();
         Assert.Null(await Service(store, users, Provider with { AutoCreateUsers = autoCreate },
             new() { SignUp = signUp }).Resolve(Identity, default));
@@ -100,7 +108,7 @@ public sealed class OidcSignInTests
     [Fact]
     public async Task NewOidcAccountHasVerifiedEmailAndRetainsModeratedApproval()
     {
-        var store = Substitute.For<IOidcAccountStore>();
+        var store = Store();
         var users = Users();
         var access = Substitute.For<IAccessSettingsQueries>();
         access.Current(default).Returns(AccessSettings.Open with { ModeratedSignUp = true });
@@ -110,19 +118,37 @@ public sealed class OidcSignInTests
         Assert.True(created.PendingApproval);
         Assert.Equal(Now, Assert.Single(created.Emails).ConfirmedAt);
         Assert.Equal("User", created.DisplayName);
-        await store.Received().Link(created.Id, "company", Identity.Issuer, Identity.Subject, default);
+        await store.Received().CreateAndLink(Arg.Any<Func<Task<bool>>>(), created.Id, "company", Identity.Issuer, Identity.Subject, default);
+        await store.DidNotReceiveWithAnyArgs().Link(default, default!, default!, default!, default);
     }
 
     [Fact]
     public async Task CreationFailureNeverLinksOrSynchronizesRoles()
     {
-        var store = Substitute.For<IOidcAccountStore>();
+        var store = Store();
         var users = Users();
         var access = Substitute.For<IAccessSettingsQueries>();
         access.Current(default).Returns(AccessSettings.Open);
         users.CreateAsync(Arg.Any<ApplicationUser>()).Returns(IdentityResult.Failed(new IdentityError { Code = "EmailAlreadyExists" }));
         Assert.Null(await Service(store, users, access: access).Resolve(Identity, default));
         await store.DidNotReceiveWithAnyArgs().Link(default, default!, default!, default!, default);
+        await store.DidNotReceiveWithAnyArgs().SynchronizeRoles(default, default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task NewAccountIsCreatedInsideTheLinkingTransaction()
+    {
+        var store = Substitute.For<IOidcAccountStore>();
+        var users = Users();
+        var access = Substitute.For<IAccessSettingsQueries>();
+        access.Current(default).Returns(AccessSettings.Open);
+        users.CreateAsync(Arg.Any<ApplicationUser>()).Returns(IdentityResult.Success);
+        store.CreateAndLink(default!, default, default!, default!, default!, default)
+            .ReturnsForAnyArgs(Task.FromException<bool>(new InvalidOperationException("link failed")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Service(store, users, access: access).Resolve(Identity, default));
+        await users.DidNotReceive().CreateAsync(Arg.Any<ApplicationUser>());
         await store.DidNotReceiveWithAnyArgs().SynchronizeRoles(default, default!, default!, default!, default);
     }
 

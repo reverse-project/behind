@@ -144,6 +144,20 @@ public sealed class ScheduleEndpointsTests
     }
 
     [Fact]
+    public async Task Update_WithSubmittedVersion_SavesAgainstThatVersionAndReportsConflicts()
+    {
+        var queries = Substitute.For<IScheduleQueries>();
+        queries.Find(default, default, default).ReturnsForAnyArgs(Some(Details()));
+        _commands.Update(Id, 2, Arg.Any<IScheduleCommands.ScheduleDraft>(), Arg.Any<CancellationToken>())
+            .Returns(new VersionedSaveResult.VersionConflict());
+
+        var result = await ScheduleEndpoints.Update(Id, Request() with { Version = 2 }, new DefaultHttpContext(), _commands, queries, [_action]);
+
+        Assert.Equal(VersionedSaveResultExtensions.VersionConflictReason, ConflictReason(result));
+        await _commands.DidNotReceiveWithAnyArgs().Update(default, default!, default);
+    }
+
+    [Fact]
     public async Task Run_StartsTheScheduleForTheCurrentMinute()
     {
         var queries = Substitute.For<IScheduleQueries>();

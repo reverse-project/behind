@@ -18,8 +18,10 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
     var fixedBindings = false;
     var managementRoute = /^#\/(?:manage(?:\/|$)|administration$|settings$|sites(?:\/|$)|users$|roles$|audit-log$|profile(?:\/|$)|private-messages(?:\/|$)|session|sign(?:[-/]|$))/;
     var authRoute = /^#\/(?:session|sign(?:[-/]|$))/;
+    var accountRoute = /^#\/(?:profile|private-messages)(?:\/|$)/;
     var isDedicatedAssignment = function (assignmentRoute) {
-        return managementRoute.test(assignmentRoute.endsWith("*") ? assignmentRoute.slice(0, -1) : assignmentRoute);
+        var target = assignmentRoute.endsWith("*") ? assignmentRoute.slice(0, -1) : assignmentRoute;
+        return managementRoute.test(target) && !accountRoute.test(target);
     };
 
     var addTokens = function (element, value) {
@@ -216,7 +218,7 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
 
         clear();
 
-        if (restriction.restricted() || authRoute.test(route)) {
+        if (restriction.restricted() || authRoute.test(route) || !preview && accountRoute.test(route)) {
             mountFixedShell();
             return;
         }

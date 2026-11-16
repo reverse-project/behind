@@ -22,6 +22,9 @@ public sealed class ScheduleRunnerTests : IAsyncDisposable
     private readonly List<IScheduledAction> _actions = [];
     private SchedulerConfiguration _configuration = new();
     private ServiceProvider? _services;
+    private Func<IScheduleRunCommands.ScheduleRunDraft, Task>? _beforeRecord;
+    private bool _failParticipants;
+    private bool _failEnabled;
 
     public async ValueTask DisposeAsync()
     {
@@ -55,11 +58,16 @@ public sealed class ScheduleRunnerTests : IAsyncDisposable
             .Build());
         services.AddLogging();
         services.AddScoped<AbstractCoreContext>(_ => _factory.CreateAuditedContext(AuditActor.Autonomous, _clock));
-        services.AddScoped<IScheduleQueries, ScheduleQueries>();
+        services.AddScoped<ScheduleQueries>();
+        services.AddScoped<IScheduleQueries>(provider => _failEnabled ? FailingEnabled() : provider.GetRequiredService<ScheduleQueries>());
         services.AddScoped<IScheduleCommands, ScheduleCommands>();
         services.AddScoped<IScheduleRunQueries, ScheduleRunQueries>();
-        services.AddScoped<IScheduleRunCommands, ScheduleRunCommands>();
-        services.AddScoped<IScheduleParticipantQueries, ScheduleParticipantQueries>();
+        services.AddScoped<ScheduleRunCommands>();
+        services.AddScoped<IScheduleRunCommands>(provider =>
+            new HookedRunCommands(provider.GetRequiredService<ScheduleRunCommands>(), draft => _beforeRecord?.Invoke(draft) ?? Task.CompletedTask));
+        services.AddScoped<ScheduleParticipantQueries>();
+        services.AddScoped<IScheduleParticipantQueries>(provider =>
+            _failParticipants ? FailingParticipants() : provider.GetRequiredService<ScheduleParticipantQueries>());
         services.AddSingleton(_sender);
         services.AddSingleton<IScheduleRunner, ScheduleRunner>();
         services.AddSingleton<ScheduleService>();
@@ -70,6 +78,53 @@ public sealed class ScheduleRunnerTests : IAsyncDisposable
         }
 
         return _services = services.BuildServiceProvider();
+    }
+
+    private static IScheduleQueries FailingEnabled()
+    {
+        var queries = Substitute.For<IScheduleQueries>();
+        queries.Enabled(default).ReturnsForAnyArgs<IReadOnlyList<IScheduleQueries.ScheduleDetails>>(_ => throw new InvalidOperationException("db down"));
+
+        return queries;
+    }
+
+    private static IScheduleParticipantQueries FailingParticipants()
+    {
+        var participants = Substitute.For<IScheduleParticipantQueries>();
+        participants.Emails(default!, default).ReturnsForAnyArgs<IReadOnlyList<string>>(_ => throw new InvalidOperationException("directory down"));
+
+        return participants;
+    }
+
+    private sealed class HookedRunCommands(IScheduleRunCommands inner, Func<IScheduleRunCommands.ScheduleRunDraft, Task> beforeCreate)
+        : IScheduleRunCommands
+    {
+        public async Task<VersionedSaveResult> Create(IScheduleRunCommands.ScheduleRunDraft draft, CancellationToken cancellationToken = default)
+        {
+            await beforeCreate(draft);
+
+            return await inner.Create(draft, cancellationToken);
+        }
+
+        public Task<VersionedSaveResult> Update(Guid key, IScheduleRunCommands.ScheduleRunDraft draft, CancellationToken cancellationToken = default) =>
+            inner.Update(key, draft, cancellationToken);
+
+        public Task<VersionedSaveResult> Update(
+            Guid key,
+            long expectedVersion,
+            IScheduleRunCommands.ScheduleRunDraft draft,
+            CancellationToken cancellationToken = default) =>
+            inner.Update(key, expectedVersion, draft, cancellationToken);
+
+        public Task<bool> Delete(Guid key, CancellationToken cancellationToken = default) => inner.Delete(key, cancellationToken);
+
+        public Task<bool> Restore(Guid key, CancellationToken cancellationToken = default) => inner.Restore(key, cancellationToken);
+
+        public Task<HardDeleteResult> HardDelete(Guid key, CancellationToken cancellationToken = default) =>
+            inner.HardDelete(key, cancellationToken);
+
+        public Task<bool> Ensure(Guid key, IScheduleRunCommands.ScheduleRunDraft draft, CancellationToken cancellationToken = default) =>
+            inner.Ensure(key, draft, cancellationToken);
     }
 
     private IScheduleRunner Runner => Services().GetRequiredService<IScheduleRunner>();
@@ -196,6 +251,21 @@ public sealed class ScheduleRunnerTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task FailingRecipientLookup_KeepsTheActionOutcomeAndRecordsAFailedEmail()
+    {
+        _actions.Add(new FakeScheduledAction());
+        var schedule = await ScheduleAsync(ScheduleDraft(notify: ScheduleNotification.Always,
+            participants: [new(ScheduleParticipantKind.Email, "ops@example.test")]));
+        _failParticipants = true;
+
+        var run = await StartAndWaitAsync(schedule);
+
+        Assert.Equal((ScheduleRunStatus.Succeeded, "Report created"), (run.Status, run.Summary));
+        Assert.Equal("#/reports/42?tab=summary", run.Link);
+        Assert.Equal((ScheduleRunEmail.Failed, 0), (run.Email, run.Recipients));
+    }
+
+    [Fact]
     public async Task TryStart_RefusesASecondRunOfARunningSchedule()
     {
         var release = new TaskCompletionSource();
@@ -239,6 +309,38 @@ public sealed class ScheduleRunnerTests : IAsyncDisposable
         var run = Assert.Single(await RunsAsync());
         Assert.Equal((ScheduleRunStatus.Failed, ScheduleRunner.InterruptedSummary), (run.Status, run.Summary));
         Assert.True((await Runner.TryStart(schedule, Now.ToScheduleMinute())).IsNone());
+    }
+
+    [Fact]
+    public async Task Stop_WaitsForRunsThatWereBeingRecorded()
+    {
+        var recording = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _beforeRecord = async _ =>
+        {
+            recording.TrySetResult();
+            await release.Task;
+        };
+        _actions.Add(new FakeScheduledAction(async (_, token) =>
+        {
+            await Task.Delay(Timeout.Infinite, token);
+
+            return new ScheduledActionResult(true, "never", None);
+        }));
+        var schedule = await ScheduleAsync();
+        var start = Runner.TryStart(schedule, Now.ToScheduleMinute());
+        await recording.Task;
+
+        var stop = Runner.Stop();
+        await Task.Delay(50);
+
+        Assert.False(stop.IsCompleted);
+        release.SetResult();
+        await stop;
+        Assert.False((await start).IsNone());
+        var run = Assert.Single(await RunsAsync());
+        Assert.Equal((ScheduleRunStatus.Failed, ScheduleRunner.InterruptedSummary), (run.Status, run.Summary));
+        Assert.False(Runner.IsRunning(schedule.Id.Key));
     }
 
     [Fact]
@@ -301,6 +403,47 @@ public sealed class ScheduleRunnerTests : IAsyncDisposable
 
         var invocation = Assert.Single(action.Invocations);
         Assert.Equal((Now.ToScheduleMinute().AddMinutes(15), "Quarter"), (invocation.ScheduledFor, invocation.ScheduleName));
+    }
+
+    [Fact]
+    public async Task Tick_RetriesTheMinuteWhenTheScheduleQueryFails()
+    {
+        var action = new FakeScheduledAction();
+        _actions.Add(action);
+        await ScheduleAsync(ScheduleDraft("Every minute", "* * * * *"));
+        var service = Services().GetRequiredService<ScheduleService>();
+        _failEnabled = true;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.TickAsync());
+
+        _failEnabled = false;
+        Assert.Equal(1, await service.TickAsync());
+        await Runner.WhenIdle();
+        Assert.Equal(Now.ToScheduleMinute(), Assert.Single(action.Invocations).ScheduledFor);
+    }
+
+    [Fact]
+    public async Task Tick_RetriesFailedStartsWithoutRepeatingAcceptedOnes()
+    {
+        _actions.Add(new FakeScheduledAction());
+        var first = await ScheduleAsync(ScheduleDraft("First", "* * * * *"));
+        var second = await ScheduleAsync(ScheduleDraft("Second", "* * * * *"));
+        var failures = 1;
+        _beforeRecord = draft => draft.ScheduleId == second.Id.Key && failures-- > 0
+            ? Task.FromException(new InvalidOperationException("record failed"))
+            : Task.CompletedTask;
+        var service = Services().GetRequiredService<ScheduleService>();
+
+        Assert.Equal(1, await service.TickAsync());
+        await Runner.WhenIdle();
+        Assert.Equal(1, await service.TickAsync());
+        await Runner.WhenIdle();
+        Assert.Equal(0, await service.TickAsync());
+
+        var runs = await RunsAsync();
+        Assert.Equal(
+            [first.Id.Key, second.Id.Key],
+            runs.Select(run => run.ScheduleId).Order());
     }
 
     [Fact]

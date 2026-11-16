@@ -16,6 +16,7 @@ public sealed class ScheduleService(
     IOptionsMonitor<SchedulerConfiguration> options,
     ILogger<ScheduleService> logger) : BackgroundService
 {
+    private readonly Dictionary<Guid, DateTimeOffset> _accepted = [];
     private DateTimeOffset _last = clock.GetUtcNow().ToScheduleMinute().AddMinutes(-1);
 
     public async Task<int> TickAsync(CancellationToken cancellationToken = default)
@@ -28,15 +29,15 @@ public sealed class ScheduleService(
             return 0;
         }
 
-        _last = minutes[^1];
-
         await using var scope = scopes.CreateAsyncScope();
         var schedules = await scope.ServiceProvider.GetRequiredService<IScheduleQueries>().Enabled(cancellationToken);
         var started = 0;
+        var failed = false;
 
         foreach (var schedule in schedules)
         {
-            var due = minutes.Where(minute => schedule.Cron.Matches(minute)).ToList();
+            var accepted = _accepted.GetValueOrDefault(schedule.Id.Key, DateTimeOffset.MinValue);
+            var due = minutes.Where(minute => minute > accepted && schedule.Cron.Matches(minute)).ToList();
 
             if (due.Count == 0)
             {
@@ -46,11 +47,28 @@ public sealed class ScheduleService(
             if (runner.IsRunning(schedule.Id.Key))
             {
                 logger.LogWarning("Schedule {ScheduleId} is still running; the run at {Minute} is skipped", () => [schedule.Id.Key, due[^1]]);
+                _accepted[schedule.Id.Key] = due[^1];
                 continue;
             }
 
-            var run = await runner.TryStart(schedule, due[^1], cancellationToken);
-            started += run.Match(() => 0, _ => 1);
+            try
+            {
+                var run = await runner.TryStart(schedule, due[^1], cancellationToken);
+                _accepted[schedule.Id.Key] = due[^1];
+                started += run.Match(() => 0, _ => 1);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                failed = true;
+                logger.LogError(exception, "Schedule {ScheduleId} could not be started for {Minute}", () => [schedule.Id.Key, due[^1]]);
+            }
+        }
+
+        // Failed minutes stay pending for the next tick; accepted starts are remembered so they are not repeated.
+        if (!failed)
+        {
+            _last = minutes[^1];
+            _accepted.Clear();
         }
 
         return started;
@@ -67,8 +85,6 @@ public sealed class ScheduleService(
         if (!options.CurrentValue.Enabled)
         {
             logger.LogInformation("Scheduler is disabled");
-
-            return;
         }
 
         await TryAsync(() => runner.RecoverInterrupted(stoppingToken), "Interrupted schedule runs could not be recovered");

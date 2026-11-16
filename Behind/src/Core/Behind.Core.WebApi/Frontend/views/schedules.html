@@ -68,7 +68,7 @@
                     <select id="schedule-action" class="form-select" data-bind="options: actions, optionsText: 'name', optionsValue: 'key', optionsCaption: $root.i18n.t('schedules.selectAction'), value: action"></select>
                 </div>
                 <div data-bind="foreach: parameterFields">
-                    <div class="mb-3">
+                    <div class="mb-3 behind-schedule-parameter">
                         <label class="form-label" data-bind="text: label"></label>
                         <!-- ko if: kind === 'choice' -->
                         <select class="form-select" data-bind="options: options, optionsText: 'label', optionsValue: 'value', optionsCaption: $root.i18n.t('schedules.selectValue'), value: value, valueAllowUnset: true"></select>
@@ -80,7 +80,7 @@
                         <input class="form-control" type="number" step="1" inputmode="numeric" data-bind="value: value, valueUpdate: 'input', attr: { required: required, min: minimum, max: maximum, placeholder: defaultValue }">
                         <!-- /ko -->
                         <!-- ko if: kind === 'template' -->
-                        <input class="form-control" type="text" data-bind="value: value, valueUpdate: 'input', attr: { placeholder: defaultValue, required: required }">
+                        <input class="form-control behind-schedule-template" type="text" data-bind="value: value, valueUpdate: 'input', attr: { placeholder: defaultValue, required: required }">
                         <div class="d-flex flex-wrap gap-1 mt-2" data-bind="foreach: placeholders">
                             <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="text: '{{' + $data + '}}', click: function (placeholder, event) { $root.insertPlaceholder($parent, placeholder, event); }"></button>
                         </div>

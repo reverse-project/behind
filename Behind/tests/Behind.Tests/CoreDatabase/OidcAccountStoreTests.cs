@@ -2,9 +2,11 @@ using Behind.Common.Database;
 using Behind.Common.Database.Raw;
 using Behind.Core.Database;
 using Behind.Core.Database.Auditing;
+using Behind.Core.Database.Sqlite;
 using Behind.Core.Domain;
 using Behind.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
+using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Tests.CoreDatabase;
 
@@ -56,6 +58,62 @@ public sealed class OidcAccountStoreTests : IDisposable
         var binding = await verify.Set<Dictionary<string, object>>("OidcAccountBindings").FirstAsync();
         Assert.False(binding.ContainsKey("Subject"));
         Assert.Equal(64, ((string)binding["SubjectDigest"]).Length);
+    }
+
+    [Fact]
+    public async Task CreateAndLink_RollsBackTheNewUserWhenLinkingFails()
+    {
+        var owner = await SeedUserAsync("owner@test.com");
+        await WithStoreAsync(store => store.Link(owner, "provider", "issuer", "subject", CancellationToken.None));
+        var newUser = Guid.NewGuid();
+
+        await using (var context = _factory.CreateContext())
+        {
+            var store = new OidcAccountStore(context);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.CreateAndLink(
+                async () =>
+                {
+                    await CreateUserAsync(context, newUser, "new@test.com");
+                    return true;
+                },
+                newUser, "provider", "issuer", "subject", CancellationToken.None));
+        }
+
+        Assert.False(await UserExistsAsync(newUser));
+    }
+
+    [Fact]
+    public async Task CreateAndLink_CommitsTheUserWithItsBindingOrRollsBackARejectedCreation()
+    {
+        var rejected = Guid.NewGuid();
+        var accepted = Guid.NewGuid();
+
+        await using (var context = _factory.CreateContext())
+        {
+            var store = new OidcAccountStore(context);
+            Assert.False(await store.CreateAndLink(
+                async () =>
+                {
+                    await CreateUserAsync(context, rejected, "rejected@test.com");
+                    return false;
+                },
+                rejected, "provider", "issuer", "rejected", CancellationToken.None));
+            Assert.True(await store.CreateAndLink(
+                async () =>
+                {
+                    await CreateUserAsync(context, accepted, "accepted@test.com");
+                    return true;
+                },
+                accepted, "provider", "issuer", "accepted", CancellationToken.None));
+        }
+
+        Assert.False(await UserExistsAsync(rejected));
+        Assert.True(await UserExistsAsync(accepted));
+        await WithStoreAsync(async store =>
+        {
+            Assert.Null(await store.FindUser("provider", "issuer", "rejected", CancellationToken.None));
+            Assert.Equal(accepted, await store.FindUser("provider", "issuer", "accepted", CancellationToken.None));
+        });
     }
 
     [Fact]
@@ -224,6 +282,21 @@ public sealed class OidcAccountStoreTests : IDisposable
     {
         await using var context = _factory.CreateContext();
         return await DatabaseSeedHelper.SeedHumanUserAsync(context, email);
+    }
+
+    private static async Task CreateUserAsync(CoreContextSqlite context, Guid id, string email)
+    {
+        var user = new HumanUser("Test User", [new Email(email)], None);
+        await context.Users.AddAsync(user);
+        context.Entry(user).Property<Guid>("Id").CurrentValue = id;
+        await context.SaveChangesAsync();
+    }
+
+    private async Task<bool> UserExistsAsync(Guid userId)
+    {
+        await using var context = _factory.CreateContext();
+        using var scope = context.SoftDelete.IncludeDeleted();
+        return await context.Users.AnyAsync(user => EF.Property<Guid>(user, "Id") == userId);
     }
 
     private async Task<Guid> SeedRoleAsync(string name)

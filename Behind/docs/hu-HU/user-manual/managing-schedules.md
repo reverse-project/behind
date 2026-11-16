@@ -20,7 +20,7 @@ A `*` minden értéket jelent, a `*/N` minden N-edik értéket, az `a,b,c` felso
 
 ## Munkamenetek takarítása
 
-A **Munkamenetek takarítása** művelet véglegesen törli azokat a munkameneteket, amelyeket az ütemezett futási időponthoz képest több mint **Érvénytelenített munkamenet kora (nap)** nappal ezelőtt érvénytelenítettek (kijelentkezés, rendszergazdai lezárás vagy csere miatt). A kor egész számú nap; üresen hagyva az alapértelmezett 30 nap érvényes. A felső korlát 3650 nap, hacsak az üzemeltető nem módosítja a `Backend:Scheduler:MaxSessionCleanupAgeDays` beállítást. Az aktív munkamenetek és az érvénytelenítési időpont nélküli érvénytelen munkamenetek soha nem törlődnek. A futás összegzése megadja a törölt munkamenetek számát; a művelet nem ad eredményhivatkozást. Például a `0 3 * * *` cron kifejezés minden nap 03:00 UTC-kor futtatja a takarítást.
+A **Munkamenetek takarítása** művelet véglegesen törli azokat a munkameneteket, amelyeket az ütemezett futási időponthoz képest több mint **Érvénytelenített munkamenet kora (nap)** nappal ezelőtt érvénytelenítettek (kijelentkezés, rendszergazdai lezárás vagy csere miatt). A kor egész számú nap; üresen hagyva az alapértelmezett 30 nap érvényes (vagy a felső korlát, ha az kisebb). A felső korlát 3650 nap, hacsak az üzemeltető nem módosítja a `Backend:Scheduler:MaxSessionCleanupAgeDays` beállítást. Az aktív munkamenetek és az érvénytelenítési időpont nélküli érvénytelen munkamenetek soha nem törlődnek. A futás összegzése megadja a törölt munkamenetek számát; a művelet nem ad eredményhivatkozást. Például a `0 3 * * *` cron kifejezés minden nap 03:00 UTC-kor futtatja a takarítást.
 
 ## Résztvevők és e-mail
 

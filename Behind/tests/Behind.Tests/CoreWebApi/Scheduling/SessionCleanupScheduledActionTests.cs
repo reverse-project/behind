@@ -41,6 +41,22 @@ public sealed class SessionCleanupScheduledActionTests
         Assert.Equal(90, parameter.Maximum);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData(" ")]
+    public async Task OmittedOrBlankAge_UsesTheDefaultClampedToALowerConfiguredLimit(string? days)
+    {
+        var action = CreateAction(7);
+
+        Assert.Equal("7", Assert.Single(action.Descriptor.Parameters).DefaultValue);
+        Assert.Equal(None, await action.Validate(new ClaimsPrincipal(), Parameters(days), CancellationToken.None));
+
+        var result = await action.Run(Invocation(days), CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        await _sessions.Received(1).DeleteInvalidatedBefore(ScheduledFor.AddDays(-7), Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task Options_ReturnsNothing()
     {

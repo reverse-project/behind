@@ -140,17 +140,16 @@ public class SchedulesFrontendTests
         Assert.Contains("self.emailKeyDown", Read("viewmodels/schedules.js"));
     }
 
+    // Save, calculator and grant behavior is exercised in tests/frontend-runtime-tests/schedules-editor-frontend.test.cjs.
     [Fact]
-    public void Save_KeepsTheSavedScheduleOpenAndReportsTheResultNextToTheButton()
+    public void Save_ReportsTheResultNextToTheButton()
     {
         var view = Read("views/schedules.html");
-        var viewModel = Read("viewmodels/schedules.js");
-        var save = viewModel[viewModel.IndexOf("self.save = function", StringComparison.Ordinal)..viewModel.IndexOf("self.preset = function", StringComparison.Ordinal)];
+        var start = view.IndexOf("submit: save", StringComparison.Ordinal);
+        var editor = view[start..view.IndexOf("</form>", start, StringComparison.Ordinal)];
+        var button = editor.LastIndexOf("enable: canSave", StringComparison.Ordinal);
 
-        Assert.Contains("role=\"status\" data-bind=\"visible: saveMessage, text: saveMessage", view);
-        Assert.Contains("self.editingVersion(result.data.version);", save);
-        Assert.Contains("self.saveMessage(result.message);", save);
-        Assert.DoesNotContain("self.reset()", save);
+        Assert.Contains("role=\"status\" data-bind=\"visible: saveMessage, text: saveMessage", editor[button..]);
     }
 
     [Theory]

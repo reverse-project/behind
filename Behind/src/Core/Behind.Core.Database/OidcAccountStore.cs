@@ -1,3 +1,5 @@
+using System.Data;
+using System.Data.Common;
 using System.Security.Cryptography;
 using System.Text;
 using Behind.Common.Database;
@@ -8,6 +10,10 @@ namespace Behind.Core.Database;
 
 public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccountStore
 {
+    private const int MaxSynchronizationAttempts = 5;
+    private const string SerializationFailure = "40001";
+    private const string DeadlockDetected = "40P01";
+
     public async Task<Guid?> FindUser(
         string providerId,
         string issuer,
@@ -40,7 +46,52 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
         ValidateIdentifier(subject, nameof(subject));
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await LinkInTransaction(userId, providerId, issuer, subject, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
 
+    public async Task<bool> CreateAndLink(
+        Func<Task<bool>> create,
+        Guid userId,
+        string providerId,
+        string issuer,
+        string subject,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(create);
+        ValidateIdentifier(providerId, nameof(providerId));
+        ValidateIdentifier(issuer, nameof(issuer));
+        ValidateIdentifier(subject, nameof(subject));
+
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            if (!await create())
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                context.ChangeTracker.Clear();
+                return false;
+            }
+
+            await LinkInTransaction(userId, providerId, issuer, subject, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return true;
+        }
+        catch
+        {
+            context.ChangeTracker.Clear();
+            throw;
+        }
+    }
+
+    private async Task LinkInTransaction(
+        Guid userId,
+        string providerId,
+        string issuer,
+        string subject,
+        CancellationToken cancellationToken)
+    {
         if (!await IsActiveUser(userId, cancellationToken))
         {
             throw new InvalidOperationException("An active user is required to link an OIDC account.");
@@ -74,8 +125,6 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
                 cancellationToken);
             await context.SaveChangesAsync(cancellationToken);
         }
-
-        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task SynchronizeRoles(
@@ -89,8 +138,32 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
         ArgumentNullException.ThrowIfNull(autoRoleNames);
         ValidateIdentifier(providerId, nameof(providerId));
 
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        // Serializable isolation makes concurrent sign-ins of the same user or with the same new role
+        // name conflict instead of duplicating auto-created roles or keeping memberships no provider owns.
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await using var transaction = await context.Database.BeginTransactionAsync(
+                    IsolationLevel.Serializable, cancellationToken);
+                await SynchronizeRolesInTransaction(userId, providerId, mappedRoleNames, autoRoleNames, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return;
+            }
+            catch (Exception exception) when (attempt < MaxSynchronizationAttempts && IsSerializationConflict(exception))
+            {
+                context.ChangeTracker.Clear();
+            }
+        }
+    }
 
+    private async Task SynchronizeRolesInTransaction(
+        Guid userId,
+        string providerId,
+        IReadOnlyList<string> mappedRoleNames,
+        IReadOnlyList<string> autoRoleNames,
+        CancellationToken cancellationToken)
+    {
         if (!await IsActiveUser(userId, cancellationToken))
         {
             throw new InvalidOperationException("An active user is required to synchronize OIDC roles.");
@@ -208,8 +281,15 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
         }
 
         await context.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
     }
+
+    private static bool IsSerializationConflict(Exception exception) => exception switch
+    {
+        DbUpdateException { InnerException: { } inner } => IsSerializationConflict(inner),
+        DbException { SqlState: SerializationFailure or DeadlockDetected } => true,
+        DbException { IsTransient: true } => true,
+        _ => false
+    };
 
     private DbSet<Dictionary<string, object>> Bindings() =>
         context.Set<Dictionary<string, object>>("OidcAccountBindings");

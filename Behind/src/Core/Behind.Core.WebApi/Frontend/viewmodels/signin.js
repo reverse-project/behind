@@ -24,11 +24,31 @@ define(["ko", "viewmodels/captchaform", "viewmodels/twofactorchallenge", "models
             return self.run(action).then(function (result) {
                 if (result.twoFactor) {
                     self.twoFactor.begin(result.twoFactor);
-                    return;
+                    return result;
                 }
 
                 if (result.ok) {
                     self.twoFactor.complete(result);
+                }
+                return result;
+            });
+        };
+
+        var loadOidcProviders = function () {
+            return auth.listOidcProviders().then(function (result) {
+                if (result.ok) {
+                    self.oidcProviders(result.providers);
+
+                    if (result.providers.length > 0 && window.location.protocol !== "https:") {
+                        self.oidcProviders([]);
+                        self.message(i18n.t("signin.oidc.error"));
+                    }
+
+                    return;
+                }
+
+                if (!self.message()) {
+                    self.message(result.message);
                 }
             });
         };
@@ -103,7 +123,7 @@ define(["ko", "viewmodels/captchaform", "viewmodels/twofactorchallenge", "models
                 delete params.oidc;
                 delete params.oidcError;
                 self.message(i18n.t("signin.oidc.error"));
-                return;
+                return loadOidcProviders();
             }
 
             if (params.oidc) {
@@ -113,28 +133,17 @@ define(["ko", "viewmodels/captchaform", "viewmodels/twofactorchallenge", "models
 
                 if (window.location.protocol !== "https:") {
                     self.message(i18n.t("signin.oidc.error"));
-                    return;
+                    return loadOidcProviders();
                 }
 
                 return signIn(function () {
                     return auth.redeemOidc(ticket);
+                }).then(function (result) {
+                    return result && (result.ok || result.twoFactor) ? undefined : loadOidcProviders();
                 });
             }
 
-            return auth.listOidcProviders().then(function (result) {
-                if (result.ok) {
-                    self.oidcProviders(result.providers);
-
-                    if (result.providers.length > 0 && window.location.protocol !== "https:") {
-                        self.oidcProviders([]);
-                        self.message(i18n.t("signin.oidc.error"));
-                    }
-
-                    return;
-                }
-
-                self.message(result.message);
-            });
+            return loadOidcProviders();
         };
     };
 });

@@ -35,7 +35,8 @@ public sealed class ScheduleEndpoints
         Dictionary<string, string?>? Parameters,
         bool Enabled,
         [property: MaxLength(Schedule.MaxNotifyLength)] string? Notify,
-        [property: MaxLength(MaxParticipants)] IReadOnlyList<ScheduleParticipantRequest>? Participants);
+        [property: MaxLength(MaxParticipants)] IReadOnlyList<ScheduleParticipantRequest>? Participants,
+        long? Version = null);
 
     [IgnoreETag]
     public static Task<IResult> Manage(
@@ -127,7 +128,9 @@ public sealed class ScheduleEndpoints
 
         return await (await request.ToDraft(httpContext.User, actions, httpContext.RequestAborted)).Match(
             errors => Task.FromResult(Rejected(errors)),
-            async draft => (await commands.Update(id, draft, httpContext.RequestAborted)).ToResult());
+            async draft => (await (request.Version is { } version
+                ? commands.Update(id, version, draft, httpContext.RequestAborted)
+                : commands.Update(id, draft, httpContext.RequestAborted))).ToResult());
     }
 
     [IgnoreETag]

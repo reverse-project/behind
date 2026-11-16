@@ -10,6 +10,7 @@ define(["ko", "models/session", "models/schedules", "models/pager", "models/i18n
 
     return function ScheduleRunsViewModel() {
         var self = this;
+        var request = 0;
         self.isSignedIn = session.isSignedIn;
         self.i18n = i18n;
         self.canRead = ko.pureComputed(function () { return session.hasGrant("Schedule.Read"); });
@@ -32,6 +33,7 @@ define(["ko", "models/session", "models/schedules", "models/pager", "models/i18n
         self.hasMessage = ko.pureComputed(function () { return self.message() !== ""; });
 
         self.refresh = function () {
+            var current = ++request;
             if (!self.canRead()) {
                 self.items([]);
                 return Promise.resolve();
@@ -39,6 +41,7 @@ define(["ko", "models/session", "models/schedules", "models/pager", "models/i18n
             self.busy(true);
             return schedules.runs({ page: self.pager.page(), pageSize: 20, scheduleId: self.scheduleId(), status: self.status(), deleted: self.showDeleted() })
                 .then(function (result) {
+                    if (current !== request) { return; }
                     self.message(result.message);
                     if (!result.ok) {
                         self.items([]);
@@ -71,7 +74,9 @@ define(["ko", "models/session", "models/schedules", "models/pager", "models/i18n
                         };
                         return run;
                     }));
-                }).finally(function () { self.busy(false); });
+                }).finally(function () {
+                    if (current === request) { self.busy(false); }
+                });
         };
         self.perform = function (action) {
             self.busy(true);

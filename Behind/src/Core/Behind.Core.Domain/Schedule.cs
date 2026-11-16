@@ -48,7 +48,8 @@ public sealed record ScheduleParameters(IReadOnlyDictionary<string, string> Valu
     public bool Equals(ScheduleParameters? other) =>
         other is not null
         && Values.Count == other.Values.Count
-        && Values.All(entry => other.Values.TryGetValue(entry.Key, out var value) && value == entry.Value);
+        && Values.OrderBy(entry => entry.Key, StringComparer.Ordinal)
+            .SequenceEqual(other.Values.OrderBy(entry => entry.Key, StringComparer.Ordinal));
 
     public override int GetHashCode() =>
         Values.OrderBy(entry => entry.Key, StringComparer.Ordinal)

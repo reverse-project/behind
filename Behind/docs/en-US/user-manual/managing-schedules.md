@@ -20,7 +20,7 @@ Use `*` for every value, `*/N` for every N values, `a,b,c` for selected values, 
 
 ## Session cleanup
 
-The **Session cleanup** action permanently deletes sessions that were invalidated (signed out, ended by an administrator, or replaced) more than **Invalidated session age (days)** ago, measured from the scheduled run time. The age is a whole number of days; leaving it empty uses the default of 30 days. The upper limit is 3650 days unless the operator changes `Backend:Scheduler:MaxSessionCleanupAgeDays`. Active sessions, and invalidated sessions without an invalidation time, are never removed. The run summary reports how many sessions were deleted; the action does not produce a result link. For example, the cron expression `0 3 * * *` runs the cleanup every day at 03:00 UTC.
+The **Session cleanup** action permanently deletes sessions that were invalidated (signed out, ended by an administrator, or replaced) more than **Invalidated session age (days)** ago, measured from the scheduled run time. The age is a whole number of days; leaving it empty uses the default of 30 days (or the upper limit, when that is lower). The upper limit is 3650 days unless the operator changes `Backend:Scheduler:MaxSessionCleanupAgeDays`. Active sessions, and invalidated sessions without an invalidation time, are never removed. The run summary reports how many sessions were deleted; the action does not produce a result link. For example, the cron expression `0 3 * * *` runs the cleanup every day at 03:00 UTC.
 
 ## Participants and email
 

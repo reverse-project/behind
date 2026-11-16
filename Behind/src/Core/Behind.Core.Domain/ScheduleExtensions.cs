@@ -143,7 +143,8 @@ public static class ScheduleExtensions
         string.IsNullOrWhiteSpace(json)
             ? ScheduleParticipants.Empty
             : new ScheduleParticipants(
-                (JsonSerializer.Deserialize<List<ParticipantJson>>(json, SerializerOptions) ?? [])
+                (JsonSerializer.Deserialize<List<ParticipantJson?>>(json, SerializerOptions) ?? [])
+                .Select(item => item ?? throw new FormatException("A participant entry is missing."))
                 .Select(item => item.Kind.ToScheduleParticipantKind().Match(
                     () => throw new FormatException($"Unknown participant kind '{item.Kind}'."),
                     kind => new ScheduleParticipant(kind, item.Value ?? string.Empty)))

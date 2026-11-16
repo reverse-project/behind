@@ -82,6 +82,27 @@ public sealed class ScheduleTests
     }
 
     [Fact]
+    public void Participants_NullEntryIsAJsonError()
+    {
+        Assert.Throws<FormatException>(() => ScheduleExtensions.ParseScheduleParticipants("[null]"));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ScheduleParticipants>("[null]"));
+    }
+
+    [Fact]
+    public void Parameters_EqualityComparesKeysOrdinallyRegardlessOfTheDictionaryComparer()
+    {
+        var ordinal = new ScheduleParameters(new Dictionary<string, string>(StringComparer.Ordinal) { ["Key"] = "1" });
+        var ignoreCase = new ScheduleParameters(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["key"] = "1" });
+        var matching = new ScheduleParameters(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Key"] = "1" });
+
+        Assert.NotEqual(ordinal, ignoreCase);
+        Assert.NotEqual(ignoreCase, ordinal);
+        Assert.Equal(ordinal, matching);
+        Assert.Equal(matching, ordinal);
+        Assert.Equal(ordinal.GetHashCode(), matching.GetHashCode());
+    }
+
+    [Fact]
     public void Parameters_JsonIsSortedAndRoundTrips()
     {
         var parameters = new ScheduleParameters(new Dictionary<string, string> { ["b"] = "2", ["a"] = "1" });

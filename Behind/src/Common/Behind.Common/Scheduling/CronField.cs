@@ -61,7 +61,7 @@ public sealed class CronField : IEquatable<CronField>
                 values => Valid(new CronField(
                     text,
                     Normalize(values, specification),
-                    text is Wildcard or AnyValue)));
+                    IsWildcardText(text))));
 
     public bool Equals(CronField? other) => other is not null && Text == other.Text;
 
@@ -70,6 +70,10 @@ public sealed class CronField : IEquatable<CronField>
     public override int GetHashCode() => Text.GetHashCode(StringComparison.Ordinal);
 
     public override string ToString() => Text;
+
+    // Like cronie, a field starting with * or ? (including */N) stays a wildcard for day matching.
+    private static bool IsWildcardText(string text) =>
+        text.StartsWith(Wildcard, StringComparison.Ordinal) || text.StartsWith(AnyValue, StringComparison.Ordinal);
 
     private static ImmutableSortedSet<int> Normalize(ImmutableSortedSet<int> values, CronFieldSpecification specification) =>
         specification == CronFieldSpecification.DayOfWeek && values.Contains(AlternativeSunday)

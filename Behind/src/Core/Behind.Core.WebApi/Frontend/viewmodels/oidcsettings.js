@@ -57,6 +57,7 @@ define(["ko", "models/settings"], function (ko, settings) {
     return function OidcSettingsEditor(canEdit) {
         var self = this;
         var original = null;
+        var loadGeneration = 0;
         self.loaded = ko.observable(false);
         self.providers = ko.observableArray([]);
         self.ticketLifetime = "";
@@ -72,9 +73,10 @@ define(["ko", "models/settings"], function (ko, settings) {
             self.loaded(true);
         };
         self.load = function () {
+            var generation = ++loadGeneration;
             self.loaded(false);
             return settings.loadOidc().then(function (result) {
-                if (result.ok) {
+                if (result.ok && generation === loadGeneration) {
                     self.apply(result.data);
                 }
                 return result;

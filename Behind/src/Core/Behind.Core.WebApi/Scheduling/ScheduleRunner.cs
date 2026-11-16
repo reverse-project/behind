@@ -29,6 +29,9 @@ public sealed class ScheduleRunner(
     private readonly ConcurrentDictionary<Guid, Task> _tasks = new();
     private readonly SemaphoreSlim _slots = new(options.CurrentValue.ConcurrencyLimit);
     private readonly CancellationTokenSource _stopping = new();
+    private readonly ConcurrentDictionary<Guid, Task> _admissions = new();
+    private readonly Lock _gate = new();
+    private bool _closed;
 
     public bool IsRunning(Guid scheduleId) => _running.ContainsKey(scheduleId);
 
@@ -38,10 +41,17 @@ public sealed class ScheduleRunner(
         CancellationToken cancellationToken = default)
     {
         var scheduleId = schedule.Id.Key;
+        var admissionId = Guid.NewGuid();
+        var admission = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        if (_stopping.IsCancellationRequested || !_running.TryAdd(scheduleId, Guid.Empty))
+        lock (_gate)
         {
-            return None;
+            if (_closed || !_running.TryAdd(scheduleId, Guid.Empty))
+            {
+                return None;
+            }
+
+            _admissions[admissionId] = admission.Task;
         }
 
         try
@@ -62,6 +72,11 @@ public sealed class ScheduleRunner(
         {
             _running.TryRemove(scheduleId, out _);
             throw;
+        }
+        finally
+        {
+            _admissions.TryRemove(admissionId, out _);
+            admission.SetResult();
         }
     }
 
@@ -87,6 +102,7 @@ public sealed class ScheduleRunner(
         {
             await commands.Update(
                 run.Id.Key,
+                run.Id.Version,
                 run.ToDraft() with
                 {
                     FinishedAt = clock.GetUtcNow(),
@@ -101,7 +117,13 @@ public sealed class ScheduleRunner(
 
     public async Task Stop()
     {
+        lock (_gate)
+        {
+            _closed = true;
+        }
+
         await _stopping.CancelAsync();
+        await Task.WhenAll(_admissions.Values.ToList());
         await WhenIdle();
     }
 
@@ -148,7 +170,7 @@ public sealed class ScheduleRunner(
 
             await using var scope = scopes.CreateAsyncScope();
             var outcome = await Invoke(scope.ServiceProvider, schedule, scheduledFor);
-            var email = await Notify(scope.ServiceProvider, schedule, outcome);
+            var email = await TryNotify(scope.ServiceProvider, schedule, outcome);
 
             await Finish(scope.ServiceProvider, runId, outcome, outcome.Link.Map(link => link.ToHashRoute()), email);
         }
@@ -205,6 +227,26 @@ public sealed class ScheduleRunner(
             logger.LogWarning(exception, "Scheduled action {Action} failed", () => [schedule.Action]);
 
             return new ScheduledActionResult(false, FailedSummaryPrefix + exception.Message, None);
+        }
+    }
+
+    private async Task<(ScheduleRunEmail Status, int Recipients)> TryNotify(
+        IServiceProvider services,
+        IScheduleQueries.ScheduleDetails schedule,
+        ScheduledActionResult outcome)
+    {
+        try
+        {
+            return await Notify(services, schedule, outcome);
+        }
+        catch (Exception exception)
+        {
+            if (!_stopping.IsCancellationRequested)
+            {
+                logger.LogWarning(exception, "Schedule {ScheduleId} notification could not be prepared", () => [schedule.Id.Key]);
+            }
+
+            return (ScheduleRunEmail.Failed, 0);
         }
     }
 

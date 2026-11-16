@@ -63,6 +63,30 @@ public sealed class ScheduleCommandsTests : IDisposable
         Assert.Equal(("Renamed", "0 3 * * *", false), (latest.Name, latest.Cron.Text, latest.Enabled));
     }
 
+    [Fact]
+    public async Task Update_WithStaleExpectedVersion_IsAVersionConflictWithoutSaving()
+    {
+        var key = await _bed.CreateScheduleAsync();
+        await _bed.WithScheduleCommandsAsync(commands => commands.Update(key, 1, ScheduleDraft("First")));
+
+        var stale = await _bed.WithScheduleCommandsAsync(commands => commands.Update(key, 1, ScheduleDraft("Stale")));
+        var ahead = await _bed.WithScheduleCommandsAsync(commands => commands.Update(key, 5, ScheduleDraft("Ahead")));
+        var current = await _bed.WithScheduleCommandsAsync(commands => commands.Update(key, 2, ScheduleDraft("Current")));
+
+        Assert.IsType<VersionedSaveResult.VersionConflict>(stale);
+        Assert.IsType<VersionedSaveResult.VersionConflict>(ahead);
+        Assert.Equal(new VersionedKey<Guid>(key, 3), Assert.IsType<VersionedSaveResult.Saved>(current).Id);
+        Assert.Equal(["First", "Current"], (await VersionsAsync(key)).Skip(1).Select(schedule => schedule.Name));
+    }
+
+    [Fact]
+    public async Task Update_WithExpectedVersionOfAMissingSchedule_IsNotFound()
+    {
+        var result = await _bed.WithScheduleCommandsAsync(commands => commands.Update(Guid.CreateVersion7(), 1, ScheduleDraft("Missing")));
+
+        Assert.IsType<VersionedSaveResult.NotFound>(result);
+    }
+
     [Theory]
     [InlineData("  ", TestAction)]
     [InlineData("Name", " ")]

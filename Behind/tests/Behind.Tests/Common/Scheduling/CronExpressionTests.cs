@@ -97,6 +97,28 @@ public sealed class CronExpressionTests
     }
 
     [Fact]
+    public void Matches_TreatsSteppedWildcardDayFieldsAsWildcards()
+    {
+        var everyMonday = Cron("0 0 */1 * mon");
+        var firstOnSteppedWeekdays = Cron("0 0 1 * */3");
+
+        Assert.True(everyMonday.DayOfMonth.IsWildcard);
+        Assert.True(everyMonday.Matches(new DateTimeOffset(2026, 11, 16, 0, 0, 0, TimeSpan.Zero)));
+        Assert.False(everyMonday.Matches(new DateTimeOffset(2026, 11, 17, 0, 0, 0, TimeSpan.Zero)));
+        Assert.True(firstOnSteppedWeekdays.DayOfWeek.IsWildcard);
+        Assert.False(firstOnSteppedWeekdays.Matches(new DateTimeOffset(2026, 12, 1, 0, 0, 0, TimeSpan.Zero)));
+        Assert.False(firstOnSteppedWeekdays.Matches(new DateTimeOffset(2026, 11, 21, 0, 0, 0, TimeSpan.Zero)));
+        Assert.True(firstOnSteppedWeekdays.Matches(new DateTimeOffset(2027, 5, 1, 0, 0, 0, TimeSpan.Zero)));
+    }
+
+    [Fact]
+    public void Next_TreatsSteppedWildcardDayFieldsAsWildcards()
+    {
+        Assert.Equal(new DateTimeOffset(2026, 11, 23, 0, 0, 0, TimeSpan.Zero), NextOf("0 0 */1 * mon", Monday));
+        Assert.Equal(new DateTimeOffset(2027, 5, 1, 0, 0, 0, TimeSpan.Zero), NextOf("0 0 1 * */3", Monday));
+    }
+
+    [Fact]
     public void Next_ReturnsTheFirstMatchingMinuteStrictlyAfterTheMoment()
     {
         Assert.Equal(Monday.AddMinutes(1), NextOf("* * * * *", Monday));

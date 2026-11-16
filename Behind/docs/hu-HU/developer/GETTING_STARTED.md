@@ -4,6 +4,16 @@ Gyorsindítási útmutató a Behind projekt beállításához és az azon végze
 
 ## Előfeltételek
 
+A Test Explorer és a VS Code lefedettségi feladatai ugyanazt a tesztassembly-szintű
+Podman-felderítést használják, mint a `dotnet test`: először a kifejezett DOCKER_HOST,
+majd a CONTAINER_HOST vagy helyi Podman socket érvényesül, ha nincs Docker socket.
+Docker CLI-alias nem szükséges. A devcontainer minden VS Code-futtatónak átadja
+a csatolt Podman-végpontot, a rootless Ryuk-beállítást és a portok gazdagépét.
+Környezeti változás után töltse újra. Ha a host.containers.internal nem éri el
+a közzétett portokat, a TESTCONTAINERS_HOST_OVERRIDE értéke elérhető motorgazdacím
+legyen. A kifejezett felülírások megmaradnak. Lásd a
+[gyökér tesztútmutatót](../../../../README.md#build-and-test).
+
 ### Gyorsítótárazás
 
 A Core modult használó gazdaalkalmazások regisztrálják a `HybridCache`

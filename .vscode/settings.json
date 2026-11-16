@@ -1,0 +1,12 @@
+{
+  "coverage-gutters.coverageBaseDir": "Behind/**",
+  "coverage-gutters.coverageFileNames": [
+    "coverage.cobertura.xml"
+  ],
+  "coverage-gutters.coverageReportFileName": "Behind/CoverageReport/**/index.html",
+  "coverage-gutters.showLineCoverage": true,
+  "coverage-gutters.showRulerCoverage": true,
+  "coverage-gutters.showGutterCoverage": true,
+  "coverage-gutters.ignoredPathGlobs": "**/{node_modules,venv,.venv,vendor,bin,obj}/**",
+  "dotnet-test-explorer.testProjectPath": "Behind/**/*.Tests.csproj"
+}

@@ -1,0 +1,114 @@
+using Behind.Common;
+using Behind.Common.Database;
+using Behind.Common.Database.Modules;
+using Behind.Core.Domain;
+using static Behind.Common.FunctionalExtensions;
+using Microsoft.EntityFrameworkCore;
+
+namespace Behind.Core.Database.Queries;
+
+public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerable<IAuditLabelSource> labelSources)
+    : IAuditLogEntryQueries
+{
+    public async Task<IReadOnlyList<string>> GetEntityTypes(CancellationToken cancellationToken = default) =>
+        await context.AuditLogEntries.AsNoTracking()
+            .Select(entry => entry.EntityName)
+            .Distinct()
+            .OrderBy(name => name)
+            .ToListAsync(cancellationToken);
+
+    public async Task<AuditLabels> ResolveLabels(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return AuditLabels.Empty;
+        }
+
+        using var attribution = context.SoftDelete.IncludeDeleted();
+
+        return await context.ResolveAuditLabelsAsync(ids, labelSources, cancellationToken);
+    }
+
+    public async Task<Option<PagedResult<AuditLogEntry>>> GetAuditLog(IAuditLogEntryQueries.RequestAuditLog request,
+        CancellationToken cancellationToken = default)
+    {
+        using var attribution = context.SoftDelete.IncludeDeleted();
+
+        DateTime fromDate = DateTime.SpecifyKind(request.FromDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        DateTime toDate =
+            DateTime.SpecifyKind(request.ToDate.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+
+        var baseQuery = request.Filter is EmptyFilter<AuditLogEntry>
+            ? context.AuditLogEntries.Where(x => x.Timestamp >= fromDate && x.Timestamp < toDate)
+            : request.Filter.Apply(
+                context.AuditLogEntries.Where(x => x.Timestamp >= fromDate && x.Timestamp < toDate)
+            );
+
+        var total = await baseQuery.CountAsync(cancellationToken);
+
+        var projectionQuery = (from audit in baseQuery
+            join user in context.Users
+                on EF.Property<Guid?>(audit, "UserId")
+                equals EF.Property<Guid?>(user, "Id")
+                into userGroups
+            from dbUser in userGroups.DefaultIfEmpty()
+            join behalfOfUser in context.Users
+                on EF.Property<Guid?>(audit, "BehalfOfId")
+                equals EF.Property<Guid?>(behalfOfUser, "Id")
+                into behalfOfGroups
+            from dbBehalfOf in behalfOfGroups.DefaultIfEmpty()
+            select new
+            {
+                Audit = audit,
+                Id = EF.Property<Guid>(audit, "Id"),
+                UserId = EF.Property<Guid?>(audit, "UserId"),
+                dbUser.DisplayName,
+                BehalfOfId = EF.Property<Guid?>(audit, "BehalfOfId"),
+                BehalfOfDisplayName = dbBehalfOf.DisplayName,
+                PrimaryEmails = context.Emails
+                    .Where(e => EF.Property<Guid?>(e, "UserId") == EF.Property<Guid?>(audit, "UserId"))
+                    .Select(e => e.Value).ToList(),
+                BehalfOfEmails = context.Emails
+                    .Where(e => EF.Property<Guid?>(e, "UserId") == EF.Property<Guid?>(audit, "BehalfOfId"))
+                    .Select(e => e.Value).ToList()
+            }).AsNoTracking();
+
+
+        if (!request.OrderByCollection.Collection.Any())
+        {
+            request = request with { OrderByCollection = new OrderByCollection([new OrderBy("audit.Timestamp")]) };
+        }
+
+        var stableOrder = new OrderByCollection(
+            request.OrderByCollection.Collection.Concat([new OrderBy("Id")]));
+
+        var items = await request.Flipper.Apply(
+            stableOrder.Apply(projectionQuery)
+        ).ToListAsync(cancellationToken);
+
+        var populatedItems = items.Select(item =>
+        {
+            User user = item.UserId.HasValue
+                ? item.UserId.Value.ToUser(item.DisplayName, item.PrimaryEmails)
+                : new GuestUser(None);
+
+            var behalfOf = item.BehalfOfId.HasValue
+                ? Some(item.BehalfOfId.Value.ToUser(item.BehalfOfDisplayName, item.BehalfOfEmails))
+                : None;
+
+            return item.Audit with { User = user, BehalfOf = behalfOf, ActorId = item.UserId, BehalfOfActorId = item.BehalfOfId };
+        });
+
+        return total > 0
+            ? Some(
+                new PagedResult<AuditLogEntry>(
+                    total,
+                    request.Flipper.Index,
+                    request.Flipper.PageCount(total),
+                    request.Flipper.Size,
+                    Some(populatedItems)))
+            : None;
+    }
+}

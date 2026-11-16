@@ -1,0 +1,10 @@
+global using Xunit;
+global using NSubstitute;
+global using Behind.Common;
+global using Behind.Common.Database;
+global using Behind.Common.Modules;
+global using Behind.Core.Domain;
+global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Logging.Abstractions;
+global using Behind.Tests.Helpers;
+global using static Behind.Common.FunctionalExtensions;

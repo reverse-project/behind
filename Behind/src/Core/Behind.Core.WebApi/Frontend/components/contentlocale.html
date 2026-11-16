@@ -1,0 +1,11 @@
+<div data-bind="if: canManage">
+    <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: toggle, t: 'contentLocale.label'"></button>
+    <div class="border rounded p-2 mt-2" data-bind="if: open">
+        <label class="form-label"><span data-bind="t: 'contentLocale.label'"></span>
+            <select class="form-select form-select-sm" data-bind="options: options, optionsText: 'name', optionsValue: 'code', value: value, enable: !busy()"></select>
+        </label>
+        <button class="btn btn-sm btn-primary" type="button" data-bind="click: save, enable: canSave, t: 'common.save'"></button>
+        <p class="small mb-0" role="status" data-bind="text: message"></p>
+        <p class="small text-danger mb-0" role="alert" data-bind="visible: loadFailed, t: 'contentLocale.error'"></p>
+    </div>
+</div>

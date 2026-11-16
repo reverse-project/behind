@@ -1,0 +1,10 @@
+@baseUrl = http://localhost:5000
+@token = replace-with-access-token
+
+### List recorded entity types (AuditLog.Read)
+GET {{baseUrl}}/auditLog/entityTypes
+Authorization: Bearer {{token}}
+
+### Filter by an exact entity type (AuditLog.Read)
+GET {{baseUrl}}/auditLog?fromDate=2026-11-01&toDate=2026-11-13&entity=User&entityExact=true
+Authorization: Bearer {{token}}

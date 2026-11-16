@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Behind</title>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="BeHind" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+    <link rel="stylesheet" href="css/solid.min.css">
+    <link rel="stylesheet" href="css/quill.snow.min.css">
+    <link rel="stylesheet" href="css/app.css">
+    <script src="libraries/require.min.js" data-main="bootloader.js"></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+<div id="application-shell" class="d-flex flex-column flex-grow-1">
+    <header id="header-container" class="behind-page-header"></header>
+    <main id="main-container" class="container my-4 behind-main flex-grow-1">
+        <div id="page-loading" class="d-flex justify-content-center align-items-center py-5" role="status">
+            <div class="spinner-border text-primary">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </main>
+    <footer id="footer-container" class="behind-page-footer border-top py-3"></footer>
+</div>
+<noscript>
+    <div class="alert alert-warning m-3" role="alert">This application requires JavaScript.</div>
+</noscript>
+</body>
+</html>

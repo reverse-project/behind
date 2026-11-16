@@ -1,0 +1,48 @@
+<section class="behind-wide">
+    <h1 data-bind="t: 'contact.title'">Contact</h1>
+    <div class="alert alert-danger" role="alert" data-bind="visible: error, text: error"></div>
+    <div class="alert" role="status" data-bind="visible: notice, css: notice() === 'contact.done.submitted' ? 'alert-success' : 'alert-warning', t: notice"></div>
+    <p class="text-body-secondary" data-bind="visible: !hasForms() &amp;&amp; !busy(), t: 'contact.empty'">There are no contact forms available.</p>
+    <div data-bind="visible: hasForms">
+        <div class="mb-3" data-bind="visible: forms().length > 1">
+            <label class="form-label" data-bind="attr: { for: idPrefix + '-form-select' }, t: 'contact.form'">Contact form</label>
+            <select class="form-select" data-bind="attr: { id: idPrefix + '-form-select' }, options: forms, optionsText: 'name', optionsValue: 'id', value: selectedFormId, enable: !busy()"></select>
+        </div>
+        <form class="card card-body" data-bind="submit: submit, visible: form()">
+            <h2 class="h4" data-bind="text: form() && form().name"></h2>
+            <p class="text-body-secondary" data-bind="visible: form() &amp;&amp; form().description, text: form() &amp;&amp; form().description"></p>
+            <div class="mb-3">
+                <label class="form-label" data-bind="attr: { for: idPrefix + '-name' }, t: 'contact.name'">Name</label>
+                <input class="form-control" type="text" maxlength="200" required autocomplete="name" data-bind="attr: { id: idPrefix + '-name' }, value: name, valueUpdate: 'input', enable: !busy()">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" data-bind="attr: { for: idPrefix + '-email' }, t: 'contact.email'">Email</label>
+                <input class="form-control" type="email" maxlength="320" required autocomplete="email" data-bind="attr: { id: idPrefix + '-email' }, value: email, valueUpdate: 'input', enable: !busy()">
+            </div>
+            <div class="mb-3" data-bind="if: form() &amp;&amp; form().subjectMode === 'choices'">
+                <label class="form-label" data-bind="attr: { for: idPrefix + '-subject-choice' }, t: 'contact.subject'">Subject</label>
+                <select class="form-select" required data-bind="attr: { id: idPrefix + '-subject-choice' }, options: subjectChoices, value: subject, enable: !busy() &amp;&amp; form() &amp;&amp; form().subjectMode === 'choices'"></select>
+            </div>
+            <div class="mb-3" data-bind="if: form() &amp;&amp; form().subjectMode === 'freeText'">
+                <label class="form-label" data-bind="attr: { for: idPrefix + '-subject' }, t: 'contact.subject'">Subject</label>
+                <input class="form-control" type="text" maxlength="200" required data-bind="attr: { id: idPrefix + '-subject' }, value: subject, valueUpdate: 'input', enable: !busy() &amp;&amp; form() &amp;&amp; form().subjectMode === 'freeText'">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" data-bind="attr: { for: idPrefix + '-message' }, t: 'contact.message'">Message</label>
+                <textarea class="form-control" rows="5" maxlength="10000" required data-bind="attr: { id: idPrefix + '-message' }, value: message, valueUpdate: 'input', enable: !busy()"></textarea>
+            </div>
+            <div data-bind="foreach: fields">
+                <div class="mb-3">
+                    <label class="form-label" data-bind="text: label, attr: { for: $parent.idPrefix + '-field-' + key }"></label>
+                    <!-- ko if: type === 'textarea' -->
+                    <textarea class="form-control" rows="4" data-bind="attr: { id: $parent.idPrefix + '-field-' + key, maxlength: maxLength, required: required }, value: value, valueUpdate: 'input', enable: !$parent.busy()"></textarea>
+                    <!-- /ko -->
+                    <!-- ko if: type !== 'textarea' -->
+                    <input class="form-control" data-bind="attr: { id: $parent.idPrefix + '-field-' + key, type: type, maxlength: maxLength, required: required }, value: value, valueUpdate: 'input', enable: !$parent.busy()">
+                    <!-- /ko -->
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary align-self-start" data-bind="enable: !busy(), t: 'contact.submit'">Send message</button>
+        </form>
+    </div>
+</section>

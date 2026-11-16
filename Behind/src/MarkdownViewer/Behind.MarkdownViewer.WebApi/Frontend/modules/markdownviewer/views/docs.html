@@ -1,0 +1,23 @@
+<section class="behind-wide">
+    <div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: !configured(), t: 'markdownviewer.notConfigured'">The documentation is not available yet. A developer has to set the source directory in the settings.</div>
+    <div class="alert alert-secondary" role="status" data-bind="visible: fallbackNotice() !== '', text: fallbackNotice"></div>
+    <p class="text-body-secondary" data-bind="visible: configured() && !hasEntries(), t: 'markdownviewer.empty'">There are no documents yet.</p>
+    <div class="row" data-bind="visible: hasEntries">
+        <nav class="col-lg-3 mb-4" aria-label="Documents">
+            <h2 class="h5"><a class="text-reset text-decoration-none" data-bind="visible: homeHref() !== null, attr: { href: homeHref, 'aria-current': homeActive() ? 'page' : null }, text: title, css: { 'fw-bold': homeActive }"></a><span data-bind="visible: homeHref() === null, text: title"></span></h2>
+            <!-- ko foreach: sections -->
+            <div class="mb-3">
+                <div class="fw-semibold" data-bind="visible: hasTitle">
+                    <a data-bind="visible: href !== null, attr: { href: href, 'aria-current': active() ? 'page' : null }, text: title, css: { 'fw-bold': active }"></a>
+                    <span data-bind="visible: href === null, text: title"></span>
+                </div>
+                <ul class="list-unstyled mb-0" data-bind="foreach: entries">
+                    <li data-bind="style: { paddingLeft: indent }"><a data-bind="attr: { href: href, 'aria-current': active() ? 'page' : null }, text: title, css: { 'fw-bold': active }"></a></li>
+                </ul>
+            </div>
+            <!-- /ko -->
+        </nav>
+        <article class="col-lg-9 markdown-body text-break" data-bind="html: html, click: follow"></article>
+    </div>
+</section>

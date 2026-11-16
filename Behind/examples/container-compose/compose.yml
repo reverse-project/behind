@@ -1,0 +1,61 @@
+x-behind-user: &behind-user
+  user: "${BEHIND_UID:-1000}:${BEHIND_GID:-1000}"
+  userns_mode: keep-id
+
+services:
+  core-tools:
+    image: ghcr.io/reverse-project/behind/core-tools:latest
+    container_name: core-tools
+    restart: "no"
+    profiles:
+      - init
+    <<: *behind-user
+    command:
+      - startup
+      - create
+      - --data-directory
+      - /app/data
+      - --config-directory
+      - /app/config
+      - --frontend-url
+      - ${BEHIND_FRONTEND_URL:-http://localhost:8080/}
+      - --skip-existing
+    volumes:
+      - ./config:/app/config:Z
+      - ./data:/app/data:Z
+
+  core-database-migrator:
+    image: ghcr.io/reverse-project/behind/core-database-migrator:latest
+    container_name: core-database-migrator
+    restart: "no"
+    <<: *behind-user
+    profiles:
+      - init
+    environment:
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+    volumes:
+      - ./config/database.json:/app/database.json:Z
+      - ./config/backend.json:/app/backend.json:Z
+      - ./data:/app/data:Z
+
+  web:
+    image: ghcr.io/reverse-project/behind/web:latest
+    container_name: web
+    restart: always
+    <<: *behind-user
+    ports:
+      - "8080:8080"
+    environment:
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+    volumes:
+      - ./config/database.json:/app/database.json:Z
+      - ./config/backend.json:/app/backend.json:Z
+      - ./data:/app/data:Z
+      - ./config/appsettings.json:/app/appsettings.json:Z
+      - ./config/security.json:/app/security.json:Z
+      - ./config/frontend.json:/app/frontend.json:Z
+      - ./config/email.json:/app/email.json:Z
+      - ./config/forum.json:/app/forum.json:Z
+      - ./config/markdownviewer.json:/app/markdownviewer.json:Z

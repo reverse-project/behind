@@ -1,0 +1,58 @@
+@baseUrl = http://localhost:5000
+@token = replace-with-access-token
+@id = 18fdcc69-269d-4c1a-9123-56f83cd36d50
+
+### List active messages (Message.Read)
+GET {{baseUrl}}/messages/manage?page=1&pageSize=50&search=&letter=
+Authorization: Bearer {{token}}
+
+### List deleted messages (Message.Read and RawDatabase.Manage)
+GET {{baseUrl}}/messages/manage?deleted=true
+Authorization: Bearer {{token}}
+
+### Message details (Message.Read)
+GET {{baseUrl}}/messages/{{id}}
+Authorization: Bearer {{token}}
+
+### Create (Message.Write); use returned id in subsequent requests
+POST {{baseUrl}}/messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Maintenance notice",
+  "title": "Scheduled maintenance",
+  "content": "<p>The site will be unavailable briefly.</p>",
+  "level": "warning",
+  "startsAt": "2026-11-12T12:00:00Z",
+  "endsAt": "2026-11-12T13:00:00Z"
+}
+
+### Update (Message.Write)
+POST {{baseUrl}}/messages/{{id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Maintenance complete",
+  "title": "",
+  "content": "<p>The site is available again.</p>",
+  "level": "success",
+  "startsAt": null,
+  "endsAt": null
+}
+
+### Public widget; 404 outside schedule or when deleted
+GET {{baseUrl}}/widgets/messages/{{id}}
+
+### Soft delete (Message.Delete)
+POST {{baseUrl}}/messages/{{id}}/delete
+Authorization: Bearer {{token}}
+
+### Restore (RawDatabase.Manage)
+POST {{baseUrl}}/messages/{{id}}/restore
+Authorization: Bearer {{token}}
+
+### Permanently delete a previously deleted message (RawDatabase.Manage)
+POST {{baseUrl}}/messages/{{id}}/hard/delete
+Authorization: Bearer {{token}}

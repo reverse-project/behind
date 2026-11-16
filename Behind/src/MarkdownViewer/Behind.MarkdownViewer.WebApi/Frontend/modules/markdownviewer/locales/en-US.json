@@ -1,0 +1,30 @@
+{
+  "name": "English (International)",
+  "messages": {
+    "menu.item.documentation": "Documentation",
+    "markdownviewer.administration": "Documentation",
+    "markdownviewer.title": "Documentation",
+    "markdownviewer.notConfigured": "The documentation is not available yet. A developer has to set the source directory in the settings.",
+    "markdownviewer.empty": "There are no documents yet.",
+    "markdownviewer.back": "Back to administration",
+    "markdownviewer.signInToManage": "to generate the documentation.",
+    "markdownviewer.denied": "You need documentation access to generate the static pages.",
+    "markdownviewer.manage.title": "Documentation generator",
+    "markdownviewer.manage.intro": "Generates a static website from the Markdown files of the source directory into the output directory. Both directories are set in the markdownviewer.json tab of the settings. A source directory with one folder per language (en-US, hu-HU) is generated as one site per language.",
+    "markdownviewer.manage.notConfigured": "The source directory is not set or does not exist.",
+    "markdownviewer.manage.documents": "Documents found:",
+    "markdownviewer.manage.settings": "Open settings",
+    "markdownviewer.manage.open": "Open the documentation",
+    "markdownviewer.generate": "Generate static pages",
+    "markdownviewer.done.generated": "Generated {0} pages and {1} files into {3}. {2} outdated files were removed.",
+    "markdownviewer.error.notFound": "This document does not exist.",
+    "markdownviewer.error.generateDenied": "You are not allowed to generate the documentation.",
+    "markdownviewer.error.source-not-configured": "The source directory is not set in markdownviewer.json.",
+    "markdownviewer.error.source-missing": "The source directory does not exist.",
+    "markdownviewer.error.output-not-configured": "The output directory is not set in markdownviewer.json.",
+    "markdownviewer.error.output-overlaps-source": "The output directory and the source directory must not contain each other.",
+    "markdownviewer.error.generation-failed": "The static pages could not be generated. See the application log.",
+    "markdownviewer.fallback": "This documentation is not available in your language. It is shown in {0}.",
+    "markdownviewer.manage.languages": "Languages:"
+  }
+}

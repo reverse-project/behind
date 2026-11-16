@@ -1,0 +1,37 @@
+@baseUrl = http://localhost:5000
+@token = replace-with-access-token
+@messageId = 00000000-0000-0000-0000-000000000001
+
+### Recent messages (nextCursor is the next request's before value)
+GET {{baseUrl}}/widgets/chat?limit=20
+
+### Older messages
+GET {{baseUrl}}/widgets/chat?limit=20&before={{messageId}}
+
+### Read a message (404 if missing or removed)
+GET {{baseUrl}}/widgets/chat/{{messageId}}
+
+### Post a message
+POST {{baseUrl}}/widgets/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "text": "Hello!", "replyToId": null }
+
+### Reply to a visible message
+POST {{baseUrl}}/widgets/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "text": "Thanks!", "replyToId": "{{messageId}}" }
+
+### Edit your own message within five minutes (409 for a stale version)
+PUT {{baseUrl}}/widgets/chat/{{messageId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "text": "Hello again!", "version": 1 }
+
+### Remove your own message (Chat.Delete) or moderate any message (Chat.Manage)
+DELETE {{baseUrl}}/widgets/chat/{{messageId}}
+Authorization: Bearer {{token}}

@@ -1,0 +1,74 @@
+@baseUrl = http://localhost:5000
+@token = replace-with-access-token
+@userId = 019a7821-1234-7000-8000-012345678901
+
+### Public profile, without private birthday or hidden email
+GET {{baseUrl}}/users/profiles/{{userId}}
+
+### Public profile: User.Manage also receives private account and retained ban details
+GET {{baseUrl}}/users/profiles/{{userId}}
+Authorization: Bearer {{token}}
+
+### Missing public profile
+GET {{baseUrl}}/users/profiles/00000000-0000-0000-0000-000000000000
+
+### Read own private profile settings
+GET {{baseUrl}}/profile/details
+Authorization: Bearer {{token}}
+
+### Store optional private birthday and hide public email
+PUT {{baseUrl}}/profile/details
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "birthday": "2000-02-29", "hideEmail": true }
+
+### Clear birthday and opt in to showing primary email
+PUT {{baseUrl}}/profile/details
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "birthday": null, "hideEmail": false }
+
+### Reject future birthday
+PUT {{baseUrl}}/profile/details
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "birthday": "9999-12-31", "hideEmail": true }
+
+### List own addresses and per-address confirmation status
+GET {{baseUrl}}/profile/emails
+Authorization: Bearer {{token}}
+
+### Add an address (confirmation email sent when enabled)
+POST {{baseUrl}}/profile/emails
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "email": "second@example.test" }
+
+### Replace an address (use an id from the list)
+PUT {{baseUrl}}/profile/emails/019a7821-1234-7000-8000-012345678902
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "email": "replacement@example.test" }
+
+### Resend confirmation for that address
+POST {{baseUrl}}/profile/emails/019a7821-1234-7000-8000-012345678902/confirmation
+Authorization: Bearer {{token}}
+
+### Remove an address (409 when this is the last one)
+DELETE {{baseUrl}}/profile/emails/019a7821-1234-7000-8000-012345678902
+Authorization: Bearer {{token}}
+
+### Reject access to a missing address
+DELETE {{baseUrl}}/profile/emails/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Confirm exactly the address from an emailed link
+POST {{baseUrl}}/sign/up/confirm
+Content-Type: application/json
+
+{ "userId": "{{userId}}", "emailId": "019a7821-1234-7000-8000-012345678902", "token": "replace-with-email-confirmation-token" }

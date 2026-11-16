@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <LangVersion>preview</LangVersion>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <NoWarn>$(NoWarn);AD0001</NoWarn>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <CoverletOutput>$(MSBuildProjectDirectory)/coverage.cobertura.xml</CoverletOutput>
+    <ExcludeByFile>**/obj/**/*.cs;**/*.Designer.cs;**/*.g.cs;**/*.generated.cs</ExcludeByFile>
+    <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+    <ExcludeByLine>^\s*namespace;^\s*using;</ExcludeByLine>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Contact/Behind.Contact.WebApi/Behind.Contact.WebApi.csproj" />
+    <ProjectReference Include="../../src/Contact/Behind.Contact.Database.Sqlite/Behind.Contact.Database.Sqlite.csproj" />
+    <ProjectReference Include="../../src/Contact/Behind.Contact.Database.Postgres/Behind.Contact.Database.Postgres.csproj" />
+    <ProjectReference Include="../../src/Forum/Behind.Forum.WebApi/Behind.Forum.WebApi.csproj" />
+    <ProjectReference Include="../../src/Forum/Behind.Forum.Database.Sqlite/Behind.Forum.Database.Sqlite.csproj" />
+    <ProjectReference Include="../../src/Forum/Behind.Forum.Database.Postgres/Behind.Forum.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Core\Behind.Core.Database.Postgres\Behind.Core.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Core\Behind.Core.Database.Sqlite\Behind.Core.Database.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\Core\Behind.Core.Common\Behind.Core.Common.csproj" />
+    <ProjectReference Include="..\..\src\Common\Behind.Common\Behind.Common.csproj" />
+    <ProjectReference Include="..\..\src\Common\Behind.Common.Database\Behind.Common.Database.csproj" />
+    <ProjectReference Include="..\..\src\Common\Behind.Common.WebApi\Behind.Common.WebApi.csproj" />
+    <ProjectReference Include="..\..\src\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
+    <ProjectReference Include="..\..\src\Core\Behind.Core.Tools\Behind.Core.Tools.csproj" />
+    <ProjectReference Include="..\..\src\MarkdownViewer\Behind.MarkdownViewer.WebApi\Behind.MarkdownViewer.WebApi.csproj" />
+    <ProjectReference Include="..\..\src\Quotes\Behind.Quotes.Database.Postgres\Behind.Quotes.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Quotes\Behind.Quotes.Database.Sqlite\Behind.Quotes.Database.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\Quotes\Behind.Quotes.WebApi\Behind.Quotes.WebApi.csproj" />
+    <ProjectReference Include="..\..\src\Sport\Behind.Sport.Database.Postgres\Behind.Sport.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Sport\Behind.Sport.Database.Sqlite\Behind.Sport.Database.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\Sport\Behind.Sport.WebApi\Behind.Sport.WebApi.csproj" />
+    <ProjectReference Include="..\..\src\Sites\Behind.Sites.FSE.Database.Postgres\Behind.Sites.FSE.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Sites\Behind.Sites.FSE.Database.Sqlite\Behind.Sites.FSE.Database.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\Web\Behind.Web.Database.Postgres\Behind.Web.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Web\Behind.Web.Database.Sqlite\Behind.Web.Database.Sqlite.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Frontend\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.msbuild">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="NSubstitute.Analyzers.CSharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

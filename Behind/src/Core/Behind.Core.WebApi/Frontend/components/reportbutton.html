@@ -1,0 +1,22 @@
+<div class="d-inline-block" data-bind="visible: allowed">
+    <button type="button" class="btn btn-sm btn-outline-warning" data-bind="click: function () { open(!open()); message(''); }, text: buttonLabel">Report</button>
+    <div class="alert alert-info mt-2" role="status" data-bind="visible: message, text: message"></div>
+    <form class="card card-body mt-2" data-bind="visible: open, submit: submit">
+        <p data-bind="visible: hasSource"><strong data-bind="t: 'reports.source'">Source</strong>: <span data-bind="text: sourceLabel"></span></p>
+        <p data-bind="visible: hasSource, t: 'reports.sourceNotice'">The selected content will be included as evidence.</p>
+        <label class="form-label" data-bind="t: 'reports.reason'">Reason</label>
+        <textarea class="form-control mb-2" required maxlength="4000" data-bind="textInput: reason, tAttr: { 'aria-label': 'reports.reason' }"></textarea>
+        <label class="form-label" data-bind="text: t(hasSource ? 'reports.additionalUsers' : 'reports.requiredUsers')">Users</label>
+        <div class="input-group mb-2">
+            <input class="form-control" data-bind="textInput: search, tAttr: { 'aria-label': 'reports.additionalUsers' }">
+            <button type="button" class="btn btn-outline-secondary" data-bind="click: find, t: 'common.search'">Search</button>
+        </div>
+        <div data-bind="foreach: users">
+            <label class="form-check"><input class="form-check-input" type="checkbox" data-bind="checked: $parent.selected, checkedValue: id"><span class="form-check-label" data-bind="text: displayName"></span></label>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-warning" data-bind="enable: !busy() && reason().trim() && (hasSource || selected().length), t: 'reports.submit'">Submit report</button>
+            <button type="button" class="btn btn-outline-secondary" data-bind="click: function () { open(false); }, t: 'common.cancel'">Cancel</button>
+        </div>
+    </form>
+</div>

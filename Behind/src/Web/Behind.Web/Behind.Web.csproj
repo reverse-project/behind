@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:11.0-resolute</ContainerBaseImage>
+      <PublishSingleFile>true</PublishSingleFile>
+      <SelfContained>true</SelfContained>
+      <ContainerRepository>reverse-project/behind/web</ContainerRepository>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="../../Contact/Behind.Contact.WebApi/Behind.Contact.WebApi.csproj" />
+      <ProjectReference Include="../../Forum/Behind.Forum.WebApi/Behind.Forum.WebApi.csproj" />
+      <ProjectReference Include="..\..\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
+      <ProjectReference Include="..\..\MarkdownViewer\Behind.MarkdownViewer.WebApi\Behind.MarkdownViewer.WebApi.csproj" />
+      <ProjectReference Include="..\..\Quotes\Behind.Quotes.WebApi\Behind.Quotes.WebApi.csproj" />
+      <ProjectReference Include="..\..\Sport\Behind.Sport.WebApi\Behind.Sport.WebApi.csproj" />
+      <ProjectReference Include="..\Behind.Web.Database.Postgres\Behind.Web.Database.Postgres.csproj" />
+      <ProjectReference Include="..\Behind.Web.Database.Sqlite\Behind.Web.Database.Sqlite.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="forum.json" CopyToOutputDirectory="Always" />
+      <Content Update="database.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="backend.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="email.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="markdownviewer.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="security.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+    
+</Project>

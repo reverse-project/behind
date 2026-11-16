@@ -1,0 +1,9 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=/workspaces/behind/Data/fse/fse.db"
+  },
+  "Database": {
+    "Provider": "Sqlite",
+    "Key": "DefaultConnection"
+  }
+}

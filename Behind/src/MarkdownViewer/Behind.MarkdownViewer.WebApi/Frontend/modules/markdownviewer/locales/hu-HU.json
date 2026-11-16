@@ -1,0 +1,30 @@
+{
+  "name": "Magyar",
+  "messages": {
+    "menu.item.documentation": "Dokumentáció",
+    "markdownviewer.administration": "Dokumentáció",
+    "markdownviewer.title": "Dokumentáció",
+    "markdownviewer.notConfigured": "A dokumentáció még nem érhető el. A fejlesztőnek be kell állítania a forráskönyvtárat a beállításokban.",
+    "markdownviewer.empty": "Még nincsenek dokumentumok.",
+    "markdownviewer.back": "Vissza az adminisztrációhoz",
+    "markdownviewer.signInToManage": "a dokumentáció előállításához.",
+    "markdownviewer.denied": "A statikus oldalak előállításához dokumentációs jogosultság szükséges.",
+    "markdownviewer.manage.title": "Dokumentációgenerátor",
+    "markdownviewer.manage.intro": "A forráskönyvtár Markdown fájljaiból statikus weboldalt állít elő a kimeneti könyvtárba. Mindkét könyvtár a beállítások markdownviewer.json lapján adható meg. A nyelvenként egy mappát (en-US, hu-HU) tartalmazó forráskönyvtárból nyelvenként egy weboldal készül.",
+    "markdownviewer.manage.notConfigured": "A forráskönyvtár nincs megadva vagy nem létezik.",
+    "markdownviewer.manage.documents": "Talált dokumentumok:",
+    "markdownviewer.manage.settings": "Beállítások megnyitása",
+    "markdownviewer.manage.open": "A dokumentáció megnyitása",
+    "markdownviewer.generate": "Statikus oldalak előállítása",
+    "markdownviewer.done.generated": "{0} oldal és {1} fájl előállítva ide: {3}. {2} elavult fájl törölve.",
+    "markdownviewer.error.notFound": "Ez a dokumentum nem létezik.",
+    "markdownviewer.error.generateDenied": "Nincs jogosultsága a dokumentáció előállításához.",
+    "markdownviewer.error.source-not-configured": "A forráskönyvtár nincs megadva a markdownviewer.json fájlban.",
+    "markdownviewer.error.source-missing": "A forráskönyvtár nem létezik.",
+    "markdownviewer.error.output-not-configured": "A kimeneti könyvtár nincs megadva a markdownviewer.json fájlban.",
+    "markdownviewer.error.output-overlaps-source": "A kimeneti és a forráskönyvtár nem tartalmazhatja egymást.",
+    "markdownviewer.error.generation-failed": "A statikus oldalak előállítása nem sikerült. Lásd az alkalmazásnaplót.",
+    "markdownviewer.fallback": "Ez a dokumentáció nem érhető el az Ön nyelvén. A következő nyelven jelenik meg: {0}.",
+    "markdownviewer.manage.languages": "Nyelvek:"
+  }
+}

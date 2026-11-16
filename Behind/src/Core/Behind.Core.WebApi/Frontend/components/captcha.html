@@ -1,0 +1,8 @@
+<div class="mb-3">
+    <label class="form-label" for="captcha-answer" data-bind="t: 'captcha.label'">Type the characters shown in the picture</label>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <img class="border rounded" width="200" height="70" data-bind="visible: hasImage, attr: { src: image }, tAttr: { alt: 'captcha.imageAlt' }">
+        <button type="button" class="btn btn-outline-secondary" data-bind="enable: !loading(), click: refresh, t: 'captcha.refresh'">New picture</button>
+    </div>
+    <input id="captcha-answer" class="form-control" type="text" maxlength="16" autocomplete="off" required autocapitalize="characters" spellcheck="false" data-bind="value: answer">
+</div>

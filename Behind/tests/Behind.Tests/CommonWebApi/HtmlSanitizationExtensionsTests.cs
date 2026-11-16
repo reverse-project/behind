@@ -1,0 +1,92 @@
+using System.Text;
+using Behind.Common.WebApi;
+using Microsoft.AspNetCore.Http;
+
+namespace Behind.Tests.CommonWebApi;
+
+public class HtmlSanitizationExtensionsTests
+{
+    [Theory]
+    [InlineData("<p>Hello <strong>world</strong></p>")]
+    [InlineData("<h2>Title</h2><ul><li>one</li></ul><ol><li>two</li></ol>")]
+    [InlineData("<blockquote>quote</blockquote><pre class=\"ql-syntax\">code</pre>")]
+    [InlineData("<p class=\"ql-align-center ql-indent-1\">centered</p>")]
+    [InlineData("<p><a href=\"https://example.com/\">link</a> <a href=\"mailto:a@b.c\">mail</a></p>")]
+    [InlineData("<p><img src=\"/sites/images/abc\" alt=\"logo\"></p>")]
+    [InlineData("<p><img src=\"/sites/images/abc\" width=\"240\" class=\"ql-image-left\"></p>")]
+    [InlineData("<p><img src=\"/sites/images/abc\" class=\"ql-image-center\"></p>")]
+    [InlineData("<p><img src=\"/sites/images/abc\" class=\"ql-image-right\"></p>")]
+    public void SanitizeRichText_KeepsTheEditorMarkup(string html)
+    {
+        Assert.Equal(html, html.SanitizeRichText());
+    }
+
+    [Theory]
+    [InlineData("<p>a</p><script>alert(1)</script>", "<p>a</p>")]
+    [InlineData("<p onclick=\"alert(1)\">a</p>", "<p>a</p>")]
+    [InlineData("<p style=\"color:red\">a</p>", "<p>a</p>")]
+    [InlineData("<a href=\"javascript:alert(1)\">a</a>", "<a>a</a>")]
+    [InlineData("<img src=\"data:image/png;base64,AAAA\">", "<img>")]
+    [InlineData("<iframe src=\"https://example.com\"></iframe><p>a</p>", "<p>a</p>")]
+    [InlineData("<p class=\"evil\">a</p>", "<p>a</p>")]
+    [InlineData("<img src=\"x\" onerror=\"alert(1)\">", "<img src=\"x\">")]
+    [InlineData("<img src=\"x\" class=\"ql-image-left evil\" style=\"width:9999px\">", "<img src=\"x\" class=\"ql-image-left\">")]
+    public void SanitizeRichText_RemovesAnythingUnsafe(string html, string expected)
+    {
+        Assert.Equal(expected, html.SanitizeRichText());
+    }
+
+    [Fact]
+    public void SanitizeRichText_EmptyContent_StaysEmpty()
+    {
+        Assert.Equal(string.Empty, string.Empty.SanitizeRichText());
+    }
+}
+
+public class MarkdownSanitizationExtensionsTests
+{
+    [Theory]
+    [InlineData("<h2 id=\"title\">Title</h2>")]
+    [InlineData("<table><tbody><tr><td style=\"text-align: right\">a</td></tr></tbody></table>")]
+    [InlineData("<table><thead><tr><th>A</th></tr></thead><tbody><tr><td colspan=\"2\">1</td></tr></tbody></table>")]
+    [InlineData("<pre><code class=\"language-csharp\">var a = 1;</code></pre>")]
+    [InlineData("<ul><li><input disabled=\"disabled\" type=\"checkbox\" checked=\"checked\">done</li></ul>")]
+    [InlineData("<p><a href=\"#/docs/a.md\">link</a> <img src=\"/markdownviewer/files/a.png\" alt=\"a\"></p>")]
+    public void SanitizeMarkdown_KeepsTheDocumentMarkup(string html)
+    {
+        Assert.Equal(html, html.SanitizeMarkdown());
+    }
+
+    [Theory]
+    [InlineData("<p>a</p><script>alert(1)</script>", "<p>a</p>")]
+    [InlineData("<p onclick=\"alert(1)\">a</p>", "<p>a</p>")]
+    [InlineData("<a href=\"javascript:alert(1)\">a</a>", "<a>a</a>")]
+    [InlineData("<iframe src=\"https://example.com\"></iframe><p>a</p>", "<p>a</p>")]
+    [InlineData("<p style=\"position:fixed\">a</p>", "<p>a</p>")]
+    public void SanitizeMarkdown_RemovesUnsafeContent(string html, string expected)
+    {
+        Assert.Equal(expected, html.SanitizeMarkdown());
+    }
+}
+
+public class FormFileExtensionsTests
+{
+    [Fact]
+    public async Task ReadAllBytesAsync_ReturnsTheWholeFile()
+    {
+        byte[] bytes = [1, 2, 3, 4, 5];
+        using var stream = new MemoryStream(bytes);
+        var file = new FormFile(stream, 0, bytes.Length, "file", "a.bin");
+
+        Assert.Equal(bytes, await file.ReadAllBytesAsync());
+    }
+
+    [Fact]
+    public async Task ReadAllBytesAsync_EmptyFile_ReturnsNothing()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(string.Empty));
+        var file = new FormFile(stream, 0, 0, "file", "a.bin");
+
+        Assert.Empty(await file.ReadAllBytesAsync());
+    }
+}

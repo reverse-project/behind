@@ -1,0 +1,15 @@
+<div>
+    <label class="form-label mt-2" data-bind="t: 'privateMessages.findUsers'">Find recipients</label>
+    <div class="input-group mb-2"><input class="form-control" data-bind="textInput: search, tAttr: { 'aria-label': 'privateMessages.findUsers' }"><button type="button" class="btn btn-outline-secondary" data-bind="click: find, t: 'common.search'">Search</button></div>
+    <p class="form-text" data-bind="t: 'privateMessages.recipientHelp'">Select visible and hidden recipients. Role membership is evaluated when messages are read.</p>
+    <div class="row">
+        <div class="col-md-6">
+            <h3 class="h6" data-bind="t: 'privateMessages.users'">Users</h3>
+            <div data-bind="foreach: users"><div class="d-flex gap-3"><span data-bind="text: displayName"></span><label><input type="checkbox" data-bind="checked: $parent.userIds, checkedValue: id"> <span data-bind="t: 'privateMessages.to'">To</span></label><label><input type="checkbox" data-bind="checked: $parent.bccUserIds, checkedValue: id"> <span data-bind="t: 'privateMessages.bcc'">BCC</span></label></div></div>
+        </div>
+        <div class="col-md-6" data-bind="visible: canRoles">
+            <h3 class="h6" data-bind="t: 'privateMessages.roles'">Roles</h3>
+            <div data-bind="foreach: roles"><div class="d-flex gap-3"><span data-bind="text: $data.name || $data.displayName"></span><label><input type="checkbox" data-bind="checked: $parent.roleIds, checkedValue: id"> <span data-bind="t: 'privateMessages.to'">To</span></label><label><input type="checkbox" data-bind="checked: $parent.bccRoleIds, checkedValue: id"> <span data-bind="t: 'privateMessages.bcc'">BCC</span></label></div></div>
+        </div>
+    </div>
+</div>

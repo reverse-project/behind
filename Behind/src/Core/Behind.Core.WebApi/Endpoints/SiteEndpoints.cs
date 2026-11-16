@@ -1,0 +1,211 @@
+using System.ComponentModel.DataAnnotations;
+using Behind.Common;
+using Behind.Common.WebApi.Middleware;
+using Behind.Core.Common.Configuration;
+using Behind.Core.WebApi.Authorization;
+using Behind.Core.Database;
+using Behind.Core.Domain;
+using Behind.Common.Database;
+using Behind.Common.WebApi;
+using Behind.Common.WebApi.Infrastructure.Localization;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Site = Behind.Core.Domain.Site;
+using static Behind.Common.FunctionalExtensions;
+
+namespace Behind.Core.WebApi.Endpoints;
+
+public sealed class SiteEndpoints
+{
+    public const int DefaultPageSize = ManagedListExtensions.DefaultPageSize;
+    public const int MaxPageSize = ManagedListExtensions.MaxPageSize;
+    public const string DeletedRecordsGrant = ManagedListExtensions.DeletedRecordsGrant;
+    public const string NoStore = ManagedListExtensions.NoStore;
+    public const string NoCache = "no-cache";
+
+    public sealed record SaveSiteSectionRequest(
+        SiteSectionTheme Theme,
+        [property: MaxLength(SiteSection.MaxTitleLength * 2)] string? Title,
+        [property: MaxLength(SiteSection.MaxContentLength * 2)] string? Content,
+        Guid? ImageId,
+        [property: MaxLength(SiteSection.MaxImageAltLength * 2)] string? ImageAlt,
+        SiteSectionImagePosition ImagePosition,
+        Guid? Id = null);
+
+    public sealed record SaveSiteRequest(
+        [property: Required, MaxLength(Site.MaxTitleLength)] string Title,
+        [property: MaxLength(Site.MaxSlugLength * 2)] string? Slug,
+        [property: MaxLength(Site.MaxContentLength)] string? Content,
+        bool Publish,
+        bool HideTitle = false,
+        IReadOnlyList<SaveSiteSectionRequest>? Sections = null) : ContentLocaleDraft;
+
+    [IgnoreETag]
+    public static Task<IResult> List(
+        HttpContext httpContext,
+        ISiteQueries queries,
+        IAuthorizationService authorization,
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null,
+        [FromQuery] string? search = null,
+        [FromQuery] string? letter = null,
+        [FromQuery] bool deleted = false) =>
+        httpContext.WithManagedList(
+            authorization,
+            search,
+            letter,
+            deleted,
+            async query =>
+            {
+                var sites = await queries.List(
+                    Flipper.Create(page, pageSize, DefaultPageSize, MaxPageSize),
+                    query.Search,
+                    query.Letter,
+                    query.State,
+                    httpContext.RequestAborted);
+
+                var letters = await queries.GetLetters(query.Search, query.State, httpContext.RequestAborted);
+
+                return Results.Json(new SiteListResponse(sites.ToPageResponse(site => site.ToItem(query.State)), letters));
+            });
+
+    [IgnoreETag]
+    public static async Task<IResult> Delete(Guid id, HttpContext httpContext, ISiteCommands commands) =>
+        await commands.Delete(id, httpContext.RequestAborted) ? Results.NoContent() : Results.NotFound();
+
+    [IgnoreETag]
+    public static async Task<IResult> Restore(Guid id, HttpContext httpContext, ISiteCommands commands)
+    {
+        var result = await commands.Restore(id, httpContext.RequestAborted);
+
+        return result is SiteSaveResult.Saved ? Results.NoContent() : result.ToResult();
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> HardDelete(Guid id, HttpContext httpContext, ISiteCommands commands) =>
+        (await commands.HardDelete(id, httpContext.RequestAborted)).ToResult();
+
+    [IgnoreETag]
+    public static IResult GetSettings(HttpContext httpContext, IOptionsSnapshot<SitesConfiguration> configuration)
+    {
+        httpContext.Response.Headers.CacheControl = NoStore;
+
+        return Results.Json(configuration.Value.ToResponse());
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> GetHistory(Guid id, HttpContext httpContext, ISiteQueries queries)
+    {
+        httpContext.Response.Headers.CacheControl = NoStore;
+
+        var history = await queries.FindHistory(id, httpContext.RequestAborted);
+
+        return history.Match(() => Results.NotFound(), found => Results.Json(found.ToResponse()));
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> GetVersion(Guid id, long version, HttpContext httpContext, ISiteQueries queries)
+    {
+        httpContext.Response.Headers.CacheControl = NoStore;
+
+        var site = await queries.FindVersion(new VersionedKey<Guid>(id, version), httpContext.RequestAborted);
+
+        return await site.Match(
+            () => Task.FromResult<IResult>(Results.NotFound()),
+            async found => Results.Json(
+                found.ToVersionResponse(await queries.FindSections(found.Id, httpContext.RequestAborted))));
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> Create(
+        SaveSiteRequest request, HttpContext httpContext, ISiteCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null)
+    {
+        if (!await request.SelectContentLocale(context, locales, httpContext.RequestAborted))
+        {
+            return Results.BadRequest();
+        }
+        return await WithDraft(
+            request,
+            async draft =>
+                (await commands.Create(
+                    draft.Title,
+                    draft.Slug,
+                    draft.Content,
+                    draft.Publish,
+                    draft.HideTitle,
+                    draft.Sections,
+                    httpContext.RequestAborted)).ToResult());
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> SaveVersion(
+        Guid id,
+        SaveSiteRequest request,
+        HttpContext httpContext,
+        ISiteCommands commands,
+        [FromServices] AbstractCoreContext? context = null, [FromServices] LocaleCatalog? locales = null)
+    {
+        if (!await request.SelectContentLocale(context, locales, httpContext.RequestAborted))
+        {
+            return Results.BadRequest();
+        }
+        return await WithDraft(
+            request,
+            async draft =>
+                (await commands.SaveVersion(
+                    id,
+                    draft.Title,
+                    draft.Slug,
+                    draft.Content,
+                    draft.Publish,
+                    draft.HideTitle,
+                    draft.Sections,
+                    httpContext.RequestAborted)).ToResult());
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> Activate(
+        Guid id,
+        long version,
+        HttpContext httpContext,
+        ISiteCommands commands)
+    {
+        var result = await commands.Activate(new VersionedKey<Guid>(id, version), httpContext.RequestAborted);
+
+        return result.ToResult();
+    }
+
+    public static Task<IResult> GetPublic(string slug, HttpContext httpContext, ISiteQueries queries) =>
+        ServePublic(slug.ToSlug(Site.MaxSlugLength), httpContext, queries);
+
+    public static Task<IResult> GetIndex(
+        HttpContext httpContext,
+        ISiteQueries queries,
+        IOptionsSnapshot<SitesConfiguration> configuration) =>
+        ServePublic(configuration.Value.IndexSlugOption, httpContext, queries);
+
+    private static async Task<IResult> ServePublic(Option<string> slug, HttpContext httpContext, ISiteQueries queries)
+    {
+        httpContext.Response.Headers.CacheControl = NoCache;
+
+        var site = await slug.Match(
+            () => Task.FromResult<Option<Site>>(None),
+            value => queries.FindActiveBySlug(value, httpContext.RequestAborted));
+
+        return await site.Match(
+            () => Task.FromResult<IResult>(Results.NotFound()),
+            async found =>
+            {
+                var sections = await queries.FindSections(found.Id, httpContext.RequestAborted);
+
+                return found.ToPublicResponse(sections)
+                    .Match(() => Results.NotFound(), response => Results.Json(response));
+            });
+    }
+
+    private static Task<IResult> WithDraft(SaveSiteRequest request, Func<SiteDraft, Task<IResult>> action) =>
+        request.ToDraft().Match(() => Task.FromResult<IResult>(Results.BadRequest()), action);
+}

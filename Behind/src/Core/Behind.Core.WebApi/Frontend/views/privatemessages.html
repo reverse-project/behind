@@ -1,0 +1,85 @@
+<section class="behind-wide" data-bind="privateDispose: $root">
+    <h1 data-bind="t: 'privateMessages.title'">Private messages</h1>
+    <report-button params="sourceType: null"></report-button>
+    <p class="alert alert-warning" role="alert" data-bind="visible: !canRead(), t: 'privateMessages.forbidden'">You cannot read private messages.</p>
+    <div data-bind="visible: canRead">
+        <div class="nav nav-pills gap-2 mb-3" role="group" data-bind="tAttr: { 'aria-label': 'privateMessages.title' }">
+            <button type="button" class="nav-link" data-bind="click: function () { selectFolder('inbox'); }, css: { active: !composing() && !showBlocks() && folder() === 'inbox' }, attr: { 'aria-pressed': !composing() && !showBlocks() && folder() === 'inbox' }, t: 'privateMessages.inbox'">Inbox</button>
+            <button type="button" class="nav-link" data-bind="click: function () { selectFolder('read'); }, css: { active: !composing() && !showBlocks() && folder() === 'read' }, attr: { 'aria-pressed': !composing() && !showBlocks() && folder() === 'read' }, t: 'privateMessages.read'">Read</button>
+            <button type="button" class="nav-link" data-bind="click: function () { selectFolder('sent'); }, css: { active: !composing() && !showBlocks() && folder() === 'sent' }, attr: { 'aria-pressed': !composing() && !showBlocks() && folder() === 'sent' }, t: 'privateMessages.sent'">Sent</button>
+            <button type="button" class="nav-link" data-bind="click: function () { selectFolder('deleted'); }, css: { active: !composing() && !showBlocks() && folder() === 'deleted' }, attr: { 'aria-pressed': !composing() && !showBlocks() && folder() === 'deleted' }, t: 'privateMessages.deleted'">Deleted</button>
+            <button type="button" class="nav-link" data-bind="visible: canWrite, click: function () { selectFolder('left'); }, css: { active: !composing() && !showBlocks() && folder() === 'left' }, attr: { 'aria-pressed': !composing() && !showBlocks() && folder() === 'left' }, t: 'privateMessages.left'">Left groups</button>
+            <button type="button" class="nav-link" data-bind="visible: canWrite, click: compose, css: { active: composing() }, attr: { 'aria-pressed': composing() }, t: 'privateMessages.compose'">Compose</button>
+            <button type="button" class="nav-link" data-bind="visible: canWrite, click: openBlocks, css: { active: showBlocks() }, attr: { 'aria-pressed': showBlocks() }, t: 'privateMessages.blocks'">Blocked users</button>
+        </div>
+        <p class="alert alert-warning" role="alert" data-bind="visible: message, text: message"></p>
+        <div data-bind="visible: !detail() && !composing() && !showBlocks()">
+            <ul class="list-group mb-3" data-bind="foreach: items">
+                <li class="list-group-item">
+                    <button type="button" class="btn btn-link" data-bind="visible: $root.folder() !== 'left', text: subject, click: $root.open"></button>
+                    <span data-bind="visible: $root.folder() === 'left', text: subject"></span>
+                    <span data-bind="visible: $root.folder() !== 'left', text: $root.dateTime(updatedAt || createdAt)"></span>
+                    <span class="badge text-bg-primary" data-bind="visible: $root.folder() !== 'left' && !isRead, t: 'privateMessages.unread'">Unread</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="visible: $root.folder() === 'left' && $root.canWrite(), click: $root.rejoin, enable: !$root.busy(), t: 'privateMessages.join'">Join</button>
+                </li>
+            </ul>
+            <pager params="pager: pager"></pager>
+        </div>
+        <div data-bind="if: showBlocks">
+            <h2 data-bind="t: 'privateMessages.blocks'">Blocked users</h2>
+            <ul class="list-group mb-3" data-bind="foreach: blocks"><li class="list-group-item"><span data-bind="text: displayName"></span> <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: $root.unblock, enable: !$root.busy(), t: 'privateMessages.unblock'">Unblock</button></li></ul>
+            <pager params="pager: blocksPager"></pager>
+            <div class="input-group mb-2"><input class="form-control" data-bind="textInput: search, tAttr: { 'aria-label': 'privateMessages.findUsers' }"><button type="button" class="btn btn-outline-secondary" data-bind="click: find, t: 'common.search'">Search</button></div>
+            <ul class="list-group" data-bind="foreach: users"><li class="list-group-item"><span data-bind="text: displayName"></span> <button type="button" class="btn btn-sm btn-outline-danger" data-bind="click: $root.block, enable: !$root.busy(), t: 'privateMessages.block'">Block</button></li></ul>
+        </div>
+        <form data-bind="visible: composing, submit: send">
+            <h2 data-bind="t: 'privateMessages.compose'">Compose</h2>
+            <label class="form-label" for="pm-subject" data-bind="t: 'privateMessages.subject'">Subject</label>
+            <input id="pm-subject" class="form-control mb-2" required maxlength="200" data-bind="textInput: subject">
+            <label class="form-check" data-bind="visible: canSystem"><input class="form-check-input" type="checkbox" data-bind="checked: isSystem"><span data-bind="t: 'privateMessages.system'">System conversation</span></label>
+            <private-recipients params="search: search, users: users, roles: roles, userIds: userIds, roleIds: roleIds, bccUserIds: bccUserIds, bccRoleIds: bccRoleIds, canRoles: canSystem, find: find"></private-recipients>
+            <label class="form-label mt-3" for="pm-content" data-bind="t: 'privateMessages.body'">Message</label>
+            <div class="nav nav-pills gap-2 mb-2" role="group" data-bind="tAttr: { 'aria-label': 'privateMessages.body' }"><button type="button" class="nav-link" data-bind="click: function () { editorMode('visual'); }, css: { active: editorMode() === 'visual' }, attr: { 'aria-pressed': editorMode() === 'visual' }, t: 'privateMessages.visual'">Visual editor</button><button type="button" class="nav-link" data-bind="click: function () { editorMode('source'); }, css: { active: editorMode() === 'source' }, attr: { 'aria-pressed': editorMode() === 'source' }, t: 'privateMessages.source'">BBCode</button></div>
+            <textarea id="pm-content" class="form-control" rows="8" data-bind="visible: editorMode() === 'source', textInput: content"></textarea>
+            <div data-bind="if: editorMode() === 'visual'"><span id="pm-content-label" data-bind="t: 'privateMessages.body'">Message</span><div data-bind="bbcodeEditor: { value: content, enabled: !busy(), labelId: 'pm-content-label' }"></div></div>
+            <h3 class="h6 mt-2" data-bind="t: 'privateMessages.preview'">Preview</h3><div class="border rounded p-2 mb-2" data-bind="bbcode: content"></div>
+            <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'privateMessages.send'">Send</button>
+        </form>
+        <div data-bind="if: detail">
+            <div data-bind="with: detail">
+                <h2 data-bind="text: subject"></h2>
+                <p data-bind="foreach: participants"><span class="badge text-bg-secondary me-1" data-bind="text: displayName"></span></p>
+                <div data-bind="foreach: messages">
+                    <article class="card mb-2"><div class="card-body">
+                        <div class="d-flex flex-wrap gap-2"><strong data-bind="text: author"></strong><span data-bind="text: $root.dateTime(createdAt)"></span></div>
+                        <div class="border rounded p-2 mt-2" data-bind="with: $root.parentOf($data)"><strong data-bind="text: author"></strong><div data-bind="bbcode: content"></div></div>
+                        <div class="my-2 text-break" data-bind="bbcode: content"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: $parent.canReply && $root.canWrite(), click: $root.selectReply, t: 'privateMessages.replyTo'">Reply to this</button>
+                        <report-button params="sourceType: 'privateMessage', sourceId: id"></report-button>
+                    </div></article>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-danger" data-bind="visible: $root.folder() !== 'deleted' && $root.canDelete(), click: function () { $root.conversationAction('delete'); }, enable: !$root.busy(), t: 'common.delete'">Delete</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bind="visible: $root.folder() === 'deleted', click: function () { $root.conversationAction('restore'); }, enable: !$root.busy(), t: 'common.restore'">Restore</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bind="visible: $root.canManageMembership(), click: function () { $root.conversationAction('join'); }, enable: !$root.busy(), t: 'privateMessages.join'">Join</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bind="visible: $root.canManageMembership(), click: function () { $root.conversationAction('leave'); }, enable: !$root.busy(), t: 'privateMessages.leave'">Leave</button>
+                    <button type="button" class="btn btn-outline-primary" data-bind="visible: $root.canInvite(), click: $root.startInvite, enable: !$root.busy(), t: 'privateMessages.invite'">Invite participants</button>
+                </div>
+                <form class="card card-body mb-3" data-bind="if: $root.inviting, submit: $root.invite">
+                    <h3 class="h5" data-bind="t: 'privateMessages.invite'">Invite participants</h3>
+                    <private-recipients params="search: $root.search, users: $root.users, roles: $root.roles, userIds: $root.inviteUserIds, roleIds: $root.inviteRoleIds, bccUserIds: $root.inviteBccUserIds, bccRoleIds: $root.inviteBccRoleIds, canRoles: $root.canSystem, find: $root.find"></private-recipients>
+                    <div class="d-flex gap-2 mt-3"><button type="submit" class="btn btn-primary" data-bind="enable: !$root.busy(), t: 'privateMessages.invite'">Invite participants</button><button type="button" class="btn btn-outline-secondary" data-bind="click: $root.cancelInvite, enable: !$root.busy(), t: 'common.cancel'">Cancel</button></div>
+                </form>
+                <form data-bind="visible: canReply && $root.canWrite(), submit: $root.sendReply">
+                    <div class="border rounded p-2 mb-2" data-bind="if: $root.replyTo"><strong data-bind="text: $root.replyTo().author"></strong><div data-bind="bbcode: $root.replyTo().content"></div><button type="button" class="btn btn-sm btn-link" data-bind="click: function () { $root.replyTo(null); }, t: 'common.cancel'">Cancel</button></div>
+                    <label class="form-label" for="pm-reply" data-bind="t: 'privateMessages.reply'">Reply</label>
+                    <div class="nav nav-pills gap-2 mb-2" role="group" data-bind="tAttr: { 'aria-label': 'privateMessages.body' }"><button type="button" class="nav-link" data-bind="click: function () { $root.editorMode('visual'); }, css: { active: $root.editorMode() === 'visual' }, attr: { 'aria-pressed': $root.editorMode() === 'visual' }, t: 'privateMessages.visual'">Visual editor</button><button type="button" class="nav-link" data-bind="click: function () { $root.editorMode('source'); }, css: { active: $root.editorMode() === 'source' }, attr: { 'aria-pressed': $root.editorMode() === 'source' }, t: 'privateMessages.source'">BBCode</button></div>
+                    <textarea id="pm-reply" class="form-control mb-2" rows="5" data-bind="visible: $root.editorMode() === 'source', textInput: $root.reply"></textarea>
+                    <div data-bind="if: $root.editorMode() === 'visual'"><span id="pm-reply-label" data-bind="t: 'privateMessages.reply'">Reply</span><div data-bind="bbcodeEditor: { value: $root.reply, enabled: !$root.busy(), labelId: 'pm-reply-label' }"></div></div>
+                    <div class="border rounded p-2 mb-2" data-bind="bbcode: $root.reply"></div>
+                    <button type="submit" class="btn btn-primary" data-bind="enable: !$root.busy(), t: 'privateMessages.send'">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,22 @@
+<div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
+<div class="mb-3">
+    <div class="small text-body-secondary mb-1" data-bind="t: 'sport.field.discipline'">Sport</div>
+    <div class="d-flex flex-wrap gap-2" data-bind="foreach: disciplines">
+        <button type="button" class="btn btn-sm" data-bind="css: id === $parent.disciplineId() ? 'btn-primary' : 'btn-outline-primary', text: name, click: $parent.choose"></button>
+    </div>
+</div>
+<div class="mb-3" data-bind="visible: seasons().length > 0">
+    <div class="small text-body-secondary mb-1" data-bind="t: 'sport.field.season'">Season</div>
+    <div class="d-flex flex-wrap gap-2" data-bind="foreach: seasons">
+        <a class="btn btn-sm" data-bind="css: id === $parent.seasonId ? 'btn-primary' : 'btn-outline-primary', attr: { href: $parent.seasonLink($data) }, text: name"></a>
+    </div>
+</div>
+<div class="mb-3" data-bind="visible: statTypes().length > 0">
+    <div class="small text-body-secondary mb-1" data-bind="t: 'sport.field.statType'">Stat type</div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm" data-bind="css: statTypeId === null ? 'btn-primary' : 'btn-outline-primary', attr: { href: statTypeLink(null) }, t: 'sport.browser.allStatTypes'">All stat types</a>
+        <!-- ko foreach: statTypes -->
+        <a class="btn btn-sm" data-bind="css: id === $parent.statTypeId ? 'btn-primary' : 'btn-outline-primary', attr: { href: $parent.statTypeLink($data) }, text: name"></a>
+        <!-- /ko -->
+    </div>
+</div>

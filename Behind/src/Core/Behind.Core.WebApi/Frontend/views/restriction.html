@@ -1,0 +1,10 @@
+<section class="behind-restriction text-center py-5">
+    <i class="fa-solid fa-lock fa-3x mb-3" aria-hidden="true"></i>
+    <h1 data-bind="text: title">Restricted website</h1>
+    <div class="behind-restriction-message site-content lead" data-bind="html: message"></div>
+    <p class="text-body-secondary" data-bind="visible: isSignedIn, t: 'restriction.noAccess'">Your account is not allowed to see this website.</p>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+        <a class="btn btn-primary" href="#/sign-in" data-bind="visible: canSignIn, t: 'app.signIn'">Sign in</a>
+        <a class="btn btn-outline-primary" href="#/sign-up" data-bind="visible: canSignUp, t: 'app.signUp'">Sign up</a>
+    </div>
+</section>

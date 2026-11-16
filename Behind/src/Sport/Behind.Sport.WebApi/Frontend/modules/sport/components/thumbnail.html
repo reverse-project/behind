@@ -1,0 +1,6 @@
+<!-- ko if: hasUrl -->
+<img class="rounded object-fit-cover bg-body-secondary flex-shrink-0" data-bind="attr: { src: url, alt: alt }, style: frame">
+<!-- /ko -->
+<!-- ko ifnot: hasUrl -->
+<span class="d-inline-flex align-items-center justify-content-center rounded bg-body-secondary text-body-secondary flex-shrink-0" aria-hidden="true" data-bind="style: frame"><i class="fa-solid" data-bind="css: icon"></i></span>
+<!-- /ko -->

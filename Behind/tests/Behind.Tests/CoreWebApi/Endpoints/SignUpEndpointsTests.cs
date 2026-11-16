@@ -1,0 +1,487 @@
+using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
+using Behind.Core.Domain;
+using Behind.Core.WebApi.Endpoints;
+using Behind.Core.WebApi.Identity;
+using Behind.Tests.Helpers;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+
+namespace Behind.Tests.CoreWebApi.Endpoints;
+
+public class SignUpEndpointsTests
+{
+    private static readonly DateTimeOffset Now = new(2026, 11, 1, 10, 0, 0, TimeSpan.Zero);
+    private static readonly Guid EmailId = Guid.NewGuid();
+
+    private static IEmailQueries Emails(bool confirmed = false)
+    {
+        var queries = Substitute.For<IEmailQueries>();
+        queries.Addresses(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new IEmailQueries.Address[] { new(EmailId, "ada@test.com", confirmed ? Now : null) });
+        return queries;
+    }
+
+    private static IEmailCommands ConfirmationCommands()
+    {
+        var commands = Substitute.For<IEmailCommands>();
+        commands.ConfirmAddress(Arg.Any<Guid>(), EmailId, "ada@test.com", Arg.Any<CancellationToken>()).Returns(true);
+        return commands;
+    }
+
+    private readonly IEmailSender<ApplicationUser> _emailSender = Substitute.For<IEmailSender<ApplicationUser>>();
+
+    private static IAccessSettingsQueries AccessSettingsOf(bool moderated)
+    {
+        var queries = Substitute.For<IAccessSettingsQueries>();
+        queries.Current(Arg.Any<CancellationToken>())
+            .Returns(AccessSettings.Open with { ModeratedSignUp = moderated });
+
+        return queries;
+    }
+
+    private static IOptions<SecurityConfiguration> Security(bool emailConfirmation) =>
+        Options.Create(new SecurityConfiguration { EmailConfirmation = emailConfirmation });
+
+    private static IConfiguration FrontendConfigurationOf(string? url) =>
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(url is null ? [] : new Dictionary<string, string?> { ["Frontend:Url"] = url })
+            .Build();
+
+    private static DefaultHttpContext NewHttpContext()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Scheme = "https";
+        context.Request.Host = new HostString("attacker.invalid");
+        context.Request.Headers["X-Forwarded-Host"] = "forwarded-attacker.invalid";
+        return context;
+    }
+
+    private Task<IResult> SignUp(
+        UserManager<ApplicationUser> manager,
+        SignUpEndpoints.PasswordRequest request,
+        ILogger<SignUpEndpoints>? logger = null,
+        bool emailConfirmation = true,
+        string? frontendUrl = "https://app.test/",
+        bool moderated = false) =>
+        SignUpEndpoints.SignUpPassword(
+            manager,
+            Security(emailConfirmation),
+            AccessSettingsOf(moderated),
+            _emailSender,
+            Emails(),
+            FrontendConfigurationOf(frontendUrl),
+            new FixedTimeProvider(Now),
+            NewHttpContext(),
+            logger ?? NullLogger<SignUpEndpoints>.Instance,
+            request);
+
+    private static UserManager<ApplicationUser> ManagerCapturing(Action<ApplicationUser> capture)
+    {
+        var manager = Substitute.For<UserManager<ApplicationUser>>(
+            Substitute.For<IUserStore<ApplicationUser>>(),
+            null, null, null, null, null, null, null, null);
+        manager.FindByEmailAsync(Arg.Any<string>()).Returns((ApplicationUser?)null);
+        manager.Options = new IdentityOptions();
+        manager.GenerateUserTokenAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>()).Returns("the token");
+        manager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
+            .Returns(call =>
+            {
+                capture(call.Arg<ApplicationUser>());
+                return IdentityResult.Success;
+            });
+        return manager;
+    }
+
+    [Theory]
+    [InlineData(null, "")]
+    [InlineData("", "")]
+    [InlineData("   ", "")]
+    [InlineData("  Ada  ", "Ada")]
+    public async Task SignUpPassword_StoresNormalizedDisplayName(string? displayName, string expected)
+    {
+        ApplicationUser? created = null;
+        var manager = ManagerCapturing(user => created = user);
+
+        var result = await SignUp(manager, new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!", displayName));
+
+        Assert.IsType<StatusCodeHttpResult>(result);
+        Assert.Equal(expected, created!.DisplayName);
+        Assert.Equal("ada@test.com", Assert.Single(created.Emails).Value);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_Success_LogsInformationWithUserId()
+    {
+        ApplicationUser? created = null;
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        await SignUp(ManagerCapturing(user => created = user), new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"), logger);
+
+        Assert.Equal(created!.Id, logger.Entries.First(entry => entry.Level == LogLevel.Information).State["UserId"]);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_EmailInUse_LogsWarning()
+    {
+        var manager = ManagerCapturing(_ => { });
+        manager.FindByEmailAsync(Arg.Any<string>()).Returns(new ApplicationUser());
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        await SignUp(manager, new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"), logger);
+
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_IdentityFailure_LogsWarningWithErrorCodes()
+    {
+        var manager = ManagerCapturing(_ => { });
+        manager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
+            .Returns(IdentityResult.Failed(new IdentityError { Code = "PasswordTooShort", Description = "short" }));
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        await SignUp(manager, new SignUpEndpoints.PasswordRequest("ada@test.com", "x"), logger);
+
+        Assert.Equal(["PasswordTooShort"], (string[])logger.Single(LogLevel.Warning).State["ErrorCodes"]!);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_WithoutDisplayName_IsStillValid()
+    {
+        ApplicationUser? created = null;
+        var manager = ManagerCapturing(user => created = user);
+
+        await SignUp(manager, new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"));
+
+        Assert.Equal(string.Empty, created!.DisplayName);
+    }
+
+    [Theory]
+    [InlineData("https://app.test/")]
+    [InlineData("https://app.test/frontend/")]
+    [InlineData("http://localhost:5000/")]
+    public async Task SignUpPassword_ConfirmationEnabled_LeavesEmailUnconfirmedAndSendsLink(string url)
+    {
+        ApplicationUser? created = null;
+
+        await SignUp(
+            ManagerCapturing(user => created = user),
+            new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"),
+            frontendUrl: url);
+
+        Assert.Null(Assert.Single(created!.Emails).ConfirmedAt);
+        await _emailSender.Received(1).SendConfirmationLinkAsync(
+            created,
+            "ada@test.com",
+            $"{url}#/sign/up/confirm?userId={created.Id}&token=the%20token&emailId={EmailId}");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("not a URL")]
+    [InlineData("/relative")]
+    [InlineData("//attacker.invalid")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("file:///tmp/frontend")]
+    [InlineData("https://user:password@app.test/")]
+    [InlineData("https://app.test/?redirect=attacker.invalid")]
+    [InlineData("https://app.test/#/other")]
+    public async Task SignUpPassword_InvalidFrontendUrl_NeverGeneratesOrSendsConfirmationToken(string? url)
+    {
+        var manager = ManagerCapturing(_ => { });
+        var logger = new CapturingLogger<SignUpEndpoints>();
+        await SignUp(manager, new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"), logger, frontendUrl: url);
+
+        await manager.DidNotReceiveWithAnyArgs().GenerateUserTokenAsync(default!, default!, default!);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+        Assert.Contains("Frontend:Url", logger.Single(LogLevel.Error).Message);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_ConfirmationEnabled_LogsSentConfirmation()
+    {
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        await SignUp(ManagerCapturing(_ => { }), new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"), logger);
+
+        Assert.Contains(logger.Entries, entry => entry.Message.StartsWith("Confirmation email sent"));
+    }
+
+    [Fact]
+    public async Task SignUpPassword_ConfirmationDisabled_ConfirmsEmailNowAndSendsNothing()
+    {
+        ApplicationUser? created = null;
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        var result = await SignUp(
+            ManagerCapturing(user => created = user),
+            new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"),
+            logger,
+            emailConfirmation: false);
+
+        Assert.IsType<StatusCodeHttpResult>(result);
+        Assert.Equal(Now, Assert.Single(created!.Emails).ConfirmedAt);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+        Assert.Contains(logger.Entries, entry => entry.Message.Contains("email confirmation is disabled"));
+    }
+
+    [Fact]
+    public async Task SignUpPassword_ConfirmationEmailFails_StillSucceedsAndLogsError()
+    {
+        var logger = new CapturingLogger<SignUpEndpoints>();
+        _emailSender.SendConfirmationLinkAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromException(new InvalidOperationException("smtp down")));
+
+        var result = await SignUp(
+            ManagerCapturing(_ => { }),
+            new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"),
+            logger);
+
+        Assert.IsType<StatusCodeHttpResult>(result);
+        Assert.Equal("smtp down", logger.Single(LogLevel.Error).Exception!.Message);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_IdentityFailure_SendsNoConfirmation()
+    {
+        var manager = ManagerCapturing(_ => { });
+        manager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
+            .Returns(IdentityResult.Failed(new IdentityError { Code = "PasswordTooShort" }));
+
+        await SignUp(manager, new SignUpEndpoints.PasswordRequest("ada@test.com", "x"));
+
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+    }
+
+    private static UserManager<ApplicationUser> ManagerConfirming(ApplicationUser? user, IdentityResult result)
+    {
+        var manager = Substitute.For<UserManager<ApplicationUser>>(
+            Substitute.For<IUserStore<ApplicationUser>>(),
+            null, null, null, null, null, null, null, null);
+        manager.FindByIdAsync(Arg.Any<string>()).Returns(user);
+        manager.Options = new IdentityOptions();
+        manager.VerifyUserTokenAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(result.Succeeded);
+        return manager;
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_ValidToken_ReturnsNoContentAndLogsInformation()
+    {
+        var user = new ApplicationUser { Emails = [new Email("ada@test.com")] };
+        var manager = ManagerConfirming(user, IdentityResult.Success);
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        var result = await SignUpEndpoints.ConfirmEmail(
+            manager,
+            Emails(),
+            ConfirmationCommands(),
+            logger,
+            new SignUpEndpoints.ConfirmEmailRequest(user.Id, "token", EmailId));
+
+        Assert.IsType<NoContent>(result);
+        await manager.Received(1).VerifyUserTokenAsync(user, manager.Options.Tokens.EmailConfirmationTokenProvider,
+            $"ConfirmEmail:{EmailId}:ada@test.com", "token");
+        Assert.Equal(user.Id, logger.Single(LogLevel.Information).State["UserId"]);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_UnknownUser_ReturnsBadRequestAndLogsWarning()
+    {
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        var result = await SignUpEndpoints.ConfirmEmail(
+            ManagerConfirming(null, IdentityResult.Success),
+            Emails(),
+            ConfirmationCommands(),
+            logger,
+            new SignUpEndpoints.ConfirmEmailRequest(Guid.NewGuid(), "token"));
+
+        Assert.IsType<BadRequest>(result);
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_InvalidToken_ReturnsBadRequestAndLogsRejection()
+    {
+        var user = new ApplicationUser { Emails = [new Email("ada@test.com")] };
+        var manager = ManagerConfirming(user, IdentityResult.Failed(new IdentityError { Code = "InvalidToken" }));
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        var result = await SignUpEndpoints.ConfirmEmail(
+            manager,
+            Emails(),
+            ConfirmationCommands(),
+            logger,
+            new SignUpEndpoints.ConfirmEmailRequest(user.Id, "bad", EmailId));
+
+        Assert.IsType<BadRequest>(result);
+        Assert.Contains("address or token is invalid", logger.Single(LogLevel.Warning).Message);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ConfirmEmail_MissingOrRemovedAddress_NeverConfirmsAnotherAddress(bool legacy)
+    {
+        var user = new ApplicationUser();
+        var manager = ManagerConfirming(user, IdentityResult.Success);
+        var commands = ConfirmationCommands();
+        var result = await SignUpEndpoints.ConfirmEmail(manager, Emails(), commands,
+            NullLogger<SignUpEndpoints>.Instance, new(user.Id, "token", legacy ? Guid.Empty : Guid.NewGuid()));
+        Assert.IsType<BadRequest>(result);
+        await manager.DidNotReceiveWithAnyArgs().VerifyUserTokenAsync(default!, default!, default!, default!);
+        await commands.DidNotReceiveWithAnyArgs().ConfirmAddress(default, default, default!, default);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_AddressChangedAfterTokenValidation_DoesNotReportSuccess()
+    {
+        var user = new ApplicationUser();
+        var commands = Substitute.For<IEmailCommands>();
+        var result = await SignUpEndpoints.ConfirmEmail(ManagerConfirming(user, IdentityResult.Success),
+            Emails(), commands, NullLogger<SignUpEndpoints>.Instance, new(user.Id, "token", EmailId));
+        Assert.IsType<BadRequest>(result);
+        await commands.Received(1).ConfirmAddress(user.Id, EmailId, "ada@test.com", Arg.Any<CancellationToken>());
+    }
+
+    private static UserManager<ApplicationUser> ManagerFinding(ApplicationUser? user, bool confirmed = false)
+    {
+        var manager = Substitute.For<UserManager<ApplicationUser>>(
+            Substitute.For<IUserStore<ApplicationUser>>(),
+            null, null, null, null, null, null, null, null);
+        manager.FindByEmailAsync(Arg.Any<string>()).Returns(user);
+        manager.IsEmailConfirmedAsync(Arg.Any<ApplicationUser>()).Returns(confirmed);
+        manager.Options = new IdentityOptions();
+        manager.GenerateUserTokenAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>()).Returns("the token");
+        return manager;
+    }
+
+    private Task<IResult> Resend(
+        UserManager<ApplicationUser> manager,
+        bool emailConfirmation = true,
+        ILogger<SignUpEndpoints>? logger = null,
+        bool confirmed = false,
+        string? frontendUrl = "https://app.test/") =>
+        SignUpEndpoints.ResendConfirmation(
+            manager,
+            Security(emailConfirmation),
+            _emailSender,
+            Emails(confirmed),
+            FrontendConfigurationOf(frontendUrl),
+            NewHttpContext(),
+            logger ?? NullLogger<SignUpEndpoints>.Instance,
+            new SignUpEndpoints.ResendConfirmationRequest("ada@test.com"));
+
+    [Fact]
+    public async Task ResendConfirmation_UnconfirmedUser_SendsNewLinkAndReturnsNoContent()
+    {
+        var user = new ApplicationUser { Emails = [new Email("ada@test.com")] };
+
+        var result = await Resend(ManagerFinding(user));
+
+        Assert.IsType<NoContent>(result);
+        await _emailSender.Received(1).SendConfirmationLinkAsync(
+            user,
+            "ada@test.com",
+            $"https://app.test/#/sign/up/confirm?userId={user.Id}&token=the%20token&emailId={EmailId}");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("/relative")]
+    public async Task ResendConfirmation_InvalidFrontendUrl_NeverGeneratesOrSendsToken(string? url)
+    {
+        var manager = ManagerFinding(new ApplicationUser { Emails = [new Email("ada@test.com")] });
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        var result = await Resend(manager, logger: logger, frontendUrl: url);
+
+        Assert.IsType<NoContent>(result);
+        await manager.DidNotReceiveWithAnyArgs().GenerateUserTokenAsync(default!, default!, default!);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+        Assert.Contains("Frontend:Url", logger.Single(LogLevel.Error).Message);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_UnknownEmail_ReturnsNoContentAndSendsNothing()
+    {
+        var result = await Resend(ManagerFinding(null));
+
+        Assert.IsType<NoContent>(result);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_AlreadyConfirmed_ReturnsNoContentAndSendsNothing()
+    {
+        var user = new ApplicationUser { Emails = [new Email("ada@test.com", Now)] };
+
+        var result = await Resend(ManagerFinding(user, confirmed: true), confirmed: true);
+
+        Assert.IsType<NoContent>(result);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_ConfirmationDisabled_ReturnsNotFoundAndSendsNothing()
+    {
+        var manager = ManagerFinding(new ApplicationUser { Emails = [new Email("ada@test.com")] });
+        var logger = new CapturingLogger<SignUpEndpoints>();
+
+        var result = await Resend(manager, emailConfirmation: false, logger: logger);
+
+        Assert.IsType<NotFound>(result);
+        await manager.DidNotReceiveWithAnyArgs().FindByEmailAsync(default!);
+        await _emailSender.DidNotReceiveWithAnyArgs().SendConfirmationLinkAsync(default!, default!, default!);
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_EmailFails_StillReturnsNoContentAndLogsError()
+    {
+        var logger = new CapturingLogger<SignUpEndpoints>();
+        _emailSender.SendConfirmationLinkAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromException(new InvalidOperationException("smtp down")));
+
+        var result = await Resend(
+            ManagerFinding(new ApplicationUser { Emails = [new Email("ada@test.com")] }),
+            logger: logger);
+
+        Assert.IsType<NoContent>(result);
+        Assert.Equal("smtp down", logger.Single(LogLevel.Error).Exception!.Message);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_ModerationOn_MarksTheUserPendingAndAnswersApprovalPending()
+    {
+        ApplicationUser? created = null;
+
+        var result = await SignUp(
+            ManagerCapturing(user => created = user),
+            new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"),
+            moderated: true);
+
+        Assert.True(created!.PendingApproval);
+        var json = Assert.IsType<JsonHttpResult<SignInEndpoints.ApprovalPendingResponse>>(result);
+        Assert.Equal(StatusCodes.Status202Accepted, json.StatusCode);
+        Assert.Equal(SignInEndpoints.ApprovalPendingCode, json.Value!.Code);
+    }
+
+    [Fact]
+    public async Task SignUpPassword_ModerationOff_LeavesTheUserApproved()
+    {
+        ApplicationUser? created = null;
+
+        await SignUp(
+            ManagerCapturing(user => created = user),
+            new SignUpEndpoints.PasswordRequest("ada@test.com", "Passw0rd!"));
+
+        Assert.False(created!.PendingApproval);
+    }
+}

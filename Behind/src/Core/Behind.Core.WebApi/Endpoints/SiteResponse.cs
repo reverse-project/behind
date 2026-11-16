@@ -1,0 +1,68 @@
+using Behind.Common.WebApi;
+using Behind.Core.Domain;
+
+namespace Behind.Core.WebApi.Endpoints;
+
+public sealed record SiteListItem(
+    Guid Id,
+    string Title,
+    string Slug,
+    long LatestVersion,
+    long? ActiveVersion,
+    string? ActiveSlug,
+    DateTimeOffset UpdatedAt,
+    bool IsDeleted = false);
+
+public sealed record SiteListResponse(PageResponse<SiteListItem> Sites, IReadOnlyList<string> Letters);
+
+public sealed record SiteVersionItem(
+    long Version,
+    string Title,
+    string Slug,
+    DateTimeOffset? PublishedAt,
+    DateTimeOffset CreatedAt,
+    bool IsActive,
+    bool IsDraft);
+
+public sealed record SiteHistoryResponse(Guid Id, long? ActiveVersion, IReadOnlyList<SiteVersionItem> Versions);
+
+public sealed record SiteVersionResponse(
+    Guid Id,
+    long Version,
+    string Title,
+    string Slug,
+    string Content,
+    DateTimeOffset? PublishedAt,
+    DateTimeOffset CreatedAt,
+    bool IsDraft,
+    bool HideTitle,
+    IReadOnlyList<SiteSectionResponse> Sections);
+
+public sealed record SiteSavedResponse(Guid Id, long Version);
+
+public sealed record SiteConflictResponse(string Reason);
+
+public sealed record PublicSiteResponse(
+    Guid Id,
+    string Title,
+    string Slug,
+    string Content,
+    DateTimeOffset PublishedAt,
+    bool HideTitle,
+    IReadOnlyList<SiteSectionResponse> Sections);
+
+public sealed record SiteSectionResponse(
+    Guid Id,
+    SiteSectionTheme Theme,
+    string Title,
+    string Content,
+    Guid? ImageId,
+    string? ImageUrl,
+    string ImageAlt,
+    SiteSectionImagePosition ImagePosition);
+
+public sealed record SiteImageResponse(Guid Id, string Url);
+
+public sealed record SiteSettingsResponse(string? IndexSlug, long MaxImageBytes, int MaxSections);
+
+public sealed record SiteImageLimitResponse(long MaxBytes);

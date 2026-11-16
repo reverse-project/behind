@@ -1,0 +1,12 @@
+namespace Behind.Common.Database;
+
+public interface IUnitOfWork
+{
+    IRepository<TAggregate, TKey> GetRepository<TAggregate, TKey>();
+
+    IHardDeleteRepository<TAggregate, TKey> GetHardDeleteRepository<TAggregate, TKey>();
+
+    IRestoreRepository<TAggregate, TKey> GetRestoreRepository<TAggregate, TKey>();
+    
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+}

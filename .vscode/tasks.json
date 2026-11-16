@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "coverage: clean results",
+      "type": "shell",
+      "command": "rm -rf '${workspaceFolder}/Behind/tests/Behind.Tests/coverage.cobertura.xml' '${workspaceFolder}/Behind/TestResults'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "coverage: run tests",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "test",
+        "tests/Behind.Tests/Behind.Tests.csproj"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/Behind"
+      },
+      "problemMatcher": "$msCompile",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "coverage: run tests (clean)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "coverage: clean results",
+        "coverage: run tests"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "coverage: watch tests",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "watch",
+        "--project",
+        "tests/Behind.Tests/Behind.Tests.csproj",
+        "test"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/Behind"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}

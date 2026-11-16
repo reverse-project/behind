@@ -1,0 +1,38 @@
+<section class="behind-wide" data-bind="reportsDispose: $root">
+    <h1 data-bind="t: 'reports.title'">Reports</h1>
+    <p class="alert alert-warning" role="alert" data-bind="visible: !allowed(), t: 'reports.forbidden'">You cannot manage reports.</p>
+    <div data-bind="visible: allowed">
+        <p class="alert alert-info" role="status" data-bind="visible: message, text: message"></p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <label><span data-bind="t: 'reports.status'">Status</span> <select class="form-select" data-bind="value: status, event: { change: changeFilter }"><option value="open" data-bind="t: 'reports.open'">Open</option><option value="resolved" data-bind="t: 'reports.resolved'">Resolved</option><option value="dismissed" data-bind="t: 'reports.dismissed'">Dismissed</option></select></label>
+            <label class="form-check align-self-end" data-bind="visible: developer"><input type="checkbox" class="form-check-input" data-bind="checked: showDeleted, event: { change: changeFilter }"><span data-bind="t: 'reports.showDeleted'">Show deleted</span></label>
+        </div>
+        <ul class="list-group mb-3" data-bind="foreach: items"><li class="list-group-item"><button type="button" class="btn btn-link" data-bind="click: $root.open, text: $data.reason || id"></button> <span data-bind="text: $root.statusLabel(status)"></span> <span data-bind="text: $root.dateTime($data.createdAt)"></span></li></ul>
+        <pager params="pager: pager"></pager>
+        <div data-bind="if: detail">
+            <div class="card card-body mt-3" data-bind="with: detail">
+                <h2 class="h4" data-bind="t: 'reports.details'">Report details</h2>
+                <p><strong data-bind="t: 'reports.status'">Status</strong>: <span data-bind="text: $root.statusLabel(status)"></span></p>
+                <p data-bind="visible: $data.resolvedById"><strong data-bind="t: 'reports.handledBy'">Handled by administrator</strong>: <a data-bind="text: $data.resolvedByName, attr: { href: $data.resolvedById ? '#/user/' + encodeURIComponent($data.resolvedById) : null }"></a></p>
+                <p><strong data-bind="t: 'reports.reason'">Reason</strong>: <span class="text-break" data-bind="text: $data.reason"></span></p>
+                <h3 class="h5" data-bind="t: 'reports.reportedUsers'">Reported users</h3>
+                <ul data-bind="foreach: $data.reportedUsers || []"><li><a data-bind="text: displayName, attr: { href: '#/user/' + encodeURIComponent(id) }"></a></li></ul>
+                <h3 class="h5" data-bind="t: 'reports.evidence'">Evidence</h3>
+                <ul data-bind="foreach: $data.evidence || []"><li><strong data-bind="text: $root.sourceLabel(sourceType)"></strong><pre class="text-wrap text-break" data-bind="text: content"></pre></li></ul>
+                <div data-bind="if: $root.conversation">
+                    <h3 class="h5" data-bind="t: 'reports.conversation'">Conversation</h3>
+                    <div data-bind="foreach: $root.conversation().messages"><article class="border rounded p-2 mb-2"><strong data-bind="text: author"></strong><div data-bind="bbcode: content"></div></article></div>
+                </div>
+                <p role="status" data-bind="visible: $data.emailDeliveryStatus, text: $root.deliveryLabel($data.emailDeliveryStatus)"></p>
+                <button type="button" class="btn btn-outline-warning mb-3" data-bind="visible: $data.emailDeliveryStatus === 'failed' || $data.emailDeliveryStatus === 'pending', click: function () { $root.action('retry-email'); }, enable: !$root.busy(), t: 'reports.retryEmail'">Retry email</button>
+                <div data-bind="visible: status === 'open' && !$root.showDeleted()">
+                    <label class="form-label" for="report-ban-until" data-bind="t: 'reports.banUntil'">Ban until (leave empty for permanent)</label><input id="report-ban-until" type="datetime-local" class="form-control mb-2" data-bind="value: $root.banUntil">
+                    <label class="form-label" for="report-reporter-message" data-bind="t: 'reports.reporterMessage'">Optional message to reporter</label><textarea id="report-reporter-message" class="form-control mb-2" data-bind="textInput: $root.reporterMessage"></textarea>
+                    <label class="form-label" for="report-email" data-bind="t: 'reports.reportedEmail'">Optional email to reported users</label><textarea id="report-email" class="form-control mb-2" data-bind="textInput: $root.reportedEmail"></textarea>
+                    <div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-secondary" data-bind="click: function () { $root.resolve('dismiss'); }, enable: !$root.busy(), t: 'reports.dismiss'">Dismiss</button><button type="button" class="btn btn-primary" data-bind="click: function () { $root.resolve('resolve'); }, enable: !$root.busy(), t: 'reports.resolve'">Resolve</button><button type="button" class="btn btn-danger" data-bind="click: function () { $root.resolve('ban'); }, enable: !$root.busy(), t: 'reports.ban'">Resolve and ban</button></div>
+                </div>
+                <div class="d-flex gap-2 mt-3"><button type="button" class="btn btn-outline-danger" data-bind="visible: !$root.showDeleted(), click: function () { $root.action('delete'); }, enable: !$root.busy(), t: 'common.delete'">Delete</button><button type="button" class="btn btn-outline-secondary" data-bind="visible: $root.showDeleted() && $root.developer(), click: function () { $root.action('restore'); }, enable: !$root.busy(), t: 'common.restore'">Restore</button><button type="button" class="btn btn-danger" data-bind="visible: $root.showDeleted() && $root.developer(), click: function () { $root.action('hard/delete'); }, enable: !$root.busy(), t: 'reports.hardDelete'">Delete permanently</button></div>
+            </div>
+        </div>
+    </div>
+</section>

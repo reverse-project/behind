@@ -80,7 +80,30 @@ shape by moving settings to `caching.json`, moving the inline connection into
 is allowed for existing installations and uses memory-only defaults; run
 `startup create --skip-existing` to generate it, then restart.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:1a3fc36c408ad354b0d8a147077fe1a0f93b795102681f3ec16e824b64ff90cc -->
+
+For the Compose example, run setup for both fresh installations and upgrades before
+starting the web container:
+
+```bash
+cd Behind/examples/container-compose
+bash setup.sh
+docker compose run --rm core-database-migrator
+docker compose up -d web
+```
+
+Use `bash setup.sh podman` and `podman compose` when using Podman. Setup runs
+`startup create --skip-existing` through the tools container, preserving existing
+configuration and generating missing files, then checks that `config/caching.json`
+is a regular file. If that path is already a directory, move it aside after
+inspecting its contents, then rerun setup. The web bind mount refuses to create
+missing host paths, so skipping setup cannot silently create a directory there.
+
 ### System Requirements
+
+<!-- /coderabbit-ai-generated:v1 -->
 - **OS**: Windows 10+, Ubuntu 20.04+, macOS 11+ (development only)
 - **RAM**: 8GB minimum, 16GB recommended
 - **.NET SDK**: 11.0 (install via dev container or manually)

@@ -82,7 +82,32 @@ beállításokat a `caching.json` fájlba, a kapcsolatot a `ConnectionStrings` a
 memóriaalapú működés marad; a `startup create --skip-existing` létrehozza az új
 fájlt, majd újraindítás szükséges.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cb68a1320cfed6cf1e0785aabc97719e6750ad05d0204b244d6b60eec150035e -->
+
+A Compose példánál új telepítés és frissítés esetén is futtassa az előkészítést
+a webes konténer indítása előtt:
+
+```bash
+cd Behind/examples/container-compose
+bash setup.sh
+docker compose run --rm core-database-migrator
+docker compose up -d web
+```
+
+Podman használatakor a `bash setup.sh podman` és `podman compose` parancsokat
+használja. Az előkészítés a tools konténerben futtatja a
+`startup create --skip-existing` parancsot, megőrzi a meglévő konfigurációt,
+létrehozza a hiányzó fájlokat, majd ellenőrzi, hogy a `config/caching.json`
+szabályos fájl. Ha az útvonal már könyvtár, tartalmának ellenőrzése után helyezze
+át, majd futtassa újra az előkészítést. A webes bind csatolás nem hoz létre
+hiányzó gazdagép-útvonalat, így az előkészítés kihagyása sem hoz létre ott
+észrevétlenül könyvtárat.
+
 ### Rendszerkövetelmények
+
+<!-- /coderabbit-ai-generated:v1 -->
 - **Operációs rendszer**: Windows 10+, Ubuntu 20.04+, macOS 11+ (csak fejlesztéshez)
 - **RAM**: legalább 8 GB, 16 GB ajánlott
 - **.NET SDK**: 11.0 (telepítse dev containerrel vagy manuálisan)

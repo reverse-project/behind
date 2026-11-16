@@ -3,6 +3,7 @@
     "version": "1.0.2",
     "date": "2026-11-15",
     "changes": [
+      { "type": "fixed", "text": "Container setup prepares caching.json before startup, caching Settings accepts property casing variants without duplicate fields, and raw table counts reflect session cleanup bulk deletes." },
       { "type": "added", "text": "Versioned JSON Schemas cover configuration records, layouts, contact field data, schedule JSON, audit actions and bundled changelog/license/locale data. Configuration and persisted JSON are validated before saving; compatibility regressions preserve existing converter shapes, defaults and domain checks." },
       { "type": "changed", "text": "The database configuration key record and its converters are named DatabaseKey for consistency with CachingKey; the Database:Key configuration format is unchanged." },
       { "type": "fixed", "text": "Caching connection strings are masked in configuration responses. Raw-database table listings cache only numeric counts, using committed audit revisions to invalidate across hosts; transactions and pending writes bypass caching, and commands and PII-bearing query results remain uncached." },

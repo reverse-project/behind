@@ -13,7 +13,7 @@ public static class CachingSettings
         string.Equals(file, ConfigurationFileCatalog.CachingFile, StringComparison.OrdinalIgnoreCase);
 
     public static IReadOnlyList<SettingsOption>? OptionsFor(string file, string path) =>
-        IsCachingFile(file) && path == ProviderPath
+        IsCachingFile(file) && string.Equals(path, ProviderPath, StringComparison.OrdinalIgnoreCase)
             ? [new(nameof(Memory), nameof(Memory)), new(nameof(RedisCompatible), nameof(RedisCompatible))]
             : null;
 
@@ -24,18 +24,18 @@ public static class CachingSettings
             return true;
         }
 
-        if (path == ProviderPath)
+        if (string.Equals(path, ProviderPath, StringComparison.OrdinalIgnoreCase))
         {
             return value.ValueKind == JsonValueKind.String
                 && value.GetString() is nameof(Memory) or nameof(RedisCompatible);
         }
 
-        if (path == KeyPath)
+        if (string.Equals(path, KeyPath, StringComparison.OrdinalIgnoreCase))
         {
             return value.ValueKind == JsonValueKind.String;
         }
 
-        return path.StartsWith("ConnectionStrings:", StringComparison.Ordinal)
+        return path.StartsWith("ConnectionStrings:", StringComparison.OrdinalIgnoreCase)
             && value.ValueKind == JsonValueKind.String;
     }
 
@@ -58,7 +58,8 @@ public static class CachingSettings
     {
         foreach (var path in new[] { ProviderPath, KeyPath })
         {
-            if (root.FindValue(path) is null && DefaultValue(root, file, path) is { } value)
+            if (!root.Fields().Any(field => string.Equals(field.Path, path, StringComparison.OrdinalIgnoreCase))
+                && DefaultValue(root, file, path) is { } value)
             {
                 yield return new SettingsFieldResponse(
                     path, "string", value.GetValue<string>(), false, true, null, OptionsFor(file, path));

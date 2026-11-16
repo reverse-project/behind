@@ -7,15 +7,15 @@ namespace Behind.Tests.Common;
 public sealed class CachingProviderTests
 {
     [Theory]
-    [InlineData("Memory")]
-    [InlineData("RedisCompatible")]
-    [InlineData("memory")]
-    [InlineData("rediscompatible")]
-    public void ProviderRoundTripsThroughTypeDescriptorAndJson(string name)
+    [InlineData("Memory", "Memory")]
+    [InlineData("RedisCompatible", "RedisCompatible")]
+    [InlineData("memory", "Memory")]
+    [InlineData("rediscompatible", "RedisCompatible")]
+    public void ProviderRoundTripsThroughTypeDescriptorAndJson(string name, string canonical)
     {
         var converter = TypeDescriptor.GetConverter(typeof(CachingProvider));
         var provider = Assert.IsAssignableFrom<CachingProvider>(converter.ConvertFromInvariantString(name));
-        var canonical = provider is Memory ? "Memory" : "RedisCompatible";
+        Assert.Equal(canonical, provider.GetType().Name);
         Assert.Equal(canonical, converter.ConvertToInvariantString(provider));
         Assert.Equal(canonical, provider.ToString());
         Assert.Equal($"\"{canonical}\"", JsonSerializer.Serialize(provider));

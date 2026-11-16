@@ -36,6 +36,7 @@ public sealed class RawDatabaseQueries(
                 cancellationToken: cancellationToken);
         }
 
+        var cacheHit = counts is not null;
         if (counts is null)
         {
             counts = new long[tables.Length];
@@ -53,6 +54,19 @@ public sealed class RawDatabaseQueries(
         if (counts.Length != tables.Length || counts.Any(count => count < 0))
         {
             throw new InvalidOperationException("Invalid cached table-count aggregate.");
+        }
+
+        if (cacheHit)
+        {
+            counts = counts.ToArray();
+            for (var index = 0; index < tables.Length; index++)
+            {
+                if (tables[index].Name == context.Sessions.EntityType.GetTableName()
+                    && tables[index].Schema == context.Sessions.EntityType.GetSchema())
+                {
+                    counts[index] = await context.CountRawRowsAsync(tables[index], None, cancellationToken);
+                }
+            }
         }
 
         return tables.Select((table, index) =>

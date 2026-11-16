@@ -89,6 +89,35 @@ public sealed class CachingIntegrationTests
         Assert.IsType<RawWriteResult.Deleted>(await commands.Delete("Grants",
             new Dictionary<string, JsonElement> { ["Id"] = JsonSerializer.SerializeToElement(id) }));
         Assert.Equal(baseline, Grants(await secondQuery.ListTables()));
+
+        var user = new HumanUser("Cleanup", [new Email("cleanup@example.test")], None);
+        await one.Users.AddAsync(user);
+        await one.SaveChangesAsync();
+        var userId = one.Entry(user).Property<Guid>("Id").CurrentValue;
+        var sessions = new SessionCommands(one);
+        var sessionId = await sessions.CreateForUserId(userId, new ValidSession(
+            AccessToken.Create(new GuestUser(None)),
+            RefreshToken.Create(new GuestUser(None)),
+            "127.0.0.1", "cache-test"));
+        var cutoff = DateTimeOffset.UtcNow;
+        await sessions.InvalidateSession(sessionId, userId, cutoff.AddDays(-1));
+        static long Sessions(IReadOnlyList<IRawDatabaseQueries.RawTableListing> rows) =>
+            rows.Single(row => row.Table.Name == "Sessions").Rows;
+        var sessionCount = Sessions(await firstQuery.ListTables());
+        Assert.Equal(sessionCount, Sessions(await secondQuery.ListTables()));
+        var auditCount = await one.AuditLogEntries.LongCountAsync();
+        await using (var transaction = await one.Database.BeginTransactionAsync())
+        {
+            Assert.Equal(1, await sessions.DeleteInvalidatedBefore(cutoff));
+            Assert.Equal(sessionCount - 1, Sessions(await firstQuery.ListTables()));
+            Assert.Equal(sessionCount, Sessions(await secondQuery.ListTables()));
+            await transaction.RollbackAsync();
+        }
+        Assert.Equal(sessionCount, Sessions(await firstQuery.ListTables()));
+        Assert.Equal(1, await sessions.DeleteInvalidatedBefore(cutoff));
+        Assert.Equal(auditCount, await one.AuditLogEntries.LongCountAsync());
+        Assert.Equal(sessionCount - 1, Sessions(await firstQuery.ListTables()));
+        Assert.Equal(sessionCount - 1, Sessions(await secondQuery.ListTables()));
     }
 
     [Fact]

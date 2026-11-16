@@ -68,6 +68,24 @@ public sealed class CachingSettingsEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task MixedCasePathsAreListedOnceAndAcceptUpdates()
+    {
+        File.WriteAllText(FilePath, """{ "cAcHiNg": { "pRoViDeR": "Memory", "kEy": "Valkey" }, "cOnNeCtIoNsTrInGs": { "Valkey": "old" } }""");
+        var file = await Listed();
+        Assert.Single(file.Fields, field => string.Equals(field.Path, "Caching:Provider", StringComparison.OrdinalIgnoreCase));
+        Assert.Single(file.Fields, field => string.Equals(field.Path, "Caching:Key", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(file.Fields.Single(field => field.Path == "cAcHiNg:pRoViDeR").Options);
+        Assert.IsType<NoContent>(await Save("cAcHiNg:pRoViDeR", "RedisCompatible"));
+        Assert.IsType<NoContent>(await Save("cAcHiNg:kEy", string.Empty));
+        Assert.IsType<NoContent>(await Save("cOnNeCtIoNsTrInGs:Valkey", "replacement"));
+        Assert.IsType<BadRequest>(await Save("cAcHiNg:pRoViDeR", "Unknown"));
+        var root = JsonNode.Parse(File.ReadAllText(FilePath))!;
+        Assert.Equal("RedisCompatible", root["cAcHiNg"]!["pRoViDeR"]!.GetValue<string>());
+        Assert.Equal(string.Empty, root["cAcHiNg"]!["kEy"]!.GetValue<string>());
+        Assert.Equal("replacement", root["cOnNeCtIoNsTrInGs"]!["Valkey"]!.GetValue<string>());
+    }
+
+    [Fact]
     public async Task RejectsInvalidProviderAndReadOnlyWritesWithoutChangingFile()
     {
         var before = File.ReadAllText(FilePath);

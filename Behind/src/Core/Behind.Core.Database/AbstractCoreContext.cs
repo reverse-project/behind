@@ -88,6 +88,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         modelBuilder.Entity<ActiveVersion>().ToTable("ActiveVersions", table => table.ExcludeFromMigrations());
         UserConfiguration.ApplyHumanUser(modelBuilder);
         UserConfiguration.ApplyUserRoles(modelBuilder);
+        UserConfiguration.ApplyOidcPersistence(modelBuilder);
         UserConfiguration.ApplyUserAccess(modelBuilder);
         UserConfiguration.ApplyUserSettings(modelBuilder);
         UserConfiguration.ApplyUserApprovals(modelBuilder);
@@ -143,6 +144,8 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         typeof(MenuItem),
         typeof(RouteAlias),
         typeof(Message),
+        typeof(Schedule),
+        typeof(ScheduleRun),
         typeof(PrivateConversation),
         typeof(PrivateConversationRecipient),
         typeof(PrivateMessage),

@@ -27,6 +27,7 @@ public class AccountsConfigurationTests
         Assert.True(configuration.SignUp);
         Assert.True(configuration.Password);
         Assert.True(configuration.MagicLink);
+        Assert.True(configuration.Oidc);
         Assert.True(configuration.TwoFactor);
         Assert.True(configuration.Passkey);
         Assert.True(configuration.EmailTwoFactor);
@@ -45,6 +46,7 @@ public class AccountsConfigurationTests
     [Theory]
     [InlineData("Password")]
     [InlineData("MagicLink")]
+    [InlineData("Oidc")]
     [InlineData("TwoFactor")]
     [InlineData("Passkey")]
     [InlineData("EmailTwoFactor")]
@@ -54,6 +56,7 @@ public class AccountsConfigurationTests
 
         Assert.Equal(mode != "Password", configuration.Password);
         Assert.Equal(mode != "MagicLink", configuration.MagicLink);
+        Assert.Equal(mode != "Oidc", configuration.Oidc);
         Assert.Equal(mode != "TwoFactor", configuration.TwoFactor);
         Assert.Equal(mode != "Passkey", configuration.Passkey);
         Assert.Equal(mode != "EmailTwoFactor", configuration.EmailTwoFactor);

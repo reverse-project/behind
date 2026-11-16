@@ -2,6 +2,12 @@
 
 Open these pages from your name in the navigation bar.
 
+## Sign in with an identity provider
+
+Configured providers appear on **Sign in**, independently of password or email-link controls. Choose a provider, authenticate on its own site, then return to Behind. Account approval, bans and Behind's own two-factor requirements still apply; provider authentication does not bypass them. First sign-in requires a verified email for account creation or configured linking. Later email changes at the provider do not switch the linked Behind account.
+
+OIDC roles synchronize when you sign in. Manually assigned roles remain intact. If the browser handoff expires, cookies are blocked, or the server restarts during sign-in, start again. Signing out of Behind ends the Behind session, not your identity-provider session.
+
 ## Profile
 
 Use **Profile** to change your display name and your password. Password changes are not available while you impersonate another user.

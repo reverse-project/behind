@@ -1,6 +1,7 @@
 using Behind.Core.Common.Configuration;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.TwoFactor;
+using Behind.Core.WebApi.Oidc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,8 +48,7 @@ public sealed class AccountModeFilter(AccountMode mode) : IEndpointFilter
             _ => false
         };
 
-        if (enabled && mode is (AccountMode.TwoFactor or AccountMode.Passkey or AccountMode.EmailTwoFactor)
-            && (!settings.MagicLink || !settings.Password || !settings.Passkey))
+        if (enabled && mode is (AccountMode.TwoFactor or AccountMode.Passkey or AccountMode.EmailTwoFactor))
         {
             var token = context.Arguments.Select(argument => argument switch
             {
@@ -64,7 +64,10 @@ public sealed class AccountModeFilter(AccountMode mode) : IEndpointFilter
             if (token is not null)
             {
                 enabled = services.GetRequiredService<ITwoFactorTickets>().Open(token)
-                    .Match(() => true, ticket => ticket.Function switch
+                    .Match(() => true, ticket => ticket.PrimaryOidcProviderId is not null
+                        ? settings.SignIn && settings.Oidc && services.GetRequiredService<OidcProviderCatalog>()
+                            .Find(ticket.PrimaryOidcProviderId) is not null
+                        : ticket.Function switch
                     {
                         null => ticket.PrimaryCredentialId is null ? settings.Password : settings.Passkey,
                         MagicLinkFunction.SignIn => settings.MagicLink,

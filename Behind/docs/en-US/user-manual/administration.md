@@ -16,6 +16,7 @@
 | Contact (module) | the `Contact.Read` grant (`Contact.Write` to configure forms, mark read or retry; `Contact.Delete` to delete) | [Contact forms and inbox](./managing-contact.md) |
 | Sport (module) | the `Sport.Read` grant (`Sport.Write` to change them) | [Sport](./managing-sport.md) |
 | Documentation (module) | the `MarkdownViewer.Read` grant (`MarkdownViewer.Write` to generate the static pages) | [Documentation](./managing-markdown-viewer.md) |
+| Schedules | the `Schedule.Read` grant (`Schedule.Write` to edit, `Schedule.Delete` to delete, `Schedule.Manage` to run) | [Managing schedules](./managing-schedules.md) |
 | Messages | the `Message.Read` grant (`Message.Write` to change them) | [Messages](./managing-messages.md) |
 | Route aliases | the `RouteAlias.Read` grant (`RouteAlias.Write` to change them) | [Route aliases](./managing-route-aliases.md) |
 | Access settings | the `Access.Read` grant (`Access.Write` to change them) | [Access settings](./managing-access-settings.md) |

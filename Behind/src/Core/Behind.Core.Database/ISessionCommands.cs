@@ -9,4 +9,5 @@ public interface ISessionCommands
     Task<bool> RenewTokens(Guid sessionId, TokenNonce expectedAccessNonce, TokenNonce expectedRefreshNonce, AccessToken accessToken, RefreshToken refreshToken, CancellationToken cancellationToken = default);
     Task InvalidateSession(Guid sessionId, Guid invalidatedBy, DateTimeOffset invalidatedAt, CancellationToken cancellationToken = default);
     Task InvalidateAllSessions(Guid userId, Guid invalidatedBy, DateTimeOffset invalidatedAt, CancellationToken cancellationToken = default);
+    Task<int> DeleteInvalidatedBefore(DateTimeOffset cutoff, CancellationToken cancellationToken = default);
 }

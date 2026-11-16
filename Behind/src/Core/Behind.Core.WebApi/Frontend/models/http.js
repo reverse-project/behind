@@ -42,7 +42,7 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
         }
     };
 
-    var send = function (method, url, body, extraHeaders, requestLocale) {
+    var send = function (method, url, body, extraHeaders, requestLocale, withCredentials) {
         var token = session.accessToken();
         var hasBody = body !== undefined;
         var isForm = hasBody && body instanceof FormData;
@@ -70,7 +70,8 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
                 headers: headers,
                 contentType: hasBody && !isForm ? "application/json" : false,
                 processData: !isForm,
-                data: hasBody && !isForm ? JSON.stringify(body) : body
+                data: hasBody && !isForm ? JSON.stringify(body) : body,
+                xhrFields: withCredentials ? { withCredentials: true } : undefined
             }).then(
                 function (data, status, xhr) {
                     if (cached && xhr.status === 304) {
@@ -127,28 +128,36 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
         });
     };
 
-    var request = function (method, url, body, extraHeaders) {
+    var request = function (method, url, body, extraHeaders, withCredentials) {
         var wasSignedIn = session.isSignedIn();
         var locale = contentLocale.current();
 
-        return send(method, url, body, extraHeaders, locale).then(function (response) {
+        return send(method, url, body, extraHeaders, locale, withCredentials).then(function (response) {
             if (response.status !== 401 || !wasSignedIn || url === sessionUrl) {
                 return response;
             }
 
             return renew().then(function (renewed) {
-                return renewed ? send(method, url, body, extraHeaders, locale) : response;
+                return renewed ? send(method, url, body, extraHeaders, locale, withCredentials) : response;
             });
         });
     };
 
+    var backendUrl = function (path) {
+        return new URL(path, window.location.origin).toString();
+    };
+
     return {
         loadSession: loadSession,
+        backendUrl: backendUrl,
         get: function (url, headers) {
             return request("GET", url, undefined, headers);
         },
         post: function (url, body) {
             return request("POST", url, body);
+        },
+        postWithCredentials: function (url, body) {
+            return request("POST", url, body, undefined, true);
         },
         put: function (url, body) {
             return request("PUT", url, body);

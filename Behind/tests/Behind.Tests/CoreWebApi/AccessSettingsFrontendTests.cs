@@ -174,8 +174,10 @@ public class AccessSettingsFrontendTests
     {
         var auditLog = Read("viewmodels/auditlog.js");
 
-        Assert.Contains("AccessSettings: \"audit.entities.AccessSettings\"", auditLog);
-        Assert.Contains("PendingUserApprovals: \"audit.entities.PendingUserApprovals\"", auditLog);
+        Assert.Contains("i18n.tOr(\"audit.entities.\" + name, name)", auditLog);
+        var english = Read("locales/en-US.json");
+        Assert.Contains("\"audit.entities.AccessSettings\"", english);
+        Assert.Contains("\"audit.entities.PendingUserApprovals\"", english);
     }
 
     [Fact]

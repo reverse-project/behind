@@ -77,6 +77,18 @@ define(["models/http", "models/i18n"], function (http, i18n) {
             });
         },
 
+        loadOidc: function () {
+            return http.get(filePath("security.json", "oidc")).then(function (response) {
+                return response.ok ? success("", response.data) : failure(response);
+            });
+        },
+
+        saveOidc: function (request) {
+            return http.put(filePath("security.json", "oidc"), request).then(function (response) {
+                return response.ok ? success(i18n.t("settings.oidc.saved")) : failure(response);
+            });
+        },
+
         loadLogging: function (file) {
             return http.get(filePath(file, "logging")).then(function (response) {
                 return response.ok ? success("", response.data) : failure(response);

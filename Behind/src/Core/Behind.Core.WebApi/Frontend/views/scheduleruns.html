@@ -1,0 +1,38 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'schedules.runs.title'">Schedule runs</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/manage/schedules" data-bind="t: 'schedules.backToSchedules'">Back to schedules</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'schedules.denied'">You need schedule access to view runs.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
+    <div data-bind="visible: canRead">
+        <form class="row g-2 mb-3" data-bind="submit: find">
+            <div class="col-md-6"><label class="form-label" for="run-schedule-filter" data-bind="t: 'schedules.filter.schedule'">Schedule</label><select id="run-schedule-filter" class="form-select" data-bind="options: schedules, optionsText: 'name', optionsValue: 'id', optionsCaption: $root.i18n.t('schedules.filter.allSchedules'), value: scheduleId"></select></div>
+            <div class="col-md-4"><label class="form-label" for="run-status-filter" data-bind="t: 'schedules.filter.status'">Status</label><select id="run-status-filter" class="form-select" data-bind="options: statuses, optionsText: 'label', optionsValue: 'value', optionsCaption: $root.i18n.t('schedules.filter.allStatuses'), value: status"></select></div>
+            <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit" data-bind="enable: !busy(), t: 'common.search'">Filter</button></div>
+        </form>
+        <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted"><label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'schedules.showDeletedRuns'">Show deleted runs</span></label></div>
+        <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'schedules.runs.empty'">No runs found.</p>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle" data-bind="visible: hasItems">
+                <thead><tr><th data-bind="t: 'schedules.runs.schedule'">Schedule</th><th data-bind="t: 'schedules.runs.scheduledFor'">Scheduled for (UTC)</th><th data-bind="t: 'schedules.runs.status'">Status</th><th data-bind="t: 'schedules.runs.summary'">Summary</th><th data-bind="t: 'schedules.runs.email'">Email</th><th data-bind="t: 'schedules.runs.actions'">Actions</th></tr></thead>
+                <tbody data-bind="foreach: items">
+                    <tr>
+                        <td><span class="text-break" data-bind="text: scheduleName"></span><div class="small text-body-secondary" data-bind="text: actionName"></div></td>
+                        <td><span data-bind="text: scheduledForText"></span><div class="small text-body-secondary" data-bind="visible: startedAtText"><span data-bind="t: 'schedules.runs.started'">Started</span>: <span data-bind="text: startedAtText"></span></div><div class="small text-body-secondary" data-bind="visible: finishedAtText"><span data-bind="t: 'schedules.runs.finished'">Finished</span>: <span data-bind="text: finishedAtText"></span></div></td>
+                        <td><span class="badge" data-bind="css: statusClass, text: $root.i18n.t('schedules.run.status.' + status)"></span><span class="badge text-bg-dark ms-1" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span></td>
+                        <td class="text-break"><span data-bind="text: summaryText"></span><span class="d-block" data-bind="visible: link"><a target="_blank" rel="noopener" data-bind="attr: { href: link }, t: 'schedules.runs.openResult'">Open result</a></span></td>
+                        <td><span data-bind="text: emailText"></span><span class="d-block small text-body-secondary" data-bind="visible: recipients > 0, text: $root.i18n.t('schedules.runs.recipients', [recipients])"></span></td>
+                        <td class="text-nowrap">
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$root.busy(), click: remove, t: 'common.delete'">Delete</button>
+                            <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $root.canViewDeleted(), enable: !$root.busy(), click: restore, t: 'common.restore'">Restore</button>
+                            <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $root.canViewDeleted(), enable: !$root.busy(), click: hardDelete, t: 'common.deletePermanently'">Delete permanently</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <pager class="d-block" params="pager: pager"></pager>
+    </div>
+</section>

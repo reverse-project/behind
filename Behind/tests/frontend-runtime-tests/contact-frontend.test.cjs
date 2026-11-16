@@ -12,7 +12,7 @@ const i18n = { t: key => key };
 test("every Contact frontend locale key exists in each supported language", () => {
     const keys = new Set([
         "contact.widget", "contact.administration", "menu.item.contact",
-        ...["text", "textarea", "email"].map(type => "contact.fieldType." + type),
+        ...["text", "textarea", "email", "boolean"].map(type => "contact.fieldType." + type),
         ...["sent", "failed", "sending", "notRequested"].map(status => "contact.deliveryStatus." + status)
     ]);
     for (const dir of ["models", "viewmodels", "views"]) {
@@ -65,7 +65,8 @@ function publicViewModel(api, hash = "#/contact") {
     const ViewModel = load(path.join(contact, "viewmodels/contact.js"), {
         ko,
         "models/i18n": i18n,
-        "modules/contact/models/contact": api
+        "modules/contact/models/contact": api,
+        "bindings/bbcode": {}
     }, { location: { hash }, confirm: () => true });
     return new ViewModel();
 }
@@ -910,8 +911,13 @@ test("page and nested widget fields bind to their contact view model", () => {
         const template = fs.readFileSync(path.join(contact, "views", file), "utf8");
         assert.match(template, /foreach: fields/);
         assert.match(template, /for: \$parent\.idPrefix \+ '-field-' \+ key/);
-        assert.equal((template.match(/id: \$parent\.idPrefix \+ '-field-' \+ key/g) || []).length, 2);
-        assert.equal((template.match(/enable: !\$parent\.busy\(\)/g) || []).length, 2);
+        assert.equal((template.match(/id: \$parent\.idPrefix \+ '-field-' \+ key/g) || []).length, 3);
+        assert.equal((template.match(/enable: !\$parent\.busy\(\)/g) || []).length, 3);
+        assert.match(template, /type === 'boolean'/);
+        assert.match(template, /<!-- ko if: type !== 'boolean' -->\s*<label class="form-label"/);
+        assert.match(template, /type="checkbox"[^>]+required: required[^>]+checked: value/);
+        assert.match(template, /class="form-check-label"[^>]+bbcode: label/);
+        assert.match(template, /type === 'text' \|\| type === 'email'/);
         assert.doesNotMatch(template, /\$root\.(?:idPrefix|fields|busy)/);
     }
 });
@@ -922,7 +928,8 @@ test("registered widget activates and disposes its actual public view model", as
     const forms = new Promise(resolve => { resolveForms = resolve; });
     const ViewModel = load(path.join(contact, "viewmodels/contact.js"), {
         ko, "models/i18n": i18n,
-        "modules/contact/models/contact": { forms: () => forms }
+        "modules/contact/models/contact": { forms: () => forms },
+        "bindings/bbcode": {}
     });
     load(path.join(contact, "models/contact-widget.js"), {
         ko: { components: {
@@ -967,4 +974,68 @@ test("inbox-only forms save an empty recipient and never offer or perform retry"
     view.requestDetails({ id: "request-2", deliveryStatus: "notRequested", isDeleted: false, recipient: "" });
     await view.retryRequest();
     assert.equal(calls.some(call => call.action === "retry"), false);
+});
+
+test("boolean fields start unchecked, send canonical string values and reset after submission", async () => {
+    const calls = [];
+    const schema = form("consent", [
+        { key: "terms", label: "Accept [url=https://example.org/terms]terms[/url]", type: "boolean", required: true, maxLength: 5 },
+        { key: "newsletter", label: "Subscribe", type: "boolean", required: false, maxLength: 5 }
+    ]);
+    const view = publicViewModel({
+        forms: async () => ({ ok: true, data: [schema] }),
+        form: async () => ({ ok: true, data: schema }),
+        submit: async (id, body) => {
+            calls.push(body);
+            return { ok: true, data: { deliveryStatus: "notRequested" } };
+        }
+    });
+    await view.activate();
+    assert.equal(view.fields()[0].value(), false);
+    assert.equal(view.fields()[1].value(), false);
+    assert.equal(view.fields()[0].label, schema.fields[0].label);
+    view.fields()[0].value(true);
+    await view.submit();
+    assert.equal(calls[0].fields.terms, "true");
+    assert.equal(calls[0].fields.newsletter, "false");
+    assert.equal(view.fields()[0].value(), false);
+    view.fields().forEach(field => field.value(true));
+    await view.submit();
+    assert.equal(calls[1].fields.newsletter, "true");
+    view.dispose();
+});
+
+test("management creates and round-trips checkbox schemas without a text length setting", async () => {
+    const label = "Accept [url=https://example.org/terms]" + "Terms ".repeat(40) + "[/url]";
+    const schema = form("consent", [{ key: "terms", label, type: "boolean", required: true, maxLength: 5 }]);
+    let saved;
+    const view = managerViewModel({
+        manageForm: async () => ({ ok: true, data: schema }),
+        manageForms: async () => ({ ok: true, data: [schema] }),
+        saveForm: async (id, fields) => {
+            saved = fields;
+            return { ok: true, data: schema };
+        }
+    });
+    assert.ok(view.fieldTypes.some(type => type.value === "boolean" && type.label === "contact.fieldType.boolean"));
+    await view.editForm(schema);
+    assert.equal(view.formFields()[0].label(), label);
+    assert.equal(view.formFields()[0].type(), "boolean");
+    view.formFields()[0].maxLength("");
+    await view.saveForm();
+    assert.equal(saved.fields[0].type, "boolean");
+    assert.equal(saved.fields[0].label, label);
+    assert.equal(saved.fields[0].required, true);
+    assert.equal(saved.fields[0].maxLength, 5);
+    const template = fs.readFileSync(path.join(contact, "views/contactmanager.html"), "utf8");
+    assert.match(template, /maxlength: type\(\) === 'boolean' \? 2000 : 200/);
+    assert.match(template, /enable: !\$root\.busy\(\) &amp;&amp; type\(\) !== 'boolean'/);
+});
+
+test("checkbox BBCode labels render safe document links and escape raw HTML", () => {
+    const bbcode = load(path.join(core, "models/bbcode.js"), {});
+    const html = bbcode.render('Accept [url=https://example.org/terms]terms[/url] <img src=x onerror=alert(1)> [url=javascript:alert(1)]bad[/url]');
+    assert.match(html, /<a href="https:\/\/example.org\/terms" target="_blank" rel="nofollow noopener noreferrer">terms<\/a>/);
+    assert.match(html, /&lt;img/);
+    assert.doesNotMatch(html, /<img|href="javascript:/);
 });

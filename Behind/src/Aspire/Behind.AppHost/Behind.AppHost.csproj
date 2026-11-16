@@ -16,8 +16,4 @@
       <PackageReference Include="MessagePack" />
     </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\..\Web\Behind.Web\Behind.Web.csproj" />
-    </ItemGroup>
-
 </Project>

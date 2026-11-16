@@ -220,8 +220,9 @@ public sealed class StartupSetupTests : IDisposable
         Assert.Equal(new DownloadsConfiguration(), Bind<DownloadsConfiguration>(BackendPath, DownloadsConfiguration.SectionName));
         Assert.Equal(new CommentsConfiguration(), Bind<CommentsConfiguration>(BackendPath, CommentsConfiguration.SectionName));
         Assert.Equal(new AccountsConfiguration(), Bind<AccountsConfiguration>(BackendPath, AccountsConfiguration.SectionName));
+        Assert.Equal(new SchedulerConfiguration(), Bind<SchedulerConfiguration>(BackendPath, SchedulerConfiguration.SectionName));
         var backend = Section(BackendPath, "Backend");
-        foreach (var name in new[] { "ContentRestrictions", "Downloads", "Comments", "Accounts" })
+        foreach (var name in new[] { "ContentRestrictions", "Downloads", "Comments", "Accounts", "Scheduler" })
         {
             Assert.NotEmpty(backend.GetProperty(name).EnumerateObject());
         }
@@ -243,7 +244,7 @@ public sealed class StartupSetupTests : IDisposable
     }
 
     [Fact]
-    public void Run_SecurityFileHasEveryMagicLinkDefault()
+    public void Run_SecurityFileHasEveryMagicLinkAndOidcDefault()
     {
         Request().Run(new StringWriter());
 
@@ -268,6 +269,7 @@ public sealed class StartupSetupTests : IDisposable
         Assert.Equal(Some(MagicLinkSettings.DefaultRedeemLimit), magicLink.RedeemLimit);
         Assert.Equal(Some(MagicLinkSettings.DefaultRedeemWindow), magicLink.RedeemWindow);
         Assert.Equal(None, magicLink.OldSecret);
+        Assert.Equal(Json(new OidcConfiguration()), Json(Bind<OidcConfiguration>(SecurityPath, OidcConfiguration.SectionName)));
     }
 
     [Fact]

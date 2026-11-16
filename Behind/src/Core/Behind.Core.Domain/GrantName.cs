@@ -25,10 +25,11 @@ public static class GrantArea
     public const string PrivateMessage = nameof(PrivateMessage);
     public const string PrivateMessageModeration = nameof(PrivateMessageModeration);
     public const string Report = nameof(Report);
+    public const string Schedule = nameof(Schedule);
 
     public const string RawDatabase = nameof(RawDatabase);
 
-    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download, RouteAlias, Access, Chat, Message, ContentRestriction, ContentAge, PrivateMessage, PrivateMessageModeration, Report];
+    public static readonly IReadOnlyList<string> All = [Session, AuditLog, Role, User, Configuration, Impersonation, Site, News, Article, Menu, Gallery, Download, RouteAlias, Access, Chat, Message, ContentRestriction, ContentAge, PrivateMessage, PrivateMessageModeration, Report, Schedule];
 
     public static IReadOnlyList<string> ActionsOf(string area) =>
         area switch

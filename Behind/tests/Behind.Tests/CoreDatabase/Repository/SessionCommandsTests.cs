@@ -217,5 +217,46 @@ public sealed class SessionCommandsTests : IDisposable
         Assert.Equal(firstInvalidation, firstInvalid.InvalidatedAt.Match(() => throw new Xunit.Sdk.XunitException("None"), at => at));
         Assert.Equal(firstInvalidation.AddHours(1), secondInvalid.InvalidatedAt.Match(() => throw new Xunit.Sdk.XunitException("None"), at => at));
     }
-}
 
+    [Fact]
+    public async Task DeleteInvalidatedBefore_RemovesOnlySessionsInvalidatedBeforeTheCutoff()
+    {
+        Guid userId;
+        await using (var seed = _factory.CreateContext())
+        {
+            userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, "cleanup@test.com");
+        }
+
+        var now = new DateTimeOffset(2026, 11, 16, 12, 0, 0, TimeSpan.Zero);
+        var cutoff = now.AddDays(-30);
+        var ids = new Dictionary<string, Guid>();
+        await using (var ctx = _factory.CreateContext())
+        {
+            var commands = new SessionCommands(ctx);
+            foreach (var name in new[] { "active", "old", "boundary", "recent" })
+            {
+                ids[name] = await commands.CreateForUserId(userId, NewSession());
+            }
+        }
+
+        foreach (var (name, at) in new[] { ("old", cutoff.AddTicks(-1)), ("boundary", cutoff), ("recent", now.AddDays(-1)) })
+        {
+            await using var ctx = _factory.CreateContext();
+            await new SessionCommands(ctx).InvalidateSession(ids[name], userId, at);
+        }
+
+        int removed;
+        await using (var ctx = _factory.CreateContext())
+        {
+            removed = await new SessionCommands(ctx).DeleteInvalidatedBefore(cutoff);
+        }
+
+        await using var reader = _factory.CreateContext();
+        var queries = new SessionQueries(reader);
+        Assert.Equal(1, removed);
+        Assert.Equal(None, await queries.TryFindById(ids["old"]));
+        Assert.NotEqual(None, await queries.TryFindById(ids["active"]));
+        Assert.NotEqual(None, await queries.TryFindById(ids["boundary"]));
+        Assert.NotEqual(None, await queries.TryFindById(ids["recent"]));
+    }
+}

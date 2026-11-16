@@ -1,7 +1,7 @@
+using Behind.Contact.Domain;
+
 namespace Behind.Contact.WebApi.Endpoints;
 
-public sealed record ContactField(string Key, string Label, string Type, bool Required, int MaxLength);
-public sealed record ContactValue(string Key, string Label, string Value);
 public sealed record SaveContactForm(long? Version, string Name, string Description, string? Recipient, string SubjectMode, string[] Subjects, ContactField[] Fields);
 public sealed record SubmitContactRequest(string Name, string Email, string Subject, string Message, Dictionary<string, string> Fields);
 public sealed record ContactFormResponse(Guid Id, long Version, string Name, string Description, string SubjectMode, string[] Subjects, ContactField[] Fields);

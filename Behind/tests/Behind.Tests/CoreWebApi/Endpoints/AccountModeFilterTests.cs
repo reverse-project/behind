@@ -2,6 +2,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.TwoFactor;
+using Behind.Core.WebApi.Oidc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,13 @@ public sealed class AccountModeFilterTests
             .AddLogging()
             .AddSingleton<IOptionsSnapshot<AccountsConfiguration>>(FixedOptionsSnapshot.Of(settings))
             .AddSingleton(tickets ?? Substitute.For<ITwoFactorTickets>())
+            .AddSingleton(new OidcProviderCatalog(new()
+            {
+                Providers = [new()
+                {
+                    Id = "company", DisplayName = "Company", Authority = "https://id.example.test", ClientId = "behind"
+                }]
+            }))
             .BuildServiceProvider();
         await using (services)
         {
@@ -110,5 +118,43 @@ public sealed class AccountModeFilterTests
         Assert.IsType<NotFound>(await Invoke(AccountMode.TwoFactor,
             new AccountsConfiguration { Password = false },
             new TwoFactorSignInEndpoints.CodeRequest("ticket", "123456"), tickets));
+    }
+
+    [Theory]
+    [InlineData("company", true, true)]
+    [InlineData("company", false, false)]
+    [InlineData("removed", true, false)]
+    public async Task OidcChallengeIsIndependentOfPasswordAndChecksProvider(string provider, bool signIn, bool allowed)
+    {
+        var tickets = Substitute.For<ITwoFactorTickets>();
+        tickets.Open("ticket").Returns(Some(new TwoFactorTicket(
+            Guid.NewGuid(), TwoFactorStage.Verify, DateTimeOffset.UtcNow.AddMinutes(1), PrimaryOidcProviderId: provider)));
+        var result = await Invoke(AccountMode.TwoFactor,
+            new() { Password = false, MagicLink = false, SignIn = signIn },
+            new TwoFactorSignInEndpoints.CodeRequest("ticket", "123456"), tickets);
+        if (allowed)
+        {
+            Assert.Equal("next", result);
+        }
+
+        else
+        {
+            Assert.IsType<NotFound>(result);
+        }
+    }
+
+    [Fact]
+    public async Task DisablingOidcRejectsItsOutstandingSecondFactorChallengesOnly()
+    {
+        var tickets = Substitute.For<ITwoFactorTickets>();
+        tickets.Open("oidc").Returns(Some(new TwoFactorTicket(
+            Guid.NewGuid(), TwoFactorStage.Verify, DateTimeOffset.UtcNow.AddMinutes(1), PrimaryOidcProviderId: "company")));
+        tickets.Open("password").Returns(Some(new TwoFactorTicket(
+            Guid.NewGuid(), TwoFactorStage.Verify, DateTimeOffset.UtcNow.AddMinutes(1))));
+        var settings = new AccountsConfiguration { Oidc = false };
+        Assert.IsType<NotFound>(await Invoke(AccountMode.TwoFactor, settings,
+            new TwoFactorSignInEndpoints.CodeRequest("oidc", "123456"), tickets));
+        Assert.Equal("next", await Invoke(AccountMode.TwoFactor, settings,
+            new TwoFactorSignInEndpoints.CodeRequest("password", "123456"), tickets));
     }
 }

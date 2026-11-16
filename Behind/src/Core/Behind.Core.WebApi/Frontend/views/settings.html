@@ -4,7 +4,7 @@
     <div class="alert alert-info" role="alert" data-bind="visible: hasMessage, text: message"></div>
     <div class="alert alert-secondary" role="alert" data-bind="visible: readOnly, t: 'settings.readOnly'">The configuration is read-only. Values are shown masked and cannot be changed here.</div>
     <div data-bind="visible: canView">
-        <p class="text-body-secondary" data-bind="t: 'settings.description'">The configuration files of the application. Secrets are masked. Changes apply immediately, the application does not need to be restarted.</p>
+        <p class="text-body-secondary" data-bind="t: 'settings.description'">The application configuration files. Secrets are masked. Most changes apply immediately; OpenTelemetry and OpenID Connect provider changes require a restart.</p>
         <ul class="nav nav-pills gap-2 mb-3" role="tablist" data-bind="foreach: files">
             <li class="nav-item" role="presentation">
                 <button type="button" class="nav-link" role="tab" data-bind="text: name, css: { active: $parent.isSelected($data) }, attr: { 'aria-selected': $parent.isSelected($data) }, click: $parent.choose"></button>
@@ -274,6 +274,100 @@
             </div>
             <div class="d-flex gap-2 mb-4" data-bind="visible: $root.canManage">
                 <button type="submit" class="btn btn-primary" data-bind="enable: $root.canSaveAppSettings, t: 'common.save'">Save</button>
+            </div>
+        </form>
+        <form class="mb-4" data-bind="with: oidc, submit: $root.saveOidc, visible: $root.isOidcSelected">
+            <fieldset data-bind="enable: loaded() && $root.canEdit()">
+                <legend class="h5" data-bind="t: 'settings.oidc.title'">OpenID Connect</legend>
+                <p class="text-body-secondary" data-bind="t: 'settings.oidc.restart'">Enable or disable OpenID Connect in backend.json under Backend › Accounts › Oidc. Provider changes require a restart.</p>
+                <div data-bind="foreach: providers">
+                    <fieldset class="border rounded p-3 mb-3">
+                        <legend class="float-none w-auto h6 px-2" data-bind="text: displayName() || id() || $root.text('settings.oidc.provider')"></legend>
+                        <div class="row g-3">
+                            <label class="col-md-6"><span data-bind="t: 'settings.oidc.id'">Provider ID</span>
+                                <input class="form-control" type="text" data-bind="value: id, valueUpdate: 'input'">
+                            </label>
+                            <label class="col-md-6"><span data-bind="t: 'settings.oidc.displayName'">Display name</span>
+                                <input class="form-control" type="text" data-bind="value: displayName">
+                            </label>
+                            <div class="col-12 form-text" data-bind="t: 'settings.oidc.idHelp'">Use letters, numbers, hyphens or underscores. Changing an ID does not carry its stored secret or identity links to the new ID.</div>
+                            <label class="col-12 form-check form-switch ms-2">
+                                <input type="checkbox" class="form-check-input" role="switch" data-bind="checked: enabled">
+                                <span data-bind="t: 'settings.oidc.providerEnabled'">Enable provider</span>
+                            </label>
+                            <label class="col-md-6"><span data-bind="t: 'settings.oidc.authority'">Authority</span>
+                                <input class="form-control" type="text" data-bind="value: authority">
+                            </label>
+                            <label class="col-md-6"><span data-bind="t: 'settings.oidc.clientId'">Client ID</span>
+                                <input class="form-control" type="text" data-bind="value: clientId">
+                            </label>
+                            <div class="col-12">
+                                <label><span data-bind="t: 'settings.oidc.clientSecret'">Client secret</span>
+                                    <input class="form-control" type="password" autocomplete="new-password" data-bind="value: clientSecret, enable: !clearClientSecret()">
+                                </label>
+                                <div class="form-text" data-bind="text: hasClientSecret() ? $root.text('settings.oidc.secretStored') : $root.text('settings.oidc.secretAbsent')"></div>
+                                <label class="form-check" data-bind="visible: hasClientSecret">
+                                    <input type="checkbox" class="form-check-input" data-bind="checked: clearClientSecret">
+                                    <span data-bind="t: 'settings.oidc.clearSecret'">Clear stored secret</span>
+                                </label>
+                            </div>
+                            <div class="col-12">
+                                <div class="fw-semibold" data-bind="t: 'settings.oidc.scopes'">Scopes</div>
+                                <div data-bind="foreach: scopes">
+                                    <div class="input-group mb-2">
+                                        <input class="form-control" type="text" data-bind="value: value, tAttr: { 'aria-label': 'settings.oidc.scope' }">
+                                        <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.removeScope, t: 'common.remove'">Remove</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary" data-bind="click: addScope, t: 'settings.oidc.addScope'">Add scope</button>
+                            </div>
+                            <label class="col-12 form-check form-switch ms-2">
+                                <input type="checkbox" class="form-check-input" role="switch" data-bind="checked: autoCreateUsers">
+                                <span data-bind="t: 'settings.oidc.autoCreateUsers'">Automatically create users</span>
+                            </label>
+                            <label class="col-12 form-check form-switch ms-2">
+                                <input type="checkbox" class="form-check-input" role="switch" data-bind="checked: linkByVerifiedEmail">
+                                <span data-bind="t: 'settings.oidc.linkByVerifiedEmail'">Link accounts by verified email</span>
+                            </label>
+                            <label class="col-md-6"><span data-bind="t: 'settings.oidc.roleClaimType'">Role claim type</span>
+                                <input class="form-control" type="text" data-bind="value: roleClaimType">
+                            </label>
+                            <div class="col-12">
+                                <div class="fw-semibold" data-bind="t: 'settings.oidc.roleMappings'">Role mappings</div>
+                                <div class="border rounded p-2 mb-2" data-bind="foreach: roleMappings">
+                                    <div class="mb-3">
+                                        <label class="d-block"><span data-bind="t: 'settings.oidc.externalRole'">External role</span>
+                                            <input class="form-control mb-2" type="text" data-bind="value: external">
+                                        </label>
+                                        <div data-bind="foreach: roles">
+                                            <div class="input-group mb-2">
+                                                <input class="form-control" type="text" data-bind="value: value, tAttr: { 'aria-label': 'settings.oidc.localRole' }">
+                                                <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.removeRole, t: 'common.remove'">Remove</button>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary" data-bind="click: addRole, t: 'settings.oidc.addRole'">Add local role</button>
+                                        <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.removeMapping, t: 'settings.oidc.removeMapping'">Remove mapping</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary" data-bind="click: addMapping, t: 'settings.oidc.addMapping'">Add mapping</button>
+                            </div>
+                            <label class="col-12 form-check form-switch ms-2">
+                                <input type="checkbox" class="form-check-input" role="switch" data-bind="checked: autoCreateRoles">
+                                <span data-bind="t: 'settings.oidc.autoCreateRoles'">Automatically create roles</span>
+                            </label>
+                            <label class="col-md-6"><span data-bind="t: 'settings.oidc.autoCreateRolePrefix'">Automatic role prefix</span>
+                                <input class="form-control" type="text" data-bind="value: autoCreateRolePrefix">
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger mt-3" data-bind="click: $parent.remove, t: 'settings.oidc.removeProvider'">Remove provider</button>
+                    </fieldset>
+                </div>
+                <button type="button" class="btn btn-outline-secondary mb-3" data-bind="click: add, t: 'settings.oidc.addProvider'">Add provider</button>
+            </fieldset>
+            <p class="text-danger" data-bind="visible: loaded() && !isValid(), t: 'settings.oidc.invalid'">Use unique valid provider IDs and nonempty, unique mapping names and nonempty scopes and roles.</p>
+            <div class="d-flex gap-2" data-bind="visible: $root.canManage">
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="click: discard, enable: loaded() && $root.canEdit(), t: 'common.discard'">Discard</button>
             </div>
         </form>
         <form data-bind="with: selected, submit: save, visible: isFieldTabSelected">

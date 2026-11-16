@@ -4,7 +4,7 @@ Contact is available when the Contact module is installed. The main Behind insta
 
 ## Sending a request
 
-Open `#/contact` or use a Contact form widget placed in a page layout. Select an active form and fill in your name, email address, subject, message and any additional fields. A form may offer fixed subject choices or allow your own subject. Required fields must be completed.
+Open `#/contact` or use a Contact form widget placed in a page layout. Select an active form and fill in your name, email address, subject, message and any additional fields. A form may offer fixed subject choices or allow your own subject. Required fields must be completed; required checkboxes must be checked. Optional checkboxes start unchecked and may be left unchecked.
 
 The application saves your request in the administrator inbox. If the form has an email recipient, it then attempts email delivery. If delivery fails, the saved request remains available to administrators for retry. Do not resubmit an accepted request just because email delivery is pending or failed.
 
@@ -15,7 +15,11 @@ Open **Administration > Contact** (`#/administration/contact`) and use the forms
 - Display name and description.
 - Optional destination email address, visible only to authorized administrators. Leave it empty to use the administrator inbox without sending email.
 - Fixed subject choices or a free-text subject.
-- Extra field keys, labels, text/textarea/email types, required flags and maximum lengths.
+- Extra field keys, labels, text/textarea/email/boolean types, required flags and maximum lengths for text fields.
+
+Boolean fields appear as checkboxes on both the contact page and the widget. Use a required checkbox for consent that must be explicitly given, or an optional checkbox for a newsletter opt-in. The checkbox records the choice in the request only; it does not subscribe the sender to a mailing list.
+
+Only boolean field labels support BBCode; other field labels remain plain text. For example, `I agree to the [url=https://example.org/terms]terms[/url]` provides a link in a consent label. Boolean labels can contain up to 2,000 characters, including BBCode; other labels are limited to 200. Links use the existing BBCode link confirmation. Boolean values are saved as the strings `true` or `false`; an omitted optional value is recorded as `false`, while a required boolean must be `true`. Maximum length does not apply to boolean submissions.
 
 Deleted forms do not accept public requests. Editing a form does not change already-submitted requests: their original form name, field labels, values and destination are preserved.
 

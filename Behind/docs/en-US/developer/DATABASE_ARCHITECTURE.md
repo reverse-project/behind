@@ -30,6 +30,12 @@ Core's `Messages` table stores immutable `(Key, Version)` versions with `Name`, 
 
 `IMessageQueries.FindLive` selects the latest active version first, then applies the half-open schedule interval. Management queries support search, letters, paging and deleted state; `IMessageCommands` reuses `IVersionedCommands` for create/update, soft delete, restore and permanent deletion.
 
+## Scheduler persistence
+
+`AddSchedules` (SQLite and PostgreSQL) creates the versioned `Schedules` (`Name`, `Cron`, `Action`, JSON `Parameters`, `Enabled`, `Notify`, JSON `Participants`) and `ScheduleRuns` (`ScheduleId`, `ScheduleName`, `Action`, `ScheduledFor`, `StartedAt`, `FinishedAt`, `Status`, `Summary`, `Link`, `Email`, `Recipients`) tables. Both are `(Key, Version)` entities with audit-log timestamps and soft delete, hard delete and restore; both are listed in `CoreSoftDeletedEntities` and exposed in the raw database editor. A schedule cannot be permanently deleted while it still has runs. Runs left `Running` by a stopped host are marked failed on startup.
+
+`ISessionCommands.DeleteInvalidatedBefore(cutoff)` removes `Sessions` rows whose `InvalidatedAt` is earlier than the cutoff with a single `ExecuteDelete` (using the existing `InvalidatedAt` index). Active sessions and invalidated sessions without `InvalidatedAt` are kept. The bulk delete bypasses entity audit entries; the scheduled run's summary records the deleted count.
+
 ## Layout configuration persistence
 
 Layouts are configuration, not database entities: `<Backend:DataDirectory>/layouts.json` stores the schema version, configuration revision, default layout, layouts (including soft-deleted ones), and route assignments. No database migration, entity audit label or raw database table is introduced. Back up this file alongside the database. A missing file uses configurable header, content and footer sections. Versionless/schema-0 files are upgraded in memory to schema 1 with header/footer widgets; the file and revision remain unchanged until the next successful save. Schema-1 files preserve intentionally headerless/footerless pages. Unsupported schemas and malformed files produce an explicit error and are never silently overwritten. Writes use a singleton asynchronous gate, optimistic revision comparison and atomic file replacement. Run one writer application per data directory; do not share the file between independent writer processes. Restore and permanent deletion require `RawDatabase.Manage`; ordinary saves retain hidden deleted layouts.

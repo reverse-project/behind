@@ -70,7 +70,8 @@ public sealed record StartupSecuritySection(
     SecretKey SecretKey,
     JwtSettings Jwt,
     ElevationSettings Elevation,
-    StartupMagicLinkSettings MagicLink
+    StartupMagicLinkSettings MagicLink,
+    OidcConfiguration Oidc
 );
 
 public sealed record StartupMagicLinkSettings(
@@ -97,7 +98,8 @@ public sealed record StartupBackendSection(
     ContentRestrictionsConfiguration ContentRestrictions,
     DownloadsConfiguration Downloads,
     CommentsConfiguration Comments,
-    AccountsConfiguration Accounts
+    AccountsConfiguration Accounts,
+    SchedulerConfiguration Scheduler
 );
 
 public sealed record StartupFrontendFile(StartupFrontendSection Frontend);

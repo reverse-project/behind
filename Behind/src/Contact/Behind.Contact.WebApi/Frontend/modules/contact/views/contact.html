@@ -33,11 +33,19 @@
             </div>
             <div data-bind="foreach: fields">
                 <div class="mb-3">
+                    <!-- ko if: type !== 'boolean' -->
                     <label class="form-label" data-bind="text: label, attr: { for: $parent.idPrefix + '-field-' + key }"></label>
+                    <!-- /ko -->
                     <!-- ko if: type === 'textarea' -->
                     <textarea class="form-control" rows="4" data-bind="attr: { id: $parent.idPrefix + '-field-' + key, maxlength: maxLength, required: required }, value: value, valueUpdate: 'input', enable: !$parent.busy()"></textarea>
                     <!-- /ko -->
-                    <!-- ko if: type !== 'textarea' -->
+                    <!-- ko if: type === 'boolean' -->
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" data-bind="attr: { id: $parent.idPrefix + '-field-' + key, required: required }, checked: value, enable: !$parent.busy()">
+                        <label class="form-check-label" data-bind="bbcode: label, attr: { for: $parent.idPrefix + '-field-' + key }"></label>
+                    </div>
+                    <!-- /ko -->
+                    <!-- ko if: type === 'text' || type === 'email' -->
                     <input class="form-control" data-bind="attr: { id: $parent.idPrefix + '-field-' + key, type: type, maxlength: maxLength, required: required }, value: value, valueUpdate: 'input', enable: !$parent.busy()">
                     <!-- /ko -->
                 </div>

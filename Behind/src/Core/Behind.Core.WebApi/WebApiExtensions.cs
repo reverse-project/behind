@@ -29,6 +29,8 @@ using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.MagicLinks;
 using Behind.Core.WebApi.Middleware;
+using Behind.Core.WebApi.Oidc;
+using Behind.Core.WebApi.Scheduling;
 using Behind.Core.WebApi.Settings;
 using Behind.Core.WebApi.Layouts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -90,6 +92,8 @@ public static class WebApiExtensions
             builder.Services.Configure<ContentRestrictionsConfiguration>(
                 builder.Configuration.GetSection(ContentRestrictionsConfiguration.SectionName)
             );
+            builder.Services.Configure<SchedulerConfiguration>(
+                builder.Configuration.GetSection(SchedulerConfiguration.SectionName));
             builder.Services.Configure<DownloadsConfiguration>(
                 builder.Configuration.GetSection(DownloadsConfiguration.SectionName)
             );
@@ -196,6 +200,8 @@ public static class WebApiExtensions
                 });
             builder.Services.AddOptionsCacheInvalidation<SecurityConfiguration, JwtBearerOptions>();
 
+            builder.AddOidc();
+
             return builder;
         }
 
@@ -265,6 +271,14 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IRouteAliasCommands, RouteAliasCommands>();
             builder.Services.AddScoped<IMessageQueries, MessageQueries>();
             builder.Services.AddScoped<IMessageCommands, MessageCommands>();
+            builder.Services.AddScoped<IScheduleQueries, ScheduleQueries>();
+            builder.Services.AddScoped<IScheduleCommands, ScheduleCommands>();
+            builder.Services.AddScoped<IScheduleRunQueries, ScheduleRunQueries>();
+            builder.Services.AddScoped<IScheduleRunCommands, ScheduleRunCommands>();
+            builder.Services.AddScoped<IScheduleParticipantQueries, ScheduleParticipantQueries>();
+            builder.Services.AddScoped<IScheduledAction, SessionCleanupScheduledAction>();
+            builder.Services.AddSingleton<IScheduleRunner, ScheduleRunner>();
+            builder.Services.AddHostedService<ScheduleService>();
             builder.Services.AddScoped<IAccessSettingsQueries, AccessSettingsQueries>();
             builder.Services.AddScoped<IAccessSettingsCommands, AccessSettingsCommands>();
             builder.Services.AddScoped<IUserApprovalQueries, UserApprovalQueries>();
@@ -348,6 +362,19 @@ public static class WebApiExtensions
                 .Produces(403)
                 .Produces(404)
                 .Produces(500);
+
+            application.MapGet(OidcSettingsEndpoints.Route, OidcSettingsEndpoints.Get)
+                .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read))
+                .WithSummary("Read OpenID Connect provider settings without exposing client secrets")
+                .Produces<OidcSettings>()
+                .Produces(401).Produces(403).Produces(404).Produces(500);
+
+            application.MapPut(OidcSettingsEndpoints.Route, OidcSettingsEndpoints.Update)
+                .RequireAuthorization(configurationManage)
+                .WithSummary("Save OpenID Connect provider configuration")
+                .Produces(204).Produces(400).Produces(401)
+                .Produces<ConfigurationForbiddenResponse>(403)
+                .Produces(404).Produces(500);
 
             application.MapPut("/settings/email", SettingsEndpoints.UpdateEmail)
                 .RequireAuthorization(configurationManage)
@@ -437,6 +464,19 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(409)
                 .Produces(500);
+
+            application.MapGet("/sign/in/oidc/providers", OidcSignInEndpoints.Providers)
+                .WithSummary("List enabled OpenID Connect sign-in providers")
+                .Produces<OidcSignInEndpoints.ProviderResponse[]>();
+            application.MapGet("/sign/in/oidc/{id}", OidcSignInEndpoints.Challenge)
+                .WithSummary("Start an OpenID Connect authorization code flow with PKCE")
+                .Produces(302).Produces(400).Produces(404);
+            application.MapPost("/sign/in/oidc/redeem", OidcSignInEndpoints.Redeem)
+                .WithSummary("Redeem a single-use, browser-bound OpenID Connect sign-in ticket")
+                .AddEndpointFilter<DataAnnotationValidationFilter<OidcSignInEndpoints.RedeemRequest>>()
+                .Produces<SignInEndpoints.SignInResponse>()
+                .Produces<TwoFactorChallengeResponse>()
+                .Produces(400).Produces(401).Produces(403).Produces(404).Produces(500);
 
             application.MapGet("/sessions", SessionListEndpoints.Get)
                 .Produces<SessionListResponse>()
@@ -981,6 +1021,7 @@ public static class WebApiExtensions
             application.MapWidgetEndpoints();
             application.MapRouteAliasEndpoints();
             application.MapMessageEndpoints();
+            application.MapScheduleEndpoints();
             application.MapPrivateMessageEndpoints();
             application.MapReportEndpoints();
             application.MapAccessEndpoints();

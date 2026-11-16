@@ -107,7 +107,8 @@ public static class StartupSetupExtensions
                         MagicLinkSettings.DefaultRequestLimit,
                         MagicLinkSettings.DefaultRequestWindow,
                         MagicLinkSettings.DefaultRedeemLimit,
-                        MagicLinkSettings.DefaultRedeemWindow)
+                        MagicLinkSettings.DefaultRedeemWindow),
+                    new OidcConfiguration()
                 )).ToConfigurationJson(),
                 [
                     $"Certificate: {dataProtection.CertificatePath}",
@@ -139,7 +140,8 @@ public static class StartupSetupExtensions
                         new ContentRestrictionsConfiguration(),
                         new DownloadsConfiguration(),
                         new CommentsConfiguration(),
-                        new AccountsConfiguration()))
+                        new AccountsConfiguration(),
+                        new SchedulerConfiguration()))
                     .ToConfigurationJson(),
                 []);
 

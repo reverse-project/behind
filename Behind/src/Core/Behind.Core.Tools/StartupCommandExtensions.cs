@@ -30,7 +30,7 @@ public static class StartupCommandExtensions
             };
             var frontendUrl = new Option<string>("--frontend-url")
             {
-                Description = "Public URL of the site written to Frontend:Url (used in email links and passkeys)",
+                Description = "Public URL of the site written to Frontend:Url (used in email links, passkeys and OIDC)",
                 DefaultValueFactory = _ => StartupSetupRequest.DefaultFrontendUrl
             };
             var emailConfirmation = new Option<bool>("--email-confirmation")

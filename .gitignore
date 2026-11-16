@@ -1,2 +1,4 @@
 Data/**
 .devcontainer/devcontainer-lock.json
+cheating/*
+/.scratch-yaml/

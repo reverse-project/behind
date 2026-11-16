@@ -85,7 +85,8 @@ public static class DatabaseSeedHelper
             new Dictionary<string, object>
             {
                 ["UserId"] = userId,
-                ["RoleId"] = roleId
+                ["RoleId"] = roleId,
+                ["IsManuallyAssigned"] = true
             });
 
         await context.SaveChangesAsync();

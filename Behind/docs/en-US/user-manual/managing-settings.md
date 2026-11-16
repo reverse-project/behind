@@ -31,10 +31,11 @@ Give each age a display name, such as **Adult**, when adding it. The name can be
 
 ## Account sign-in methods
 
-In **backend.json > Backend > Accounts**, **Password**, **MagicLink**, **TwoFactor**, **Passkey** and **EmailTwoFactor** control sign-in and second-factor methods. All default to **true**, and changes reload without restarting.
+In **backend.json > Backend > Accounts**, **Password**, **MagicLink**, **Oidc**, **TwoFactor**, **Passkey** and **EmailTwoFactor** control sign-in and second-factor methods. All default to **true**, and changes reload without restarting.
 
 - **Password** enables or disables password sign-in.
 - **MagicLink** enables or disables email sign-in links. It does **not** disable **LostPassword** recovery links, which permit a password reset only and do not grant a full signed-in session.
+- **Oidc** enables or disables all OpenID Connect providers. This global switch lives in `backend.json` under `Backend:Accounts`, defaults to true and reloads without restarting. Turning it off blocks new OIDC sign-ins and pending callbacks, ticket redemption and second-factor continuations; existing sessions remain active.
 - **TwoFactor** enables or disables two-factor authentication. Turning it off does not bypass protection: users who have enrolled in two-factor authentication cannot sign in while it is disabled, and users cannot sign in when two-factor authentication is required but disabled.
 - **Passkey** enables or disables passkeys both for sign-in and as a second factor. A passkey used to sign in cannot also satisfy that sign-in's second-factor challenge. When disabled, recovery codes remain usable.
 - **EmailTwoFactor** enables or disables email codes as a second factor. Users choose a confirmed account address after primary authentication. Email codes are not offered after an email sign-in or password recovery link, because both use the same channel.
@@ -42,6 +43,18 @@ In **backend.json > Backend > Accounts**, **Password**, **MagicLink**, **TwoFact
 After a password recovery, all existing sessions and outstanding sign-in and recovery links are revoked.
 
 If a method is disabled, previously issued links and active challenges for that method are rejected.
+
+## OpenID Connect providers
+
+The **security.json** tab includes an **OpenID Connect providers** editor alongside the existing security fields and Generate/Rotate controls. Use **Add provider** to add one, edit its fields, scopes and role mappings, or remove it, then use the provider editor's **Save** button. Leave a client secret empty to keep it, enter a new one to replace it, or explicitly clear it. Secrets are never returned to the browser. Existing provider IDs should remain unchanged. The editor follows Configuration.Read/Manage permissions and read-only configuration.
+
+The editor writes `Security:Oidc` in `security.json`; see the complete [OIDC sign-in specification](../specs/oidc-sign-in-1.1.0.md) for a configuration example and endpoint contract. `Providers` defaults to an empty array, so existing installations are unchanged. Each provider has a stable `Id`, `DisplayName`, HTTPS `Authority`, `ClientId`, optional secret, scopes and independent account/role settings. Register `https://<backend>/sign/in/oidc/callback/<Id>` as its exact redirect URI. The backend and `Frontend:Url` must use HTTPS; same-origin hosting is recommended.
+
+`LinkByVerifiedEmail` is opt-in. When enabled, first sign-in can link an existing account only when the provider asserts `email_verified=true` and that exact local address is already confirmed. Subsequent sign-ins use the persisted provider/issuer/subject binding, not email. `AutoCreateUsers` defaults to true but also requires global sign-up to be enabled; moderated registration remains pending approval.
+
+`RoleMappings` maps external roles to arrays of existing local role names. With `AutoCreateRoles=true`, unmapped roles create ordinary roles without grants or developer access, using `AutoCreateRolePrefix` (default `oidc:<Id>:`). Automatic reuse of privileged roles is refused. Role synchronization removes only this provider's obsolete assignments, preserving manual roles and roles supplied by another provider. Changes take effect at the next successful OIDC account resolution; provider removal alone does not revoke existing roles or sessions.
+
+Provider configuration is read at startup and requires a restart after editing. The global on/off switch is separate: **backend.json > Backend > Accounts > Oidc** reloads without restarting. `TicketLifetime` (default two minutes), `AuthenticationTimeout` (ten minutes) and `MaxPendingTickets` (1000) bound transient browser handoffs. A restart invalidates pending handoff tickets; start sign-in again.
 
 ## Email settings
 
@@ -71,9 +84,9 @@ Passwords, secret keys, signing keys, tokens and connection strings are never sh
 2. Choose **Save**. Only the changed values are written to the file; everything else in the file stays as it was.
 3. **Discard** puts the original values back in the boxes.
 
-Every change applies immediately, the application does not need to be restarted. The same is true when you edit a configuration file by hand: the application watches `database.json`, `backend.json`, `email.json`, `security.json`, `frontend.json` and `appsettings.json` and reloads them when they change. A file that is not valid JSON, or values that cannot be used, are refused and the previous values stay active (the problem is written to the log). In a container with a mounted volume the file watcher needs `DOTNET_USE_POLLING_FILE_WATCHER=true`; a change is then picked up within a few seconds.
+Except for the startup-only settings listed below, changes apply immediately without restarting. The same is true when you edit a configuration file by hand: the application watches `database.json`, `backend.json`, `email.json`, `security.json`, `frontend.json` and `appsettings.json` and reloads them when they change. A file that is not valid JSON, or values that cannot be used, are refused and the previous values stay active (the problem is written to the log). In a container with a mounted volume the file watcher needs `DOTNET_USE_POLLING_FILE_WATCHER=true`; a change is then picked up within a few seconds.
 
-The only values that are still read once at startup are the data protection certificate and keys (`Security:DataProtection`), the OpenTelemetry settings and the database provider.
+The values read once at startup are OpenID Connect (`Security:Oidc`), the data protection certificate and keys (`Security:DataProtection`), the OpenTelemetry settings and the database provider.
 
 ## Generate and Rotate
 

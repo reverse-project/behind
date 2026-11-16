@@ -46,11 +46,27 @@ public static class BuiltInRolesExtensions
 
             if (assigned)
             {
+                var existing = await userRoles
+                    .Where(userRole => EF.Property<Guid>(userRole, "UserId") == userId
+                                       && EF.Property<Guid>(userRole, "RoleId") == roleId)
+                    .FirstAsync(cancellationToken);
+
+                if (!(bool)existing["IsManuallyAssigned"])
+                {
+                    existing["IsManuallyAssigned"] = true;
+                    await context.SaveChangesAsync(cancellationToken);
+                }
+
                 return;
             }
 
             await userRoles.AddAsync(
-                new Dictionary<string, object> { ["UserId"] = userId, ["RoleId"] = roleId },
+                new Dictionary<string, object>
+                {
+                    ["UserId"] = userId,
+                    ["RoleId"] = roleId,
+                    ["IsManuallyAssigned"] = true
+                },
                 cancellationToken);
 
             await context.SaveChangesAsync(cancellationToken);
@@ -70,7 +86,21 @@ public static class BuiltInRolesExtensions
                 return;
             }
 
-            userRoles.RemoveRange(assigned);
+            foreach (var membership in assigned)
+            {
+                membership["IsManuallyAssigned"] = false;
+            }
+
+            var ownedByOidc = context.Set<Dictionary<string, object>>("OidcRoleOwnerships");
+            var hasOidcOwnership = await ownedByOidc.AnyAsync(
+                ownership => EF.Property<Guid>(ownership, "UserId") == userId
+                            && EF.Property<Guid>(ownership, "RoleId") == roleId,
+                cancellationToken);
+
+            if (!hasOidcOwnership)
+            {
+                userRoles.RemoveRange(assigned);
+            }
 
             await context.SaveChangesAsync(cancellationToken);
         }

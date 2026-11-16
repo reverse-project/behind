@@ -12,6 +12,8 @@ public sealed record AccountsConfiguration
 
     public bool MagicLink { get; init; } = true;
 
+    public bool Oidc { get; init; } = true;
+
     public bool TwoFactor { get; init; } = true;
 
     public bool Passkey { get; init; } = true;

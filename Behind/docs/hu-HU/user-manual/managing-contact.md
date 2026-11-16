@@ -4,7 +4,7 @@ A kapcsolatkezelés telepített Contact modullal érhető el. A fő Behind telep
 
 ## Kérés küldése
 
-Nyissa meg a `#/contact` oldalt, vagy használjon egy elrendezésbe helyezett kapcsolatűrlap-widgetet. Válasszon aktív űrlapot, majd adja meg nevét, e-mail-címét, a tárgyat, üzenetet és a kiegészítő mezőket. Az űrlap rögzített tárgyakat kínálhat vagy saját tárgyat engedhet. A kötelező mezőket ki kell tölteni.
+Nyissa meg a `#/contact` oldalt, vagy használjon egy elrendezésbe helyezett kapcsolatűrlap-widgetet. Válasszon aktív űrlapot, majd adja meg nevét, e-mail-címét, a tárgyat, üzenetet és a kiegészítő mezőket. Az űrlap rögzített tárgyakat kínálhat vagy saját tárgyat engedhet. A kötelező mezőket ki kell tölteni, a kötelező jelölőnégyzeteket be kell jelölni. Az opcionális jelölőnégyzetek kezdetben nincsenek bejelölve, és üresen hagyhatók.
 
 Az alkalmazás menti a kérést az adminisztrátori beérkezett listába. Ha az űrlaphoz e-mail-címzett tartozik, ezután megpróbálja az e-mail-küldést. Kézbesítési hiba esetén a mentett kérés megmarad újrapróbáláshoz. Ne küldje be újra az elfogadott kérést csak azért, mert az e-mail-küldés függőben van vagy sikertelen.
 
@@ -15,7 +15,11 @@ Nyissa meg az **Adminisztráció > Kapcsolat** (`#/administration/contact`) olda
 - A megjelenítendő név és leírás.
 - Az opcionális cél e-mail-címe, amelyet csak jogosult adminisztrátor lát. Hagyja üresen az adminisztrátori beérkezett lista e-mail-küldés nélküli használatához.
 - Rögzített tárgyak vagy szabad szöveges tárgy.
-- A kiegészítő mezők kulcsa, felirata, szöveg/többsoros szöveg/e-mail típusa, kötelezősége és legnagyobb hossza.
+- A kiegészítő mezők kulcsa, felirata, szöveg/többsoros szöveg/e-mail/logikai típusa, kötelezősége és a szöveges mezők legnagyobb hossza.
+
+A logikai mezők jelölőnégyzetként jelennek meg a kapcsolatoldalon és a widgetben is. Kötelező jelölőnégyzettel kifejezett hozzájárulást kérhet, opcionálissal pedig például hírlevélre jelentkezést. A jelölőnégyzet csak a kérésben rögzíti a választást; nem iratkoztatja fel a feladót levelezőlistára.
+
+Csak a logikai mezők felirata támogatja a BBCode-ot; a többi mező felirata egyszerű szöveg marad. Például az `Elfogadom a [url=https://example.org/terms]feltételeket[/url]` hivatkozást ad a hozzájárulás feliratához. A logikai mezők felirata legfeljebb 2000 karakteres lehet a BBCode-dal együtt, a többi felirat legfeljebb 200 karakteres. A hivatkozások a meglévő BBCode-hivatkozásmegerősítést használják. A logikai értékek `true` vagy `false` szövegként kerülnek mentésre; a kihagyott opcionális érték `false`, a kötelező logikai értéknek pedig `true`-nak kell lennie. A legnagyobb hossz nem vonatkozik a logikai mezők beküldött értékére.
 
 A törölt űrlap nem fogad nyilvános kérést. Az űrlap módosítása nem változtatja meg a korábbi beküldést: az eredeti űrlapnév, mezőfelirat, érték és címzett megmarad.
 

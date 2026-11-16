@@ -249,6 +249,18 @@ public static class AuditLabelExtensions
                 .Select(message => new Named(EF.Property<Guid>(message, VersionedColumns.Key), message.Name))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken),
+            .. await context.Schedules
+                .Where(schedule => ids.Contains(EF.Property<Guid>(schedule, VersionedColumns.Key)))
+                .OrderByDescending(schedule => EF.Property<long>(schedule, VersionedColumns.Version))
+                .Select(schedule => new Named(EF.Property<Guid>(schedule, VersionedColumns.Key), schedule.Name))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
+            .. await context.ScheduleRuns
+                .Where(run => ids.Contains(EF.Property<Guid>(run, VersionedColumns.Key)))
+                .OrderByDescending(run => EF.Property<long>(run, VersionedColumns.Version))
+                .Select(run => new Named(EF.Property<Guid>(run, VersionedColumns.Key), run.ScheduleName))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken),
             .. await context.UserReports
                 .Where(report => ids.Contains(EF.Property<Guid>(report, VersionedColumns.Key)))
                 .Select(report => new Named(EF.Property<Guid>(report, VersionedColumns.Key), "User report"))

@@ -30,6 +30,8 @@ public class DownloadsFrontendTests
     [InlineData("models/filetypes.js")]
     [InlineData("components/downloadtree.js")]
     [InlineData("components/downloadtree.html")]
+    [InlineData("components/folderbrowser.js")]
+    [InlineData("components/folderbrowser.html")]
     public void Provider_ContainsFile(string path)
     {
         Assert.True(Provider.GetFileInfo(path).Exists);
@@ -57,6 +59,7 @@ public class DownloadsFrontendTests
         Assert.Contains("pattern: /(?:^|\\/)#\\/manage\\/downloads\\/(.*)$/, controller: \"controllers/downloadmanager\"", app);
         Assert.Contains("pattern: /(?:^|\\/)#\\/downloads\\/(.*)$/, controller: \"controllers/downloads\"", app);
         Assert.Contains("ko.components.register(\"download-tree\", { require: \"components/downloadtree\" })", app);
+        Assert.Contains("ko.components.register(\"folder-browser\", { require: \"components/folderbrowser\" })", app);
         var patterns = app.IndexOf("patternRoutes.forEach", StringComparison.Ordinal);
         var tables = app.IndexOf("var tables = [routes, moduleRouteTable(), siteRoutes];", StringComparison.Ordinal);
         var registration = app.IndexOf("tables.forEach", StringComparison.Ordinal);
@@ -103,9 +106,11 @@ public class DownloadsFrontendTests
     {
         var view = Read("views/downloads.html");
         var tree = Read("components/downloadtree.html");
+        var browser = Read("components/folderbrowser.html");
 
-        Assert.Contains("<download-tree params=\"nodes: roots\"></download-tree>", view);
-        Assert.Contains("<download-tree params=\"nodes: children\"></download-tree>", tree);
+        Assert.Contains("<folder-browser params=\"roots: roots", view);
+        Assert.Contains("<download-tree params=\"nodes: roots, selectFolder: selectFolder\"></download-tree>", browser);
+        Assert.Contains("<download-tree params=\"nodes: children, selectFolder: $component.selectFolder\"></download-tree>", tree);
         Assert.Contains("fa-folder-open", tree);
         Assert.Contains("fa-folder'", tree);
         Assert.Contains("fa-chevron-down", tree);
@@ -143,7 +148,7 @@ public class DownloadsFrontendTests
     {
         var view = Read("views/downloadmanager.html");
 
-        Assert.Contains("<download-tree params=\"nodes: browser.roots\"></download-tree>", view);
+        Assert.Contains("<folder-browser params=\"roots: browser.roots", view);
         Assert.Contains("visible: !isSignedIn()", view);
         Assert.Contains("visible: isDenied", view);
         Assert.Contains("href=\"#/administration\"", view);

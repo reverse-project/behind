@@ -155,7 +155,10 @@ function setup(data, options = {}) {
     const layouts = {
         current: () => current,
         load: options.load || (async () => data),
-        select: configuration => configuration.layouts[0]
+        select: configuration => configuration.layouts[0],
+        selectAssigned: (configuration, route, accept) => configuration.assignments.some(assignment =>
+            (assignment.route.endsWith("*") ? route.indexOf(assignment.route.slice(0, -1)) === 0 : assignment.route === route)
+                && accept(assignment.route)) ? configuration.layouts[0] : undefined
     };
     const shell = load("models/layoutshell.js", {
         ko: {
@@ -253,6 +256,32 @@ test("public layouts may omit either chrome widget without leaving fixed or hidd
     assert.ok(fixture.shell.isManagementRoute("#/session/renew"));
     assert.ok(fixture.shell.isManagementRoute("#/sign/in/magiclink"));
     assert.ok(!fixture.shell.isManagementRoute("#/news"));
+});
+
+test("management routes use a layout only when an assignment targets them explicitly", async () => {
+    const data = configuration([
+        { rows: 1, columns: 1, width: "full", widgets: [widget("core.content", "content")] }
+    ]);
+    data.assignments = [{ route: "#/*", layout: "default" }];
+    const fixture = setup(data);
+    await fixture.shell.start(fixture.context);
+    const hasLayout = () => fixture.application.children.some(element => element.classList.contains("behind-layout"));
+
+    fixture.shell.route("#/manage/auditor");
+    assert.equal(hasLayout(), false);
+    assert.equal(fixture.main.parentNode, fixture.application);
+
+    data.assignments.push({ route: "#/manage/auditor", layout: "default" }, { route: "#/sign-in", layout: "default" });
+    fixture.shell.route("#/manage/reports");
+    assert.equal(hasLayout(), false);
+    fixture.shell.route("#/manage/auditor");
+    assert.equal(hasLayout(), true);
+    assert.ok(fixture.main.parentNode.classList.contains("behind-layout-cell"));
+    assert.equal(fixture.header.parentNode, null);
+
+    fixture.shell.route("#/sign-in");
+    assert.equal(hasLayout(), false);
+    assert.equal(fixture.header.parentNode, fixture.application);
 });
 
 test("cell appearance options are independent and do not leak across invalidation", async () => {

@@ -120,6 +120,7 @@ public class RouteAliasesFrontendTests
     [Fact]
     public void AuditLog_NamesTheRouteAliasEntity()
     {
-        Assert.Contains("RouteAlias: \"audit.entities.RouteAlias\"", Read("viewmodels/auditlog.js"));
+        Assert.Contains("i18n.tOr(\"audit.entities.\" + name, name)", Read("viewmodels/auditlog.js"));
+        Assert.Contains("\"audit.entities.RouteAlias\"", Read("locales/en-US.json"));
     }
 }

@@ -1267,5 +1267,14 @@
     "url": "https://www.nuget.org/packages/xunit.runner.visualstudio",
     "scope": "development",
     "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "Microsoft.AspNetCore.Authentication.OpenIdConnect",
+    "version": "11.0.0",
+    "license": "MIT",
+    "copyright": "Copyright Microsoft Corporation. All rights reserved.",
+    "url": "https://asp.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
   }
 ]

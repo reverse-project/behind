@@ -48,14 +48,15 @@
                         <button class="btn btn-sm btn-outline-primary ms-auto" type="button" data-bind="click: addField, enable: !busy() &amp;&amp; formFields().length &lt; 30, t: 'contact.manager.form.addField'">Add field</button>
                     </div>
                     <p class="form-text" data-bind="t: 'contact.manager.form.fieldsHelp'">Submitted values are stored and shown as plain text in the inbox.</p>
+                    <p class="form-text" data-bind="t: 'contact.manager.form.booleanHelp'">Checkbox labels support BBCode, for example [url=https://example.org/terms]Terms and conditions[/url]. Required checkboxes must be checked; optional ones can record newsletter consent.</p>
                     <div data-bind="foreach: formFields">
                         <fieldset class="border rounded p-3 mb-2">
                             <legend class="float-none w-auto px-2 fs-6" data-bind="text: label() || $index() + 1"></legend>
                             <div class="row g-2">
                                 <label class="col-md-3"><span data-bind="t: 'contact.manager.form.fieldKey'">Key</span><input class="form-control" required maxlength="50" pattern="[a-zA-Z][a-zA-Z0-9_-]{0,49}" data-bind="value: key, valueUpdate: 'input', enable: !$root.busy()"></label>
-                                <label class="col-md-3"><span data-bind="t: 'contact.manager.form.fieldLabel'">Label</span><input class="form-control" required maxlength="200" data-bind="value: label, valueUpdate: 'input', enable: !$root.busy()"></label>
+                                <label class="col-md-3"><span data-bind="t: 'contact.manager.form.fieldLabel'">Label</span><input class="form-control" required data-bind="attr: { maxlength: type() === 'boolean' ? 2000 : 200 }, value: label, valueUpdate: 'input', enable: !$root.busy()"></label>
                                 <label class="col-md-2"><span data-bind="t: 'contact.manager.form.fieldType'">Type</span><select class="form-select" data-bind="options: $root.fieldTypes, optionsText: 'label', optionsValue: 'value', value: type, enable: !$root.busy()"></select></label>
-                                <label class="col-md-2"><span data-bind="t: 'contact.manager.form.fieldMaxLength'">Maximum length</span><input class="form-control" type="number" min="1" max="2000" data-bind="value: maxLength, enable: !$root.busy()"></label>
+                                <label class="col-md-2" data-bind="visible: type() !== 'boolean'"><span data-bind="t: 'contact.manager.form.fieldMaxLength'">Maximum length</span><input class="form-control" type="number" min="1" max="2000" data-bind="value: maxLength, enable: !$root.busy() &amp;&amp; type() !== 'boolean'"></label>
                                 <label class="col-md-1 form-check mt-4"><input class="form-check-input" type="checkbox" data-bind="checked: required, enable: !$root.busy()"> <span class="form-check-label" data-bind="t: 'contact.manager.form.fieldRequired'">Required</span></label>
                                 <div class="col-md-1 d-flex align-items-end"><button class="btn btn-outline-danger" type="button" data-bind="click: function () { $root.removeField($data); }, enable: !$root.busy(), t: 'common.remove'">Remove</button></div>
                             </div>

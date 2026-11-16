@@ -1,4 +1,4 @@
-define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings", "viewmodels/opentelemetrysettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor, OpenTelemetrySettingsEditor) {
+define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings", "viewmodels/opentelemetrysettings", "viewmodels/oidcsettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor, OpenTelemetrySettingsEditor, OidcSettingsEditor) {
     var emailEditor = "email";
     var loggingEditor = "logging";
 
@@ -101,6 +101,7 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
         self.email = new EmailSettingsEditor(self.canEdit);
         self.logging = new LoggingSettingsEditor(self.canEdit);
         self.openTelemetry = new OpenTelemetrySettingsEditor(self.canEdit);
+        self.oidc = new OidcSettingsEditor(self.canEdit);
         self.canSaveAppSettings = ko.pureComputed(function () {
             return self.logging.canSave() && self.openTelemetry.canSave();
         });
@@ -173,11 +174,15 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
             return self.selected() !== null && self.selected().editor === loggingEditor;
         });
 
+        self.isOidcSelected = ko.pureComputed(function () {
+            return self.selected() !== null && self.selected().name === "security.json";
+        });
+
         self.isFieldTabSelected = ko.pureComputed(function () {
             return self.selected() !== null && !self.selected().editor;
         });
 
-        var loadEditor = function () {
+        var loadEditor = function (skipOidc) {
             var loading = self.isEmailSelected()
                 ? self.email.load()
                 : self.isLoggingSelected()
@@ -189,7 +194,9 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
                             return !result.ok;
                         })[0] || { ok: true };
                     })
-                    : Promise.resolve({ ok: true });
+                    : self.isOidcSelected() && !skipOidc
+                        ? self.oidc.load()
+                        : Promise.resolve({ ok: true });
 
             return loading.then(function (result) {
                 if (!result.ok) {
@@ -209,7 +216,7 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
             return loadEditor();
         };
 
-        self.load = function () {
+        self.load = function (skipOidc) {
             var current = self.selected() ? self.selected().name : null;
 
             return settings.load().then(function (result) {
@@ -224,18 +231,18 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
                 self.files(result.data.files.map(presentFile));
                 select(current);
 
-                return loadEditor();
+                return loadEditor(skipOidc);
             });
         };
 
-        var perform = function (operation) {
+        var perform = function (operation, reload) {
             self.busy(true);
 
             return operation()
                 .then(function (result) {
                     self.message(result.message);
 
-                    return result.ok ? self.load().then(function () {
+                    return result.ok ? (reload || self.load)().then(function () {
                         return result;
                     }) : result;
                 })
@@ -256,11 +263,27 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
 
             return perform(function () {
                 return settings.save(tab.name, values);
+            }, function () {
+                return self.load(true);
             });
         };
 
         self.saveEmail = function () {
             return perform(self.email.save);
+        };
+
+        self.saveOidc = function () {
+            if (!self.isOidcSelected() || !self.oidc.canSave()) {
+                return Promise.resolve();
+            }
+
+            return perform(self.oidc.save, function () {
+                return self.oidc.load().then(function (result) {
+                    if (!result.ok) {
+                        self.message(result.message);
+                    }
+                });
+            });
         };
 
         self.saveAppSettings = function () {

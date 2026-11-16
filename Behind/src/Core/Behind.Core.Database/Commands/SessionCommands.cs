@@ -117,4 +117,10 @@ public sealed class SessionCommands(AbstractCoreContext context) : ISessionComma
             await context.SaveChangesAsync(cancellationToken);
         }
     }
+
+    public Task<int> DeleteInvalidatedBefore(DateTimeOffset cutoff, CancellationToken cancellationToken = default) =>
+        context.Sessions
+            .Where(s => EF.Property<DateTimeOffset?>(s, "InvalidatedAt") != null
+                        && EF.Property<DateTimeOffset?>(s, "InvalidatedAt") < cutoff)
+            .ExecuteDeleteAsync(cancellationToken);
 }

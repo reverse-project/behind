@@ -2,6 +2,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
+        "#/signin": "controllers/signin",
         "#/sign-up": "controllers/signup",
         "#/session": "controllers/session",
         "#/sessions": "controllers/sessions",
@@ -42,6 +43,8 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
         "#/manage/menus/:id": "controllers/menuitems",
         "#/manage/route-aliases": "controllers/routealiases",
         "#/manage/messages": "controllers/messages",
+        "#/manage/schedules": "controllers/schedules",
+        "#/manage/schedules/runs": "controllers/scheduleruns",
         "#/private-messages": "controllers/privatemessages",
         "#/private-messages/new/:recipientId": "controllers/privatemessages",
         "#/private-messages/:id": "controllers/privatemessages",
@@ -90,6 +93,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     ko.components.register("access-editor", { require: "components/accesseditor" });
     ko.components.register("content-age", { require: "components/contentage" });
     ko.components.register("download-tree", { require: "components/downloadtree" });
+    ko.components.register("folder-browser", { require: "components/folderbrowser" });
     ko.components.register("menu-items", { require: "components/menuitems" });
     ko.components.register("menu-nav", { require: "components/menunav" });
     ko.components.register("carousel-editor", { require: "components/carouseleditor" });

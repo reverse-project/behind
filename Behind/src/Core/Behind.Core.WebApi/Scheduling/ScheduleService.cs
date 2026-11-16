@@ -1,0 +1,98 @@
+using Behind.Common;
+using Behind.Common.Logging;
+using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace Behind.Core.WebApi.Scheduling;
+
+public sealed class ScheduleService(
+    IServiceScopeFactory scopes,
+    IScheduleRunner runner,
+    TimeProvider clock,
+    IOptionsMonitor<SchedulerConfiguration> options,
+    ILogger<ScheduleService> logger) : BackgroundService
+{
+    private DateTimeOffset _last = clock.GetUtcNow().ToScheduleMinute().AddMinutes(-1);
+
+    public async Task<int> TickAsync(CancellationToken cancellationToken = default)
+    {
+        var now = clock.GetUtcNow();
+        var minutes = _last.ScheduleMinutesUntil(now, options.CurrentValue.CatchUpMinutes);
+
+        if (minutes.Count == 0)
+        {
+            return 0;
+        }
+
+        _last = minutes[^1];
+
+        await using var scope = scopes.CreateAsyncScope();
+        var schedules = await scope.ServiceProvider.GetRequiredService<IScheduleQueries>().Enabled(cancellationToken);
+        var started = 0;
+
+        foreach (var schedule in schedules)
+        {
+            var due = minutes.Where(minute => schedule.Cron.Matches(minute)).ToList();
+
+            if (due.Count == 0)
+            {
+                continue;
+            }
+
+            if (runner.IsRunning(schedule.Id.Key))
+            {
+                logger.LogWarning("Schedule {ScheduleId} is still running; the run at {Minute} is skipped", () => [schedule.Id.Key, due[^1]]);
+                continue;
+            }
+
+            var run = await runner.TryStart(schedule, due[^1], cancellationToken);
+            started += run.Match(() => 0, _ => 1);
+        }
+
+        return started;
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await base.StopAsync(cancellationToken);
+        await runner.Stop().WaitAsync(cancellationToken);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        if (!options.CurrentValue.Enabled)
+        {
+            logger.LogInformation("Scheduler is disabled");
+
+            return;
+        }
+
+        await TryAsync(() => runner.RecoverInterrupted(stoppingToken), "Interrupted schedule runs could not be recovered");
+
+        using var timer = new PeriodicTimer(options.CurrentValue.TickInterval, clock);
+
+        do
+        {
+            if (options.CurrentValue.Enabled)
+            {
+                await TryAsync(() => TickAsync(stoppingToken), "Scheduler tick failed");
+            }
+        } while (await timer.WaitForNextTickAsync(stoppingToken));
+    }
+
+    private async Task TryAsync(Func<Task<int>> work, string failure)
+    {
+        try
+        {
+            await work();
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, failure);
+        }
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/reverse-project/behind/schemas/locale-1.0.0.schema.json",
+  "title": "Behind bundled core and module locale 1.0.0",
+  "type": "object",
+  "required": ["messages"],
+  "properties": {
+    "name": { "type": ["string", "null"] },
+    "flag": { "type": ["string", "null"] },
+    "messages": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

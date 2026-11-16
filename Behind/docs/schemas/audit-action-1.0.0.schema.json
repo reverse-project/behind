@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind audit action JSON 1.0.0",
+  "oneOf": [
+    { "type": "string", "enum": ["Created", "Deleted", "HardDeleted", "Restored", "ImpersonationStarted", "ImpersonationEnded"] },
+    {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "string", "enum": ["Created", "Deleted", "HardDeleted", "Restored", "ImpersonationStarted", "ImpersonationEnded", "Updated", "ChangeOwnership", "Moved"] },
+        "differences": {
+          "type": ["array", "null"],
+          "items": {
+            "type": ["object", "null"],
+            "properties": {
+              "propertyName": { "type": ["string", "null"] },
+              "oldValue": true,
+              "newValue": true
+            }
+          }
+        },
+        "oldOwnerId": { "type": "string", "format": "uuid" },
+        "newOwnerId": { "type": "string", "format": "uuid" },
+        "oldParentId": { "type": "string", "format": "uuid" },
+        "newParentId": { "type": "string", "format": "uuid" }
+      }
+    }
+  ]
+}

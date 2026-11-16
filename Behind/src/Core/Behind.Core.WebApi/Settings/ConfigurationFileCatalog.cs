@@ -10,11 +10,13 @@ public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<
     public const string LoggingEditor = "logging";
     public const string AppSettingsFile = "appsettings.json";
     public const string FrontendFile = "frontend.json";
+    public const string CachingFile = "caching.json";
 
     public static readonly IReadOnlyList<string> DefaultNames =
     [
         AppSettingsFile,
         "backend.json",
+        CachingFile,
         "database.json",
         EmailFile,
         FrontendFile,

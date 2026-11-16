@@ -13,6 +13,15 @@ Mindkét engedély a `Developers` szerepkörhöz tartozik. Az adminisztrátorok 
 
 ## Fülek
 
+A **caching.json** fül a HybridCache beállításait tartalmazza. A **Provider**
+választó értékei **Memory** (alapérték) és **RedisCompatible** (Valkey).
+A **Key** a **ConnectionStrings** egyik kapcsolatának neve; a létrehozott név
+**CachingConnection**. A maszkolt jelszómező új értéke lecseréli a végpontot és
+hitelesítést; üresen hagyva megmarad a titok. A Key törlése kikapcsolja az
+elosztott gyorsítótárat. Hiányzó kulcs vagy üres/hiányzó kapcsolat esetén csak
+memória használható. Mentés után indítsa újra az alkalmazást. Meglévő telepítésnél
+a `startup create --skip-existing` létrehozza a fájlt.
+
 Minden, az alkalmazás mellett létező konfigurációs fájl kap egy fület: `appsettings.json`, `backend.json`, `database.json`, `email.json`, `frontend.json` és `security.json`, valamint minden olyan modul fájlja, amelynek van ilyen (például a [Dokumentáció](./managing-markdown-viewer.md) modul `markdownviewer.json` fájlja). Az `email.json` és az `appsettings` fájlok kivételével, amelyeknek saját űrlapjuk van (lásd alább), a fül a fájl beállításait szakaszok szerint csoportosítva listázza, például `Security › Jwt`. A szöveges beállítások szövegmezők, a be- és kikapcsolós beállítások kapcsolók, a számok pedig számmezők.
 
 Az oldalak képforgóinak korlátai a `frontend.json` számai (`Frontend › Carousels`): **MaxSlides** (képek száma képforgónként), **MinIntervalSeconds** és **MaxIntervalSeconds** (az engedélyezett másodpercek képenként), **IntervalSeconds** (ezzel az értékkel indul egy új képforgó), **MaxCaptionLength** és **MaxImageBytes**. Lásd az [Oldalak kezelése](./managing-sites.md) részt.

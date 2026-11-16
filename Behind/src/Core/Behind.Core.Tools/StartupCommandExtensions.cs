@@ -15,7 +15,7 @@ public static class StartupCommandExtensions
             };
             var configDirectory = new Option<string>("--config-directory", "-c")
             {
-                Description = "Directory where appsettings.json, security.json, database.json, backend.json, frontend.json, email.json, forum.json and markdownviewer.json are generated",
+                Description = "Directory where appsettings.json, security.json, database.json, backend.json, caching.json, frontend.json, email.json, forum.json and markdownviewer.json are generated",
                 DefaultValueFactory = _ => "."
             };
             var issuer = new Option<string>("--issuer")

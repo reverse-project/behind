@@ -82,6 +82,8 @@ public static class WebApiExtensions
         WebApplicationBuilder AddBackend()
         {
             builder.AddReloadableJsonFile("backend.json", false);
+            builder.AddReloadableJsonFile("caching.json", true);
+            builder.AddCaching();
             builder.Services.AddVfsContentStore(builder.Configuration);
             builder.Services.Configure<AccountsConfiguration>(
                 builder.Configuration.GetSection(AccountsConfiguration.SectionName)

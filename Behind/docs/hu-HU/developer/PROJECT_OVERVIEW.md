@@ -1,5 +1,17 @@
 # Projekt áttekintés
 
+## Közös gyorsítótár
+
+A Core minden gazdánál, a webhelyeknél is regisztrálja a Common.WebApi HybridCache
+szolgáltatását. A Common `CachingConfiguration` kizárólag adatbázismintájú
+`Provider` és `Key` rekordokat tartalmaz. Az opcionális `caching.json` tartalma
+`Caching` és névvel ellátott `ConnectionStrings`; a Memory az alapérték,
+a RedisCompatible Valkey-t támogat. A Beállítások lap a közös űrlapot és
+jogosultságokat használja ellenőrzött szolgáltatóválasztóval és maszkolt
+kapcsolatokkal. A módosítás újraindítást igényel. Lásd a
+[beállításokat és biztonságot](./GETTING_STARTED.md#gyorsítótárazás), valamint
+az [1.0.0 szerződést](../specs/caching-configuration-1.0.0.md).
+
 ## Privát üzenetek és jelentések
 
 A privát üzenetküldés a Core része, külön az ütemezett értesítésektől és a nyilvános csevegéstől. A postaláda olvasott, elküldött és törölt mappákat, BBCode-beszélgetéseket, felhasználó- és szerepkörcímzetteket, titkos címzetteket, változó csoportokat és tiltólistát kezel. A szerepkörtagság élő ellenőrzése a korábbi előzményekhez is hozzáférést ad. A rendszerválaszt csak a válaszoló, az eredeti feladó és a `PrivateMessageModeration.Manage` jogosult adminisztrátor látja.

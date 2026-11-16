@@ -28,7 +28,7 @@ public sealed class AuditWiringTests : IDisposable
         var builder = WebApplication.CreateBuilder();
         builder.Configuration["ConnectionStrings:Test"] = $"Data Source={_databasePath}";
 
-        new DatabaseConfiguration(Some<Provider>(new SqliteProvider()), Some(new Key("Test"))).RegisterSqlite(builder);
+        new DatabaseConfiguration(Some<Provider>(new SqliteProvider()), Some(new DatabaseKey("Test"))).RegisterSqlite(builder);
 
         if (withHttpActor)
         {

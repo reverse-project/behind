@@ -1,5 +1,27 @@
 # Adatbázis-architektúra
 
+A `DatabaseConfiguration.Key` típusa a `DatabaseKey` értékrekord, felderíthető
+`DatabaseKeyTypeConverter` és `DatabaseKeyJsonConverter` konverterrel, a `CachingKey`
+elnevezéséhez igazodva. A `Database:Key` neve és szöveges formátuma változatlan;
+a meglévő konfigurációs fájlok nem igényelnek migrációt.
+
+A tárolt kapcsolat-, ütemező- és audit-JSON írás előtt beágyazott JSON-sémák
+alapján ellenőrződik. A konverterkompatibilitás és a PostgreSQL-regressziók leírása
+a [tárolt JSON szerződésében](../specs/persisted-json-1.0.0.md) található.
+
+## Személyesadat-mentes összesítések gyorsítótára
+
+A `RawDatabaseQueries.ListTables` kizárólag számszerű darabszámokat tárolhat
+HybridCache-ben. Soradatok, személyazonosítók, jogosultságok és felhasználói
+szövegek nem tárolhatók. A véglegesített auditrevízió minden gazdán elkülöníti
+a bejegyzéseket; tranzakciók és függő írások esetén nincs gyorsítótárazás, az
+újraellenőrzés megakadályozza kevert módosítások közzétételét. Minden író, a nyers
+írások is atomian mentse a módosítást és auditját. Naplózatlan SQL, visszaállítás
+vagy auditnapló-tisztítás után ürítse a gyorsítótárat. A teljes szabályzat a
+[gyorsítótár-útmutatóban](./GETTING_STARTED.md#gyorsítótárazás) található; a tesztek
+ideiglenes PostgreSQL és Valkey konténerekkel ellenőrzik az SQL-találatokat és
+a visszagörgetést.
+
 ## Privát üzenetek és jelentések tárolása
 
 A privát üzenetek és jelentések a Core meglévő migrációs láncát használják a közös SQLite/PostgreSQL adatbázisban. A gazda indítása előtt futtassa a telepítés migrátorát. Az új entitások `(Key, Version)` kulcsot és audit-időbélyeget használnak. A postaláda állapota felhasználónként különböző; a törlés más résztvevő előzményeit nem távolítja el.

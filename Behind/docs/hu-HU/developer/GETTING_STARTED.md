@@ -4,6 +4,84 @@ Gyorsindítási útmutató a Behind projekt beállításához és az azon végze
 
 ## Előfeltételek
 
+### Gyorsítótárazás
+
+A Core modult használó gazdaalkalmazások regisztrálják a `HybridCache`
+szolgáltatást; a meglévő lekérdezések nem kerülnek automatikusan a gyorsítótárba.
+A `CachingConfiguration` kizárólag `Provider` és `Key` mezőt tartalmaz az
+adatbázis-konfiguráció mintájára. Helye a `caching.json` `Caching` szakasza.
+A `startup create` alapértékei:
+
+```json
+{
+  "Caching": {
+    "Provider": "Memory",
+    "Key": "CachingConnection"
+  },
+  "ConnectionStrings": {
+    "CachingConnection": ""
+  }
+}
+```
+
+A `RedisCompatible` szolgáltató és a `Caching:Key` által kiválasztott
+`ConnectionStrings` bejegyzés (például `valkey:6379`) elosztott L2 gyorsítótárat
+kapcsol be. A kapcsolati karakterlánc soha nem része a `CachingConfiguration`
+rekordnak. A memória helyi L1 gyorsítótár. `Memory`, illetve hiányzó vagy üres
+kulcs vagy kapcsolati karakterlánc esetén csak memóriát használ; az utóbbi esetben a gazda
+induláskor figyelmeztetést naplóz. A megadott, de elérhetetlen kiszolgáló nem
+számít hiányzó konfigurációnak: a Redis-kliens és a HybridCache szokásos
+hibadiagnosztikája érvényesül. A módosítások újraindítást igényelnek.
+A titkokat tartalmazó kapcsolati karakterláncot védeni kell. A Beállítások
+`caching.json` lapján ellenőrzött szolgáltatóválasztó, szerkeszthető kapcsolati kulcs
+és maszkolt kapcsolati mezők jelennek meg. A `Configuration.Read` és
+`Configuration.Manage` jogosultságok, valamint az írásvédelem érvényesek.
+Az üres titkos mező megtartja a tárolt értéket; a `Caching:Key` törlése csak
+memóriát használ. Elkülönített telepítésekhez külön Valkey logikai adatbázist
+használjon. Alkalmazásadatok tárolása előtt
+tervezze meg a kulcsokat, a jogosultsági határokat és az érvénytelenítést.
+Az elosztott törlés más gazdák meglévő L1-bejegyzéseit nem távolítja el.
+
+A nyersadatbázis-táblák listázása kizárólag számszerű sorszámokat tárol a
+gyorsítótárban. Soradatok, felhasználói szövegek, azonosítók, keresések,
+munkamenetek és jogosultsági eredmények nem kerülnek bele. A metaadatokat és az
+írásvédelmi szabályokat az aktuális EF-modell adja; a jogosultságellenőrzés és a
+`no-store` HTTP-fejléc változatlan. Más adatlekérdezések nem gyorsítótárazottak,
+mert a nyilvános tartalom is tartalmazhat személyes adatot. A parancsok mindig
+végrehajtják az ellenőrzést, a módosítást és a naplózást.
+
+Minden olvasás először lekéri a véglegesített auditbejegyzések számát. Ez a csak
+bővülő revízió része az adatbázis/modell szerint SHA-256-tal elkülönített kulcsnak.
+A naplózott módosítások, nyers írások, törlések és visszaállítások új kulcsot
+választanak minden gazda L1/L2 gyorsítótárában; egy régi olvasó nem írhatja felül az
+új generációt. Feltöltés előtt újraellenőrizzük a revíziót. Explicit és környezeti
+tranzakciók, valamint függő módosítások esetén nincs gyorsítótár-olvasás vagy -írás.
+Megosztott gyorsítótár-factory nem futtat adatbázisműveletet. A HybridCache
+alapértelmezett lejárata a régi generációk élettartamát korlátozza, nem a frissességet
+biztosítja. Csak rögzített alakú összesítések tárolhatók, támadó által megadott
+keresőkulcsok és hibás eredmények nem.
+
+Minden írónak meg kell őriznie a tranzakciós auditálást. Naplózatlan SQL,
+adatbázis-visszaállítás vagy auditnapló-tisztítás után a kérések kiszolgálása előtt
+törölni kell a telepítés gyorsítótárát.
+A Valkey legyen privát, hitelesített és TLS-sel védett; az összesítések személyes
+adat nélkül is üzemeltetési metaadatok.
+
+A tesztek parancsa:
+`dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~Caching"`.
+A Docker/Podman környezet beállítása a gyökér README-ben található.
+Az integrációs teszt ideiglenes Valkey-konténerrel ellenőrzi a gazdák közötti
+L2-olvasást és törlést, majd eltávolítja a konténert. A képfájl beállítása:
+`tests/Behind.Tests/caching.testsettings.json`.
+
+A formátumot a [gyorsítótár-konfiguráció 1.0.0 specifikációja](../specs/caching-configuration-1.0.0.md)
+írja le. A korábbi fejlesztői `Backend:Caching` alakról áttérve helyezze át a
+beállításokat a `caching.json` fájlba, a kapcsolatot a `ConnectionStrings` alá,
+és válassza ki a `Caching:Key` mezővel. Törölje a régi `Backend:Caching`,
+`InstanceName` és `QueryExpiration` mezőket. Hiányzó `caching.json` esetén
+memóriaalapú működés marad; a `startup create --skip-existing` létrehozza az új
+fájlt, majd újraindítás szükséges.
+
 ### Rendszerkövetelmények
 - **Operációs rendszer**: Windows 10+, Ubuntu 20.04+, macOS 11+ (csak fejlesztéshez)
 - **RAM**: legalább 8 GB, 16 GB ajánlott

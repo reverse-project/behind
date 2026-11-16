@@ -3,6 +3,10 @@
     "version": "1.0.2",
     "date": "2026-11-15",
     "changes": [
+      { "type": "added", "text": "Versioned JSON Schemas cover configuration records, layouts, contact field data, schedule JSON, audit actions and bundled changelog/license/locale data. Configuration and persisted JSON are validated before saving; compatibility regressions preserve existing converter shapes, defaults and domain checks." },
+      { "type": "changed", "text": "The database configuration key record and its converters are named DatabaseKey for consistency with CachingKey; the Database:Key configuration format is unchanged." },
+      { "type": "fixed", "text": "Caching connection strings are masked in configuration responses. Raw-database table listings cache only numeric counts, using committed audit revisions to invalidate across hosts; transactions and pending writes bypass caching, and commands and PII-bearing query results remain uncached." },
+      { "type": "added", "text": "Shared HybridCache defaults to memory. Its caching.json Settings tab provides a validated Memory/RedisCompatible provider selector, a Key referencing ConnectionStrings and masked connection editing. CachingConfiguration contains only Provider and Key; missing named connections retain memory-only caching. Changes require a restart." },
       { "type": "fixed", "text": "PostgreSQL content-age initialization writes audit timestamps as UTC ticks, allowing fresh installations and upgrades to complete their database migrations." },
       { "type": "fixed", "text": "Schedule run history clears its loading state when read access is lost during a refresh." },
       { "type": "added", "text": "The security.json Settings tab includes an OpenID Connect provider editor with add/remove, scopes, account linking, role mappings and protected client-secret replacement/clearing. A reloadable global Backend:Accounts:Oidc switch in backend.json blocks provider listing, sign-in callbacks, ticket redemption and second-factor continuations; provider configuration changes clearly require a restart." },

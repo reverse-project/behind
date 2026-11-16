@@ -2,6 +2,7 @@
   "name": "Magyar",
   "flag": "🇭🇺",
   "messages": {
+    "settings.caching.help": "A gyorsítótár módosítása újraindítást igényel. Válasszon Memory vagy RedisCompatible szolgáltatót. A Key a ConnectionStrings maszkolt értékét választja ki; hiányzó kapcsolat esetén csak memória használható. Az üres kapcsolati érték megtartja a tárolt titkot; a Key törlése kikapcsolja az elosztott háttértárat.",
     "audit.entities.ActiveVersion": "Aktív verzió",
     "audit.entities.ContentAgeOption": "Tartalmi korhatár",
     "audit.entities.ContentLocale": "Tartalom nyelve",

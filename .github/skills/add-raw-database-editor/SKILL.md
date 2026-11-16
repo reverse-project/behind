@@ -5,6 +5,11 @@ description: 'Keep the RAW database entry editor of the Behind management UI (Ad
 
 # Raw database entry editors
 
+Follow `manage-caching` when changing raw queries or writes. Only numeric table
+counts are currently cacheable; never cache raw rows or masked PII. Preserve
+transactional auditing so committed revision keys invalidate across hosts, and
+test rollback and actual PostgreSQL/Valkey cache hits.
+
 Load `csharp-code-standards` first. Every persisted entity must be editable in the raw database editor: developers (`RawDatabase.Manage`) list, search, sort, insert, edit and permanently delete the stored rows of every table. The editor is generic and driven by the EF Core relational model, so most entities need no editor code, only the checks below.
 
 ## How it works

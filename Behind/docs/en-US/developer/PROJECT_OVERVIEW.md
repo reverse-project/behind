@@ -1,5 +1,16 @@
 # Project Overview
 
+## Shared caching
+
+Core registers Common.WebApi HybridCache for every host, including sites.
+`CachingConfiguration` in Common has only database-style `Provider` and `Key`
+records. The optional `caching.json` contains `Caching` plus named
+`ConnectionStrings`; Memory is the default and RedisCompatible supports Valkey.
+The Settings tab reuses the shared form and permissions with a validated provider
+selector and masked connections. Service changes require restart. See
+[caching setup and security](./GETTING_STARTED.md#caching) and the
+[1.0.0 contract](../specs/caching-configuration-1.0.0.md).
+
 ## Private messaging and reports
 
 Private messaging is Core functionality, separate from scheduled notices and public chat. The account inbox supports read, sent and deleted folders, BBCode conversations, user/role recipients, hidden recipients, evolving groups and block lists. Role membership is evaluated live, including earlier history. System responses are visible only to the replying user, original sender and administrators with `PrivateMessageModeration.Manage`.

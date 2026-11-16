@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
+using Behind.Common.Configuration;
 
 namespace Behind.Contact.Domain;
 
@@ -64,6 +66,14 @@ public sealed class ContactJsonArrayConverterFactory : JsonConverterFactory
     private sealed class ContactJsonArrayConverter<TValue, TItem> : JsonConverter<TValue>
         where TValue : class, IContactJsonArray<TValue, TItem>
     {
+        private static string SchemaName => typeof(TValue) == typeof(ContactSubjects)
+            ? "contact-subjects-1.0.0"
+            : typeof(TValue) == typeof(ContactFieldSchema)
+                ? "contact-fields-1.0.0"
+                : typeof(TValue) == typeof(ContactFieldValues)
+                    ? "contact-values-1.0.0"
+                    : throw new InvalidOperationException($"No JSON schema for {typeof(TValue).Name}.");
+
         public override TValue Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartArray)
@@ -71,12 +81,18 @@ public sealed class ContactJsonArrayConverterFactory : JsonConverterFactory
                 throw new JsonException("Contact values must be JSON arrays.");
             }
 
-            var items = JsonSerializer.Deserialize<ImmutableArray<TItem>>(ref reader, options);
+            var json = JsonNode.Parse(ref reader);
+            JsonSchemas.Validate(SchemaName, json);
+            var items = json.Deserialize<ImmutableArray<TItem>>(options);
             return TValue.Create(items);
         }
 
-        public override void Write(Utf8JsonWriter writer, TValue value, JsonSerializerOptions options) =>
-            JsonSerializer.Serialize(writer, value.Items, options);
+        public override void Write(Utf8JsonWriter writer, TValue value, JsonSerializerOptions options)
+        {
+            var json = JsonSerializer.SerializeToNode(value.Items, options);
+            JsonSchemas.Validate(SchemaName, json);
+            json!.WriteTo(writer, options);
+        }
     }
 }
 

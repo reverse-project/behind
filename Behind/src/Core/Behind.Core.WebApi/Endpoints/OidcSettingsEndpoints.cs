@@ -70,6 +70,11 @@ public sealed class OidcSettingsEndpoints
             logger.LogInformation("OIDC settings saved with {ProviderCount} providers", applied.Providers.Length);
             return Results.NoContent();
         }
+        catch (ConfigurationSchemaException)
+        {
+            logger.LogWarning("OIDC settings update rejected: configuration does not match its JSON schema");
+            return Results.BadRequest();
+        }
         finally
         {
             WriteGate.Release();

@@ -5,6 +5,10 @@ description: 'Add or change anything that uploads or serves files in Behind usin
 
 # VFS file uploads
 
+For caching-related persistence changes follow `manage-caching`; do not cache
+file content, filenames or user metadata as supposedly PII-free data. Keep
+authorization uncached and test committed invalidation with PostgreSQL/Valkey.
+
 Load `csharp-code-standards` first. Code: `AbstractCoreContextVfs`, `IVfsCommands`, `VfsFile` (`Behind.Core.Domain`), `VfsStoreTests`, `SiteImageAttachTests`.
 
 ## Rules

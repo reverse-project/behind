@@ -28,7 +28,7 @@ dotnet build Behind.slnx
 dotnet test tests/Behind.Tests/Behind.Tests.csproj
 ```
 
-The test suite includes disposable PostgreSQL integration tests using Testcontainers
+The test suite includes disposable PostgreSQL and Valkey integration tests using Testcontainers
 and requires a running Docker-compatible engine. To run just these tests:
 
 ```sh
@@ -47,6 +47,8 @@ The PostgreSQL image is configured in
 and defaults to `postgres:latest`. An unavailable engine fails the integration tests
 rather than silently skipping them. To run without containers, use
 `--filter "Category!=Integration"`.
+The HybridCache tests use the Valkey image from
+[caching.testsettings.json](./Behind/tests/Behind.Tests/caching.testsettings.json).
 
 For configuration and instructions to run the application, see the [Getting Started guide](./Behind/docs/en-US/developer/GETTING_STARTED.md).
 

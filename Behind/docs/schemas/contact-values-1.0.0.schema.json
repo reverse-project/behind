@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind contact submitted value JSON 1.0.0",
+  "type": "array",
+  "items": {
+    "type": ["object", "null"],
+    "patternProperties": {
+      "^[kK][eE][yY]$": { "type": ["string", "null"] },
+      "^[lL][aA][bB][eE][lL]$": { "type": ["string", "null"] },
+      "^[vV][aA][lL][uU][eE]$": { "type": ["string", "null"] }
+    }
+  }
+}

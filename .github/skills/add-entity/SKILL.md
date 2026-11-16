@@ -5,6 +5,10 @@ description: 'Add a new persisted entity (or start using an entity somewhere new
 
 # Add a new entity
 
+For persistence or queries involving caching, follow `manage-caching`. Do not cache
+PII, user-authored fields or command responses; preserve committed cross-host
+invalidation and test PostgreSQL/Valkey transactions and rollback.
+
 Load `csharp-code-standards` first. Reference implementations: `Site`, `News`, `Download` (commit `e0f7485` shows a full feature, 73 files) and `Article`.
 
 ## Checklist

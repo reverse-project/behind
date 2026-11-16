@@ -4,6 +4,82 @@ Quick start guide for setting up and developing in the Behind project.
 
 ## Prerequisites
 
+### Caching
+
+All hosts using Core register `HybridCache` for dependency injection. Existing
+queries are not cached automatically. `CachingConfiguration` has only `Provider`
+and `Key`, following the database configuration pattern. It is stored under
+`Caching` in **caching.json**; `startup create` generates:
+
+```json
+{
+  "Caching": {
+    "Provider": "Memory",
+    "Key": "CachingConnection"
+  },
+  "ConnectionStrings": {
+    "CachingConnection": ""
+  }
+}
+```
+
+Set `Caching:Provider` to `RedisCompatible`; `Caching:Key` selects a value from
+`ConnectionStrings` (for example `ConnectionStrings:CachingConnection` set to
+`valkey:6379`) to add a distributed L2 cache. Never put a connection string inside
+`CachingConfiguration`. Memory remains the local L1 cache. With `Memory`, or with
+`RedisCompatible` but a missing/blank key or named connection,
+HybridCache uses memory only; the latter logs a warning on host startup.
+An explicitly configured but unreachable server is not treated as unconfigured:
+the Redis client and HybridCache retain their standard failure diagnostics.
+Configuration changes require a host restart. Protect connection strings containing
+secrets. Settings has a `caching.json` tab with a validated provider selector, an
+editable connection key and masked named-connection fields. It uses the existing
+`Configuration.Read`/`Configuration.Manage` permissions and read-only protection.
+Blank secret inputs preserve stored values; clear `Caching:Key` to use memory only.
+Use a distinct Valkey logical database for installations that need separate cache
+namespaces.
+Cache keys, authorization boundaries and invalidation must be designed explicitly
+before caching application data; distributed invalidation does not evict other
+hosts' already-cached L1 entries.
+
+The existing raw-database table listing caches **only numeric row counts**. Row
+contents, names entered by users, identifiers, search strings, sessions, grants
+and authorization results are never cached by this query. Table metadata and
+read-only policies are rebuilt from the current EF model; authorization and
+`no-store` HTTP headers remain unchanged. Other data queries remain uncached:
+free-text content and apparently public profile fields can contain PII.
+Commands always execute, including authorization, validation and auditing.
+
+Every aggregate lookup first reads the committed audit-row count from the database.
+That append-only revision is part of a SHA-256 database/model-partitioned key, so
+committed audited commands (including raw writes, deletes and restores) select a
+new key across all hosts, including their L1 caches. This prevents a slow old reader
+from repopulating the current generation. Cache misses recheck the revision before
+publishing, and explicit/ambient transactions and pending tracked writes bypass
+both cache reads and writes. No database work runs in a shared cache factory.
+HybridCache's default expiration bounds retention of obsolete generations;
+it is not the freshness guarantee. Only fixed-shape aggregates are allowed, not
+attacker-controlled search keys. Failures are not cached as successful results.
+
+This policy requires all writers to preserve the existing transactional auditing
+contract. Direct unaudited SQL, database restore/replacement or audit-log pruning
+requires flushing the installation's cache namespace
+before serving requests. Use a private, authenticated/TLS-protected Valkey deployment;
+aggregates are operational metadata even though they contain no PII.
+
+Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~Caching"`
+with the Docker/Podman environment described in the root README. The integration
+test starts and disposes Valkey, verifying cross-host L2 reads and invalidation.
+Its image is configured in `tests/Behind.Tests/caching.testsettings.json`.
+
+The [caching configuration 1.0.0 specification](../specs/caching-configuration-1.0.0.md)
+defines the format. Upgrade from the earlier development-only `Backend:Caching`
+shape by moving settings to `caching.json`, moving the inline connection into
+`ConnectionStrings`, and replacing it with `Caching:Key`. Remove the obsolete
+`Backend:Caching`, `InstanceName` and `QueryExpiration` fields. Missing `caching.json`
+is allowed for existing installations and uses memory-only defaults; run
+`startup create --skip-existing` to generate it, then restart.
+
 ### System Requirements
 - **OS**: Windows 10+, Ubuntu 20.04+, macOS 11+ (development only)
 - **RAM**: 8GB minimum, 16GB recommended

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Behind.Common.Configuration;
 using Behind.Common.Modules;
 using Behind.Core.Common.Configuration;
 using Microsoft.Extensions.Options;
@@ -75,13 +76,18 @@ public sealed class LayoutService(IOptions<BackendConfiguration> backend, Module
             {
                 return new LayoutSaveResult("invalid", null);
             }
+            var json = JsonSerializer.SerializeToNode(saved, JsonOptions);
+            if (!JsonSchemas.IsValid("layouts-1.0.0", json))
+            {
+                return new LayoutSaveResult("invalid", null);
+            }
             var path = FilePath;
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
             var temporary = $"{path}.{Guid.NewGuid():N}.tmp";
 
             try
             {
-                await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(saved, JsonOptions), cancellationToken);
+                await File.WriteAllTextAsync(temporary, json!.ToJsonString(JsonOptions), cancellationToken);
                 File.Move(temporary, path, overwrite: true);
             }
             finally

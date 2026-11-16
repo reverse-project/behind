@@ -24,13 +24,15 @@ public static class SettingsChangeExtensions
 
         private Option<KeyValuePair<string, JsonNode?>> PlanChange(string file, string path, JsonElement incoming)
         {
-            var isEditable = file.FindAction(path) == None && !OidcSettingsExtensions.IsOidcPath(file, path);
+            var isEditable = file.FindAction(path) == None && !OidcSettingsExtensions.IsOidcPath(file, path)
+                && CachingSettings.IsValid(file, path, incoming);
             var keepsSecret = path.IsSensitiveConfigurationPath && incoming.IsBlank;
             var existing = root.FindValue(path);
             if (existing is null && AccountModeSettings.CanAdd(root, file, path))
             {
                 existing = JsonValue.Create(true);
             }
+            existing ??= CachingSettings.DefaultValue(root, file, path);
 
             return isEditable && !keepsSecret && existing is not null
                 ? existing.Coerce(incoming).Map(node => KeyValuePair.Create(path, (JsonNode?)node))

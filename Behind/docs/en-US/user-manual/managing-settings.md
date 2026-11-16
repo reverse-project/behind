@@ -13,6 +13,15 @@ Both grants belong to the `Developers` role. Administrators never have these gra
 
 ## Tabs
 
+The **caching.json** tab controls HybridCache. **Provider** is a dropdown containing
+**Memory** (default) and **RedisCompatible** (Valkey). **Key** names a connection
+under **ConnectionStrings**; the generated name is **CachingConnection**.
+Edit its masked password field to replace the endpoint/credentials; leaving the
+password input blank preserves the stored secret. Clear Key to disable distributed
+caching. A missing key or empty/missing connection uses memory only. Save and
+restart the application for changes to take effect. Existing installations can
+generate this file with `startup create --skip-existing`.
+
 Every configuration file that exists next to the application gets a tab: `appsettings.json`, `backend.json`, `database.json`, `email.json`, `frontend.json` and `security.json`, plus the file of every module that has one (for example `markdownviewer.json` of the [Documentation](./managing-markdown-viewer.md) module). Except for `email.json` and the `appsettings` files, which have their own forms (see below), a tab lists the settings of the file grouped by section, for example `Security › Jwt`. Text settings are text boxes, on and off settings are switches and numbers are number boxes.
 
 The limits of the site image carousels are the numbers of `frontend.json` (`Frontend › Carousels`): **MaxSlides** (images per carousel), **MinIntervalSeconds** and **MaxIntervalSeconds** (the allowed seconds per image), **IntervalSeconds** (what a new carousel starts with), **MaxCaptionLength** and **MaxImageBytes**. See [Managing sites](./managing-sites.md).

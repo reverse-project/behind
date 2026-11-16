@@ -49,6 +49,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Frontend\**\*" />
     <None Update="postgresql.testsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="caching.testsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

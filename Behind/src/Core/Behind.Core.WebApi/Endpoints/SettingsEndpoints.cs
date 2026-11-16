@@ -46,6 +46,7 @@ public sealed class SettingsEndpoints
                 appSettings => Modify(
                     Some(appSettings),
                     security,
+                    logger,
                     targetFile => UpdateAppSettings(targetFile, request, logger, cancellationToken)));
         }
 
@@ -57,6 +58,7 @@ public sealed class SettingsEndpoints
         return Modify(
             target,
             security,
+            logger,
             async configurationFile =>
             {
                 var changes = (await configurationFile.ReadJsonAsync(cancellationToken))
@@ -123,6 +125,7 @@ public sealed class SettingsEndpoints
         Modify(
             catalog.Find(file),
             security,
+            logger,
             target => target.Name
                 .FindAction(request.Path, SettingsActionKind.Generate)
                 .Match(
@@ -140,6 +143,7 @@ public sealed class SettingsEndpoints
         Modify(
             catalog.Find(file),
             security,
+            logger,
             target => target.Name
                 .FindAction(request.Path, SettingsActionKind.Rotate)
                 .Match(
@@ -171,6 +175,7 @@ public sealed class SettingsEndpoints
         Modify(
             catalog.FindWithEditor(ConfigurationFileCatalog.EmailFile, ConfigurationFileCatalog.EmailEditor),
             security,
+            logger,
             async target =>
             {
                 var configuration = target.ReadEmailConfiguration().Apply(request);
@@ -228,13 +233,28 @@ public sealed class SettingsEndpoints
             new SettingsActionResponse(action.Path, generated.OtpUri.Match<string?>(() => null, uri => uri)));
     }
 
-    private static Task<IResult> Modify(
+    private static async Task<IResult> Modify(
         Option<FileInfo> target,
         IOptions<SecurityConfiguration> security,
-        Func<FileInfo, Task<IResult>> operation) =>
-        security.Value.ReadOnlyConfiguration
-            ? Task.FromResult<IResult>(Results.Json(ConfigurationForbiddenResponse.ConfigurationReadOnly, statusCode: StatusCodes.Status403Forbidden))
-            : target.Match(
+        ILogger logger,
+        Func<FileInfo, Task<IResult>> operation)
+    {
+        try
+        {
+            if (security.Value.ReadOnlyConfiguration)
+            {
+                return Results.Json(ConfigurationForbiddenResponse.ConfigurationReadOnly,
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
+
+            return await target.Match(
                 () => Task.FromResult<IResult>(Results.NotFound()),
                 operation);
+        }
+        catch (ConfigurationSchemaException)
+        {
+            logger.LogWarning("Settings update rejected: configuration does not match its JSON schema");
+            return Results.BadRequest();
+        }
+    }
 }

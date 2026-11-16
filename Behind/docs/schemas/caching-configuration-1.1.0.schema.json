@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind caching configuration 1.1.0",
+  "type": ["object", "null"],
+  "properties": {
+    "Caching": {
+      "type": ["object", "null"],
+      "properties": {
+        "Provider": {
+          "type": "string",
+          "enum": ["Memory", "RedisCompatible"],
+          "default": "Memory"
+        },
+        "Key": { "type": ["string", "null"] }
+      }
+    },
+    "ConnectionStrings": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "null"] }
+    }
+  }
+}

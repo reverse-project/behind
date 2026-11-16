@@ -20,7 +20,7 @@ public sealed class DatabaseProviderRegistrationTests
     private const string PostgresConnection = "Host=localhost;Database=behind-test;Username=test;Password=test";
 
     private static DatabaseConfiguration Configuration(Provider provider) =>
-        new(Some(provider), Some(new Key("Test")));
+        new(Some(provider), Some(new DatabaseKey("Test")));
 
     private static ServiceProvider Register(Provider provider, string connectionString)
     {

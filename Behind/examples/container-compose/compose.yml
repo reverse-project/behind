@@ -59,3 +59,4 @@ services:
       - ./config/email.json:/app/email.json:Z
       - ./config/forum.json:/app/forum.json:Z
       - ./config/markdownviewer.json:/app/markdownviewer.json:Z
+      - ./config/caching.json:/app/caching.json:Z

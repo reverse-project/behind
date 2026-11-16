@@ -1,5 +1,25 @@
 # Database Architecture
 
+`DatabaseConfiguration.Key` uses the `DatabaseKey` value record, with discoverable
+`DatabaseKeyTypeConverter` and `DatabaseKeyJsonConverter`, matching `CachingKey`
+naming. The `Database:Key` property name and string representation are unchanged;
+existing configuration files require no migration.
+
+Persisted contact, schedule and audit JSON is checked against embedded JSON
+Schemas before writing. See the [persisted JSON contract](../specs/persisted-json-1.0.0.md)
+for converter compatibility and PostgreSQL regression coverage.
+
+## PII-free aggregate caching
+
+`RawDatabaseQueries.ListTables` may cache only numeric counts using HybridCache.
+Row data, identities, authorization and user-authored fields are not cacheable.
+Committed audit revisions partition entries across hosts; transactions and pending
+writes bypass the cache, and a revision recheck prevents publishing mixed writes.
+Keep every writer's audit entry atomic with the mutation, including raw writes.
+Flush the cache after unaudited SQL, database restore or audit pruning. The
+[caching guide](./GETTING_STARTED.md#caching) documents the full policy; tests use
+disposable PostgreSQL and Valkey and assert SQL-level cache hits and rollback safety.
+
 ## Private messaging and report persistence
 
 Private messaging/report tables use Core's existing migration chain in the shared SQLite/PostgreSQL database. Apply migrations with the installation migrator before starting the host. New entities use `(Key, Version)` keys and audit timestamps. Mailbox state is per user; deletion does not remove other participants' history.

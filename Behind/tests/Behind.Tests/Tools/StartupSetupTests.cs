@@ -32,6 +32,7 @@ public sealed class StartupSetupTests : IDisposable
     private string DatabasePath => Path.Combine(ConfigDirectory, "database.json");
 
     private string BackendPath => Path.Combine(ConfigDirectory, "backend.json");
+    private string CachingPath => Path.Combine(ConfigDirectory, "caching.json");
 
     private string FrontendPath => Path.Combine(ConfigDirectory, "frontend.json");
 
@@ -83,6 +84,7 @@ public sealed class StartupSetupTests : IDisposable
         Assert.True(File.Exists(SecurityPath));
         Assert.True(File.Exists(DatabasePath));
         Assert.True(File.Exists(BackendPath));
+        Assert.True(File.Exists(CachingPath));
         Assert.True(File.Exists(FrontendPath));
         Assert.True(File.Exists(EmailPath));
         Assert.True(File.Exists(AppSettingsPath));
@@ -270,6 +272,22 @@ public sealed class StartupSetupTests : IDisposable
         Assert.Equal(Some(MagicLinkSettings.DefaultRedeemWindow), magicLink.RedeemWindow);
         Assert.Equal(None, magicLink.OldSecret);
         Assert.Equal(Json(new OidcConfiguration()), Json(Bind<OidcConfiguration>(SecurityPath, OidcConfiguration.SectionName)));
+    }
+
+    [Fact]
+    public void Run_CachingFileHasOnlyProviderAndKeyAndAnEmptyNamedConnection()
+    {
+        Request().Run(new StringWriter());
+        OptionTypeConverterRegistration.Register<CachingKey>();
+        var configuration = Load(CachingPath);
+        var caching = configuration.GetSection(CachingConfiguration.SectionName)
+            .GetOptionAware<CachingConfiguration>()!;
+        Assert.IsType<Memory>(caching.Provider);
+        Assert.Equal("CachingConnection", caching.Key.Match(() => string.Empty, key => key.Value));
+        Assert.Equal(string.Empty, configuration.GetConnectionString("CachingConnection"));
+        Assert.Equal(new[] { "Key", "Provider" }, Section(CachingPath, "Caching")
+            .EnumerateObject().Select(property => property.Name).Order());
+        Assert.Null(Load(BackendPath)["Backend:Caching:Provider"]);
     }
 
     [Fact]

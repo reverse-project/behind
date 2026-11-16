@@ -6,6 +6,9 @@ description: 'Create and test EF Core migrations for the Behind SQLite and Postg
 # EF Core migration
 
 Load `csharp-code-standards` first.
+For changes affecting cached data, also follow `manage-caching`: preserve committed
+audit revisions, transaction bypass and cross-host invalidation; use real
+PostgreSQL/Valkey tests. Never cache PII or command responses.
 
 ## Where
 - Core context migrations: `Behind/src/Core/Behind.Core.Database.Sqlite/Migrations` (`CoreContextSqlite`, snapshot `CoreContextSqliteModelSnapshot.cs`).

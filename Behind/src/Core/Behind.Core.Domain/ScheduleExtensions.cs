@@ -1,6 +1,8 @@
 using System.Net.Mail;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Behind.Common;
+using Behind.Common.Configuration;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Domain;
@@ -113,9 +115,8 @@ public static class ScheduleExtensions
                 .ToList());
 
         public string ToJson() =>
-            JsonSerializer.Serialize(
-                participants.Items.Select(participant => new ParticipantJson(participant.Kind.Key, participant.Value)),
-                SerializerOptions);
+            ValidatedJson("schedule-participants-1.0.0",
+                participants.Items.Select(participant => new ParticipantJson(participant.Kind.Key, participant.Value)));
 
         private IReadOnlyList<Guid> IdsOf(ScheduleParticipantKind kind) =>
             participants.Items
@@ -128,9 +129,8 @@ public static class ScheduleExtensions
     extension(ScheduleParameters parameters)
     {
         public string ToJson() =>
-            JsonSerializer.Serialize(
-                new SortedDictionary<string, string>(parameters.Values.ToDictionary(), StringComparer.Ordinal),
-                SerializerOptions);
+            ValidatedJson("schedule-parameters-1.0.0",
+                new SortedDictionary<string, string>(parameters.Values.ToDictionary(), StringComparer.Ordinal));
     }
 
     extension(Schedule schedule)
@@ -143,7 +143,7 @@ public static class ScheduleExtensions
         string.IsNullOrWhiteSpace(json)
             ? ScheduleParticipants.Empty
             : new ScheduleParticipants(
-                (JsonSerializer.Deserialize<List<ParticipantJson?>>(json, SerializerOptions) ?? [])
+                (ParseValidated<List<ParticipantJson?>>(json, "schedule-participants-1.0.0") ?? [])
                 .Select(item => item ?? throw new FormatException("A participant entry is missing."))
                 .Select(item => item.Kind.ToScheduleParticipantKind().Match(
                     () => throw new FormatException($"Unknown participant kind '{item.Kind}'."),
@@ -154,8 +154,22 @@ public static class ScheduleExtensions
         string.IsNullOrWhiteSpace(json)
             ? ScheduleParameters.Empty
             : new ScheduleParameters(
-                JsonSerializer.Deserialize<Dictionary<string, string>>(json, SerializerOptions)
+                ParseValidated<Dictionary<string, string>>(json, "schedule-parameters-1.0.0")
                 ?? new Dictionary<string, string>());
+
+    private static T? ParseValidated<T>(string json, string schema)
+    {
+        var node = JsonNode.Parse(json);
+        JsonSchemas.Validate(schema, node);
+        return node.Deserialize<T>(SerializerOptions);
+    }
+
+    private static string ValidatedJson<T>(string schema, T value)
+    {
+        var node = JsonSerializer.SerializeToNode(value, SerializerOptions);
+        JsonSchemas.Validate(schema, node);
+        return node!.ToJsonString();
+    }
 
     private static Option<T> Lookup<T>(IReadOnlyDictionary<string, T> values, string? key) =>
         key is not null && values.TryGetValue(key.Trim(), out var value) ? Some(value) : None;

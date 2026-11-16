@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/reverse-project/behind/schemas/changelog-1.0.0.schema.json",
+  "title": "Behind bundled changelog 1.0.0",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": ["version", "date", "changes"],
+    "properties": {
+      "version": { "$ref": "#/$defs/nonBlankString" },
+      "date": { "$ref": "#/$defs/nonBlankString" },
+      "changes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["type", "text"],
+          "properties": {
+            "type": { "$ref": "#/$defs/nonBlankString" },
+            "text": { "$ref": "#/$defs/nonBlankString" }
+          },
+          "additionalProperties": true
+        }
+      }
+    },
+    "additionalProperties": true
+  },
+  "$defs": {
+    "nonBlankString": { "type": "string", "pattern": "\\S" }
+  }
+}

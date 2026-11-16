@@ -3,6 +3,7 @@
     "version": "1.0.2",
     "date": "2026-11-15",
     "changes": [
+      { "type": "fixed", "text": "Schedule run history clears its loading state when read access is lost during a refresh." },
       { "type": "added", "text": "The security.json Settings tab includes an OpenID Connect provider editor with add/remove, scopes, account linking, role mappings and protected client-secret replacement/clearing. A reloadable global Backend:Accounts:Oidc switch in backend.json blocks provider listing, sign-in callbacks, ticket redemption and second-factor continuations; provider configuration changes clearly require a restart." },
       { "type": "added", "text": "Configurable OpenID Connect providers support authorization code sign-in with PKCE, opt-in verified-email account linking, persisted provider identities, explicit role mappings and safe automatic role creation. OIDC role synchronization preserves manual assignments and other providers, and sign-in retains approval, ban and two-factor checks." },
       { "type": "added", "text": "Core schedules can run module-contributed actions on UTC cron expressions, manage participants and result email notifications, trigger runs immediately, and browse run history." },

@@ -36,6 +36,7 @@ define(["ko", "models/session", "models/schedules", "models/pager", "models/i18n
             var current = ++request;
             if (!self.canRead()) {
                 self.items([]);
+                self.busy(false);
                 return Promise.resolve();
             }
             self.busy(true);

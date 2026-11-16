@@ -41,3 +41,36 @@ test("an older run filter response neither replaces newer rows nor clears busy",
     assert.equal(view.busy(), false);
     assert.deepEqual(view.items().map(item => item.id), ["succeeded"]);
 });
+
+test("losing read access clears busy and ignores a pending run response", async () => {
+    const pending = [];
+    const canRead = ko.observable(true);
+    const schedules = { runs: () => new Promise(resolve => pending.push(resolve)) };
+    const pager = () => ({ page: () => 1, isOutOfRange: () => false, clampIfOutOfRange: () => {}, update: () => {} });
+    const dependencies = {
+        ko, "models/session": { isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: () => canRead() },
+        "models/schedules": schedules, "models/pager": pager,
+        "models/i18n": { t: key => key, tOr: (key, fallback) => fallback }, "models/paging": {}
+    };
+    let Runs;
+    vm.runInNewContext(fs.readFileSync(path.join(core, "viewmodels/scheduleruns.js"), "utf8"), {
+        define(names, factory) { Runs = factory(...names.map(name => dependencies[name])); },
+        window: { location: { hash: "#/manage/schedules/runs" } },
+        Promise, setImmediate
+    });
+    const view = new Runs();
+    view.items([{ id: "existing" }]);
+
+    const first = view.refresh();
+    assert.equal(view.busy(), true);
+    canRead(false);
+    await view.refresh();
+    assert.equal(pending.length, 1);
+    assert.equal(view.busy(), false);
+    assert.equal(view.items().length, 0);
+
+    pending[0]({ ok: true, message: "", data: { items: [{ id: "stale" }] } });
+    await first;
+    assert.equal(view.busy(), false);
+    assert.equal(view.items().length, 0);
+});

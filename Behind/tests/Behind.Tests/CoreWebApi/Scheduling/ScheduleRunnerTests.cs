@@ -442,7 +442,7 @@ public sealed class ScheduleRunnerTests : IAsyncDisposable
 
         var runs = await RunsAsync();
         Assert.Equal(
-            [first.Id.Key, second.Id.Key],
+            new[] { first.Id.Key, second.Id.Key }.Order(),
             runs.Select(run => run.ScheduleId).Order());
     }
 

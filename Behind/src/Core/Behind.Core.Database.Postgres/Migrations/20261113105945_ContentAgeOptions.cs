@@ -38,7 +38,8 @@ public partial class _20261113105945_ContentAgeOptions : Migration
             ) AS ages;
             INSERT INTO "AuditLogEntries" ("Id", "EntityName", "EntityKey", "Action", "Timestamp", "UserId", "BehalfOfId")
             SELECT ('b6e00000-0000-0000-0000-' || lpad("Age"::text, 12, '0'))::uuid,
-                   'ContentAgeOption', "Key"::text || ':1', 'Created', CURRENT_TIMESTAMP, NULL, NULL
+                   'ContentAgeOption', "Key"::text || ':1', 'Created',
+                   (EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 10000000)::bigint + 621355968000000000, NULL, NULL
             FROM "ContentAgeOptions";
             """);
     }

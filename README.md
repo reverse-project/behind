@@ -28,6 +28,26 @@ dotnet build Behind.slnx
 dotnet test tests/Behind.Tests/Behind.Tests.csproj
 ```
 
+The test suite includes disposable PostgreSQL integration tests using Testcontainers
+and requires a running Docker-compatible engine. To run just these tests:
+
+```sh
+dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "Category=Integration"
+```
+
+For rootless Podman, start its API socket (`systemctl --user start podman.socket`)
+and set `DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock`.
+Inside the devcontainer, use `DOCKER_HOST=unix:///run/podman/podman.sock` and
+`TESTCONTAINERS_HOST_OVERRIDE=host.containers.internal` so mapped ports are reachable.
+Set `TESTCONTAINERS_RYUK_DISABLED=true` when using rootless Podman; tests still dispose
+their containers on completion or assertion failure, but an interrupted test process
+may require manual cleanup. Leave Ryuk enabled with Docker.
+The PostgreSQL image is configured in
+[postgresql.testsettings.json](./Behind/tests/Behind.Tests/postgresql.testsettings.json)
+and defaults to `postgres:latest`. An unavailable engine fails the integration tests
+rather than silently skipping them. To run without containers, use
+`--filter "Category!=Integration"`.
+
 For configuration and instructions to run the application, see the [Getting Started guide](./Behind/docs/en-US/developer/GETTING_STARTED.md).
 
 ## Contributing

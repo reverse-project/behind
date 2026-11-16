@@ -17,6 +17,7 @@ MUST keep the code base clean, reuse existing code do not duplicate any of the c
 MUST use DRY, KISS and SOLID principles
 MUST follow Clean Code principles
 MUST create tests for all the new functionalities
+MUST add and maintain PostgreSQL integration regression tests with Testcontainers.PostgreSql whenever database schemas, migrations, seeds, mappings, value converters, queries or persistence behavior change; execute the affected behavior against disposable real PostgreSQL containers, not only SQLite or generated SQL. Cover fresh installations and upgrades for migration changes, preservation of existing data, audit UTC-tick round-tripping and safe reruns where applicable. Follow Behind/tests/Behind.Tests/CoreDatabase/ContentAgeOptionPostgresIntegrationTests.cs, tag container tests Category=Integration, configure the image in Behind/tests/Behind.Tests/postgresql.testsettings.json, dispose containers with await using, and keep Docker/Podman execution instructions in README.md current. Run the affected tests before considering database work complete; an unavailable container engine is an explicit validation failure, never a silent skip.
 MUST write test scripts only in C#, Bash or JavaScript
 MUST NOT use shortened if statements or blocks (if, else, for, foreach, while, using) without braces, always use braces and put the body on its own lines, to avoid bugs like Apple's "goto fail"
 MUST use TypeDescriptor and JsonConverterFactory for JSON related serialization tasks like in Behind.Common.Converters and Behind.Core.WebApi.WebApiExtensions file

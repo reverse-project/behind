@@ -35,7 +35,7 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
             existingRole = Guid.NewGuid();
             await context.Database.ExecuteSqlAsync($"""
                 INSERT INTO "Roles" ("Id", "Name", "IsDeveloper")
-                VALUES ({existingRole}, {"Existing role"}, {false})
+                VALUES ({existingRole}, {"Legacy:équipe"}, {false})
                 """);
         }
 
@@ -43,7 +43,10 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
         await context.Database.MigrateAsync();
         if (existingRole is not null)
         {
-            Assert.Equal("Existing role", (await context.Roles.SingleAsync()).Name);
+            Assert.Equal("Legacy:équipe", (await context.Roles.SingleAsync()).Name);
+            context.Roles.Add(new UserRole("LEGACY:ÉQUIPE"));
+            await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+            context.ChangeTracker.Clear();
         }
 
         var userId = await SeedUser(context, "role@test.example");
@@ -57,13 +60,13 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
         {
             await Task.WhenAll(
                 new Behind.Core.Database.OidcAccountStore(first).SynchronizeRoles(
-                    userId, "concurrent", [], ["oidc:Concurrent"], CancellationToken.None),
+                    userId, "concurrent", [], ["oidc:équipe"], CancellationToken.None),
                 new Behind.Core.Database.OidcAccountStore(second).SynchronizeRoles(
-                    secondUserId, "concurrent", [], ["OIDC:CONCURRENT"], CancellationToken.None));
+                    secondUserId, "concurrent", [], ["OIDC:ÉQUIPE"], CancellationToken.None));
         }
 
-        var concurrentRole = await context.Roles.SingleAsync(role =>
-            EF.Property<string>(role, "NormalizedName") == "OIDC:CONCURRENT");
+        var concurrentRole = (await context.Roles.ToListAsync()).Single(role =>
+            string.Equals(role.Name, "OIDC:ÉQUIPE", StringComparison.OrdinalIgnoreCase));
         var concurrentRoleId = context.Entry(concurrentRole).Property<Guid>("Id").CurrentValue;
         Assert.Equal(2, await context.Set<Dictionary<string, object>>("UserRoles")
             .CountAsync(row => EF.Property<Guid>(row, "RoleId") == concurrentRoleId));
@@ -99,6 +102,7 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
             }
         }
 
+        await RoleNameUnicodeTests.AssertOrdinalUniqueness(context);
         context.Roles.Add(new UserRole("OIDC:READERS"));
         var exception = await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
         Assert.Equal("UX_Roles_NormalizedName", Assert.IsType<PostgresException>(exception.InnerException).ConstraintName);

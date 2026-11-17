@@ -4,18 +4,37 @@
 
 <!-- coderabbit-ai-generated-section:v1:1cde6b6c737c77c374caf410a56e13c492006b39e80ef08a03bb031f48f96712 -->
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:ecd3a041b74b0d4ffee752c6fdd8733e10d83a5a35083250fd3c5874e490c23e -->
+
 ## Role name uniqueness
 
-The `UniqueRoleNames` Core migration adds the `NormalizedName` column,
-computed with database `upper(Name)` (stored on PostgreSQL, virtual on SQLite), and the `UX_Roles_NormalizedName` unique
-index. Existing role names and memberships are preserved. Resolve existing
-names whose uppercase forms collide before upgrading; the migration fails
-transactionally instead of deleting or merging roles. SQLite and PostgreSQL
-have different Unicode uppercase rules, which may also differ from the
-application's ordinal case-insensitive comparison. ASCII role names have the
-same case behavior on both providers. OIDC synchronization retries only the
-named role-name uniqueness conflict and serialization/deadlock conflicts, with
-bounded attempts.
+The `OrdinalRoleNames` Core migration replaces database-native `upper(Name)`
+with a canonical key whose equivalence matches .NET `OrdinalIgnoreCase`.
+Each Unicode scalar is uppercased only when the ordinal comparer considers
+that mapping equivalent. This handles accents, supplementary characters and
+Greek final sigma while preserving distinct Turkish dotted I, long s, Kelvin
+sign and composed/decomposed names. Keys use ordinal database collations.
+
+PostgreSQL uses an immutable SQL function generated from the .NET casing map
+and a stored column. SQLite uses a deterministic .NET function registered on
+Core, Web and FSE connections and a virtual column. Generated keys enforce
+uniqueness for EF and raw SQL inserts and renames. External SQLite writers must
+register the same function; otherwise writes fail rather than bypass the index.
+Create PostgreSQL databases through migrations; `EnsureCreated` alone does not
+install the function. PostgreSQL casing maps are installed by migrations using
+the application's .NET runtime; runtime upgrades that change ordinal casing
+rules require refreshing the function and rebuilding the generated keys/index.
+
+Existing names, IDs, memberships and audits are preserved. Resolve existing
+ordinal case duplicates before upgrading; migration fails transactionally
+instead of merging or deleting roles. Downgrades can also reject names that
+were distinct ordinally but collide under the old database uppercase rule.
+OIDC retries remain limited to the named uniqueness and serialization/deadlock
+conflicts, with bounded attempts.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 

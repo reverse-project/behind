@@ -16,7 +16,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261117054756_UniqueRoleNames";
+    public override string LastMigrationId => "20261117075301_OrdinalRoleNames";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1952,7 +1952,8 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.Property<string>("NormalizedName")
                     .ValueGeneratedOnAddOrUpdate()
                     .HasColumnType("TEXT")
-                    .HasComputedColumnSql("upper(\"Name\")", false);
+                    .HasComputedColumnSql("\"BehindOrdinalIgnoreCaseKey\"(\"Name\")", false)
+                    .UseCollation("BINARY");
 
                 b.HasIndex("Name");
 

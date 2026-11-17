@@ -4,19 +4,38 @@
 
 <!-- coderabbit-ai-generated-section:v1:c03c2ac5a67e6ea5af97f300d93ae805cb1e266770b73f294106895c26ffa7fc -->
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cc5ece34d649a4af75e6b33826ae84b92ecf9e9f7ce052d5a5b9e21119346361 -->
+
 ## Szerepkörnevek egyedisége
 
-A Core `UniqueRoleNames` migrációja hozzáadja az adatbázis `upper(Name)`
-kifejezéséből számított `NormalizedName` oszlopot
-(PostgreSQL esetén tárolt, SQLite esetén virtuális oszlop) és az egyedi
-`UX_Roles_NormalizedName` indexet. A meglévő nevek és tagságok megmaradnak.
-Frissítés előtt rendezni kell az azonos nagybetűs alakú neveket; a migráció
-ilyenkor tranzakciósan meghiúsul, nem töröl és nem von össze szerepköröket.
-Az SQLite és a PostgreSQL Unicode nagybetűsítési szabályai eltérhetnek egymástól
-és az alkalmazás ordinális, kis- és nagybetűt nem megkülönböztető összehasonlításától.
-Az ASCII nevek kezelése mindkét szolgáltatónál megegyezik. Az OIDC szinkronizálás
-korlátozott számú újrapróbálkozással kezeli a megnevezett névegyediség-,
-szerializációs és holtpontütközéseket.
+A Core `OrdinalRoleNames` migrációja az adatbázis saját `upper(Name)` szabályát
+olyan kanonikus kulcsra cseréli, amely a .NET `OrdinalIgnoreCase` egyenértékűségi
+szabályát követi. Egy Unicode karakter csak akkor alakul nagybetűvé, ha az
+ordinális összehasonlító az eredménnyel egyenértékűnek tekinti. Az ékezetek,
+a kiegészítő Unicode karakterek és a görög szigma változatai megfelelően
+működnek; a török pontozott I, a hosszú s, a Kelvin-jel és az eltérő Unicode
+normalizálású nevek szükség szerint különbözők maradnak. Az index ordinális
+adatbázis-kollációt használ.
+
+PostgreSQL alatt a .NET megfeleltetési táblájából létrehozott változatlan SQL
+függvény és tárolt oszlop, SQLite alatt a Core, Web és FSE kapcsolatokra
+regisztrált determinisztikus .NET függvény és virtuális oszlop számítja a kulcsot.
+Az egyediség EF és közvetlen SQL beszúrásnál, valamint átnevezésnél is érvényes.
+Külső SQLite íróknak ugyanazt a függvényt kell regisztrálniuk; enélkül az írás
+meghiúsul. PostgreSQL adatbázist migrációkkal kell létrehozni; az `EnsureCreated`
+önmagában nem telepíti a függvényt. Az ordinális szabályokat megváltoztató .NET
+futókörnyezet-frissítéshez a PostgreSQL függvény és a számított kulcsok/index
+újraépítése szükséges.
+
+A nevek, azonosítók, tagságok és auditadatok megmaradnak. Frissítés előtt az
+ordinális összehasonlítás szerint azonos neveket rendezni kell; a migráció
+tranzakciósan meghiúsul, nem töröl és nem von össze szerepköröket. A visszaállítás
+is meghiúsulhat, ha a régi nagybetűsítési szabály ütközést eredményez. Az OIDC
+korlátozottan próbálja újra a megnevezett egyediségi, szerializációs és holtpontütközéseket.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 

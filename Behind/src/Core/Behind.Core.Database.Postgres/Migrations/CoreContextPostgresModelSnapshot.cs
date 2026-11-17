@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261117054741_UniqueRoleNames";
+    public override string LastMigrationId => "20261117075226_OrdinalRoleNames";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1956,7 +1956,8 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.Property<string>("NormalizedName")
                     .ValueGeneratedOnAddOrUpdate()
                     .HasColumnType("text")
-                    .HasComputedColumnSql("upper(\"Name\")", true);
+                    .HasComputedColumnSql("\"BehindOrdinalIgnoreCaseKey\"(\"Name\")", true)
+                    .UseCollation("C");
 
                 b.HasIndex("Name");
 

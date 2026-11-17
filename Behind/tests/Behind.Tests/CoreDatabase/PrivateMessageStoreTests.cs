@@ -1,4 +1,5 @@
 using Behind.Core.Database;
+using Behind.Core.Database.Sqlite;
 using Behind.Core.Database.Auditing;
 using Behind.Core.Domain;
 using Behind.Common.Database;
@@ -367,10 +368,16 @@ public sealed class PrivateMessageStoreTests : IDisposable
 
     private sealed class TestContext(DbContextOptions<TestContext> options) : AbstractCoreContext(options)
     {
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+            optionsBuilder.ConfigureOrdinalRoleNames();
+        }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-            builder.ApplyCoreProviderConventions();
+            builder.ApplySqliteCoreProviderConventions();
         }
     }
 

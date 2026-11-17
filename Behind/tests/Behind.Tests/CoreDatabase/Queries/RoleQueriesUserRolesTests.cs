@@ -56,11 +56,12 @@ public sealed class RoleQueriesUserRolesTests : IDisposable
         }
 
         await using var ctx = _factory.CreateContext();
-        var found = await new RoleQueries(ctx).GetRoleByName("NAMED-ROLE");
+        var found = await new RoleQueries(ctx).GetRoleByName("named-role");
 
         var result = found.Match(() => throw new Xunit.Sdk.XunitException("None"), r => r);
         Assert.Equal("named-role", result.Role.Name);
         Assert.Equal(["named-read"], GrantNames(result.Role));
+        Assert.True((await new RoleQueries(ctx).GetRoleByName("NAMED-ROLE")).IsNone());
     }
 
     [Fact]

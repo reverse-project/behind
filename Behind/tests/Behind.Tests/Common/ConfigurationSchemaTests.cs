@@ -85,7 +85,7 @@ public sealed class ConfigurationSchemaTests : IDisposable
     [InlineData("backend.json", """{"Backend":{"Scheduler":{"TickSeconds":60}}}""", "Backend:Scheduler:TickSeconds", "1.5", true)]
     [InlineData("backend.json", """{"Backend":{"Scheduler":{"TickSeconds":60}}}""", "Backend:Scheduler:TickSeconds", "\"60\"", false)]
     [InlineData("caching.json", """{"Caching":{"Provider":"Memory"}}""", "Caching:Provider", "\"RedisCompatible\"", true)]
-    [InlineData("caching.json", """{"Caching":{"Provider":"Memory"}}""", "Caching:Provider", "\"rediscompatible\"", false)]
+    [InlineData("caching.json", """{"Caching":{"Provider":"Memory"}}""", "Caching:Provider", "\"rediscompatible\"", true)]
     [InlineData("caching.json", """{"Caching":{"Provider":"Memory"}}""", "Caching:Provider", "\"Other\"", false)]
     [InlineData("caching.json", """{"Caching":{"Key":"Valkey"}}""", "Caching:Key", "\"\"", true)]
     [InlineData("database.json", """{"Database":{"Provider":"Sqlite"}}""", "Database:Provider", "\"Npgsql\"", true)]
@@ -117,6 +117,24 @@ public sealed class ConfigurationSchemaTests : IDisposable
         await new FileInfo(path).SetJsonNodesAsync(
             new Dictionary<string, JsonNode?> { ["Backend:Accounts:Password"] = JsonValue.Create(false) });
         Assert.False(JsonNode.Parse(await File.ReadAllTextAsync(path))!["Backend"]!["Accounts"]!["Password"]!.GetValue<bool>());
+    }
+
+    [Theory]
+    [InlineData("rediscompatible")]
+    [InlineData("MEMORY")]
+    public async Task ExistingCachingProviderCasing_DoesNotPreventUnrelatedChanges(string provider)
+    {
+        var path = Path.Combine(_directory, "caching.json");
+        await File.WriteAllTextAsync(path, $$$"""{"Caching":{"Provider":"{{{provider}}}"},"ConnectionStrings":{"Cache":"old"}}""");
+
+        await new FileInfo(path).SetJsonValuesAsync(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Cache"] = "new"
+        });
+
+        var root = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+        Assert.Equal(provider, root["Caching"]!["Provider"]!.GetValue<string>());
+        Assert.Equal("new", root["ConnectionStrings"]!["Cache"]!.GetValue<string>());
     }
 
     [Fact]

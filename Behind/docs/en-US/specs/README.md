@@ -7,5 +7,6 @@
 | [Bundled frontend JSON](./bundled-json-1.0.0.md) | 1.0.0 | Current |
 | [Caching configuration](./caching-configuration-1.1.0.md) | 1.1.0 | Current |
 | [Caching configuration](./caching-configuration-1.0.0.md) | 1.0.0 | Previous |
-| [OIDC sign-in](./oidc-sign-in-1.1.0.md) | 1.1.0 | Current |
+| [OIDC sign-in](./oidc-sign-in-2.0.0.md) | 2.0.0 | Current |
+| [OIDC sign-in](./oidc-sign-in-1.1.0.md) | 1.1.0 | Previous |
 | [OIDC sign-in](./oidc-sign-in-1.0.0.md) | 1.0.0 | Previous |

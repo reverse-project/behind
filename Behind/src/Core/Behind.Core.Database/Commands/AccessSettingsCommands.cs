@@ -11,7 +11,9 @@ public sealed class AccessSettingsCommands(AbstractCoreContext context, IVfsComm
         IAccessSettingsCommands.AccessSettingsDraft draft,
         CancellationToken cancellationToken = default)
     {
-        if (!await context.Roles.AnyAsync(role => role.Name == draft.RestrictedToRole, cancellationToken))
+        var matches = await context.Roles.Where(role => role.Name == draft.RestrictedToRole)
+            .Select(role => role.Name).ToListAsync(cancellationToken);
+        if (!matches.Contains(draft.RestrictedToRole, StringComparer.Ordinal))
         {
             return new AccessSettingsSaveResult.UnknownRole();
         }

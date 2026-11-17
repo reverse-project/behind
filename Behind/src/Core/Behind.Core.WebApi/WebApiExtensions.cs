@@ -184,6 +184,7 @@ public static class WebApiExtensions
                 .AddRoles<ApplicationRole>()
                 .AddSignInManager()
                 .AddDefaultTokenProviders();
+            builder.Services.AddScoped<RoleManager<ApplicationRole>, CaseSensitiveRoleManager>();
 
             builder.Services.AddGrantAuthorization();
 

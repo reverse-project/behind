@@ -25,7 +25,17 @@ public static class ConfigurationSchema
     {
         if (schema["$ref"] is JsonValue reference)
         {
-            schema = Definition.Value["$defs"]![reference.GetValue<string>().Split('/')[^1]]!.AsObject();
+            var definitionName = reference.GetValue<string>().Split('/')[^1];
+            schema = Definition.Value["$defs"]![definitionName]!.AsObject();
+            if (definitionName == "CachingProvider" && value is JsonValue provider
+                && provider.TryGetValue<string>(out var text))
+            {
+                var canonical = schema["enum"]!.AsArray()
+                    .Select(item => item!.GetValue<string>())
+                    .FirstOrDefault(candidate => string.Equals(candidate, text, StringComparison.OrdinalIgnoreCase));
+                normalized = JsonValue.Create(canonical ?? text);
+                return true;
+            }
         }
 
         if (value is JsonObject source)

@@ -46,7 +46,7 @@ public sealed class RoleNameConflictMigrationTests
         var item = Guid.NewGuid();
         var grant = Guid.NewGuid();
         await context.Database.ExecuteSqlAsync($"""
-            INSERT INTO "Roles" ("Id", "Name", "IsDeveloper") VALUES ({first}, {"Editors"}, {false}), ({second}, {"editors"}, {true});
+            INSERT INTO "Roles" ("Id", "Name", "IsDeveloper") VALUES ({first}, {"Editors"}, {false}), ({second}, {"Editors"}, {true});
             INSERT INTO "Grants" ("Id", "Name") VALUES ({grant}, {"Test.Read"});
             INSERT INTO "RoleGrants" ("RoleId", "GrantId") VALUES ({first}, {grant});
             INSERT INTO "Menus" ("Key", "Version", "Name", "Title") VALUES ({menu}, {1L}, {"test"}, {"Test"});
@@ -64,7 +64,7 @@ public sealed class RoleNameConflictMigrationTests
 
         var error = await Assert.ThrowsAnyAsync<System.Data.Common.DbException>(() => context.Database.MigrateAsync());
         Assert.Contains("Role name conflicts", error.Message);
-        Assert.Contains("EDITORS", error.Message);
+        Assert.Contains("Editors", error.Message);
         Assert.Contains(first.ToString(), error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(second.ToString(), error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(2, await context.Roles.CountAsync());

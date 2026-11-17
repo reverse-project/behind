@@ -2,42 +2,25 @@
 
 ## Role name uniqueness
 
-The `OrdinalRoleNames` Core migration replaces database-native `upper(Name)`
-with a canonical key whose equivalence matches .NET `OrdinalIgnoreCase`.
-Each Unicode scalar is uppercased only when the ordinal comparer considers
-that mapping equivalent. This handles accents, supplementary characters and
-Greek final sigma while preserving distinct Turkish dotted I, long s, Kelvin
-sign and composed/decomposed names. Keys use ordinal database collations.
-
-PostgreSQL uses an immutable SQL function generated from the .NET casing map
-and a stored column. SQLite uses a deterministic .NET function registered on
-Core, Web and FSE connections and a virtual column. SQLite records the runtime,
-invariant globalization sort version and actual casing-map fingerprint in
-`__BehindRoleNameCasing`. Connection initialization checks that token and uses an
-immediate transaction to rebuild `UX_Roles_NormalizedName` before normal writes
-when the token changes. Conflicts abort rebuilding and prevent the connection
-from being used; the prior token and index remain intact. An unchanged token
-requires only a read.
-
-Generated keys enforce uniqueness for EF and raw SQL inserts and renames.
-External SQLite writers must
-register the same function; otherwise writes fail rather than bypass the index.
-Create PostgreSQL databases through migrations; `EnsureCreated` alone does not
-install the function. PostgreSQL casing maps are installed by migrations using
-the application's .NET runtime; runtime upgrades that change ordinal casing
-rules require refreshing the function and rebuilding the generated keys/index.
+Role names are unique with exact, case-sensitive comparison: `Editor` and
+`editor` are distinct. PostgreSQL and SQLite use a unique index directly on
+`Name` with `C` and `BINARY` collations respectively. The index applies to
+EF and raw SQL inserts and renames, including soft-deleted roles. No generated
+column, custom database function or connection initialization is needed.
 
 Existing names, IDs, memberships and audits are preserved. Resolve existing
-ordinal case duplicates before upgrading; migration preflight lists conflicting
-normalized names and role IDs, then stops transactionally before index creation.
+exact duplicate names before upgrading; migration preflight lists conflicting
+names and role IDs, then stops transactionally before index creation.
 Rename the chosen roles explicitly while retaining their IDs; user memberships,
 menu visibility references and permission distinctions are preserved. No survivor
 or automatic merge policy is assumed.
 
-Downgrades can also reject names that were distinct ordinally but collide under
-the old database uppercase rule.
 OIDC retries remain limited to the named uniqueness and serialization/deadlock
 conflicts, with bounded attempts.
+
+The replaced development-only role migrations are no longer part of the migration
+history. If they were already applied, back up the database and use the previous
+application version to roll Core back to `PersistOidcAccounts` before upgrading.
 
 `DatabaseConfiguration.Key` uses the `DatabaseKey` value record, with discoverable
 `DatabaseKeyTypeConverter` and `DatabaseKeyJsonConverter`, matching `CachingKey`

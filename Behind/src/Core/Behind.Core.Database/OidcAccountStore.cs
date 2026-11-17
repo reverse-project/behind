@@ -11,7 +11,6 @@ namespace Behind.Core.Database;
 public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccountStore
 {
     private const int MaxSynchronizationAttempts = 5;
-    private const string RoleNameConstraint = "UX_Roles_NormalizedName";
     private const string SerializationFailure = "40001";
     private const string DeadlockDetected = "40P01";
 
@@ -172,8 +171,8 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
             .Select(role => new { Id = EF.Property<Guid>(role, "Id"), role.Name })
             .ToListAsync(cancellationToken);
         var rolesByName = roles
-            .GroupBy(role => role.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
+            .GroupBy(role => role.Name, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
         var desiredRoleIds = new HashSet<Guid>();
 
         foreach (var roleName in NormalizeRoleNames(mappedRoleNames))
@@ -286,9 +285,7 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
     {
         DbUpdateException { InnerException: { } inner } => IsSerializationConflict(inner),
         DbException { SqlState: SerializationFailure or DeadlockDetected } => true,
-        DbException { SqlState: "23505" } databaseException
-            when databaseException.GetType().GetProperty("ConstraintName")?.GetValue(databaseException)
-                 is string constraintName && constraintName == RoleNameConstraint => true,
+        _ when RoleNameUniqueness.IsConflict(exception) => true,
         _ => false
     };
 
@@ -330,11 +327,10 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
     private async Task<bool> HasDeletedRoleNamed(string roleName, CancellationToken cancellationToken)
     {
         using var scope = context.SoftDelete.IncludeDeleted();
-        var deletedMatches = await context.Roles
-            .Where(role => role.Name.ToLower() == roleName.ToLower())
-            .ToListAsync(cancellationToken);
+        var roles = await context.Roles.Where(role => role.Name == roleName).ToListAsync(cancellationToken);
 
-        foreach (var role in deletedMatches)
+        foreach (var role in roles.Where(role =>
+                     string.Equals(role.Name, roleName, StringComparison.Ordinal)))
         {
             if (await context.Entry(role).IsDeletedAsync(cancellationToken))
             {
@@ -348,7 +344,7 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
     private static IReadOnlyList<string> NormalizeRoleNames(IReadOnlyList<string> names)
     {
         var normalized = new List<string>();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var name in names)
         {

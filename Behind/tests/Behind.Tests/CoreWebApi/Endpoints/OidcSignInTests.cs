@@ -82,6 +82,24 @@ public sealed class OidcSignInTests
             Arg.Is<IReadOnlyList<string>>(roles => roles.SequenceEqual(new[] { "oidc:company:Writers" })), default);
     }
 
+    [Fact]
+    public async Task RoleCaseVariantsAreNotCollapsedDuringAccountResolution()
+    {
+        var store = Store();
+        var users = Users();
+        var user = User;
+        users.FindByEmailAsync("user@example.test").Returns(user);
+        var provider = Provider with { RoleMappings = new() { ["writers"] = ["Editor", "editor"] } };
+
+        Assert.Same(user, await Service(store, users, provider)
+            .Resolve(Identity with { Roles = ["writers", "reader", "Reader"] }, default));
+        await store.Received().SynchronizeRoles(user.Id, "company",
+            Arg.Is<IReadOnlyList<string>>(roles => roles.Contains("Editor") && roles.Contains("editor") && roles.Count == 2),
+            Arg.Is<IReadOnlyList<string>>(roles => roles.Contains("oidc:company:reader")
+                                                   && roles.Contains("oidc:company:Reader") && roles.Count == 2),
+            default);
+    }
+
     [Theory]
     [InlineData(false, true, true)]
     [InlineData(true, false, true)]

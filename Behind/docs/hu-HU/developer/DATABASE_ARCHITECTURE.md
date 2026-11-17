@@ -2,41 +2,27 @@
 
 ## Szerepkörnevek egyedisége
 
-A Core `OrdinalRoleNames` migrációja az adatbázis saját `upper(Name)` szabályát
-olyan kanonikus kulcsra cseréli, amely a .NET `OrdinalIgnoreCase` egyenértékűségi
-szabályát követi. Egy Unicode karakter csak akkor alakul nagybetűvé, ha az
-ordinális összehasonlító az eredménnyel egyenértékűnek tekinti. Az ékezetek,
-a kiegészítő Unicode karakterek és a görög szigma változatai megfelelően
-működnek; a török pontozott I, a hosszú s, a Kelvin-jel és az eltérő Unicode
-normalizálású nevek szükség szerint különbözők maradnak. Az index ordinális
-adatbázis-kollációt használ.
-
-PostgreSQL alatt a .NET megfeleltetési táblájából létrehozott változatlan SQL
-függvény és tárolt oszlop, SQLite alatt a Core, Web és FSE kapcsolatokra
-regisztrált determinisztikus .NET függvény és virtuális oszlop számítja a kulcsot.
-Az SQLite a futókörnyezet, az invariáns rendezési verzió és a tényleges
-megfeleltetési tábla ujjlenyomatát a `__BehindRoleNameCasing` táblában rögzíti.
-A kapcsolat inicializálása ellenőrzi a verziót, és változáskor az írások előtt
-azonnali tranzakcióban újraépíti az indexet. Ütközéskor a régi verzió és index
-megmarad, a kapcsolat nem használható. Változatlan verziónál csak olvasás szükséges.
-
-Az egyediség EF és közvetlen SQL beszúrásnál, valamint átnevezésnél is érvényes.
-Külső SQLite íróknak ugyanazt a függvényt kell regisztrálniuk; enélkül az írás
-meghiúsul. PostgreSQL adatbázist migrációkkal kell létrehozni; az `EnsureCreated`
-önmagában nem telepíti a függvényt. Az ordinális szabályokat megváltoztató .NET
-Futókörnyezet-frissítéshez a PostgreSQL függvény és a számított kulcsok/index
-újraépítése szükséges.
+A szerepkörnevek pontos, kis- és nagybetűérzékeny összehasonlítással egyediek:
+az `Editor` és az `editor` különböző. PostgreSQL alatt `C`, SQLite alatt `BINARY`
+kollációjú egyedi index vonatkozik közvetlenül a `Name` mezőre. Az index az EF
+és közvetlen SQL beszúrásokat és átnevezéseket, valamint a törölt szerepköröket
+is kezeli. Nem szükséges számított oszlop, egyedi adatbázisfüggvény vagy
+kapcsolatinicializálás.
 
 A nevek, azonosítók, tagságok és auditadatok megmaradnak. Frissítés előtt az
-ordinális összehasonlítás szerint azonos neveket rendezni kell. A migráció
-előellenőrzése felsorolja az ütköző normalizált neveket és szerepkör-azonosítókat,
+pontosan azonos neveket rendezni kell. A migráció
+előellenőrzése felsorolja az ütköző neveket és szerepkör-azonosítókat,
 majd az index létrehozása előtt tranzakciósan leáll. A kiválasztott szerepköröket
 kifejezetten át kell nevezni az azonosítóik megtartásával; a tagságok, menühivatkozások
 és jogosultságkülönbségek megmaradnak. Automatikus összevonás nem történik.
 
-Visszaállításkor is felléphet ütközés, ha a régi nagybetűsítési szabály úgy kívánja.
 Az OIDC
 korlátozottan próbálja újra a megnevezett egyediségi, szerializációs és holtpontütközéseket.
+
+A lecserélt, csak fejlesztésre szánt szerepkör-migrációk már nem részei a
+migrációtörténetnek. Ha ezeket már alkalmazták, az adatbázis mentése után a
+korábbi alkalmazásverzióval vissza kell állítani a Core modult a
+`PersistOidcAccounts` migrációig, és csak ezután szabad frissíteni.
 
 A `DatabaseConfiguration.Key` típusa a `DatabaseKey` értékrekord, felderíthető
 `DatabaseKeyTypeConverter` és `DatabaseKeyJsonConverter` konverterrel, a `CachingKey`

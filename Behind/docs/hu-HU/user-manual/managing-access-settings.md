@@ -19,7 +19,7 @@ Az adminisztrátorok alapértelmezés szerint rendelkeznek az első három enged
 ## A korlátozó oldal
 
 1. Kapcsolja be ezt a beállítást: **A korlátozó oldal megjelenítése a szükséges szerepkör nélküli látogatóknak**.
-2. Válassza ki a **Szükséges szerepkört**. Válassza a **Users** szerepkört, ha minden regisztrált felhasználót be szeretne engedni; válasszon másik szerepkört, például egy csak a tagjainak adott szerepkört, ha a weboldalt csak nekik szeretné fenntartani.
+2. Válassza ki a **Szükséges szerepkört**. Válassza a **Users** szerepkört, ha minden regisztrált felhasználót be szeretne engedni; válasszon másik szerepkört, például egy csak a tagjainak adott szerepkört, ha a weboldalt csak nekik szeretné fenntartani. A tárolt név kis- és nagybetűinek pontosan egyezniük kell a szerepkör nevével; frissítés után ezt ellenőrizni kell.
 3. Igény szerint írjon be egy **Címet**, a korlátozó oldal címsorát. Ha üres, a címsor **Korlátozott weboldal** lesz.
 4. Írja meg az **Üzenetet**, amelyet a látogatók látnak, a formázott szövegszerkesztőben (címsorok, félkövér szöveg, listák, hivatkozások, képek és így tovább). A kép feltöltéséhez használja a **Kép** gombot, vagy húzzon egy képet a szerkesztőbe; a képeket a hozzáférési beállításokkal együtt tároljuk, és a korlátozott látogatók számára is láthatók. Ha üres, egy alapértelmezett üzenet jelenik meg.
 5. Nyomja meg a **Mentés** gombot.

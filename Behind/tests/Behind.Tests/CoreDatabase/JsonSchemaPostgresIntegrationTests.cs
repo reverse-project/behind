@@ -34,8 +34,6 @@ public sealed class JsonSchemaPostgresIntegrationTests
         Assert.Contains(modules.Modules, module => module.Key == "contact");
         var options = new DbContextOptionsBuilder<WebContextPostgres>().UseNpgsql(postgres.GetConnectionString()).Options;
         await using var context = new WebContextPostgres(options, modules);
-        await context.Database.OpenConnectionAsync();
-        await context.Database.ExecuteSqlRawAsync(Behind.Core.Database.RoleNameKeyMigration.CreatePostgresFunctionSql());
         await context.Database.EnsureCreatedAsync();
         var fields = ContactFieldSchema.From([new ContactField("agree", "Consent", ContactFieldType.Boolean, true, 0)]);
         var form = new ContactForm(new VersionedKey<Guid>(Guid.NewGuid(), 1), "Support", "Questions",

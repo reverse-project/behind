@@ -45,7 +45,7 @@ Minden szerepkör mutatja az **Engedélyeit** (zöld) és **Korlátozásait** (p
 
 ### Szerepkör létrehozása
 
-Írjon be egy nevet (legfeljebb 100 karakter) az **Új szerepkör neve** mezőbe, és válassza a **Szerepkör létrehozása** gombot. A neveknek egyedinek kell lenniük, a kis- és nagybetűk figyelmen kívül hagyásával. Az új szerepkörnek nincsenek engedélyei.
+Írjon be egy nevet (legfeljebb 100 karakter) az **Új szerepkör neve** mezőbe, és válassza a **Szerepkör létrehozása** gombot. A neveknek egyedinek kell lenniük, a kis- és nagybetűk megkülönböztetésével. Az új szerepkörnek nincsenek engedélyei.
 
 ### Szerepkör szerkesztése
 

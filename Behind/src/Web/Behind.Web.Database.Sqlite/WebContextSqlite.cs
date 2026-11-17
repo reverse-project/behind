@@ -46,12 +46,6 @@ public sealed class WebContextSqlite(DbContextOptions<WebContextSqlite> options,
 
     public DbSet<Stat> Stats => Set<Stat>();
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        base.OnConfiguring(optionsBuilder);
-        optionsBuilder.ConfigureOrdinalRoleNames();
-    }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         if (!Modules.Modules.Any(module => module.Key == "contact"))

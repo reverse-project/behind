@@ -27,7 +27,8 @@ public static class CachingSettings
         if (string.Equals(path, ProviderPath, StringComparison.OrdinalIgnoreCase))
         {
             return value.ValueKind == JsonValueKind.String
-                && value.GetString() is nameof(Memory) or nameof(RedisCompatible);
+                && (string.Equals(value.GetString(), nameof(Memory), StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(value.GetString(), nameof(RedisCompatible), StringComparison.OrdinalIgnoreCase));
         }
 
         if (string.Equals(path, KeyPath, StringComparison.OrdinalIgnoreCase))

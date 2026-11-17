@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using NSubstitute;
 using Testcontainers.PostgreSql;
 
 namespace Behind.Tests.CoreDatabase;
@@ -17,7 +18,7 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task RoleNamesAreUniqueIgnoringCaseOnFreshAndUpgradedDatabases(bool upgrade)
+    public async Task RoleNamesAreCaseSensitiveOnFreshAndUpgradedDatabases(bool upgrade)
     {
         using var configuration = new ConfigurationManager();
         configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
@@ -35,18 +36,26 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
             existingRole = Guid.NewGuid();
             await context.Database.ExecuteSqlAsync($"""
                 INSERT INTO "Roles" ("Id", "Name", "IsDeveloper")
-                VALUES ({existingRole}, {"Legacy:équipe"}, {false})
+                VALUES ({existingRole}, {"Legacy:équipe"}, {false}),
+                    ({Guid.NewGuid()}, {"Legacy:s"}, {false}),
+                    ({Guid.NewGuid()}, {"Legacy:ſ"}, {false})
                 """);
         }
 
         await context.Database.MigrateAsync();
         await context.Database.MigrateAsync();
+        var columns = await context.Database.SqlQueryRaw<string>("""
+            SELECT column_name AS "Value" FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'Roles'
+            ORDER BY column_name
+            """).ToListAsync();
+        Assert.Equal(["Id", "IsDeveloper", "Name"], columns);
         if (existingRole is not null)
         {
-            Assert.Equal("Legacy:équipe", (await context.Roles.SingleAsync()).Name);
+            Assert.Equal(3, await context.Roles.CountAsync());
+            Assert.Contains(await context.Roles.Select(role => role.Name).ToListAsync(), name => name == "Legacy:équipe");
             context.Roles.Add(new UserRole("LEGACY:ÉQUIPE"));
-            await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
-            context.ChangeTracker.Clear();
+            await context.SaveChangesAsync();
         }
 
         var userId = await SeedUser(context, "role@test.example");
@@ -54,6 +63,7 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
         await store.SynchronizeRoles(userId, "provider", [], ["oidc:Readers"], CancellationToken.None);
         await store.SynchronizeRoles(userId, "provider", [], ["OIDC:READERS"], CancellationToken.None);
         Assert.Single(await context.Roles.Where(role => role.Name == "oidc:Readers").ToListAsync());
+        Assert.Single(await context.Roles.Where(role => role.Name == "OIDC:READERS").ToListAsync());
         var secondUserId = await SeedUser(context, "second-role@test.example");
         await using (var first = new CoreContextPostgres(options))
         await using (var second = new CoreContextPostgres(options))
@@ -62,11 +72,11 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
                 new Behind.Core.Database.OidcAccountStore(first).SynchronizeRoles(
                     userId, "concurrent", [], ["oidc:équipe"], CancellationToken.None),
                 new Behind.Core.Database.OidcAccountStore(second).SynchronizeRoles(
-                    secondUserId, "concurrent", [], ["OIDC:ÉQUIPE"], CancellationToken.None));
+                    secondUserId, "concurrent", [], ["oidc:équipe"], CancellationToken.None));
         }
 
         var concurrentRole = (await context.Roles.ToListAsync()).Single(role =>
-            string.Equals(role.Name, "OIDC:ÉQUIPE", StringComparison.OrdinalIgnoreCase));
+            string.Equals(role.Name, "oidc:équipe", StringComparison.Ordinal));
         var concurrentRoleId = context.Entry(concurrentRole).Property<Guid>("Id").CurrentValue;
         Assert.Equal(2, await context.Set<Dictionary<string, object>>("UserRoles")
             .CountAsync(row => EF.Property<Guid>(row, "RoleId") == concurrentRoleId));
@@ -82,7 +92,7 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
         }
 
         Assert.Equal(2, await context.Set<Dictionary<string, object>>("UserRoles").CountAsync());
-        foreach (var constraint in new[] { "UX_Roles_NormalizedName", "UnrelatedConstraint" })
+        foreach (var constraint in new[] { "IX_Roles_Name", "UnrelatedConstraint" })
         {
             var interceptor = new UniqueViolationInterceptor(constraint);
             await using var retryContext = new CoreContextPostgres(
@@ -90,7 +100,7 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
                     .UseNpgsql(postgres.GetConnectionString()).AddInterceptors(interceptor).Options);
             var synchronize = new Behind.Core.Database.OidcAccountStore(retryContext).SynchronizeRoles(
                 userId, "provider-retry", [], [$"oidc:{constraint}"], CancellationToken.None);
-            if (constraint == "UX_Roles_NormalizedName")
+            if (constraint == "IX_Roles_Name")
             {
                 await synchronize;
                 Assert.Equal(2, interceptor.Attempts);
@@ -102,14 +112,27 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
             }
         }
 
-        await RoleNameUnicodeTests.AssertOrdinalUniqueness(context);
-        var commands = new Behind.Core.Database.Commands.RoleCommands(context, AccessCatalog.Core);
-        Assert.False((await commands.Create("ÉQUIPE")).IsNone());
-        Assert.True((await commands.Create("équipe")).IsNone());
+        await RoleNameUnicodeTests.AssertCaseSensitiveUniqueness(context);
+        var accessCommands = new Behind.Core.Database.Commands.AccessSettingsCommands(
+            context, Substitute.For<Behind.Core.Database.IVfsCommands>());
+        var draft = new Behind.Core.Database.IAccessSettingsCommands.AccessSettingsDraft(true, "Équipe", "", false);
+        Assert.IsType<Behind.Core.Database.AccessSettingsSaveResult.Saved>(await accessCommands.Save(draft));
+        Assert.IsType<Behind.Core.Database.AccessSettingsSaveResult.UnknownRole>(
+            await accessCommands.Save(draft with { RestrictedToRole = "éQUiPE" }));
+
+        var commandInterceptor = new UniqueViolationInterceptor("IX_Roles_Name");
+        await using (var commandContext = new CoreContextPostgres(
+                         new DbContextOptionsBuilder<CoreContextPostgres>()
+                             .UseNpgsql(postgres.GetConnectionString()).AddInterceptors(commandInterceptor).Options))
+        {
+            var concurrentCreate = new Behind.Core.Database.Commands.RoleCommands(commandContext, AccessCatalog.Core);
+            Assert.True((await concurrentCreate.Create("conflicting-insert")).IsNone());
+            Assert.Empty(commandContext.ChangeTracker.Entries<UserRole>());
+        }
 
         context.Roles.Add(new UserRole("OIDC:READERS"));
         var exception = await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
-        Assert.Equal("UX_Roles_NormalizedName", Assert.IsType<PostgresException>(exception.InnerException).ConstraintName);
+        Assert.Equal("IX_Roles_Name", Assert.IsType<PostgresException>(exception.InnerException).ConstraintName);
         Assert.False(context.Database.HasPendingModelChanges());
     }
 

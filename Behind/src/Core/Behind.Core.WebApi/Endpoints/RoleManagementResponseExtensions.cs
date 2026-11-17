@@ -42,7 +42,7 @@ public static class RoleManagementResponseExtensions
             IReadOnlyList<IRoleQueries.RoleResult> allRoles,
             AccessCatalog catalog)
         {
-            var assigned = access.Roles.Select(role => role.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var assigned = access.Roles.Select(role => role.Name).ToHashSet(StringComparer.Ordinal);
 
             return new UserAccessResponse(
                 userId,

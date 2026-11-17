@@ -45,7 +45,7 @@ Each role shows its **Grants** (green) and **Restrictions** (red).
 
 ### Creating a role
 
-Type a name (up to 100 characters) in **New role name** and choose **Create role**. Names must be unique, ignoring case. A new role has no grants.
+Type a name (up to 100 characters) in **New role name** and choose **Create role**. Names must be unique and are case-sensitive. A new role has no grants.
 
 ### Editing a role
 

@@ -161,4 +161,12 @@ public class UserAccessTests
         Assert.Empty(new UserAccess([ops], [], []).DeveloperRolesAddedBy(new UserAccess([ops, support], [], [])));
         Assert.Empty(current.DeveloperRolesAddedBy(current));
     }
+
+    [Fact]
+    public void DeveloperRolesAddedBy_DistinguishesNamesByCase()
+    {
+        var current = new UserAccess([new UserRole("editor")], [], []);
+        var elevated = new UserRole("Editor") { IsDeveloper = true };
+        Assert.Equal([elevated], current.DeveloperRolesAddedBy(new UserAccess([elevated], [], [])));
+    }
 }

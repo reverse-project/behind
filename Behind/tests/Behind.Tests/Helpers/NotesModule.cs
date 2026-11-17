@@ -44,12 +44,6 @@ public sealed class NotesContextSqlite(DbContextOptions<NotesContextSqlite> opti
 
     public DbSet<NoteLog> NoteLogs => Set<NoteLog>();
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        base.OnConfiguring(optionsBuilder);
-        optionsBuilder.ConfigureOrdinalRoleNames();
-    }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

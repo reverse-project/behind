@@ -383,6 +383,14 @@ async function main() {
     assert.notEqual(main.parentNode, root);
     assert.equal(main.parentNode.parentNode.classList.contains("saved-preview"), false);
     assert.equal(main.children[0], editorState);
+    shell.route("#/signin?oidc=ticket");
+    assert.equal(main.parentNode, root);
+    shell.route("#/");
+    assert.notEqual(main.parentNode, root);
+    shell.route("#/sign-in");
+    assert.equal(main.parentNode, root);
+    shell.route("#/signin-other");
+    assert.notEqual(main.parentNode, root);
 }
 
 main().catch(error => {

@@ -16,8 +16,8 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
     var generation = 0;
     var activeRefresh = 0;
     var fixedBindings = false;
-    var managementRoute = /^#\/(?:manage(?:\/|$)|administration$|settings$|sites(?:\/|$)|users$|roles$|audit-log$|profile(?:\/|$)|private-messages(?:\/|$)|session|sign(?:[-/]|$))/;
-    var authRoute = /^#\/(?:session|sign(?:[-/]|$))/;
+    var managementRoute = /^#\/(?:manage(?:\/|$)|administration$|settings$|sites(?:\/|$)|users$|roles$|audit-log$|profile(?:\/|$)|private-messages(?:\/|$)|session|sign(?:[-/]|$)|signin(?:[/?]|$))/;
+    var authRoute = /^#\/(?:session|sign(?:[-/]|$)|signin(?:[/?]|$))/;
     var accountRoute = /^#\/(?:profile|private-messages)(?:\/|$)/;
     var isDedicatedAssignment = function (assignmentRoute) {
         var target = assignmentRoute.endsWith("*") ? assignmentRoute.slice(0, -1) : assignmentRoute;

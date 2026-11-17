@@ -101,8 +101,8 @@ public sealed class OidcSignInService(
             }
         }
 
-        var mappedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var autoRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var mappedRoles = new HashSet<string>(StringComparer.Ordinal);
+        var autoRoles = new HashSet<string>(StringComparer.Ordinal);
         foreach (var externalRole in identity.Roles)
         {
             if (TryGetRoleMapping(provider.RoleMappings, externalRole, out var mapped))

@@ -6,16 +6,17 @@ public static class RoleNameConflictMigration
         DO $preflight$
         DECLARE conflicts text;
         BEGIN
-            SELECT string_agg(format('%s: %s', names."NormalizedName", names.ids), '; ')
+            SELECT string_agg(format('%s: %s', names.name_key, names.ids), '; ')
             INTO conflicts
             FROM (
-                SELECT "NormalizedName", string_agg("Id"::text, ', ' ORDER BY "Id") AS ids
+                SELECT "Name" COLLATE "C" AS name_key,
+                    string_agg("Id"::text, ', ' ORDER BY "Id") AS ids
                 FROM "Roles"
-                GROUP BY "NormalizedName"
+                GROUP BY "Name" COLLATE "C"
                 HAVING count(*) > 1
             ) names;
             IF conflicts IS NOT NULL THEN
-                RAISE EXCEPTION 'Role name conflicts prevent UX_Roles_NormalizedName creation: %. Rename conflicting roles explicitly, preserving their IDs, permissions and references, then retry.', conflicts;
+                RAISE EXCEPTION 'Role name conflicts prevent IX_Roles_Name creation: %. Rename conflicting roles explicitly, preserving their IDs, permissions and references, then retry.', conflicts;
             END IF;
         END $preflight$;
         """;
@@ -24,12 +25,12 @@ public static class RoleNameConflictMigration
         CREATE TEMP TABLE "BehindRoleNamePreflight" ("Run" INTEGER);
         CREATE TEMP TRIGGER "BehindRoleNamePreflightCheck"
         BEFORE INSERT ON "BehindRoleNamePreflight"
-        WHEN EXISTS (SELECT 1 FROM "Roles" GROUP BY "NormalizedName" HAVING count(*) > 1)
+        WHEN EXISTS (SELECT 1 FROM "Roles" GROUP BY "Name" COLLATE BINARY HAVING count(*) > 1)
         BEGIN
-            SELECT RAISE(ABORT, 'Role name conflicts prevent UX_Roles_NormalizedName creation: ' ||
+            SELECT RAISE(ABORT, 'Role name conflicts prevent IX_Roles_Name creation: ' ||
                 (SELECT group_concat(details, '; ') FROM (
-                    SELECT "NormalizedName" || ': ' || group_concat("Id", ', ') AS details
-                    FROM "Roles" GROUP BY "NormalizedName" HAVING count(*) > 1
+                    SELECT "Name" || ': ' || group_concat("Id", ', ') AS details
+                    FROM "Roles" GROUP BY "Name" COLLATE BINARY HAVING count(*) > 1
                 )) || '. Rename conflicting roles explicitly, preserving their IDs, permissions and references, then retry.');
         END;
         INSERT INTO "BehindRoleNamePreflight" VALUES (1);

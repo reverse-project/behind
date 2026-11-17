@@ -19,7 +19,7 @@ Administrators have the first three grants by default. Users do not.
 ## The restriction page
 
 1. Turn on **Show the restriction page to visitors without the required role**.
-2. Choose the **Required role**. Choose **Users** to let every registered user in; choose another role, for example a role you gave only to your members, to keep the website for them.
+2. Choose the **Required role**. Choose **Users** to let every registered user in; choose another role, for example a role you gave only to your members, to keep the website for them. The stored role name must match the role's exact case; verify it after upgrading.
 3. Optionally type a **Title**, the heading of the restriction page. When it is empty the heading is **Restricted website**.
 4. Write the **Message** visitors see in the rich text editor (headings, bold, lists, links, images and so on). Use the image button or drop an image into the editor to upload it; images are stored with the access settings and are visible to restricted visitors too. When it is empty a default message is shown.
 5. Press **Save**.

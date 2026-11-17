@@ -160,12 +160,32 @@ public sealed class OidcAccountStoreTests : IDisposable
                 CancellationToken.None));
 
             await store.SynchronizeRoles(
-                userId, "provider", ["administrator"], [], CancellationToken.None);
+                userId, "provider", ["Administrator"], [], CancellationToken.None);
         });
 
         Assert.True(await HasMembershipAsync(userId, roleId));
         Assert.False(await HasRoleAsync("oidc:provider:external"));
         Assert.False(await HasRoleAsync("oidc:provider:new"));
+    }
+
+    [Fact]
+    public async Task SynchronizeRoles_MatchesAndCreatesNamesWithExactCase()
+    {
+        var userId = await SeedUserAsync("role-case@test.com");
+        var privilegedRole = await SeedRoleAsync("Editor");
+        await WithStoreAsync(async store =>
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.SynchronizeRoles(
+                userId, "provider", ["editor"], [], CancellationToken.None));
+            await store.SynchronizeRoles(userId, "provider", ["Editor"], ["editor", "EDITOR"], CancellationToken.None);
+        });
+
+        var lower = await FindRoleAsync("editor");
+        var upper = await FindRoleAsync("EDITOR");
+        Assert.NotEqual(lower, upper);
+        Assert.True(await HasMembershipAsync(userId, privilegedRole));
+        Assert.True(await HasMembershipAsync(userId, lower));
+        Assert.True(await HasMembershipAsync(userId, upper));
     }
 
     [Fact]
@@ -220,10 +240,10 @@ public sealed class OidcAccountStoreTests : IDisposable
                 userId, "provider", [], ["oidc:provider:developer"], CancellationToken.None));
         });
 
-        var deletedRoleId = await SeedRoleAsync("oidc:provider:deleted");
+        var deletedRoleId = await SeedRoleAsync("oidc:provider:équipe");
         await DeleteRoleAsync(deletedRoleId);
         await WithStoreAsync(store => Assert.ThrowsAsync<InvalidOperationException>(() =>
-            store.SynchronizeRoles(userId, "provider", [], ["oidc:provider:deleted"], CancellationToken.None)));
+            store.SynchronizeRoles(userId, "provider", [], ["oidc:provider:équipe"], CancellationToken.None)));
         Assert.False(await HasMembershipAsync(userId, deletedRoleId));
     }
 
@@ -272,9 +292,6 @@ public sealed class OidcAccountStoreTests : IDisposable
     {
         using var context = _factory.CreateContext();
 
-        Assert.DoesNotContain(context.FindRawTable("Roles")
-            .Match(() => throw new InvalidOperationException(), table => table).Columns,
-            column => column.Name == "NormalizedName");
         Assert.True(context.IsReadOnly(context.FindRawTable("OidcAccountBindings")
             .Match(() => throw new InvalidOperationException(), table => table)));
         Assert.True(context.IsReadOnly(context.FindRawTable("OidcRoleOwnerships")

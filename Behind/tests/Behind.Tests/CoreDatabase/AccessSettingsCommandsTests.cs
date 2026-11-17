@@ -107,6 +107,15 @@ public sealed class AccessSettingsCommandsTests : IDisposable
     }
 
     [Fact]
+    public async Task Save_RequiresExactRoleNameCase()
+    {
+        await _bed.EnsureRolesAsync();
+        var result = await _bed.WithAccessSettingsCommandsAsync(commands => commands.Save(AccessDraft(role: "users")));
+        Assert.IsType<AccessSettingsSaveResult.UnknownRole>(result);
+        Assert.Empty(await VersionsAsync());
+    }
+
+    [Fact]
     public async Task Delete_SoftDeletesTheSettingsAndTurnsTheCurrentBackToOpen()
     {
         await _bed.SaveAccessSettingsAsync();

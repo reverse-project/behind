@@ -22,7 +22,7 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
     public Task<string?> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken cancellationToken) =>
         Task.FromResult(user.Emails.FirstOrDefault()?.Value.ToUpperInvariant());
 
-    public Task SetNormalizedUserNameAsync(ApplicationUser user, string? normalizedName,
+    public Task SetNormalizedUserNameAsync(ApplicationUser user, string? name,
         CancellationToken cancellationToken) => Task.CompletedTask;
 
     public async Task<IdentityResult> CreateAsync(ApplicationUser user, CancellationToken cancellationToken)

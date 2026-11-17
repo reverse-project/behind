@@ -1,5 +1,24 @@
 # Database Architecture
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:1cde6b6c737c77c374caf410a56e13c492006b39e80ef08a03bb031f48f96712 -->
+
+## Role name uniqueness
+
+The `UniqueRoleNames` Core migration adds the `NormalizedName` column,
+computed with database `upper(Name)` (stored on PostgreSQL, virtual on SQLite), and the `UX_Roles_NormalizedName` unique
+index. Existing role names and memberships are preserved. Resolve existing
+names whose uppercase forms collide before upgrading; the migration fails
+transactionally instead of deleting or merging roles. SQLite and PostgreSQL
+have different Unicode uppercase rules, which may also differ from the
+application's ordinal case-insensitive comparison. ASCII role names have the
+same case behavior on both providers. OIDC synchronization retries only the
+named role-name uniqueness conflict and serialization/deadlock conflicts, with
+bounded attempts.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
 `DatabaseConfiguration.Key` uses the `DatabaseKey` value record, with discoverable
 `DatabaseKeyTypeConverter` and `DatabaseKeyJsonConverter`, matching `CachingKey`
 naming. The `Database:Key` property name and string representation are unchanged;

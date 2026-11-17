@@ -11,6 +11,7 @@ namespace Behind.Core.Database;
 public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccountStore
 {
     private const int MaxSynchronizationAttempts = 5;
+    private const string RoleNameConstraint = "UX_Roles_NormalizedName";
     private const string SerializationFailure = "40001";
     private const string DeadlockDetected = "40P01";
 
@@ -138,8 +139,6 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
         ArgumentNullException.ThrowIfNull(autoRoleNames);
         ValidateIdentifier(providerId, nameof(providerId));
 
-        // Serializable isolation makes concurrent sign-ins of the same user or with the same new role
-        // name conflict instead of duplicating auto-created roles or keeping memberships no provider owns.
         for (var attempt = 1; ; attempt++)
         {
             try
@@ -287,7 +286,9 @@ public sealed class OidcAccountStore(AbstractCoreContext context) : IOidcAccount
     {
         DbUpdateException { InnerException: { } inner } => IsSerializationConflict(inner),
         DbException { SqlState: SerializationFailure or DeadlockDetected } => true,
-        DbException { IsTransient: true } => true,
+        DbException { SqlState: "23505" } databaseException
+            when databaseException.GetType().GetProperty("ConstraintName")?.GetValue(databaseException)
+                 is string constraintName && constraintName == RoleNameConstraint => true,
         _ => false
     };
 

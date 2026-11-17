@@ -8,6 +8,6 @@ public sealed class CoreContextSqlite(DbContextOptions<CoreContextSqlite> option
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyCoreProviderConventions();
+        modelBuilder.ApplySqliteCoreProviderConventions();
     }
 }

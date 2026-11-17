@@ -19,7 +19,9 @@ public sealed class OidcMigrationTests
             new DbContextOptionsBuilder<CoreContextSqlite>().UseSqlite(connection).Options);
         await context.GetService<IMigrator>().MigrateAsync("20261115232156_AddSchedules");
         var userId = await DatabaseSeedHelper.SeedHumanUserAsync(context, "migration@test.com");
-        var roleId = await DatabaseSeedHelper.SeedUserRoleAsync(context, "Existing manual role");
+        var roleId = Guid.NewGuid();
+        await context.Database.ExecuteSqlAsync(
+            $"INSERT INTO Roles (Id, Name, IsDeveloper) VALUES ({roleId}, {"Existing manual role"}, {false})");
         await context.Database.ExecuteSqlAsync(
             $"INSERT INTO UserRoles (UserId, RoleId) VALUES ({userId}, {roleId})");
 

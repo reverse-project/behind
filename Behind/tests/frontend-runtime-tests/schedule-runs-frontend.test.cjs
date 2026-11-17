@@ -12,7 +12,7 @@ test("an older run filter response neither replaces newer rows nor clears busy",
     const schedules = { runs: () => new Promise(resolve => pending.push(resolve)) };
     const pager = () => ({ page: () => 1, isOutOfRange: () => false, clampIfOutOfRange: () => {}, update: () => {} });
     const dependencies = {
-        ko, "models/session": { isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: () => true },
+        ko, "models/session": { isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: grant => grant !== "Schedule.Delete" },
         "models/schedules": schedules, "models/pager": pager,
         "models/i18n": { t: key => key, tOr: (key, fallback) => fallback }, "models/paging": {}
     };
@@ -23,6 +23,7 @@ test("an older run filter response neither replaces newer rows nor clears busy",
         Promise, setImmediate
     });
     const view = new Runs();
+    assert.equal(view.canDelete(), false);
     const page = name => ({ ok: true, message: "", data: { items: [{ id: name, scheduleName: name, action: "a", email: "sent" }] } });
 
     const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -59,6 +60,7 @@ test("losing read access clears busy and ignores a pending run response", async 
         Promise, setImmediate
     });
     const view = new Runs();
+    assert.equal(view.canDelete(), true);
     view.items([{ id: "existing" }]);
 
     const first = view.refresh();

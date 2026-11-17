@@ -15,6 +15,34 @@ public static class DatabaseSeedHelper
     // User / Email
     // -------------------------------------------------------------------------
 
+    public static async Task SeedLegacyBuiltInRolesAsync(CoreContextSqlite context)
+    {
+        var catalog = Behind.Core.Domain.AccessCatalog.Core;
+        foreach (var grant in catalog.Grants)
+        {
+            var name = grant.Grant.Name.ToString();
+            await context.Database.ExecuteSqlAsync(
+                $"INSERT OR IGNORE INTO Grants (Id, Name) VALUES ({grant.Id}, {name})");
+        }
+
+        foreach (var restriction in catalog.Restrictions)
+        {
+            await context.Database.ExecuteSqlAsync(
+                $"INSERT OR IGNORE INTO Restrictions (Id, Name) VALUES ({restriction.Id}, {restriction.Restriction.Name})");
+        }
+
+        foreach (var role in catalog.Roles)
+        {
+            await context.Database.ExecuteSqlAsync(
+                $"INSERT OR IGNORE INTO Roles (Id, Name, IsDeveloper) VALUES ({role.Id}, {role.Role.Name}, {role.Role.IsDeveloper})");
+            foreach (var grant in role.Grants)
+            {
+                await context.Database.ExecuteSqlAsync(
+                    $"INSERT OR IGNORE INTO RoleGrants (RoleId, GrantId) VALUES ({role.Id}, {grant.Id})");
+            }
+        }
+    }
+
     public static Task EnsureBuiltInUsersAsync(CoreContextSqlite context) =>
         context.EnsureBuiltInUsersAsync();
 

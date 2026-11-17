@@ -11,5 +11,10 @@ public sealed class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
         builder.ToTable("Roles");
 
         builder.HasIndex(r => r.Name);
+        builder.Property<string>("NormalizedName")
+            .HasComputedColumnSql("upper(\"Name\")", stored: true);
+        builder.HasIndex("NormalizedName")
+            .IsUnique()
+            .HasDatabaseName("UX_Roles_NormalizedName");
     }
 }

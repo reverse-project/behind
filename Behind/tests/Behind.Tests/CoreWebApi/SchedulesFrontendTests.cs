@@ -59,40 +59,25 @@ public class SchedulesFrontendTests
     }
 
     [Fact]
-    public void ManagementPages_ApplyScheduleGrantsAndExposeSoftDeleteWorkflow()
+    public void ManagementPages_ExposeSoftDeleteWorkflow()
     {
-        var viewModel = Read("viewmodels/schedules.js");
-        var runsViewModel = Read("viewmodels/scheduleruns.js");
         var view = Read("views/schedules.html");
         var runsView = Read("views/scheduleruns.html");
 
-        Assert.Contains("session.hasGrant(\"Schedule.Read\")", viewModel);
-        Assert.Contains("session.hasGrant(\"Schedule.Write\")", viewModel);
-        Assert.Contains("session.hasGrant(\"Schedule.Delete\")", viewModel);
-        Assert.Contains("session.hasGrant(\"Schedule.Manage\")", viewModel);
-        Assert.Contains("session.hasGrant(\"RawDatabase.Manage\")", viewModel);
         Assert.Contains("click: remove", view);
         Assert.Contains("click: restore", view);
         Assert.Contains("click: hardDelete", view);
         Assert.Contains("letterPager", view);
         Assert.Contains("click: run", view);
-        Assert.Contains("session.hasGrant(\"Schedule.Delete\")", runsViewModel);
         Assert.Contains("click: remove", runsView);
         Assert.Contains("click: restore", runsView);
         Assert.Contains("click: hardDelete", runsView);
     }
 
     [Fact]
-    public void CronEditor_UsesUtcPreviewAndTheSharedCronFieldModel()
+    public void CronEditor_ExposesCalculatorAndPreview()
     {
-        var viewModel = Read("viewmodels/schedules.js");
         var view = Read("views/schedules.html");
-
-        Assert.Contains("models/cronfields", Read("viewmodels/schedules.js"));
-        Assert.Contains("schedules.cron(expression, 5)", viewModel);
-        Assert.Contains("request !== cronRequest", viewModel);
-        Assert.Contains("cronfields.compose(values)", viewModel);
-        Assert.Contains("cronfields.parse(expression)", viewModel);
         Assert.Contains("data-bind=\"foreach: fields\"", view);
         Assert.Contains("schedules.cron.next", view);
     }
@@ -140,7 +125,6 @@ public class SchedulesFrontendTests
         Assert.Contains("self.emailKeyDown", Read("viewmodels/schedules.js"));
     }
 
-    // Save, calculator and grant behavior is exercised in tests/frontend-runtime-tests/schedules-editor-frontend.test.cjs.
     [Fact]
     public void Save_ReportsTheResultNextToTheButton()
     {

@@ -1,5 +1,25 @@
 # Adatbázis-architektúra
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:c03c2ac5a67e6ea5af97f300d93ae805cb1e266770b73f294106895c26ffa7fc -->
+
+## Szerepkörnevek egyedisége
+
+A Core `UniqueRoleNames` migrációja hozzáadja az adatbázis `upper(Name)`
+kifejezéséből számított `NormalizedName` oszlopot
+(PostgreSQL esetén tárolt, SQLite esetén virtuális oszlop) és az egyedi
+`UX_Roles_NormalizedName` indexet. A meglévő nevek és tagságok megmaradnak.
+Frissítés előtt rendezni kell az azonos nagybetűs alakú neveket; a migráció
+ilyenkor tranzakciósan meghiúsul, nem töröl és nem von össze szerepköröket.
+Az SQLite és a PostgreSQL Unicode nagybetűsítési szabályai eltérhetnek egymástól
+és az alkalmazás ordinális, kis- és nagybetűt nem megkülönböztető összehasonlításától.
+Az ASCII nevek kezelése mindkét szolgáltatónál megegyezik. Az OIDC szinkronizálás
+korlátozott számú újrapróbálkozással kezeli a megnevezett névegyediség-,
+szerializációs és holtpontütközéseket.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
 A `DatabaseConfiguration.Key` típusa a `DatabaseKey` értékrekord, felderíthető
 `DatabaseKeyTypeConverter` és `DatabaseKeyJsonConverter` konverterrel, a `CachingKey`
 elnevezéséhez igazodva. A `Database:Key` neve és szöveges formátuma változatlan;

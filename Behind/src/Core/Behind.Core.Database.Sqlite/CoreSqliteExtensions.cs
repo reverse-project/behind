@@ -1,4 +1,5 @@
 using Behind.Common.Modules;
+using Behind.Core.Domain;
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,16 @@ namespace Behind.Core.Database.Sqlite;
 
 public static class CoreSqliteExtensions
 {
+    extension(ModelBuilder modelBuilder)
+    {
+        public ModelBuilder ApplySqliteCoreProviderConventions()
+        {
+            modelBuilder.ApplyCoreProviderConventions();
+            modelBuilder.Entity<UserRole>().Property<string>("NormalizedName").Metadata.SetIsStored(false);
+            return modelBuilder;
+        }
+    }
+
     private static readonly DatabaseProviderOptions SqliteProviderOptions = new(
         (options, connectionString) => options.UseSqlite(connectionString),
         (options, connectionString) => options.UseVersioningSqlite(connectionString),

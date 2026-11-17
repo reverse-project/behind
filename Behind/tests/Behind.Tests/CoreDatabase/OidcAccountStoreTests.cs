@@ -272,6 +272,9 @@ public sealed class OidcAccountStoreTests : IDisposable
     {
         using var context = _factory.CreateContext();
 
+        Assert.DoesNotContain(context.FindRawTable("Roles")
+            .Match(() => throw new InvalidOperationException(), table => table).Columns,
+            column => column.Name == "NormalizedName");
         Assert.True(context.IsReadOnly(context.FindRawTable("OidcAccountBindings")
             .Match(() => throw new InvalidOperationException(), table => table)));
         Assert.True(context.IsReadOnly(context.FindRawTable("OidcRoleOwnerships")

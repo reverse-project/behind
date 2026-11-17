@@ -3,6 +3,7 @@
     "version": "1.0.2",
     "date": "2026-11-15",
     "changes": [
+      { "type": "fixed", "text": "Role names are unique without case distinctions, and concurrent OIDC role creation retries the specific name conflict without swallowing unrelated failures." },
       { "type": "fixed", "text": "Test and coverage runners discover the configured Podman API socket before Testcontainers initializes, without requiring Docker. Explicit Docker endpoints, mapped-port hosts and resource-reaper settings remain authoritative. Podman discovery preserves Testcontainers properties-file endpoints and host overrides, and uses available sockets for SSH connections. The devcontainer translates the mounted rootless Podman socket to its container path while forwarding other Docker endpoints." },
       { "type": "fixed", "text": "Container setup prepares caching.json before startup, caching Settings accepts property casing variants without duplicate fields, and raw table counts reflect session cleanup bulk deletes." },
       { "type": "added", "text": "Versioned JSON Schemas cover configuration records, layouts, contact field data, schedule JSON, audit actions and bundled changelog/license/locale data. Configuration and persisted JSON are validated before saving; compatibility regressions preserve existing converter shapes, defaults and domain checks." },

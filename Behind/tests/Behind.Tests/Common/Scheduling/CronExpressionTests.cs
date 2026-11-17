@@ -119,6 +119,20 @@ public sealed class CronExpressionTests
     }
 
     [Fact]
+    public void SteppedDayOfMonth_RequiresBothTheStepAndWeekdayForMatchingAndPreview()
+    {
+        var cron = Cron("0 0 */2 * mon");
+        var matchingMonday = new DateTimeOffset(2026, 11, 23, 0, 0, 0, TimeSpan.Zero);
+
+        Assert.True(cron.DayOfMonth.IsWildcard);
+        Assert.False(cron.Matches(Monday));
+        Assert.False(cron.Matches(Monday.AddDays(1)));
+        Assert.True(cron.Matches(matchingMonday));
+        Assert.Equal(matchingMonday, NextOf(cron.Text, Monday));
+        Assert.Equal(matchingMonday.AddDays(14), NextOf(cron.Text, matchingMonday));
+    }
+
+    [Fact]
     public void Next_ReturnsTheFirstMatchingMinuteStrictlyAfterTheMoment()
     {
         Assert.Equal(Monday.AddMinutes(1), NextOf("* * * * *", Monday));

@@ -28,7 +28,7 @@ function editor(options = {}) {
     const saved = [];
     const grants = options.grants || ["Schedule.Read", "Schedule.Write"];
     const schedules = {
-        cron: async () => ({ ok: true, data: { valid: true, next: [] } }),
+        cron: options.cron || (async () => ({ ok: true, data: { valid: true, next: [] } })),
         create: async fields => {
             saved.push({ id: null, fields });
             return { ok: true, message: "saved", data: { id: "s1", version: 1 } };
@@ -119,4 +119,34 @@ test("placeholders are inserted at the template input selection, not into the bu
     view.insertPlaceholder(field, "name", { currentTarget: button });
 
     assert.equal(field.value(), "ab{{name}}cd");
+});
+
+for (const [grant, capability] of [
+    ["Schedule.Read", "canRead"], ["Schedule.Write", "canWrite"],
+    ["Schedule.Delete", "canDelete"], ["Schedule.Manage", "canManage"],
+    ["RawDatabase.Manage", "canRawManage"]
+]) {
+    test(`${capability} requires its corresponding grant`, () => {
+        assert.equal(editor({ grants: [] }).view[capability](), false);
+        assert.equal(editor({ grants: [grant] }).view[capability](), true);
+    });
+}
+
+test("a stale cron preview cannot replace the current expression result", async () => {
+    const pending = [];
+    const { view } = editor({ cron: expression => new Promise(resolve => pending.push({ expression, resolve })) });
+    view.cron("0 2 * * *");
+    view.cron("0 3 * * *");
+    const latest = pending.at(-1);
+    assert.equal(latest.expression, "0 3 * * *");
+    latest.resolve({ ok: true, data: { valid: true, next: ["2026-11-18T03:00:00Z"] } });
+    await settle();
+    const preview = view.nextRuns();
+    for (const request of pending.slice(0, -1)) {
+        request.resolve({ ok: true, data: { valid: false, next: [] } });
+    }
+    await settle();
+    assert.equal(view.isCronValid(), true);
+    assert.deepEqual(view.nextRuns(), preview);
+    assert.equal(view.cronMessage(), "");
 });

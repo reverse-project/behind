@@ -7,11 +7,18 @@ Quick start guide for setting up and developing in the Behind project.
 Test Explorer and VS Code coverage tasks use the same test-assembly Podman
 discovery as `dotnet test`: explicit DOCKER_HOST first, then CONTAINER_HOST or a
 local Podman socket when no Docker socket exists. No Docker CLI alias is needed.
-The devcontainer exports the mounted Podman endpoint, rootless Ryuk setting and
-mapped-port host to every VS Code runner. Reload it after environment changes.
-Set TESTCONTAINERS_HOST_OVERRIDE to a reachable engine-host address if
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:bb5b8a2d571a70331cfa9b82049fd49168e7af0c89b3a91841d48a8abc2422db -->
+
+The devcontainer forwards DOCKER_HOST, translating the mounted Podman socket to
+its container path, and exports the rootless Ryuk setting and mapped-port host
+to VS Code runners. Rebuild it after changing DOCKER_HOST. Set
+TESTCONTAINERS_HOST_OVERRIDE to a reachable engine-host address if
 host.containers.internal cannot reach published ports. Explicit overrides are
 preserved. See the [root test instructions](../../../../README.md#build-and-test).
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ### Caching
 

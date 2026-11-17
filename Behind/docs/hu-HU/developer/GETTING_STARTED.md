@@ -7,12 +7,19 @@ Gyorsindítási útmutató a Behind projekt beállításához és az azon végze
 A Test Explorer és a VS Code lefedettségi feladatai ugyanazt a tesztassembly-szintű
 Podman-felderítést használják, mint a `dotnet test`: először a kifejezett DOCKER_HOST,
 majd a CONTAINER_HOST vagy helyi Podman socket érvényesül, ha nincs Docker socket.
-Docker CLI-alias nem szükséges. A devcontainer minden VS Code-futtatónak átadja
-a csatolt Podman-végpontot, a rootless Ryuk-beállítást és a portok gazdagépét.
-Környezeti változás után töltse újra. Ha a host.containers.internal nem éri el
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:8574c211994091a109812083c560237658edf23076fbe0690ed47b96cf4c34bb -->
+
+Docker CLI-alias nem szükséges. A devcontainer átadja a DOCKER_HOST értékét,
+a csatolt Podman socket címét a konténerbeli útvonalra cseréli, és minden VS Code-
+futtatónak átadja a rootless Ryuk-beállítást és a portok gazdagépét. A DOCKER_HOST
+módosítása után építse újra a devcontainert. Ha a host.containers.internal nem éri el
 a közzétett portokat, a TESTCONTAINERS_HOST_OVERRIDE értéke elérhető motorgazdacím
 legyen. A kifejezett felülírások megmaradnak. Lásd a
 [gyökér tesztútmutatót](../../../../README.md#build-and-test).
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ### Gyorsítótárazás
 

@@ -44,12 +44,19 @@ tasks, without a Docker CLI or a Docker alias. An explicit `DOCKER_HOST` wins;
 an existing Docker socket keeps standard Docker discovery.
 Inside the devcontainer, use `DOCKER_HOST=unix:///run/podman/podman.sock` and
 `TESTCONTAINERS_HOST_OVERRIDE=host.containers.internal` so mapped ports are reachable.
-The devcontainer now exports these defaults to VS Code as well as terminals.
-Reload/rebuild the devcontainer to refresh its environment. If the Podman host's
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:a08491c1e2bddf86e8b4335c5e9bba96416a58969778cfc60bae20dda2f3ad5a -->
+
+The devcontainer forwards the host `DOCKER_HOST`, translating the mounted rootless
+Podman socket to its container path. It exports the endpoint and defaults to VS Code
+and terminals. Rebuild the devcontainer to refresh the endpoint. If the Podman host's
 mapped ports are not reachable through `host.containers.internal`, set
 `TESTCONTAINERS_HOST_OVERRIDE` to a reachable engine-host address (not the container
 IP). The host environment's override is forwarded when creating the devcontainer;
 no machine-specific IP is checked into the repository.
+
+<!-- /coderabbit-ai-generated:v1 -->
 Set `TESTCONTAINERS_RYUK_DISABLED=true` when using rootless Podman; tests still dispose
 their containers on completion or assertion failure, but an interrupted test process
 may require manual cleanup. Leave Ryuk enabled with Docker.

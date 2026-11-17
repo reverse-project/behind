@@ -1,4 +1,5 @@
 Data/**
 .devcontainer/devcontainer-lock.json
+.devcontainer/docker-host.env
 cheating/*
 /.scratch-yaml/

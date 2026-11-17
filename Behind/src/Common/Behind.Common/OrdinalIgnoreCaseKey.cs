@@ -1,4 +1,7 @@
 using System.Text;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace Behind.Common;
 
@@ -19,6 +22,16 @@ public static class OrdinalIgnoreCaseKey
     private static readonly Lazy<IReadOnlyList<(string Source, string Target)>> MappingValues = new(CreateMappings);
 
     public static IReadOnlyList<(string Source, string Target)> Mappings => MappingValues.Value;
+
+    private static readonly Lazy<string> VersionValue = new(() =>
+    {
+        var version = CultureInfo.InvariantCulture.CompareInfo.Version;
+        var mappings = string.Join("|", Mappings.Select(pair => $"{pair.Source}:{pair.Target}"));
+        var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(mappings)));
+        return $"{RuntimeInformation.FrameworkDescription}:{version.FullVersion}:{version.SortId}:{fingerprint}";
+    });
+
+    public static string Version => VersionValue.Value;
 
     private static string Fold(Rune rune)
     {

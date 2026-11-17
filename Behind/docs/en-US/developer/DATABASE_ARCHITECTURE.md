@@ -19,7 +19,19 @@ sign and composed/decomposed names. Keys use ordinal database collations.
 
 PostgreSQL uses an immutable SQL function generated from the .NET casing map
 and a stored column. SQLite uses a deterministic .NET function registered on
-Core, Web and FSE connections and a virtual column. Generated keys enforce
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:66004be2766d167ea61307c6ca73758013357729cdd63654d5b3141d1743b255 -->
+
+Core, Web and FSE connections and a virtual column. SQLite records the runtime,
+invariant globalization sort version and actual casing-map fingerprint in
+`__BehindRoleNameCasing`. Connection initialization checks that token and uses an
+immediate transaction to rebuild `UX_Roles_NormalizedName` before normal writes
+when the token changes. Conflicts abort rebuilding and prevent the connection
+from being used; the prior token and index remain intact. An unchanged token
+requires only a read.
+
+<!-- /coderabbit-ai-generated:v1 --> Generated keys enforce
 uniqueness for EF and raw SQL inserts and renames. External SQLite writers must
 register the same function; otherwise writes fail rather than bypass the index.
 Create PostgreSQL databases through migrations; `EnsureCreated` alone does not
@@ -27,9 +39,18 @@ install the function. PostgreSQL casing maps are installed by migrations using
 the application's .NET runtime; runtime upgrades that change ordinal casing
 rules require refreshing the function and rebuilding the generated keys/index.
 
-Existing names, IDs, memberships and audits are preserved. Resolve existing
-ordinal case duplicates before upgrading; migration fails transactionally
-instead of merging or deleting roles. Downgrades can also reject names that
+Existing names, IDs, memberships and audits are preserved. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:f57d0fb1efbe54968b073de27fea5e99bbe9ab6ca5c17fc224af0adfb1208f8c -->
+
+Resolve existing
+ordinal case duplicates before upgrading; migration preflight lists conflicting
+normalized names and role IDs, then stops transactionally before index creation.
+Rename the chosen roles explicitly while retaining their IDs; user memberships,
+menu visibility references and permission distinctions are preserved. No survivor
+or automatic merge policy is assumed.
+
+<!-- /coderabbit-ai-generated:v1 --> Downgrades can also reject names that
 were distinct ordinally but collide under the old database uppercase rule.
 OIDC retries remain limited to the named uniqueness and serialization/deadlock
 conflicts, with bounded attempts.

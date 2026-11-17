@@ -103,6 +103,10 @@ public sealed class OidcRoleNamesPostgresIntegrationTests
         }
 
         await RoleNameUnicodeTests.AssertOrdinalUniqueness(context);
+        var commands = new Behind.Core.Database.Commands.RoleCommands(context, AccessCatalog.Core);
+        Assert.False((await commands.Create("ÉQUIPE")).IsNone());
+        Assert.True((await commands.Create("équipe")).IsNone());
+
         context.Roles.Add(new UserRole("OIDC:READERS"));
         var exception = await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
         Assert.Equal("UX_Roles_NormalizedName", Assert.IsType<PostgresException>(exception.InnerException).ConstraintName);

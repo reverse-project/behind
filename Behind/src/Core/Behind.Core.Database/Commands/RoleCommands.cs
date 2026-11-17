@@ -22,8 +22,9 @@ public sealed class RoleCommands(AbstractCoreContext context, AccessCatalog cata
         bool isDeveloper = false,
         CancellationToken cancellationToken = default)
     {
+        var normalizedName = OrdinalIgnoreCaseKey.Create(name);
         var exists = await context.Roles.AnyAsync(
-            role => role.Name.ToLower() == name.ToLower(),
+            role => EF.Property<string>(role, "NormalizedName") == normalizedName,
             cancellationToken);
 
         if (exists)

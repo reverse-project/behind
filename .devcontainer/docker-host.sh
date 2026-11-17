@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-endpoint="${DOCKER_HOST-unix:///run/podman/podman.sock}"
+endpoint="${DOCKER_HOST-${CONTAINER_HOST-unix:///run/podman/podman.sock}}"
 if [[ "$endpoint" == "unix://${XDG_RUNTIME_DIR-}/podman/podman.sock" ]]; then
   endpoint="unix:///run/podman/podman.sock"
 fi

@@ -21,6 +21,7 @@ public partial class _20261117075301_OrdinalRoleNames : Migration
         migrationBuilder.DropIndex(name: "UX_Roles_NormalizedName", table: "Roles");
         migrationBuilder.Sql("ALTER TABLE \"Roles\" DROP COLUMN \"NormalizedName\"");
         migrationBuilder.Sql($"ALTER TABLE \"Roles\" ADD COLUMN \"NormalizedName\" TEXT COLLATE BINARY GENERATED ALWAYS AS ({expression}) VIRTUAL");
+        migrationBuilder.Sql(RoleNameConflictMigration.SqlitePreflightSql);
         migrationBuilder.CreateIndex(
             name: "UX_Roles_NormalizedName", table: "Roles", column: "NormalizedName", unique: true);
     }

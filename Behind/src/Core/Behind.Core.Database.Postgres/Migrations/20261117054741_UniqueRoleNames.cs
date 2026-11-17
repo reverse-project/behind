@@ -18,6 +18,7 @@ public partial class _20261117054741_UniqueRoleNames : Migration
             computedColumnSql: "upper(\"Name\")",
             stored: true);
 
+        migrationBuilder.Sql(RoleNameConflictMigration.PostgresPreflightSql);
         migrationBuilder.CreateIndex(
             name: "UX_Roles_NormalizedName",
             table: "Roles",

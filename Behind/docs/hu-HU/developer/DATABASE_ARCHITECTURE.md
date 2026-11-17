@@ -21,7 +21,18 @@ adatbázis-kollációt használ.
 
 PostgreSQL alatt a .NET megfeleltetési táblájából létrehozott változatlan SQL
 függvény és tárolt oszlop, SQLite alatt a Core, Web és FSE kapcsolatokra
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:97bdb27b8807b187c95577aea3c2a5630501f5d4239a8c13faa07d345637465b -->
+
 regisztrált determinisztikus .NET függvény és virtuális oszlop számítja a kulcsot.
+Az SQLite a futókörnyezet, az invariáns rendezési verzió és a tényleges
+megfeleltetési tábla ujjlenyomatát a `__BehindRoleNameCasing` táblában rögzíti.
+A kapcsolat inicializálása ellenőrzi a verziót, és változáskor az írások előtt
+azonnali tranzakcióban újraépíti az indexet. Ütközéskor a régi verzió és index
+megmarad, a kapcsolat nem használható. Változatlan verziónál csak olvasás szükséges.
+
+<!-- /coderabbit-ai-generated:v1 -->
 Az egyediség EF és közvetlen SQL beszúrásnál, valamint átnevezésnél is érvényes.
 Külső SQLite íróknak ugyanazt a függvényt kell regisztrálniuk; enélkül az írás
 meghiúsul. PostgreSQL adatbázist migrációkkal kell létrehozni; az `EnsureCreated`
@@ -29,9 +40,18 @@ meghiúsul. PostgreSQL adatbázist migrációkkal kell létrehozni; az `EnsureCr
 futókörnyezet-frissítéshez a PostgreSQL függvény és a számított kulcsok/index
 újraépítése szükséges.
 
-A nevek, azonosítók, tagságok és auditadatok megmaradnak. Frissítés előtt az
-ordinális összehasonlítás szerint azonos neveket rendezni kell; a migráció
-tranzakciósan meghiúsul, nem töröl és nem von össze szerepköröket. A visszaállítás
+A nevek, azonosítók, tagságok és auditadatok megmaradnak. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cd7bd518d7a3e33ae6047542baefa38b2214e3f08e50441ae4af19266c29e914 -->
+
+Frissítés előtt az
+ordinális összehasonlítás szerint azonos neveket rendezni kell. A migráció
+előellenőrzése felsorolja az ütköző normalizált neveket és szerepkör-azonosítókat,
+majd az index létrehozása előtt tranzakciósan leáll. A kiválasztott szerepköröket
+kifejezetten át kell nevezni az azonosítóik megtartásával; a tagságok, menühivatkozások
+és jogosultságkülönbségek megmaradnak. Automatikus összevonás nem történik.
+
+<!-- /coderabbit-ai-generated:v1 --> A visszaállítás
 is meghiúsulhat, ha a régi nagybetűsítési szabály ütközést eredményez. Az OIDC
 korlátozottan próbálja újra a megnevezett egyediségi, szerializációs és holtpontütközéseket.
 

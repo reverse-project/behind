@@ -6,6 +6,12 @@ public interface IVersionedCommands<TDraft>
 
     Task<VersionedSaveResult> Update(Guid key, TDraft draft, CancellationToken cancellationToken = default);
 
+    Task<VersionedSaveResult> Update(
+        Guid key,
+        long expectedVersion,
+        TDraft draft,
+        CancellationToken cancellationToken = default);
+
     Task<bool> Delete(Guid key, CancellationToken cancellationToken = default);
 
     Task<bool> Restore(Guid key, CancellationToken cancellationToken = default);

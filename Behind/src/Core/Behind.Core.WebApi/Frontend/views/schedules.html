@@ -1,0 +1,150 @@
+<section class="behind-wide">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="mb-0" data-bind="t: 'schedules.title'">Schedules</h1>
+        <a class="btn btn-outline-secondary ms-auto" href="#/administration" data-bind="t: 'schedules.back'">Back to administration</a>
+        <a class="btn btn-outline-primary" href="#/manage/schedules/runs" data-bind="t: 'schedules.runs'">Run history</a>
+    </div>
+    <p data-bind="visible: !isSignedIn()"><span data-bind="t: 'common.notSignedIn'">You are not signed in.</span> <a href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a> <span data-bind="t: 'schedules.signInToManage'">to manage schedules.</span></p>
+    <div class="alert alert-warning" role="alert" data-bind="visible: isDenied, t: 'schedules.denied'">You need schedule access to manage schedules.</div>
+    <div class="alert alert-info" role="alert" data-bind="visible: list.hasMessage, text: list.message"></div>
+    <div data-bind="visible: canRead">
+        <form class="card card-body mb-4" novalidate data-bind="visible: canWrite, submit: save">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h2 class="h5 mb-0" data-bind="text: heading"></h2>
+                <div class="ms-auto form-check form-switch">
+                    <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: enabled"> <span data-bind="t: 'schedules.enabled'">Enabled</span></label>
+                </div>
+            </div>
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item"><button class="nav-link" type="button" role="tab" data-bind="css: { active: activeTab() === 'schedule' }, click: function () { activeTab('schedule'); }, t: 'schedules.tab.schedule'">Schedule</button></li>
+                <li class="nav-item"><button class="nav-link" type="button" role="tab" data-bind="css: { active: activeTab() === 'participants' }, click: function () { activeTab('participants'); }, t: 'schedules.tab.participants'">Participants</button></li>
+            </ul>
+            <div data-bind="visible: activeTab() === 'schedule'">
+                <div class="mb-3">
+                    <label class="form-label" for="schedule-name" data-bind="t: 'schedules.name'">Name</label>
+                    <input id="schedule-name" class="form-control" type="text" maxlength="200" data-bind="value: name, valueUpdate: 'input'">
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-5">
+                    <label class="form-label" for="schedule-cron" data-bind="t: 'schedules.cron.expression'">Cron expression (UTC)</label>
+                    <input id="schedule-cron" class="form-control font-monospace" type="text" spellcheck="false" data-bind="value: cron, valueUpdate: 'input'">
+                    <div class="form-text" data-bind="t: 'schedules.cron.help'">Five fields: minute hour day of month month day of week, interpreted as UTC.</div>
+                    </div>
+                    <div class="col-lg-7">
+                <fieldset class="border rounded p-3 mb-3">
+                    <legend class="float-none w-auto px-2 fs-6" data-bind="t: 'schedules.cron.calculator'">Field calculator</legend>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: function () { preset('* * * * *'); }, t: 'schedules.cron.preset.everyMinute'">Every minute</button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: function () { preset('0 * * * *'); }, t: 'schedules.cron.preset.hourly'">Hourly</button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: function () { preset('0 0 * * *'); }, t: 'schedules.cron.preset.daily'">Daily</button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: function () { preset('0 0 * * 1'); }, t: 'schedules.cron.preset.weekly'">Weekly</button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bind="click: function () { preset('0 0 1 * *'); }, t: 'schedules.cron.preset.monthly'">Monthly</button>
+                    </div>
+                    <div class="alert alert-secondary py-2" data-bind="visible: customCron, t: 'schedules.cron.custom'">The calculator cannot represent this expression; you can keep editing the raw cron text.</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <tbody data-bind="foreach: fields">
+                                <tr>
+                                    <th scope="row" data-bind="text: label"></th>
+                                    <td><select class="form-select form-select-sm" data-bind="options: $root.modes, optionsText: 'label', optionsValue: 'value', value: mode, enable: !$root.customCron()"></select></td>
+                                    <td><input class="form-control form-control-sm" type="text" data-bind="value: value, valueUpdate: 'input', visible: mode() !== 'every', enable: !$root.customCron()"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+                    </div>
+                </div>
+                <div class="alert" role="status" data-bind="visible: cronResult, css: isCronValid() ? 'alert-success' : 'alert-danger'">
+                    <span data-bind="visible: isCronValid, t: 'schedules.cron.valid'">Valid schedule.</span>
+                    <span data-bind="visible: !isCronValid(), text: cronMessage() || ''"></span>
+                    <div data-bind="visible: nextRuns().length > 0">
+                        <strong data-bind="t: 'schedules.cron.next'">Next five occurrences (UTC)</strong>
+                        <ul class="mb-0" data-bind="foreach: nextRuns"><li data-bind="text: $data"></li></ul>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="schedule-action" data-bind="t: 'schedules.action'">Action</label>
+                    <select id="schedule-action" class="form-select" data-bind="options: actions, optionsText: 'name', optionsValue: 'key', optionsCaption: $root.i18n.t('schedules.selectAction'), value: action"></select>
+                </div>
+                <div data-bind="foreach: parameterFields">
+                    <div class="mb-3 behind-schedule-parameter">
+                        <label class="form-label" data-bind="text: label"></label>
+                        <!-- ko if: kind === 'choice' -->
+                        <select class="form-select" data-bind="options: options, optionsText: 'label', optionsValue: 'value', optionsCaption: $root.i18n.t('schedules.selectValue'), value: value, valueAllowUnset: true"></select>
+                        <!-- /ko -->
+                        <!-- ko if: kind === 'text' -->
+                        <input class="form-control" type="text" data-bind="value: value, valueUpdate: 'input', attr: { required: required }">
+                        <!-- /ko -->
+                        <!-- ko if: kind === 'number' -->
+                        <input class="form-control" type="number" step="1" inputmode="numeric" data-bind="value: value, valueUpdate: 'input', attr: { required: required, min: minimum, max: maximum, placeholder: defaultValue }">
+                        <!-- /ko -->
+                        <!-- ko if: kind === 'template' -->
+                        <input class="form-control behind-schedule-template" type="text" data-bind="value: value, valueUpdate: 'input', attr: { placeholder: defaultValue, required: required }">
+                        <div class="d-flex flex-wrap gap-1 mt-2" data-bind="foreach: placeholders">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="text: '{{' + $data + '}}', click: function (placeholder, event) { $root.insertPlaceholder($parent, placeholder, event); }"></button>
+                        </div>
+                        <!-- /ko -->
+                        <button type="button" class="btn btn-sm btn-link px-0" data-bind="visible: kind === 'template' && defaultValue, click: function () { $root.resetParameter($data); }, t: 'schedules.parameter.reset'">Use default</button>
+                    </div>
+                </div>
+            </div>
+            <div data-bind="visible: activeTab() === 'participants'">
+                <div class="mb-3">
+                    <label class="form-label" for="schedule-notify" data-bind="t: 'schedules.notify.label'">Email results</label>
+                    <select id="schedule-notify" class="form-select" data-bind="options: notifyOptions, optionsText: 'label', optionsValue: 'value', value: notify"></select>
+                </div>
+                <h3 class="h6" data-bind="t: 'schedules.participants.title'">Participants</h3>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-5 d-flex gap-2">
+                        <select class="form-select" data-bind="options: roles, optionsText: 'name', optionsValue: 'id', optionsCaption: $root.i18n.t('schedules.participants.selectRole'), value: roleId"></select>
+                        <button class="btn btn-outline-primary text-nowrap" type="button" data-bind="click: addRole, enable: roleId, t: 'schedules.participants.addRole'">Add role</button>
+                    </div>
+                    <div class="col-md-7 position-relative">
+                        <input class="form-control" type="search" autocomplete="off" data-bind="value: userSearch, valueUpdate: 'input', tAttr: { placeholder: 'schedules.participants.searchUser', 'aria-label': 'schedules.participants.searchUser' }">
+                        <div class="list-group position-absolute top-100 start-0 end-0 z-3" data-bind="foreach: users">
+                            <button class="list-group-item list-group-item-action" type="button" data-bind="text: label, click: function (user) { $root.addUser(user); }"></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group mb-3">
+                    <input class="form-control" type="email" data-bind="value: email, valueUpdate: 'input', event: { keydown: emailKeyDown }, tAttr: { placeholder: 'schedules.participants.email', 'aria-label': 'schedules.participants.email' }">
+                    <button class="btn btn-outline-primary" type="button" data-bind="click: addEmail, enable: canAddEmail, t: 'schedules.participants.addEmail'">Add email</button>
+                </div>
+                <ul class="list-group mb-3" data-bind="foreach: participants">
+                    <li class="list-group-item d-flex align-items-center gap-2"><span class="badge text-bg-secondary" data-bind="text: kind"></span><span class="me-auto text-break" data-bind="text: label || value"></span><button class="btn btn-sm btn-outline-danger" type="button" data-bind="click: function () { $root.removeParticipant($data); }, t: 'common.remove'">Remove</button></li>
+                </ul>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: isEditing, click: reset, t: 'common.cancel'">Cancel</button>
+                <span class="align-self-center" role="status" data-bind="visible: saveMessage, text: saveMessage, css: saveSucceeded() ? 'text-success' : 'text-danger'"></span>
+            </div>
+        </form>
+        <div data-bind="with: list">
+            <form class="input-group mb-3" data-bind="submit: find">
+                <input class="form-control" type="search" maxlength="200" data-bind="value: search, tAttr: { placeholder: 'schedules.search.placeholder', 'aria-label': 'schedules.search.label' }">
+                <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: 'common.search'">Search</button>
+            </form>
+            <div class="form-check form-switch mb-3" data-bind="visible: canViewDeleted">
+                <label class="form-check-label"><input class="form-check-input" type="checkbox" role="switch" data-bind="checked: showDeleted, enable: !busy()"> <span data-bind="t: 'schedules.showDeleted'">Show deleted schedules</span></label>
+            </div>
+            <letter-pager class="d-block mb-3" params="pager: letterPager"></letter-pager>
+            <p class="text-body-secondary" data-bind="visible: !hasItems(), t: 'schedules.empty'">No schedules found.</p>
+            <ul class="list-group mb-3" data-bind="foreach: items">
+                <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                    <div class="me-auto"><strong class="text-break" data-bind="text: name"></strong><div class="small text-body-secondary"><code data-bind="text: cron"></code><span class="mx-2">·</span><span data-bind="text: actionName"></span><span data-bind="visible: nextRunAt"> · <span data-bind="t: 'schedules.nextRun'">Next</span> <span data-bind="text: nextRunAt"></span></span></div></div>
+                    <span class="badge" data-bind="css: enabled ? 'text-bg-success' : 'text-bg-secondary', text: enabled ? $root.i18n.t('schedules.enabled') : $root.i18n.t('schedules.disabled')"></span>
+                    <span class="badge text-bg-dark" data-bind="visible: isDeleted, t: 'common.deleted'">Deleted</span>
+                    <a class="btn btn-sm btn-outline-secondary" data-bind="attr: { href: runsHref }, t: 'schedules.viewRuns'">Runs</a>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: !isDeleted && $root.canWrite(), enable: !$parent.busy(), click: edit, t: 'common.edit'">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: !isDeleted && $root.canManage(), enable: !$parent.busy(), click: run, t: 'schedules.runNow'">Run now</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: !isDeleted && $root.canDelete(), enable: !$parent.busy(), click: remove, t: 'common.delete'">Delete</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: restore, t: 'common.restore'">Restore</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bind="visible: isDeleted && $parent.canViewDeleted(), enable: !$parent.busy(), click: hardDelete, t: 'common.deletePermanently'">Delete permanently</button>
+                </li>
+            </ul>
+            <pager class="d-block" params="pager: pager"></pager>
+        </div>
+    </div>
+</section>

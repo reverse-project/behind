@@ -474,6 +474,28 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     }
 
     [Fact]
+    public async Task ResolveLabels_NamesSchedulesAndTheirRunsAfterTheScheduleName()
+    {
+        using var bed = new NewsTestBed();
+        var scheduleId = await bed.CreateScheduleAsync(ScheduleTestBedExtensions.ScheduleDraft("Nightly"));
+        await bed.WithScheduleCommandsAsync(commands => commands.Update(
+            scheduleId,
+            ScheduleTestBedExtensions.ScheduleDraft("Weekly")));
+        var goneId = await bed.CreateScheduleAsync(ScheduleTestBedExtensions.ScheduleDraft("gone"));
+        await bed.WithScheduleCommandsAsync(commands => commands.Delete(goneId));
+        var runId = await bed.CreateScheduleRunAsync(ScheduleTestBedExtensions.ScheduleRunDraft(
+            scheduleId, NewsTestBed.Now, "Weekly"));
+
+        await using var ctx = bed.Read();
+        var labels = await new AuditLogEntryQueries(ctx, []).ResolveLabels([scheduleId, goneId, runId]);
+
+        Assert.Equal("Weekly", labels.Label(scheduleId.ToString()));
+        Assert.Equal("gone", labels.Label(goneId.ToString()));
+        Assert.Equal("Weekly", labels.Label(runId.ToString()));
+        Assert.Equal("Weekly: 1", labels.LabelKey($"{scheduleId}:1"));
+    }
+
+    [Fact]
     public async Task ResolveLabels_NamesTheAccessSettingsByTheirKind()
     {
         using var bed = new NewsTestBed();

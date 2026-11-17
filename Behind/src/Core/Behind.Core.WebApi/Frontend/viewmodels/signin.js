@@ -1,4 +1,4 @@
-define(["viewmodels/captchaform", "viewmodels/twofactorchallenge", "models/auth", "models/accounts"], function (CaptchaFormViewModel, TwoFactorChallengeViewModel, auth, accounts) {
+define(["ko", "viewmodels/captchaform", "viewmodels/twofactorchallenge", "models/auth", "models/accounts", "models/i18n"], function (ko, CaptchaFormViewModel, TwoFactorChallengeViewModel, auth, accounts, i18n) {
     return function SignInViewModel(context) {
         var self = this;
         CaptchaFormViewModel.call(self);
@@ -6,6 +6,10 @@ define(["viewmodels/captchaform", "viewmodels/twofactorchallenge", "models/auth"
         self.passwordSignInEnabled = accounts.password;
         self.magicLinkSignInEnabled = accounts.magicLink;
         self.passkeySignInEnabled = accounts.passkey;
+        self.oidcProviders = ko.observableArray([]);
+        self.oidcSignInLabel = function (displayName) {
+            return i18n.t("signin.oidc.provider", [displayName]);
+        };
 
         self.twoFactor = new TwoFactorChallengeViewModel({
             done: function (result) {
@@ -20,11 +24,31 @@ define(["viewmodels/captchaform", "viewmodels/twofactorchallenge", "models/auth"
             return self.run(action).then(function (result) {
                 if (result.twoFactor) {
                     self.twoFactor.begin(result.twoFactor);
-                    return;
+                    return result;
                 }
 
                 if (result.ok) {
                     self.twoFactor.complete(result);
+                }
+                return result;
+            });
+        };
+
+        var loadOidcProviders = function () {
+            return auth.listOidcProviders().then(function (result) {
+                if (result.ok) {
+                    self.oidcProviders(result.providers);
+
+                    if (result.providers.length > 0 && window.location.protocol !== "https:") {
+                        self.oidcProviders([]);
+                        self.message(i18n.t("signin.oidc.error"));
+                    }
+
+                    return;
+                }
+
+                if (!self.message()) {
+                    self.message(result.message);
                 }
             });
         };
@@ -71,6 +95,55 @@ define(["viewmodels/captchaform", "viewmodels/twofactorchallenge", "models/auth"
             return self.run(function (captcha) {
                 return auth.resendConfirmation(self.email(), captcha);
             });
+        };
+
+        self.signInWithOidc = function (provider) {
+            if (!provider || !provider.id || self.busy()) {
+                return;
+            }
+
+            var url = auth.oidcUrl(provider.id);
+
+            if (window.location.protocol !== "https:" || new URL(url).protocol !== "https:") {
+                self.message(i18n.t("signin.oidc.error"));
+                return;
+            }
+
+            window.location.assign(url);
+        };
+
+        var activate = self.activate;
+        self.activate = function () {
+            activate();
+
+            var params = context.params || {};
+
+            if (params.oidcError) {
+                context.scrub("#/sign-in");
+                delete params.oidc;
+                delete params.oidcError;
+                self.message(i18n.t("signin.oidc.error"));
+                return loadOidcProviders();
+            }
+
+            if (params.oidc) {
+                var ticket = params.oidc;
+                context.scrub("#/sign-in");
+                delete params.oidc;
+
+                if (window.location.protocol !== "https:") {
+                    self.message(i18n.t("signin.oidc.error"));
+                    return loadOidcProviders();
+                }
+
+                return signIn(function () {
+                    return auth.redeemOidc(ticket);
+                }).then(function (result) {
+                    return result && (result.ok || result.twoFactor) ? undefined : loadOidcProviders();
+                });
+            }
+
+            return loadOidcProviders();
         };
     };
 });

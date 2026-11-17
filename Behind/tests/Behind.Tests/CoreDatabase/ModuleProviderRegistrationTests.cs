@@ -28,7 +28,7 @@ public sealed class ModuleProviderRegistrationTests : IDisposable
     }
 
     private static DatabaseConfiguration Configuration(Provider provider) =>
-        new(Some(provider), Some(new Key("Test")));
+        new(Some(provider), Some(new DatabaseKey("Test")));
 
     private static ServiceProviderOptions Validating => new() { ValidateScopes = true, ValidateOnBuild = true };
 

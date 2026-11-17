@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind configuration records 1.0.0",
+  "type": "object",
+  "properties": {
+    "Caching": { "$ref": "#/$defs/CachingConfiguration" },
+    "Database": { "$ref": "#/$defs/DatabaseConfiguration" },
+    "ConnectionStrings": { "type": ["object", "null"], "additionalProperties": { "type": ["string", "null"] } },
+    "Backend": { "$ref": "#/$defs/BackendConfiguration" },
+    "Frontend": { "$ref": "#/$defs/FrontendConfiguration" },
+    "Security": { "$ref": "#/$defs/SecurityConfiguration" },
+    "Email": { "$ref": "#/$defs/EmailConfiguration" },
+    "Serilog": {
+      "type": "object",
+      "properties": { "MinimumLevel": { "$ref": "#/$defs/MinimumLevelConfiguration" } }
+    },
+    "OpenTelemetry": { "$ref": "#/$defs/OpenTelemetryConfiguration" },
+    "Forum": { "$ref": "#/$defs/ForumSettings" },
+    "MarkdownViewer": { "$ref": "#/$defs/MarkdownViewerConfiguration" },
+    "AllowedHosts": { "type": "string" }
+  },
+  "$defs": {
+    "Text": { "type": ["string", "null"] },
+    "Boolean": { "type": "boolean" },
+    "Number": { "type": "number" },
+    "StringList": { "type": ["array", "null"], "items": { "type": "string" } },
+    "CachingProvider": { "type": "string", "enum": ["Memory", "RedisCompatible"] },
+    "CachingKey": { "$ref": "#/$defs/Text" },
+    "DatabaseKey": { "$ref": "#/$defs/Text" },
+    "Provider": { "type": ["string", "null"] },
+    "SecretKey": { "$ref": "#/$defs/Text" },
+    "Uuid": { "$ref": "#/$defs/SecretKey" },
+    "Totp": { "$ref": "#/$defs/SecretKey" },
+    "CachingConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "Provider": { "$ref": "#/$defs/CachingProvider" },
+        "Key": { "$ref": "#/$defs/CachingKey" }
+      }
+    },
+    "DatabaseConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "Provider": { "$ref": "#/$defs/Provider" },
+        "Key": { "$ref": "#/$defs/DatabaseKey" }
+      }
+    },
+    "BackendConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "DataDirectory": { "$ref": "#/$defs/Text" },
+        "Accounts": { "$ref": "#/$defs/AccountsConfiguration" },
+        "Comments": { "$ref": "#/$defs/CommentsConfiguration" },
+        "ContentRestrictions": { "$ref": "#/$defs/ContentRestrictionsConfiguration" },
+        "Downloads": { "$ref": "#/$defs/DownloadsConfiguration" },
+        "Scheduler": { "$ref": "#/$defs/SchedulerConfiguration" }
+      }
+    },
+    "AccountsConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "SignIn": { "$ref": "#/$defs/Boolean" },
+        "SignUp": { "$ref": "#/$defs/Boolean" },
+        "Password": { "$ref": "#/$defs/Boolean" },
+        "MagicLink": { "$ref": "#/$defs/Boolean" },
+        "Oidc": { "$ref": "#/$defs/Boolean" },
+        "TwoFactor": { "$ref": "#/$defs/Boolean" },
+        "Passkey": { "$ref": "#/$defs/Boolean" },
+        "EmailTwoFactor": { "$ref": "#/$defs/Boolean" }
+      }
+    },
+    "CommentsConfiguration": {
+      "type": ["object", "null"],
+      "properties": { "News": { "$ref": "#/$defs/Boolean" } }
+    },
+    "ContentRestrictionsConfiguration": {
+      "type": ["object", "null"],
+      "properties": { "Enabled": { "$ref": "#/$defs/Boolean" } }
+    },
+    "DownloadsConfiguration": {
+      "type": ["object", "null"],
+      "properties": { "MaxFileBytes": { "$ref": "#/$defs/Number" } }
+    },
+    "SchedulerConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "Enabled": { "$ref": "#/$defs/Boolean" },
+        "TickSeconds": { "$ref": "#/$defs/Number" },
+        "MaxConcurrentRuns": { "$ref": "#/$defs/Number" },
+        "RunTimeoutMinutes": { "$ref": "#/$defs/Number" },
+        "MaxCatchUpMinutes": { "$ref": "#/$defs/Number" },
+        "PreviewCount": { "$ref": "#/$defs/Number" },
+        "MaxPreviewCount": { "$ref": "#/$defs/Number" },
+        "ParticipantSearchLimit": { "$ref": "#/$defs/Number" },
+        "MaxSessionCleanupAgeDays": { "$ref": "#/$defs/Number" }
+      }
+    },
+    "FrontendConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "Url": { "$ref": "#/$defs/Text" },
+        "ContactEmail": { "$ref": "#/$defs/Text" },
+        "Site": { "$ref": "#/$defs/Site" },
+        "Sites": { "$ref": "#/$defs/SitesConfiguration" },
+        "Galleries": { "$ref": "#/$defs/GalleriesConfiguration" },
+        "Carousels": { "$ref": "#/$defs/CarouselsConfiguration" },
+        "StaticFiles": { "$ref": "#/$defs/FrontendOptions" }
+      }
+    },
+    "Site": {
+      "type": ["object", "null"],
+      "properties": {
+        "Title": { "$ref": "#/$defs/Text" },
+        "Copyright": { "$ref": "#/$defs/Text" },
+        "DefaultLocale": { "$ref": "#/$defs/Text" }
+      }
+    },
+    "SitesConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "IndexSlug": { "$ref": "#/$defs/Text" },
+        "MaxImageBytes": { "$ref": "#/$defs/Number" }
+      }
+    },
+    "GalleriesConfiguration": {
+      "type": ["object", "null"],
+      "properties": { "MaxImageBytes": { "$ref": "#/$defs/Number" } }
+    },
+    "CarouselsConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "MaxSlides": { "$ref": "#/$defs/Number" },
+        "MinIntervalSeconds": { "$ref": "#/$defs/Number" },
+        "MaxIntervalSeconds": { "$ref": "#/$defs/Number" },
+        "IntervalSeconds": { "$ref": "#/$defs/Number" },
+        "MaxCaptionLength": { "$ref": "#/$defs/Number" },
+        "MaxImageBytes": { "$ref": "#/$defs/Number" }
+      }
+    },
+    "FrontendOptions": {
+      "type": ["object", "null"],
+      "properties": {
+        "Minify": { "$ref": "#/$defs/Boolean" },
+        "Compress": { "$ref": "#/$defs/Boolean" },
+        "DefaultFile": { "$ref": "#/$defs/Text" },
+        "CacheControl": { "$ref": "#/$defs/Text" },
+        "ContentSecurityPolicy": { "$ref": "#/$defs/Text" },
+        "ReferrerPolicy": { "$ref": "#/$defs/Text" },
+        "CompressedMimeTypes": { "$ref": "#/$defs/StringList" }
+      }
+    },
+    "SecurityConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "ReadOnlyConfiguration": { "$ref": "#/$defs/Boolean" },
+        "EmailConfirmation": { "$ref": "#/$defs/Boolean" },
+        "TwoFactorRequired": { "$ref": "#/$defs/Boolean" },
+        "SecretKey": { "$ref": "#/$defs/SecretKey" },
+        "Jwt": { "$ref": "#/$defs/JwtSettings" },
+        "MagicLink": { "$ref": "#/$defs/MagicLinkSettings" },
+        "DataProtection": { "$ref": "#/$defs/DataProtectionSettings" },
+        "Elevation": { "$ref": "#/$defs/ElevationSettings" },
+        "Oidc": { "$ref": "#/$defs/OidcConfiguration" }
+      }
+    },
+    "JwtSettings": {
+      "type": ["object", "null"],
+      "properties": {
+        "Issuer": { "$ref": "#/$defs/Text" },
+        "Audience": { "$ref": "#/$defs/Text" },
+        "SigningKey": { "$ref": "#/$defs/Text" }
+      }
+    },
+    "MagicLinkSettings": {
+      "type": ["object", "null"],
+      "properties": {
+        "ActualSecret": { "$ref": "#/$defs/Uuid" },
+        "OldSecret": { "$ref": "#/$defs/Uuid" },
+        "RotationInterval": { "$ref": "#/$defs/Text" },
+        "RotationOverlap": { "$ref": "#/$defs/Text" },
+        "LinkLifetime": { "$ref": "#/$defs/Text" },
+        "RequestCooldown": { "$ref": "#/$defs/Text" },
+        "RequestLimit": { "type": ["number", "null"] },
+        "RequestWindow": { "$ref": "#/$defs/Text" },
+        "RedeemLimit": { "type": ["number", "null"] },
+        "RedeemWindow": { "$ref": "#/$defs/Text" }
+      }
+    },
+    "DataProtectionSettings": {
+      "type": ["object", "null"],
+      "properties": {
+        "KeysPath": { "$ref": "#/$defs/Text" },
+        "CertificatePath": { "$ref": "#/$defs/Text" },
+        "CertificatePassword": { "$ref": "#/$defs/Text" }
+      }
+    },
+    "ElevationSettings": {
+      "type": ["object", "null"],
+      "properties": {
+        "Enabled": { "$ref": "#/$defs/Boolean" },
+        "DeveloperSecretKey": { "$ref": "#/$defs/SecretKey" }
+      }
+    },
+    "OidcConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "Providers": { "type": "array", "items": { "$ref": "#/$defs/OidcProviderConfiguration" } },
+        "TicketLifetime": { "$ref": "#/$defs/Text" },
+        "MaxPendingTickets": { "$ref": "#/$defs/Number" },
+        "AuthenticationTimeout": { "$ref": "#/$defs/Text" }
+      }
+    },
+    "OidcProviderConfiguration": {
+      "type": "object",
+      "properties": {
+        "Id": { "$ref": "#/$defs/Text" },
+        "DisplayName": { "$ref": "#/$defs/Text" },
+        "Enabled": { "$ref": "#/$defs/Boolean" },
+        "Authority": { "$ref": "#/$defs/Text" },
+        "ClientId": { "$ref": "#/$defs/Text" },
+        "ClientSecret": { "$ref": "#/$defs/Text" },
+        "Scopes": { "$ref": "#/$defs/StringList" },
+        "AutoCreateUsers": { "$ref": "#/$defs/Boolean" },
+        "LinkByVerifiedEmail": { "$ref": "#/$defs/Boolean" },
+        "RoleClaimType": { "$ref": "#/$defs/Text" },
+        "RoleMappings": { "type": "object", "additionalProperties": { "$ref": "#/$defs/StringList" } },
+        "AutoCreateRoles": { "$ref": "#/$defs/Boolean" },
+        "AutoCreateRolePrefix": { "$ref": "#/$defs/Text" }
+      }
+    },
+    "EmailConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "Provider": { "type": "string", "enum": ["Logger", "Smtp"] },
+        "SmtpServer": { "$ref": "#/$defs/Text" },
+        "Port": { "$ref": "#/$defs/Number" },
+        "Ssl": { "$ref": "#/$defs/Ssl" },
+        "Authentication": { "$ref": "#/$defs/Authentication" },
+        "Templates": { "$ref": "#/$defs/Templates" },
+        "From": { "$ref": "#/$defs/Text" }
+      }
+    },
+    "LoggerEmailConfiguration": { "$ref": "#/$defs/EmailConfiguration" },
+    "SmtpEmailConfiguration": { "$ref": "#/$defs/EmailConfiguration" },
+    "Ssl": {
+      "type": ["object", "null"],
+      "properties": { "Enabled": { "$ref": "#/$defs/Boolean" } }
+    },
+    "Authentication": {
+      "type": ["object", "null"],
+      "properties": {
+        "Type": { "type": "string", "enum": ["No", "Basic"] },
+        "Username": { "$ref": "#/$defs/Text" },
+        "Password": { "$ref": "#/$defs/Text" }
+      }
+    },
+    "NoAuthentication": { "$ref": "#/$defs/Authentication" },
+    "BasicAuthentication": { "$ref": "#/$defs/Authentication" },
+    "Templates": {
+      "type": ["object", "null"],
+      "additionalProperties": { "$ref": "#/$defs/Text" }
+    },
+    "MinimumLevelConfiguration": {
+      "type": ["object", "string", "null"],
+      "properties": {
+        "Default": { "$ref": "#/$defs/Text" },
+        "Override": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "OpenTelemetryConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "ServiceName": { "$ref": "#/$defs/Text" },
+        "IsEnabled": { "$ref": "#/$defs/Boolean" },
+        "Traces": { "$ref": "#/$defs/OtlpExporterConfiguration" },
+        "Metrics": { "$ref": "#/$defs/OtlpExporterConfiguration" },
+        "Logging": { "$ref": "#/$defs/LoggingConfiguration" }
+      }
+    },
+    "OtlpExporterConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "IsEnabled": { "$ref": "#/$defs/Boolean" },
+        "Endpoint": { "$ref": "#/$defs/Text" },
+        "Protocol": { "$ref": "#/$defs/Text" },
+        "Instruments": { "$ref": "#/$defs/StringList" }
+      }
+    },
+    "LoggingConfiguration": {
+      "allOf": [{ "$ref": "#/$defs/OtlpExporterConfiguration" }],
+      "properties": {
+        "IncludeFormattedMessage": { "type": ["boolean", "null"] },
+        "IncludeScopes": { "type": ["boolean", "null"] },
+        "ParseStateValues": { "type": ["boolean", "null"] }
+      }
+    },
+    "Instrumentation": { "type": "string" },
+    "ForumSettings": {
+      "type": ["object", "null"],
+      "properties": {
+        "Moderation": { "type": "string" },
+        "AllowBoardOverrides": { "$ref": "#/$defs/Boolean" },
+        "AllowUserOverrides": { "$ref": "#/$defs/Boolean" }
+      }
+    },
+    "MarkdownViewerConfiguration": {
+      "type": ["object", "null"],
+      "properties": {
+        "SourceDirectory": { "$ref": "#/$defs/Text" },
+        "OutputDirectory": { "$ref": "#/$defs/Text" },
+        "Title": { "$ref": "#/$defs/Text" },
+        "DefaultDocument": { "$ref": "#/$defs/Text" }
+      }
+    }
+  }
+}

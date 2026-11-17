@@ -1,5 +1,64 @@
 # Database Architecture
 
+## Role name uniqueness
+
+The `OrdinalRoleNames` Core migration replaces database-native `upper(Name)`
+with a canonical key whose equivalence matches .NET `OrdinalIgnoreCase`.
+Each Unicode scalar is uppercased only when the ordinal comparer considers
+that mapping equivalent. This handles accents, supplementary characters and
+Greek final sigma while preserving distinct Turkish dotted I, long s, Kelvin
+sign and composed/decomposed names. Keys use ordinal database collations.
+
+PostgreSQL uses an immutable SQL function generated from the .NET casing map
+and a stored column. SQLite uses a deterministic .NET function registered on
+Core, Web and FSE connections and a virtual column. SQLite records the runtime,
+invariant globalization sort version and actual casing-map fingerprint in
+`__BehindRoleNameCasing`. Connection initialization checks that token and uses an
+immediate transaction to rebuild `UX_Roles_NormalizedName` before normal writes
+when the token changes. Conflicts abort rebuilding and prevent the connection
+from being used; the prior token and index remain intact. An unchanged token
+requires only a read.
+
+Generated keys enforce uniqueness for EF and raw SQL inserts and renames.
+External SQLite writers must
+register the same function; otherwise writes fail rather than bypass the index.
+Create PostgreSQL databases through migrations; `EnsureCreated` alone does not
+install the function. PostgreSQL casing maps are installed by migrations using
+the application's .NET runtime; runtime upgrades that change ordinal casing
+rules require refreshing the function and rebuilding the generated keys/index.
+
+Existing names, IDs, memberships and audits are preserved. Resolve existing
+ordinal case duplicates before upgrading; migration preflight lists conflicting
+normalized names and role IDs, then stops transactionally before index creation.
+Rename the chosen roles explicitly while retaining their IDs; user memberships,
+menu visibility references and permission distinctions are preserved. No survivor
+or automatic merge policy is assumed.
+
+Downgrades can also reject names that were distinct ordinally but collide under
+the old database uppercase rule.
+OIDC retries remain limited to the named uniqueness and serialization/deadlock
+conflicts, with bounded attempts.
+
+`DatabaseConfiguration.Key` uses the `DatabaseKey` value record, with discoverable
+`DatabaseKeyTypeConverter` and `DatabaseKeyJsonConverter`, matching `CachingKey`
+naming. The `Database:Key` property name and string representation are unchanged;
+existing configuration files require no migration.
+
+Persisted contact, schedule and audit JSON is checked against embedded JSON
+Schemas before writing. See the [persisted JSON contract](../specs/persisted-json-1.0.0.md)
+for converter compatibility and PostgreSQL regression coverage.
+
+## PII-free aggregate caching
+
+`RawDatabaseQueries.ListTables` may cache only numeric counts using HybridCache.
+Row data, identities, authorization and user-authored fields are not cacheable.
+Committed audit revisions partition entries across hosts; transactions and pending
+writes bypass the cache, and a revision recheck prevents publishing mixed writes.
+Keep every writer's audit entry atomic with the mutation, including raw writes.
+Flush the cache after unaudited SQL, database restore or audit pruning. The
+[caching guide](./GETTING_STARTED.md#caching) documents the full policy; tests use
+disposable PostgreSQL and Valkey and assert SQL-level cache hits and rollback safety.
+
 ## Private messaging and report persistence
 
 Private messaging/report tables use Core's existing migration chain in the shared SQLite/PostgreSQL database. Apply migrations with the installation migrator before starting the host. New entities use `(Key, Version)` keys and audit timestamps. Mailbox state is per user; deletion does not remove other participants' history.
@@ -29,6 +88,12 @@ Optional content-locale assignments are persisted with the shared database and p
 Core's `Messages` table stores immutable `(Key, Version)` versions with `Name`, `Title`, `Content`, `Level`, nullable `StartsAt` and nullable `EndsAt`. Schedule bounds are UTC ticks, using the existing `DateTimeOffsetConverter`; creation/update times and deletion state come only from the audit log. `AddMessages` migrations exist for SQLite and PostgreSQL and are applied through the existing Core migration chain, also for flattened site databases. Run the application database migrator before starting the updated host. The raw editor discovers all columns automatically and audit labels resolve the message name.
 
 `IMessageQueries.FindLive` selects the latest active version first, then applies the half-open schedule interval. Management queries support search, letters, paging and deleted state; `IMessageCommands` reuses `IVersionedCommands` for create/update, soft delete, restore and permanent deletion.
+
+## Scheduler persistence
+
+`AddSchedules` (SQLite and PostgreSQL) creates the versioned `Schedules` (`Name`, `Cron`, `Action`, JSON `Parameters`, `Enabled`, `Notify`, JSON `Participants`) and `ScheduleRuns` (`ScheduleId`, `ScheduleName`, `Action`, `ScheduledFor`, `StartedAt`, `FinishedAt`, `Status`, `Summary`, `Link`, `Email`, `Recipients`) tables. Both are `(Key, Version)` entities with audit-log timestamps and soft delete, hard delete and restore; both are listed in `CoreSoftDeletedEntities` and exposed in the raw database editor. A schedule cannot be permanently deleted while it still has runs. Runs left `Running` by a stopped host are marked failed on startup.
+
+`ISessionCommands.DeleteInvalidatedBefore(cutoff)` removes `Sessions` rows whose `InvalidatedAt` is earlier than the cutoff with a single `ExecuteDelete` (using the existing `InvalidatedAt` index). Active sessions and invalidated sessions without `InvalidatedAt` are kept. The bulk delete bypasses entity audit entries; the scheduled run's summary records the deleted count.
 
 ## Layout configuration persistence
 

@@ -65,6 +65,14 @@ public class EmbeddedFrontendTests
     [InlineData("models/pager.js")]
     [InlineData("components/pager.js")]
     [InlineData("components/pager.html")]
+    [InlineData("controllers/schedules.js")]
+    [InlineData("controllers/scheduleruns.js")]
+    [InlineData("viewmodels/schedules.js")]
+    [InlineData("viewmodels/scheduleruns.js")]
+    [InlineData("views/schedules.html")]
+    [InlineData("views/scheduleruns.html")]
+    [InlineData("models/schedules.js")]
+    [InlineData("models/cronfields.js")]
     public void Provider_ContainsFile(string path)
     {
         Assert.True(Provider.GetFileInfo(path).Exists);
@@ -203,12 +211,12 @@ public class EmbeddedFrontendTests
     }
 
     [Fact]
-    public void AdministrationViewModel_ListsTheUsersRolesSitesNewsMenusAndAuditLogPagesForTheirManagers()
+    public void AdministrationViewModel_ListsManagementPagesForTheirManagers()
     {
         var viewModel = Read(Provider.GetFileInfo("viewmodels/administration.js"));
         var view = Read(Provider.GetFileInfo("views/administration.html"));
 
-        Assert.Equal(19, viewModel.Split("icon: \"fa-").Length - 1);
+        Assert.Equal(20, viewModel.Split("icon: \"fa-").Length - 1);
         Assert.Contains("href: \"#/manage/reports\"", viewModel);
         Assert.Contains("hasGrant(\"Report.Manage\")", viewModel);
         Assert.Contains("href: \"#/manage/content-ages\"", viewModel);
@@ -218,6 +226,7 @@ public class EmbeddedFrontendTests
         Assert.Contains("name: \"administration.pages.users\", icon: \"fa-users\", href: \"#/users\", allowed: canManageUsers", viewModel);
         Assert.Contains("name: \"administration.pages.sites\", icon: \"fa-file-lines\", href: \"#/sites\", allowed: canReadSites", viewModel);
         Assert.Contains("name: \"administration.pages.news\", icon: \"fa-newspaper\", href: \"#/manage/news\", allowed: canReadNews", viewModel);
+        Assert.Contains("name: \"administration.pages.schedules\", icon: \"fa-clock\", href: \"#/manage/schedules\", allowed: canReadSchedules", viewModel);
         Assert.Contains("hasGrant(\"User.Manage\")", viewModel);
         Assert.Contains("hasGrant(\"Site.Read\")", viewModel);
         Assert.Contains("hasGrant(\"News.Read\")", viewModel);

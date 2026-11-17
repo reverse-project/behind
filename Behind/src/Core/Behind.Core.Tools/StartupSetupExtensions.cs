@@ -44,6 +44,7 @@ public static class StartupSetupExtensions
                 request.RenderSecurity),
             request.ConfigurationArtifact(StartupSetupRequest.DatabaseFileName, request.RenderDatabase),
             request.ConfigurationArtifact(StartupSetupRequest.BackendFileName, request.RenderBackend),
+            request.ConfigurationArtifact(StartupSetupRequest.CachingFileName, RenderCaching),
             request.ConfigurationArtifact(StartupSetupRequest.FrontendFileName, request.RenderFrontend),
             request.ConfigurationArtifact(StartupSetupRequest.EmailFileName, RenderEmail),
             request.ConfigurationArtifact(StartupSetupRequest.AppSettingsFileName, RenderAppSettings),
@@ -107,7 +108,8 @@ public static class StartupSetupExtensions
                         MagicLinkSettings.DefaultRequestLimit,
                         MagicLinkSettings.DefaultRequestWindow,
                         MagicLinkSettings.DefaultRedeemLimit,
-                        MagicLinkSettings.DefaultRedeemWindow)
+                        MagicLinkSettings.DefaultRedeemWindow),
+                    new OidcConfiguration()
                 )).ToConfigurationJson(),
                 [
                     $"Certificate: {dataProtection.CertificatePath}",
@@ -128,7 +130,7 @@ public static class StartupSetupExtensions
                     },
                     new DatabaseConfiguration(
                         Some<Provider>(new Sqlite()),
-                        Some(new Key(StartupSetupRequest.ConnectionStringName)))
+                        Some(new DatabaseKey(StartupSetupRequest.ConnectionStringName)))
                 ).ToConfigurationJson(),
                 []);
 
@@ -139,7 +141,8 @@ public static class StartupSetupExtensions
                         new ContentRestrictionsConfiguration(),
                         new DownloadsConfiguration(),
                         new CommentsConfiguration(),
-                        new AccountsConfiguration()))
+                        new AccountsConfiguration(),
+                        new SchedulerConfiguration()))
                     .ToConfigurationJson(),
                 []);
 
@@ -171,6 +174,12 @@ public static class StartupSetupExtensions
 
     private static StartupRendering RenderEmail() =>
         new(new StartupEmailFile(new LoggerEmailConfiguration()).ToConfigurationJson(), []);
+
+    private static StartupRendering RenderCaching() =>
+        new(new StartupCachingFile(
+            new Dictionary<string, string> { ["CachingConnection"] = string.Empty },
+            new CachingConfiguration { Key = Some(new CachingKey("CachingConnection")) })
+            .ToConfigurationJson(), []);
 
     private static StartupRendering RenderForum() =>
         new(new StartupForumFile(new StartupForumSection()).ToConfigurationJson(), []);
@@ -239,6 +248,7 @@ public static class StartupSetupExtensions
         {
             var rendering = step.Artifact.Render();
 
+            ConfigurationSchema.Validate(JsonNode.Parse(rendering.Content));
             step.Artifact.ConfigurationPath.WriteNewFile(Encoding.UTF8.GetBytes(rendering.Content));
             output.WriteLine("Created: {0}", step.Artifact.ConfigurationPath);
             rendering.Messages.ToList().ForEach(message => output.WriteLine(message));

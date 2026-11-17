@@ -90,3 +90,53 @@ test("magic-link recovery displays a password form without starting a session", 
     assert.deepEqual(resetRequest, ["reset", "new password"]);
     assert.equal(view.passwordChanged(), true);
 });
+
+function oidcSignIn(auth) {
+    function CaptchaForm() {
+        this.message = ko.observable("");
+        this.busy = ko.observable(false);
+        this.activate = () => Promise.resolve();
+        this.run = action => action("captcha").then(result => {
+            this.message(result.message || "");
+            return result;
+        });
+    }
+    function TwoFactor() {
+        this.begin = () => {};
+        this.complete = () => {};
+    }
+    let result;
+    vm.runInNewContext(fs.readFileSync(path.join(core, "viewmodels/signin.js"), "utf8"), {
+        define(names, factory) {
+            const dependencies = {
+                ko, "viewmodels/captchaform": CaptchaForm, "viewmodels/twofactorchallenge": TwoFactor, "models/auth": auth,
+                "models/accounts": { password: ko.observable(true), magicLink: ko.observable(true), passkey: ko.observable(true) },
+                "models/i18n": { t: key => key }
+            };
+            result = factory(...names.map(name => dependencies[name]));
+        },
+        window: { location: { protocol: "https:" } },
+        Promise, URL
+    });
+    return result;
+}
+
+for (const [name, params, redeemed] of [
+    ["an OIDC error", { oidcError: "1" }, null],
+    ["a failed ticket redemption", { oidc: "ticket" }, { ok: false, message: "expired" }]
+]) {
+    test(`provider buttons are loaded after ${name}`, async () => {
+        const providers = [{ id: "company", displayName: "Company" }];
+        const auth = {
+            listOidcProviders: async () => ({ ok: true, providers }),
+            redeemOidc: async () => redeemed
+        };
+        const SignIn = oidcSignIn(auth);
+        const view = new SignIn({ params, scrub: () => {}, navigate: () => {} });
+
+        await view.activate();
+
+        assert.deepEqual(view.oidcProviders().map(provider => provider.id), ["company"]);
+        assert.notEqual(view.message(), "");
+    });
+}

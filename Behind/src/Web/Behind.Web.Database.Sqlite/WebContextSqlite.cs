@@ -1,3 +1,4 @@
+using Behind.Core.Database.Sqlite;
 using Behind.Common.Modules;
 using Behind.Contact.Database;
 using Behind.Contact.Domain;
@@ -45,6 +46,12 @@ public sealed class WebContextSqlite(DbContextOptions<WebContextSqlite> options,
 
     public DbSet<Stat> Stats => Set<Stat>();
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureOrdinalRoleNames();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         if (!Modules.Modules.Any(module => module.Key == "contact"))
@@ -54,6 +61,6 @@ public sealed class WebContextSqlite(DbContextOptions<WebContextSqlite> options,
         }
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyCoreProviderConventions();
+        modelBuilder.ApplySqliteCoreProviderConventions();
     }
 }

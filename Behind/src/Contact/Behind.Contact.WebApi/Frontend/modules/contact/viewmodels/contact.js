@@ -1,4 +1,4 @@
-define(["ko", "models/i18n", "modules/contact/models/contact"], function (ko, i18n, contact) {
+define(["ko", "models/i18n", "modules/contact/models/contact", "bindings/bbcode"], function (ko, i18n, contact) {
     var instance = 0;
 
     return function ContactViewModel() {
@@ -44,7 +44,7 @@ define(["ko", "models/i18n", "modules/contact/models/contact"], function (ko, i1
                     type: field.type,
                     required: !!field.required,
                     maxLength: field.maxLength || 2000,
-                    value: ko.observable("")
+                    value: ko.observable(field.type === "boolean" ? false : "")
                 };
             }) : []);
         };
@@ -104,7 +104,7 @@ define(["ko", "models/i18n", "modules/contact/models/contact"], function (ko, i1
 
             var extraFields = Object.create(null);
             self.fields().forEach(function (field) {
-                extraFields[field.key] = field.value();
+                extraFields[field.key] = field.type === "boolean" ? (field.value() ? "true" : "false") : field.value();
             });
 
             return contact.submit(form.id, {

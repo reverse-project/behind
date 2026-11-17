@@ -20,8 +20,10 @@ public static class SettingsResponseExtensions
             return new SettingsFileResponse(
                 file.Name,
                 [
-                    ..root.Fields().Select(field => field.ToResponse(file.Name, locales)),
+                    ..root.Fields().Where(field => !OidcSettingsExtensions.IsOidcPath(file.Name, field.Path))
+                        .Select(field => field.ToResponse(file.Name, locales)),
                     ..AccountModeSettings.Missing(root, file.Name),
+                    ..CachingSettings.Missing(root, file.Name),
                     ..file.Name.MissingActions(root).Select(action => action.ToMissingField())
                 ]);
         }
@@ -51,7 +53,7 @@ public static class SettingsResponseExtensions
                 sensitive,
                 action == None,
                 action.Match<string?>(() => null, found => found.Name),
-                locales.OptionsFor(file, field.Path));
+                CachingSettings.OptionsFor(file, field.Path) ?? locales.OptionsFor(file, field.Path));
         }
     }
 

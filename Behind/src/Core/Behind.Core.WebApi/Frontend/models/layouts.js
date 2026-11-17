@@ -48,12 +48,12 @@ define(["models/http", "models/invalidation", "models/results", "models/contentl
         return pending[key];
     };
 
-    var select = function (data, route) {
+    var match = function (data, route, accept) {
         var locale = contentLocale.current();
         var matches = data.assignments.filter(function (assignment) {
-            return assignment.route.endsWith("*")
+            return (assignment.route.endsWith("*")
                 ? route.indexOf(assignment.route.slice(0, -1)) === 0
-                : assignment.route === route;
+                : assignment.route === route) && (!accept || accept(assignment.route));
         }).sort(function (left, right) {
             var specificity = function (assignment) {
                 return assignment.route.length * 2 + (assignment.route.endsWith("*") ? 0 : 1);
@@ -66,10 +66,23 @@ define(["models/http", "models/invalidation", "models/results", "models/contentl
             return specificity(right) - specificity(left)
                 || localeMatch(rightLayout) - localeMatch(leftLayout);
         });
-        var id = matches.length ? matches[0].layout : data.defaultLayout;
+        return matches.length ? matches[0] : null;
+    };
+
+    var find = function (data, id) {
         return data.layouts.find(function (layout) {
             return layout.id === id && !layout.deleted;
         });
+    };
+
+    var select = function (data, route) {
+        var assignment = match(data, route);
+        return find(data, assignment ? assignment.layout : data.defaultLayout);
+    };
+
+    var selectAssigned = function (data, route, accept) {
+        var assignment = match(data, route, accept);
+        return assignment ? find(data, assignment.layout) : undefined;
     };
 
     return {
@@ -82,6 +95,7 @@ define(["models/http", "models/invalidation", "models/results", "models/contentl
         },
         load: load,
         select: select,
+        selectAssigned: selectAssigned,
         current: function () {
             return configurationLocale === contentLocale.current() ? configuration : null;
         },

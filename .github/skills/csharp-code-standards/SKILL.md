@@ -30,4 +30,8 @@ Source of truth: `/AGENTS.md`. Apply to all new or changed code.
 List the identified bugs and use the `ask_user` tool to ask whether to fix them. Do exactly what the user answers.
 
 ## Always-attached chores
+Caching or cached database changes also require `manage-caching`: Provider/Key-only
+configuration in caching.json with named ConnectionStrings, no PII/command-result
+caching, committed cross-host invalidation and disposable PostgreSQL/Valkey tests.
+
 Changes also trigger: `update-changelog` (every feature/relevant change), `add-entity` (audit labels), `add-raw-database-editor` (every entity is editable in the raw database editor), `update-licenses` (package/library changes).

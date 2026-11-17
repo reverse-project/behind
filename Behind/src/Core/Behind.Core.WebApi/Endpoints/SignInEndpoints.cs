@@ -248,7 +248,8 @@ public sealed class SignInEndpoints
         DateTimeOffset now, HttpContext httpContext, ILogger logger, Option<ITwoFactorGate> secondFactor,
         MagicLinkFunction? function = null, IReadOnlyList<string>? recoveryCodes = null,
         IPasswordResetGrants? passwordResetGrants = null,
-        string? primaryCredentialId = null)
+        string? primaryCredentialId = null,
+        string? primaryOidcProviderId = null)
     {
         if (emailConfirmationRequired && !user.HasConfirmedEmail)
         {
@@ -271,7 +272,9 @@ public sealed class SignInEndpoints
             {
                 var challenge = await secondFactor.Match(
                     none: () => Task.FromResult<Option<TwoFactorChallengeResponse>>(None),
-                    gate => primaryCredentialId is null
+                    gate => primaryOidcProviderId is not null
+                        ? gate.ChallengeOidc(user.Id, primaryOidcProviderId, httpContext.RequestAborted)
+                        : primaryCredentialId is null
                         ? gate.Challenge(user.Id, function, httpContext.RequestAborted)
                         : gate.ChallengePasskey(user.Id, primaryCredentialId, httpContext.RequestAborted));
 

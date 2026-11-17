@@ -58,7 +58,7 @@ public sealed class ConfigurationFileCatalogTests : IDisposable
     public void DefaultNames_CoverEveryConfigurationFileOfTheApplication()
     {
         Assert.Equal(
-            ["appsettings.json", "backend.json", "database.json", "email.json", "frontend.json", "security.json"],
+            ["appsettings.json", "backend.json", "caching.json", "database.json", "email.json", "frontend.json", "security.json"],
             ConfigurationFileCatalog.DefaultNames);
     }
 }

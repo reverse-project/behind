@@ -45,6 +45,23 @@ public abstract class VersionedCommands<TEntity, TDraft>(IModuleContext context)
             : await AddVersion(key, latest, draft, cancellationToken);
     }
 
+    public async Task<VersionedSaveResult> Update(
+        Guid key,
+        long expectedVersion,
+        TDraft draft,
+        CancellationToken cancellationToken = default)
+    {
+        var latest = await Rows.LatestVersionAsync(key, cancellationToken);
+
+        // The (key, version) primary key rejects a concurrent save of the same successor version.
+        return latest switch
+        {
+            0 => new VersionedSaveResult.NotFound(),
+            _ when latest != expectedVersion => new VersionedSaveResult.VersionConflict(),
+            _ => await AddVersion(key, expectedVersion, draft, cancellationToken)
+        };
+    }
+
     public async Task<bool> Delete(Guid key, CancellationToken cancellationToken = default)
     {
         if (!await CanDelete(key, cancellationToken))

@@ -1,11 +1,14 @@
 ---
 name: add-ef-migration
-description: 'Create an EF Core migration for the Behind core or versioning database (SQLite). USE FOR: schema changes, new tables/entities, data migrations such as MakeNewsVersioned or PublishExistingNews.'
+description: 'Create and test EF Core migrations for the Behind SQLite and PostgreSQL databases, using Testcontainers PostgreSQL regression tests. USE FOR: schema changes, new tables/entities, data migrations such as MakeNewsVersioned or PublishExistingNews.'
 ---
 
 # EF Core migration
 
 Load `csharp-code-standards` first.
+For changes affecting cached data, also follow `manage-caching`: preserve committed
+audit revisions, transaction bypass and cross-host invalidation; use real
+PostgreSQL/Valkey tests. Never cache PII or command responses.
 
 ## Where
 - Core context migrations: `Behind/src/Core/Behind.Core.Database.Sqlite/Migrations` (`CoreContextSqlite`, snapshot `CoreContextSqliteModelSnapshot.cs`).
@@ -16,7 +19,7 @@ Load `csharp-code-standards` first.
 1. Change the aggregate configuration in `Behind.Core.Database/Aggregates`.
 2. From `Behind/`: `dotnet ef migrations add "<Name>" --project src/Core/Behind.Core.Database.Sqlite --startup-project src/Core/Behind.Core.Database.Migrator` and add `--context` (`CoreContextSqlite` or `VersioningContextSqlite`) plus `--output-dir Migrations/Versioning` for the versioning context. No design-time factory exists in the repo, so if the command fails, check the options with `dotnet ef migrations list` (`GETTING_STARTED.md` names the Database project, but the migrations live in the Sqlite project).
 3. Review the generated migration and snapshot. Data migrations must keep existing rows (e.g. existing rows become version 1, audit keys rewritten to `<id>:1` for versioned entities).
-4. Migrations are excluded from coverage; still test data migrations that contain custom logic (see `VfsLegacyMigrationTests`).
+4. Migrations are excluded from coverage; still test data migrations that contain custom logic (see `VfsLegacyMigrationTests`). Add or update real PostgreSQL regression tests with `Testcontainers.PostgreSql`, following `Behind/tests/Behind.Tests/CoreDatabase/ContentAgeOptionPostgresIntegrationTests.cs`; generated SQL assertions and SQLite tests are not substitutes. Cover fresh installation and upgrade from the preceding migration, historical data preservation, correct audit UTC-tick round-tripping and safe reruns where applicable. Tag tests `Category=Integration`, read the image from `postgresql.testsettings.json`, use `await using` for container disposal, and follow the Docker/Podman setup in the root README. Run the affected integration tests; an unavailable engine must fail explicitly, never silently skip.
 5. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj`.
 6. Mention schema changes in `docs/en-US/developer/DATABASE_ARCHITECTURE.md` and the changelog (`update-changelog`).
 

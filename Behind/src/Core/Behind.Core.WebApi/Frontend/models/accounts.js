@@ -3,6 +3,7 @@ define(["ko", "models/http"], function (ko, http) {
     var signUp = ko.observable(true);
     var password = ko.observable(true);
     var magicLink = ko.observable(true);
+    var oidc = ko.observable(true);
     var twoFactor = ko.observable(true);
     var passkey = ko.observable(true);
 
@@ -11,6 +12,7 @@ define(["ko", "models/http"], function (ko, http) {
         signUp: signUp,
         password: password,
         magicLink: magicLink,
+        oidc: oidc,
         twoFactor: twoFactor,
         passkey: passkey,
 
@@ -21,6 +23,7 @@ define(["ko", "models/http"], function (ko, http) {
                     signUp(response.data.signUp);
                     password(response.data.password !== false);
                     magicLink(response.data.magicLink !== false);
+                    oidc(response.data.oidc !== false);
                     twoFactor(response.data.twoFactor !== false);
                     passkey(response.data.passkey !== false);
                 }

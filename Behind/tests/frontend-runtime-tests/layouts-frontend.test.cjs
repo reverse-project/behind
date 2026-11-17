@@ -60,6 +60,22 @@ test("layout selection prefers exact routes then longest prefixes and falls back
     assert.equal(model.select(data, "#/news").id, "default");
 });
 
+test("assigned layout selection honors only accepted assignments and never falls back to default", () => {
+    const model = load("models/layouts.js", {});
+    const data = configuration();
+    data.layouts.push({ id: "wide" }, { id: "everything" }, { id: "removed", deleted: true });
+    const dedicated = route => route.indexOf("#/manage/") === 0;
+    data.assignments = [
+        { route: "#/*", layout: "everything" },
+        { route: "#/manage/auditor", layout: "wide" },
+        { route: "#/manage/old", layout: "removed" }
+    ];
+    assert.equal(model.selectAssigned(data, "#/manage/auditor", dedicated).id, "wide");
+    assert.equal(model.selectAssigned(data, "#/manage/reports", dedicated), undefined);
+    assert.equal(model.selectAssigned(data, "#/manage/old", dedicated), undefined);
+    assert.equal(model.select(data, "#/manage/reports").id, "everything");
+});
+
 test("layout load exposes errors rather than replacing failed configuration with success", async () => {
     const model = load("models/layouts.js", { "models/http": { get: async () => ({ ok: false }) } });
     await assert.rejects(model.load(), /layouts.error.load/);
@@ -525,7 +541,7 @@ test("shell renders overlapping widgets and section offsets with independent lay
     ];
     const shell = load("models/layoutshell.js", {
         ko: { cleanNode() {}, applyBindingsToNode() {} },
-        "models/layouts": { current: () => data, load: async () => data, select: () => data.layouts[0] },
+        "models/layouts": { current: () => data, load: async () => data, select: () => data.layouts[0], selectAssigned: () => undefined },
         "models/invalidation": { subscribe() {} },
         "models/restriction": { restricted: () => false },
         "models/i18n": { t: key => key },
@@ -566,7 +582,7 @@ test("shell moves but never rebinds content and disposes widget regions during i
                 }
             }
         },
-        "models/layouts": { current: () => data, load: async () => data, select: () => data.layouts[0] },
+        "models/layouts": { current: () => data, load: async () => data, select: () => data.layouts[0], selectAssigned: () => undefined },
         "models/invalidation": { subscribe: (topic, handler) => { subscriptions[topic] = handler; }, invalidate: async () => {} },
         "models/session": { accessToken: ko.observable("") },
         "models/restriction": { restricted: () => false },
@@ -600,7 +616,7 @@ test("a single-content full-width layout remains rendered by the engine", async 
                 assert.notEqual(binding.component.name, "site-widget", "Content must not be rebound as a widget");
             }
         },
-        "models/layouts": { current: () => data, load: async () => data, select: () => data.layouts[0] },
+        "models/layouts": { current: () => data, load: async () => data, select: () => data.layouts[0], selectAssigned: () => undefined },
         "models/invalidation": { subscribe() {} },
         "models/restriction": { restricted: () => false },
         "models/i18n": { t: key => key },

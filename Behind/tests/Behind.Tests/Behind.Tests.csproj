@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Web/Behind.Web/Behind.Web.csproj" />
     <ProjectReference Include="../../src/Contact/Behind.Contact.WebApi/Behind.Contact.WebApi.csproj" />
     <ProjectReference Include="../../src/Contact/Behind.Contact.Database.Sqlite/Behind.Contact.Database.Sqlite.csproj" />
     <ProjectReference Include="../../src/Contact/Behind.Contact.Database.Postgres/Behind.Contact.Database.Postgres.csproj" />
@@ -47,6 +48,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Frontend\**\*" />
+    <None Update="postgresql.testsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="caching.testsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -66,6 +69,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

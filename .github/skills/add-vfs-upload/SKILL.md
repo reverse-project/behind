@@ -5,6 +5,10 @@ description: 'Add or change anything that uploads or serves files in Behind usin
 
 # VFS file uploads
 
+For caching-related persistence changes follow `manage-caching`; do not cache
+file content, filenames or user metadata as supposedly PII-free data. Keep
+authorization uncached and test committed invalidation with PostgreSQL/Valkey.
+
 Load `csharp-code-standards` first. Code: `AbstractCoreContextVfs`, `IVfsCommands`, `VfsFile` (`Behind.Core.Domain`), `VfsStoreTests`, `SiteImageAttachTests`.
 
 ## Rules
@@ -18,6 +22,8 @@ Load `csharp-code-standards` first. Code: `AbstractCoreContextVfs`, `IVfsCommand
 
 ## Tests
 Cover upload, parent assignment (file moved to the parent path), serving via the kind's own URL, and the legacy/migration paths when touched. Use `Helpers/VfsTestPaths.cs` and `TestImages.cs`.
+
+For VFS database schema, migration, seed, mapping, converter, query or persistence changes, add and maintain real PostgreSQL regression tests with `Testcontainers.PostgreSql`; SQLite and generated SQL tests alone are insufficient. Follow `Behind/tests/Behind.Tests/CoreDatabase/ContentAgeOptionPostgresIntegrationTests.cs`, covering fresh/upgrade migration paths, preserved metadata, audit UTC ticks and safe reruns where applicable. Tag tests `Category=Integration`, configure the image in `postgresql.testsettings.json`, dispose containers with `await using`, and run the affected tests using the root README's Docker/Podman setup. An unavailable engine must fail explicitly, never silently skip.
 
 ## Finish
 `update-changelog`; docs in `DATABASE_ARCHITECTURE.md` / `WEBAPI_CONVENTIONS.md`.

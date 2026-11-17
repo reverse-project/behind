@@ -2,6 +2,12 @@
 
 Ezeket az oldalakat a navigációs sávban lévő nevére kattintva nyithatja meg.
 
+## Bejelentkezés identitásszolgáltatóval
+
+A konfigurált szolgáltatók a **Bejelentkezés** oldalon, a jelszavas és e-mailes vezérlőktől függetlenül jelennek meg. Válasszon szolgáltatót, hitelesítsen annak oldalán, majd térjen vissza a Behindhoz. A fiókjóváhagyás, kitiltás és a Behind saját kétlépcsős követelménye továbbra is érvényes; a szolgáltatói hitelesítés ezeket nem kerüli meg. Az első bejelentkezéshez megerősített e-mail szükséges a fióklétrehozáshoz vagy az engedélyezett összekapcsoláshoz. A szolgáltatónál később módosított cím nem változtatja meg a kapcsolt Behind-fiókot.
+
+Az OIDC-szerepkörök bejelentkezéskor szinkronizálódnak, a kézi hozzárendelések megmaradnak. Ha az átadás lejár, a böngésző tiltja a sütiket, vagy a szerver közben újraindul, kezdje újra a bejelentkezést. A Behindból való kijelentkezés nem zárja le a szolgáltatói munkamenetet.
+
 ## Profil
 
 A **Profil** segítségével módosíthatja a megjelenítendő nevét és a jelszavát. A jelszómódosítás nem érhető el, amíg egy másik felhasználót személyesít meg.

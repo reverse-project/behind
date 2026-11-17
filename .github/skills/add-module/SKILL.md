@@ -5,6 +5,12 @@ description: 'Add a new module to Behind end to end: its own Common, Domain, Web
 
 # Add a new module
 
+For caching, follow `manage-caching`. Core registers shared HybridCache for every
+host from caching.json. Keep CachingConfiguration Provider/Key-only and resolve
+ConnectionStrings by Key; never add module-specific cache settings to it. Do not
+cache PII, user text or command responses; preserve committed invalidation and
+test affected PostgreSQL/Valkey behavior.
+
 Modules with reportable content register Common.WebApi `IReportEvidenceSource` in their own WebApi extension. Its `Find(HttpContext, sourceId, cancellationToken)` returns `ReportEvidence` only when the reporter can access the source under the existing grant, publication, parent, age, locale and deletion rules. Core snapshots evidence and uses the server-resolved author; anonymous authors are not exposed to reporters. Do not reference Core to contribute evidence.
 
 Load `csharp-code-standards` first. Reference module: `Core` (`src/Core/Behind.Core.*`), loaded by the host project `src/Web/Behind.Web`. Smallest complete example: `Quotes` (`src/Quotes/Behind.Quotes.*`, project side `src/Web/Behind.Web.Database.*`): copy its structure for a new module.
@@ -51,6 +57,7 @@ For chronological feeds, inject `IModuleCreationOrder` (`Behind.Common.Database.
 10. **Frontend**: pages, viewmodels, views, models and components under `Frontend/modules/<key>/` and RequireJS ids `modules/<key>/...`; locale files `Frontend/modules/<key>/locales/<code>.json` (same format as the Core ones, every language of the Core locales, keys prefixed with the module key); optional css `Frontend/modules/<key>/css/<key>.css` listed in `ModuleFrontend.Styles`. The Core frontend loads `GET /modules`, registers the routes, merges the module messages under the Core ones, adds the styles and shows the administration pages of the modules.
 11. **Sites**: update every site (`src/Sites/*`) that should show or configure the module (css, html, configuration, skin).
 12. **Tests**: module tests in `tests/Behind.Tests` mirroring the module projects, reusing `Helpers/` test beds (`Helpers/NotesModule.cs` and `Helpers/NotesTestBed.cs` are a complete example of a module descriptor, a flattened context with a module interface, an audit label source and a migration context). Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj` from `Behind/`.
+    Add and maintain real PostgreSQL regression tests with `Testcontainers.PostgreSql` whenever module schemas, migration chains, seeds, mappings, converters, queries or persistence change; SQLite and generated SQL assertions alone are insufficient. Exercise the affected module in the flattened project database, including fresh installation and upgrade, existing data preservation, audit UTC ticks and safe reruns where applicable. Follow `Behind/tests/Behind.Tests/CoreDatabase/ContentAgeOptionPostgresIntegrationTests.cs`, tag tests `Category=Integration`, configure the image in `postgresql.testsettings.json`, dispose containers with `await using`, and run the affected tests using the root README's Docker/Podman setup. An unavailable engine must fail explicitly, never silently skip.
 13. **Changelog**: use the `update-changelog` skill.
 14. **Docs**: update `Behind/docs/en-US/developer/PROJECT_OVERVIEW.md`, `DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md` and `WEBAPI_CONVENTIONS.md`, and the user manual of every new page.
 
@@ -61,6 +68,7 @@ For chronological feeds, inject `IModuleCreationOrder` (`Behind.Common.Database.
 - `IVersionedCommands<TDraft>` + `VersionedCommands<TEntity, TDraft>` + `VersionedSaveResult` (`Behind.Common.Database`): versioned create/update, soft delete, restore, hard delete (refused through `IsReferenced`) and `Ensure` for seeds. A module entity command only implements `Build`, and optionally `Validate` (returns the rejection reason), `IsReferenced` and `Saved` (see `src/Sport/Behind.Sport.Database/Commands`).
 - `Keyed<TEntity>` and `KeyedEntityExtensions` (`ToKeyedAsync`, `Latest`) read the `Key`/`Version` shadow columns together with the entity; `QueryableOptionExtensions.Narrowed` applies an optional filter.
 - `IModuleFiles` (`Behind.Common.Database/Modules`, implemented by `ModuleFiles` in Core and registered by `AddVfsContentStore`): VFS uploads for a module with its own VFS type, parent attach, existence check and open. Pair it with `ImageUploadExtensions.StoreImage`/`ServeImage` (`Behind.Common.WebApi`) and a URL of its own per kind of file. Follow `add-vfs-upload`.
+- `IScheduledAction` (`Behind.Common.WebApi`): register it as a scoped service to offer a scheduler action. `Descriptor` gives a unique module-prefixed key, a name localization key and parameters (`Text`, `Choice` with `Options`, `Template` with `DefaultValue` and `Placeholders`, `Number` with `Minimum`/`Maximum`); `Validate` returns a reason key (add it to the Core `models/schedules.js` reason map and both locales); `Run` returns a `ScheduledActionResult` with a summary and an optional hash-route `ScheduledActionLink`, which Core emails to participants according to the schedule's notify setting. References: Core `SessionCleanupScheduledAction` (numeric parameter, no link).
 - `VersionedSaveResultExtensions.ToResult()` (`Behind.Common.WebApi`) answers `{ id, version }`, `404` or `409 { reason }`.
 - Reference implementation with many entities: `Sport` (`src/Sport/Behind.Sport.*`).
 

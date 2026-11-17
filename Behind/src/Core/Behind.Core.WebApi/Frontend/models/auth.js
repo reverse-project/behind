@@ -415,6 +415,32 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
             });
         },
 
+        listOidcProviders: function () {
+            return http.get("/sign/in/oidc/providers").then(function (response) {
+                return response.ok && Array.isArray(response.data)
+                    ? { ok: true, providers: response.data }
+                    : { ok: false, providers: [], message: i18n.t("signin.oidc.error") };
+            });
+        },
+
+        oidcUrl: function (id) {
+            return http.backendUrl("/sign/in/oidc/" + encodeURIComponent(id));
+        },
+
+        redeemOidc: function (ticket) {
+            if (!ticket) {
+                return incomplete("signin.oidc.error");
+            }
+
+            return http.postWithCredentials("/sign/in/oidc/redeem", { ticket: ticket }).then(function (response) {
+                return response.ok ? completed(response) : failure(response, {
+                    400: "auth.signIn.invalid",
+                    401: "auth.signIn.badCredentials",
+                    403: bannedMessage
+                });
+            });
+        },
+
         signInWithMagicLink: function (token) {
             if (!token) {
                 return incomplete("auth.magicLink.incomplete");

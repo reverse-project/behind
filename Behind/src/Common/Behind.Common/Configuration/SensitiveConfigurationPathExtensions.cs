@@ -18,7 +18,9 @@ public static partial class SensitiveConfigurationPathExtensions
             {
                 var segments = path.Split(PathSeparator);
 
-                return segments[0] == ConnectionStringsSection || SensitiveName().IsMatch(segments[^1]);
+                return segments[0].Equals(ConnectionStringsSection, StringComparison.OrdinalIgnoreCase)
+                    || segments[^1].Equals("ConnectionString", StringComparison.OrdinalIgnoreCase)
+                    || SensitiveName().IsMatch(segments[^1]);
             }
         }
     }

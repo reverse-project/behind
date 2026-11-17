@@ -32,7 +32,7 @@ test("password sign-in switch follows server state and saves both boolean values
     const dependencies = {
         ko, "models/settings": settings, "models/session": session, "models/i18n": { t: key => key },
         "viewmodels/emailsettings": Editor, "viewmodels/loggingsettings": Editor,
-        "viewmodels/opentelemetrysettings": Editor
+        "viewmodels/opentelemetrysettings": Editor, "viewmodels/oidcsettings": Editor
     };
     let Settings;
     vm.runInNewContext(fs.readFileSync(path.join(core, "viewmodels/settings.js"), "utf8"), {

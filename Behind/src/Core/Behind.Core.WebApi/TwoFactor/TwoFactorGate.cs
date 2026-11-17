@@ -18,6 +18,11 @@ public interface ITwoFactorGate
         Guid userId,
         string credentialId,
         CancellationToken cancellationToken = default);
+
+    Task<Option<TwoFactorChallengeResponse>> ChallengeOidc(
+        Guid userId,
+        string providerId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class TwoFactorGate(
@@ -39,18 +44,25 @@ public sealed class TwoFactorGate(
         Guid userId,
         MagicLinkFunction? function,
         CancellationToken cancellationToken = default) =>
-        await ChallengeCore(userId, function, null, cancellationToken);
+        await ChallengeCore(userId, function, null, null, cancellationToken);
 
     public async Task<Option<TwoFactorChallengeResponse>> ChallengePasskey(
         Guid userId,
         string credentialId,
         CancellationToken cancellationToken = default) =>
-        await ChallengeCore(userId, null, credentialId, cancellationToken);
+        await ChallengeCore(userId, null, credentialId, null, cancellationToken);
+
+    public async Task<Option<TwoFactorChallengeResponse>> ChallengeOidc(
+        Guid userId,
+        string providerId,
+        CancellationToken cancellationToken = default) =>
+        await ChallengeCore(userId, null, null, providerId, cancellationToken);
 
     private async Task<Option<TwoFactorChallengeResponse>> ChallengeCore(
         Guid userId,
         MagicLinkFunction? function,
         string? primaryCredentialId,
+        string? primaryOidcProviderId,
         CancellationToken cancellationToken)
     {
         var status = await queries.GetStatus(userId, cancellationToken);
@@ -78,7 +90,7 @@ public sealed class TwoFactorGate(
                 return Some(new TwoFactorChallengeResponse(string.Empty, [], false, function) { Unavailable = true });
             }
 
-            return Some(await Challenge(userId, TwoFactorStage.Verify, methods, false, function, primaryCredentialId, cancellationToken));
+            return Some(await Challenge(userId, TwoFactorStage.Verify, methods, false, function, primaryCredentialId, primaryOidcProviderId, cancellationToken));
         }
 
         if (!security.Value.TwoFactorRequired)
@@ -94,7 +106,7 @@ public sealed class TwoFactorGate(
             setupMethods.Add(TwoFactorMethod.Email);
         }
 
-        return Some(await Challenge(userId, TwoFactorStage.Setup, setupMethods, true, function, primaryCredentialId, cancellationToken));
+        return Some(await Challenge(userId, TwoFactorStage.Setup, setupMethods, true, function, primaryCredentialId, primaryOidcProviderId, cancellationToken));
     }
 
     private async Task<TwoFactorChallengeResponse> Challenge(
@@ -104,6 +116,7 @@ public sealed class TwoFactorGate(
         bool setupRequired,
         MagicLinkFunction? function,
         string? primaryCredentialId,
+        string? primaryOidcProviderId,
         CancellationToken cancellationToken)
     {
         var link = MagicLink.Create(timeProvider.GetUtcNow(), TwoFactorTickets.Lifetime, MagicLinkFunction.TwoFactorChallenge);
@@ -111,6 +124,7 @@ public sealed class TwoFactorGate(
         var ticket = tickets.Create(userId, stage, function) with
         {
             PrimaryCredentialId = primaryCredentialId,
+            PrimaryOidcProviderId = primaryOidcProviderId,
             Nonce = link.Nonce.Nonce
         };
         return new TwoFactorChallengeResponse(tickets.Seal(ticket), methods, setupRequired, function);

@@ -16,7 +16,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261113150944_AddPrivateMessageEmails";
+    public override string LastMigrationId => "20261117075301_OrdinalRoleNames";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1218,6 +1218,121 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.Schedule", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Action")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Cron")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<bool>("Enabled")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Notify")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Parameters")
+                    .IsRequired()
+                    .HasMaxLength(20000)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Participants")
+                    .IsRequired()
+                    .HasMaxLength(50000)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("Name");
+
+                b.ToTable("Schedules");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.ScheduleRun", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Action")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Email")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("TEXT");
+
+                b.Property<long?>("FinishedAt")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Link")
+                    .HasMaxLength(2000)
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("Recipients")
+                    .HasColumnType("INTEGER");
+
+                b.Property<Guid>("ScheduleId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ScheduleName")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("ScheduledFor")
+                    .HasColumnType("INTEGER");
+
+                b.Property<long>("StartedAt")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Summary")
+                    .IsRequired()
+                    .HasMaxLength(4000)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("ScheduleId");
+
+                b.HasIndex("StartedAt");
+
+                b.HasIndex("Status");
+
+                b.ToTable("ScheduleRuns");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.Site", b =>
             {
                 b.Property<Guid>("SiteId")
@@ -1673,6 +1788,51 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.ToTable("MenuItemRoles");
             });
 
+        modelBuilder.Entity("OidcAccountBindings", b =>
+            {
+                b.Property<string>("ProviderDigest")
+                    .HasMaxLength(64)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("IssuerDigest")
+                    .HasMaxLength(64)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("SubjectDigest")
+                    .HasMaxLength(64)
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("ProviderDigest", "IssuerDigest", "SubjectDigest");
+
+                b.HasIndex("UserId");
+
+                b.ToTable("OidcAccountBindings");
+            });
+
+        modelBuilder.Entity("OidcRoleOwnerships", b =>
+            {
+                b.Property<string>("ProviderDigest")
+                    .HasMaxLength(64)
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid>("RoleId")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("ProviderDigest", "UserId", "RoleId");
+
+                b.HasIndex("RoleId");
+
+                b.HasIndex("UserId", "RoleId");
+
+                b.ToTable("OidcRoleOwnerships");
+            });
+
         modelBuilder.Entity("PendingUserApprovals", b =>
             {
                 b.Property<Guid>("UserId")
@@ -1751,6 +1911,11 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.Property<Guid>("UserId")
                     .HasColumnType("TEXT");
 
+                b.Property<bool>("IsManuallyAssigned")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER")
+                    .HasDefaultValue(true);
+
                 b.HasKey("RoleId", "UserId");
 
                 b.HasIndex("UserId");
@@ -1784,7 +1949,17 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.Property<bool>("IsDeveloper")
                     .HasColumnType("INTEGER");
 
+                b.Property<string>("NormalizedName")
+                    .ValueGeneratedOnAddOrUpdate()
+                    .HasColumnType("TEXT")
+                    .HasComputedColumnSql("\"BehindOrdinalIgnoreCaseKey\"(\"Name\")", false)
+                    .UseCollation("BINARY");
+
                 b.HasIndex("Name");
+
+                b.HasIndex("NormalizedName")
+                    .IsUnique()
+                    .HasDatabaseName("UX_Roles_NormalizedName");
 
                 b.ToTable("Roles");
             });
@@ -1977,6 +2152,30 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.HasOne("Behind.Core.Domain.MenuItem", null)
                     .WithMany()
                     .HasForeignKey("MenuItemKey", "MenuItemVersion")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
+
+        modelBuilder.Entity("OidcAccountBindings", b =>
+            {
+                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
+
+        modelBuilder.Entity("OidcRoleOwnerships", b =>
+            {
+                b.HasOne("Behind.Core.Domain.UserRole", null)
+                    .WithMany()
+                    .HasForeignKey("RoleId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                    .WithMany()
+                    .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
             });

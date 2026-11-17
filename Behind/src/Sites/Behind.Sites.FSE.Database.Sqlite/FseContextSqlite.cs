@@ -1,3 +1,4 @@
+using Behind.Core.Database.Sqlite;
 using Behind.Common.Modules;
 using Behind.Core.Database;
 using Behind.Sport.Database;
@@ -25,10 +26,16 @@ public sealed class FseContextSqlite(DbContextOptions<FseContextSqlite> options,
 
     public DbSet<Stat> Stats => Set<Stat>();
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureOrdinalRoleNames();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyCoreProviderConventions();
+        modelBuilder.ApplySqliteCoreProviderConventions();
     }
 }

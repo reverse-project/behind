@@ -1,0 +1,47 @@
+@baseUrl = https://localhost:5001
+@provider = company
+@ticket = replace-with-ticket-from-callback
+@accessToken = replace-with-developer-access-token
+
+### Read provider settings; requires Configuration.Read, client secrets are never returned
+GET {{baseUrl}}/settings/security.json/oidc
+Authorization: Bearer {{accessToken}}
+
+### Save provider settings; requires Configuration.Manage, replaces the configured provider list
+PUT {{baseUrl}}/settings/security.json/oidc
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "ticketLifetime": "00:02:00",
+  "authenticationTimeout": "00:10:00",
+  "maxPendingTickets": 1000,
+  "providers": []
+}
+
+### List configured providers without secrets
+GET {{baseUrl}}/sign/in/oidc/providers
+
+### Start sign-in in a browser; retain cookies through callback and redemption
+GET {{baseUrl}}/sign/in/oidc/{{provider}}
+
+### The provider redirects to this registered callback; code and state are provider-issued
+POST {{baseUrl}}/sign/in/oidc/callback/{{provider}}
+Content-Type: application/x-www-form-urlencoded
+
+code=provider-issued-code&state=protected-state-from-challenge
+
+### Redeem once, with the browser-binding cookie set by the challenge
+POST {{baseUrl}}/sign/in/oidc/redeem
+Content-Type: application/json
+
+{"ticket": "{{ticket}}"}
+
+### Unknown provider: 404
+GET {{baseUrl}}/sign/in/oidc/unknown
+
+### Unbound or invalid ticket: 401
+POST {{baseUrl}}/sign/in/oidc/redeem
+Content-Type: application/json
+
+{"ticket": "invalid"}

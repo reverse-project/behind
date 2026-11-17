@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind contact field definition JSON 1.0.0",
+  "type": "array",
+  "items": {
+    "type": ["object", "null"],
+    "patternProperties": {
+      "^[kK][eE][yY]$": { "type": ["string", "null"] },
+      "^[lL][aA][bB][eE][lL]$": { "type": ["string", "null"] },
+      "^[tT][yY][pP][eE]$": { "type": "string", "enum": ["text", "textarea", "email", "boolean"] },
+      "^[rR][eE][qQ][uU][iI][rR][eE][dD]$": { "type": "boolean" },
+      "^[mM][aA][xX][lL][eE][nN][gG][tT][hH]$": { "type": ["integer", "string"] }
+    }
+  }
+}

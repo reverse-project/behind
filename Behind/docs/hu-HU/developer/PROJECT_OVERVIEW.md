@@ -1,5 +1,17 @@
 # Projekt áttekintés
 
+## Közös gyorsítótár
+
+A Core minden gazdánál, a webhelyeknél is regisztrálja a Common.WebApi HybridCache
+szolgáltatását. A Common `CachingConfiguration` kizárólag adatbázismintájú
+`Provider` és `Key` rekordokat tartalmaz. Az opcionális `caching.json` tartalma
+`Caching` és névvel ellátott `ConnectionStrings`; a Memory az alapérték,
+a RedisCompatible Valkey-t támogat. A Beállítások lap a közös űrlapot és
+jogosultságokat használja ellenőrzött szolgáltatóválasztóval és maszkolt
+kapcsolatokkal. A módosítás újraindítást igényel. Lásd a
+[beállításokat és biztonságot](./GETTING_STARTED.md#gyorsítótárazás), valamint
+az [1.0.0 szerződést](../specs/caching-configuration-1.0.0.md).
+
 ## Privát üzenetek és jelentések
 
 A privát üzenetküldés a Core része, külön az ütemezett értesítésektől és a nyilvános csevegéstől. A postaláda olvasott, elküldött és törölt mappákat, BBCode-beszélgetéseket, felhasználó- és szerepkörcímzetteket, titkos címzetteket, változó csoportokat és tiltólistát kezel. A szerepkörtagság élő ellenőrzése a korábbi előzményekhez is hozzáférést ad. A rendszerválaszt csak a válaszoló, az eredeti feladó és a `PrivateMessageModeration.Manage` jogosult adminisztrátor látja.
@@ -23,6 +35,10 @@ Az interaktív modulwidgetek harmadik `widget` elhelyezési argumentumot is foga
 ## Opcionális tartalmi nyelvek
 
 A tartalom nyelve a meglévő szerkesztők része, nem külön adminisztrációs alkalmazás. Az útvonalak nem tartalmaznak nyelvet; a kiválasztott nyelvet a tartalomkérések kapják meg. Az alapértelmezés a bejelentkezett felhasználó profiljából, a böngésző gyorsítótárából vagy a webhely alapértelmezéséből származik. A nyelv nélküli tartalom minden kiválasztott nyelvvel megosztott; a nyelvhez rendelt tartalom nyelve szerint szűrődik a nyilvános adatfolyamokban, widgetekben és telepített modulokban. A választék a felület elérhető nyelveit használja. Az oldalak és útvonalálnevek slug-egyedisége nyelvhez kötött, a megosztott slug minden nyelven foglalt. Az elrendezésekben `core.locale-switch` és opcionális fejlécváltó érhető el. Bejelentkezett felhasználónál a váltó a profil felületi nyelvét is elmenti.
+
+## Ütemező
+
+A Core egy ütemezőt futtat (`ScheduleService`, háttérszolgáltatás, amely `Backend:Scheduler:TickSeconds` másodpercenként, alapértelmezetten 60 másodpercenként fut), amely előre definiált műveleteket indít, ha egy engedélyezett ütemezés ötmezős UTC cron kifejezése illeszkedik az aktuális percre. Az ütemezések a `#/manage/schedules` oldalon kezelhetők (nyers cron szöveg mezőkalkulátorral és következő futások előnézetével, művelet, paraméterek és Résztvevők fül), a futási előzmények a `#/manage/schedules/runs` oldalon láthatók. A műveletek a `Behind.Common.WebApi.IScheduledAction` interfészt valósítják meg, és a Core vagy a modulok scoped szolgáltatásként regisztrálják: a Core a `core.session-cleanup` műveletet adja, amely törli a beállított napnál (alapértelmezetten 30) régebben érvénytelenített munkameneteket. Az eredmény e-mailben elküldhető szerepkörök tagjainak, felhasználóknak és egyéni címeknek az ütemezés értesítési beállítása szerint (soha, mindig, sikernél, hibánál). A beállítások a `Backend:Scheduler` szakaszban vannak: `Enabled`, `TickSeconds`, `MaxConcurrentRuns`, `RunTimeoutMinutes`, `MaxCatchUpMinutes`, `PreviewCount`, `MaxPreviewCount`, `ParticipantSearchLimit` és `MaxSessionCleanupAgeDays`. Az ütemező egypéldányos: nem használ elosztott zárolást.
 
 ## Elrendezések és widgetek
 
@@ -192,7 +208,7 @@ Alapvető üzleti logika és domain-implementáció.
 - **Behind.Core.Tools**
   - CLI-eszközök és segédprogramok
   - `dataprotection create`: létrehozza az adatvédelmi tanúsítványt (véletlenszerű vagy bekért jelszóval) és egy `security.json` fájlt a `Security:DataProtection` szakasszal
-  - `startup create`: előállítja a `security.json` fájlt (adatvédelmi tanúsítvány és kulcsok elérési útja, TOTP titkos kulcs, JWT aláírókulcs, fejlesztői jogosultságemelés TOTP-kulcsa, magic link titok), a `database.json` fájlt (SQLite), a `backend.json` és a `frontend.json` fájlt, továbbá az `appsettings.json`, `email.json`, `forum.json` és `markdownviewer.json` fájlt. Minden szakasz az összes alapértelmezett értékével íródik ki (fiókok, korlátok, statikus fájlok, magic link, naplózás, OpenTelemetry, modulbeállítások), hogy a Beállítások oldal szerkeszthesse őket; a `StartupSetupTests` minden fájlt visszaköt a konfigurációs rekordokra. A modulfájlokat a Core.Tools a modulok hivatkozása nélkül tükrözi. Kapcsolók: `--data-directory` (alapértelmezés: `data`), `--config-directory` (alapértelmezés: `.`), `--issuer`, `--audience`, `--frontend-url` (alapértelmezés: `http://localhost:8080/`), `--email-confirmation`, `--prompt`, `--force`, `--skip-existing`. Hiba esetén nullától eltérő kilépési kóddal tér vissza
+  - `startup create`: előállítja a `security.json` fájlt (adatvédelmi tanúsítvány és kulcsok elérési útja, TOTP titkos kulcs, JWT aláírókulcs, fejlesztői jogosultságemelés TOTP-kulcsa, magic link titok), a `database.json` fájlt (SQLite), a `backend.json` és a `frontend.json` fájlt, továbbá az `appsettings.json`, `email.json`, `forum.json` és `markdownviewer.json` fájlt. Minden szakasz az összes alapértelmezett értékével íródik ki (fiókok, ütemező, korlátok, statikus fájlok, magic link, OIDC, naplózás, OpenTelemetry, modulbeállítások), hogy a Beállítások oldal szerkeszthesse őket; a `StartupSetupTests` minden fájlt visszaköt a konfigurációs rekordokra. A modulfájlokat a Core.Tools a modulok hivatkozása nélkül tükrözi. Kapcsolók: `--data-directory` (alapértelmezés: `data`), `--config-directory` (alapértelmezés: `.`), `--issuer`, `--audience`, `--frontend-url` (alapértelmezés: `http://localhost:8080/`), `--email-confirmation`, `--prompt`, `--force`, `--skip-existing`. Hiba esetén nullától eltérő kilépési kóddal tér vissza
   - Konténerként is futtatható (a `tools/publish-core-tools-container.sh` a `reverse-project/behind/core-tools` képet publikálja); a konfigurációs fájlokba írt elérési utak abszolútak, ezért az adatkönyvtárat úgy csatolja, hogy a többi konténer is lássa:
 
     ```bash

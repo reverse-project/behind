@@ -16,6 +16,7 @@ Az **Adminisztráció** egy olyan oldal, amely az Ön által használható kezel
 | Kapcsolat (modul) | a `Contact.Read` engedély (űrlapbeállításhoz, olvasottnak jelöléshez és újrapróbáláshoz `Contact.Write`; törléshez `Contact.Delete`) | [Kapcsolatűrlapok és beérkezett kérések](./managing-contact.md) |
 | Sport (modul) | a `Sport.Read` engedély (módosításhoz `Sport.Write`) | [Sport](./managing-sport.md) |
 | Dokumentáció (modul) | a `MarkdownViewer.Read` engedély (a statikus oldalak előállításához `MarkdownViewer.Write`) | [Dokumentáció](./managing-markdown-viewer.md) |
+| Ütemezések | a `Schedule.Read` engedély (`Schedule.Write` a szerkesztéshez, `Schedule.Delete` a törléshez, `Schedule.Manage` a futtatáshoz) | [Ütemezések kezelése](./managing-schedules.md) |
 | Üzenetek | a `Message.Read` engedély (módosításhoz `Message.Write`) | [Üzenetek](./managing-messages.md) |
 | Útvonal-álnevek | a `RouteAlias.Read` engedély (módosításhoz `RouteAlias.Write`) | [Útvonal-álnevek](./managing-route-aliases.md) |
 | Hozzáférési beállítások | az `Access.Read` engedély (módosításhoz `Access.Write`) | [Hozzáférési beállítások](./managing-access-settings.md) |

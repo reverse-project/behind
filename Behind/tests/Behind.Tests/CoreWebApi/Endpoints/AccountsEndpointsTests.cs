@@ -28,12 +28,13 @@ public class AccountsEndpointsTests
         {
             Password = false,
             MagicLink = false,
+            Oidc = false,
             TwoFactor = false,
             Passkey = false,
             EmailTwoFactor = false
         }));
 
-        Assert.Equal(new AccountsSettingsResponse(true, true, false, false, false, false, false),
+        Assert.Equal(new AccountsSettingsResponse(true, true, false, false, false, false, false, false),
             Assert.IsType<JsonHttpResult<AccountsSettingsResponse>>(result).Value);
     }
 }

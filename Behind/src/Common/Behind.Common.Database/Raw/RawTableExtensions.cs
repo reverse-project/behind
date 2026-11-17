@@ -101,7 +101,7 @@ public static class RawTableExtensions
                     .OrderBy(entityType => entityType.IsMainEntity ? 0 : 1)
                     .First()
                     .AuditEntityName,
-                [..table.Columns.Select(column => column.ToRawColumn(table))]);
+                [..table.Columns.Where(column => column.ComputedColumnSql is null).Select(column => column.ToRawColumn(table))]);
     }
 
     extension(IColumn column)

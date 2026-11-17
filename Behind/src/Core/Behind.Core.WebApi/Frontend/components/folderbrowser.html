@@ -1,0 +1,7 @@
+<nav class="card card-body" data-bind="tAttr: { 'aria-label': label }">
+    <!-- ko foreach: rootLinks -->
+    <a class="text-decoration-none mb-2" data-bind="attr: { href: href, 'aria-current': selected() ? 'page' : null }, css: { 'download-tree-selected': selected() }, click: $component.selectRoot"><i class="fa-solid fa-house me-1" aria-hidden="true"></i><span data-bind="t: label"></span></a>
+    <!-- /ko -->
+    <p class="text-body-secondary mb-0" data-bind="visible: !hasFolders(), t: emptyLabel"></p>
+    <download-tree params="nodes: roots, selectFolder: selectFolder"></download-tree>
+</nav>

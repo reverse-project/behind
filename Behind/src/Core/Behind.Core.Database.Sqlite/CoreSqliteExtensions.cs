@@ -1,7 +1,9 @@
 using Behind.Common.Modules;
+using Behind.Core.Domain;
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SqliteProvider = Behind.Core.Common.Configuration.Sqlite;
@@ -10,6 +12,16 @@ namespace Behind.Core.Database.Sqlite;
 
 public static class CoreSqliteExtensions
 {
+    extension(ModelBuilder modelBuilder)
+    {
+        public ModelBuilder ApplySqliteCoreProviderConventions()
+        {
+            modelBuilder.ApplyCoreProviderConventions();
+            modelBuilder.Entity<UserRole>().Property<string>("NormalizedName").UseCollation("BINARY").Metadata.SetIsStored(false);
+            return modelBuilder;
+        }
+    }
+
     private static readonly DatabaseProviderOptions SqliteProviderOptions = new(
         (options, connectionString) => options.UseSqlite(connectionString),
         (options, connectionString) => options.UseVersioningSqlite(connectionString),
@@ -19,6 +31,17 @@ public static class CoreSqliteExtensions
 
     extension(DbContextOptionsBuilder options)
     {
+        public DbContextOptionsBuilder ConfigureOrdinalRoleNames()
+        {
+            foreach (var connection in options.Options.Extensions.OfType<RelationalOptionsExtension>()
+                         .Select(extension => extension.Connection).OfType<Microsoft.Data.Sqlite.SqliteConnection>())
+            {
+                OrdinalRoleNameConnectionInterceptor.Register(connection);
+            }
+
+            return options.AddInterceptors(OrdinalRoleNameConnectionInterceptor.Instance);
+        }
+
         public DbContextOptionsBuilder UseVersioningSqlite(string? connectionString) =>
             options.UseSqlite(
                 connectionString,

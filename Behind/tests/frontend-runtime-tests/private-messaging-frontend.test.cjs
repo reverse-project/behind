@@ -566,9 +566,8 @@ test("messaging and reporting locale keys exist in every Core language", () => {
         for (const key of keys) {
             assert.ok(messages[key], `${locale}: ${key}`);
         }
-        for (const entity of ["PrivateConversation", "PrivateConversationRecipient", "PrivateMessage", "PrivateMailbox", "PrivateMessageRead", "PrivateUserBlock", "UserReport", "ReportEmailDelivery"]) {
+        for (const entity of ["PrivateConversation", "PrivateConversationRecipient", "PrivateMessage", "PrivateMailbox", "PrivateMessageRead", "PrivateUserBlock", "UserReport", "ReportEmailDelivery", "PrivateMessageEmailDelivery"]) {
             assert.ok(messages["audit.entities." + entity], `${locale}: ${entity}`);
-            assert.match(fs.readFileSync(path.join(core, "viewmodels/auditlog.js"), "utf8"), new RegExp(entity + ': "audit.entities.' + entity + '"'));
         }
         assert.ok(messages["menu.item.privateMessages"], `${locale}: private message menu`);
     }

@@ -1,0 +1,5 @@
+{
+  "Postgres": {
+    "Image": "docker.io/library/postgres:latest"
+  }
+}

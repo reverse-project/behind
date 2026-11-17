@@ -5,11 +5,11 @@ using Behind.Core.Common.Configuration;
 
 namespace Behind.Core.Common.Converters;
 
-public sealed class KeyJsonConverter : JsonConverter<Key>
+public sealed class DatabaseKeyJsonConverter : JsonConverter<DatabaseKey>
 {
-    private static readonly KeyTypeConverter TypeConverter = new();
+    private static readonly DatabaseKeyTypeConverter TypeConverter = new();
 
-    public override Key? Read(
+    public override DatabaseKey? Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options)
@@ -33,7 +33,7 @@ public sealed class KeyJsonConverter : JsonConverter<Key>
 
         try
         {
-            return (Key?)TypeConverter.ConvertFromInvariantString(value);
+            return (DatabaseKey?)TypeConverter.ConvertFromInvariantString(value);
         }
         catch (Exception exception) when (exception is FormatException or NotSupportedException)
         {
@@ -43,7 +43,7 @@ public sealed class KeyJsonConverter : JsonConverter<Key>
 
     public override void Write(
         Utf8JsonWriter writer,
-        Key value,
+        DatabaseKey value,
         JsonSerializerOptions options)
     {
         writer.WriteStringValue(value.Value);

@@ -1,5 +1,65 @@
 # Adatbázis-architektúra
 
+## Szerepkörnevek egyedisége
+
+A Core `OrdinalRoleNames` migrációja az adatbázis saját `upper(Name)` szabályát
+olyan kanonikus kulcsra cseréli, amely a .NET `OrdinalIgnoreCase` egyenértékűségi
+szabályát követi. Egy Unicode karakter csak akkor alakul nagybetűvé, ha az
+ordinális összehasonlító az eredménnyel egyenértékűnek tekinti. Az ékezetek,
+a kiegészítő Unicode karakterek és a görög szigma változatai megfelelően
+működnek; a török pontozott I, a hosszú s, a Kelvin-jel és az eltérő Unicode
+normalizálású nevek szükség szerint különbözők maradnak. Az index ordinális
+adatbázis-kollációt használ.
+
+PostgreSQL alatt a .NET megfeleltetési táblájából létrehozott változatlan SQL
+függvény és tárolt oszlop, SQLite alatt a Core, Web és FSE kapcsolatokra
+regisztrált determinisztikus .NET függvény és virtuális oszlop számítja a kulcsot.
+Az SQLite a futókörnyezet, az invariáns rendezési verzió és a tényleges
+megfeleltetési tábla ujjlenyomatát a `__BehindRoleNameCasing` táblában rögzíti.
+A kapcsolat inicializálása ellenőrzi a verziót, és változáskor az írások előtt
+azonnali tranzakcióban újraépíti az indexet. Ütközéskor a régi verzió és index
+megmarad, a kapcsolat nem használható. Változatlan verziónál csak olvasás szükséges.
+
+Az egyediség EF és közvetlen SQL beszúrásnál, valamint átnevezésnél is érvényes.
+Külső SQLite íróknak ugyanazt a függvényt kell regisztrálniuk; enélkül az írás
+meghiúsul. PostgreSQL adatbázist migrációkkal kell létrehozni; az `EnsureCreated`
+önmagában nem telepíti a függvényt. Az ordinális szabályokat megváltoztató .NET
+Futókörnyezet-frissítéshez a PostgreSQL függvény és a számított kulcsok/index
+újraépítése szükséges.
+
+A nevek, azonosítók, tagságok és auditadatok megmaradnak. Frissítés előtt az
+ordinális összehasonlítás szerint azonos neveket rendezni kell. A migráció
+előellenőrzése felsorolja az ütköző normalizált neveket és szerepkör-azonosítókat,
+majd az index létrehozása előtt tranzakciósan leáll. A kiválasztott szerepköröket
+kifejezetten át kell nevezni az azonosítóik megtartásával; a tagságok, menühivatkozások
+és jogosultságkülönbségek megmaradnak. Automatikus összevonás nem történik.
+
+Visszaállításkor is felléphet ütközés, ha a régi nagybetűsítési szabály úgy kívánja.
+Az OIDC
+korlátozottan próbálja újra a megnevezett egyediségi, szerializációs és holtpontütközéseket.
+
+A `DatabaseConfiguration.Key` típusa a `DatabaseKey` értékrekord, felderíthető
+`DatabaseKeyTypeConverter` és `DatabaseKeyJsonConverter` konverterrel, a `CachingKey`
+elnevezéséhez igazodva. A `Database:Key` neve és szöveges formátuma változatlan;
+a meglévő konfigurációs fájlok nem igényelnek migrációt.
+
+A tárolt kapcsolat-, ütemező- és audit-JSON írás előtt beágyazott JSON-sémák
+alapján ellenőrződik. A konverterkompatibilitás és a PostgreSQL-regressziók leírása
+a [tárolt JSON szerződésében](../specs/persisted-json-1.0.0.md) található.
+
+## Személyesadat-mentes összesítések gyorsítótára
+
+A `RawDatabaseQueries.ListTables` kizárólag számszerű darabszámokat tárolhat
+HybridCache-ben. Soradatok, személyazonosítók, jogosultságok és felhasználói
+szövegek nem tárolhatók. A véglegesített auditrevízió minden gazdán elkülöníti
+a bejegyzéseket; tranzakciók és függő írások esetén nincs gyorsítótárazás, az
+újraellenőrzés megakadályozza kevert módosítások közzétételét. Minden író, a nyers
+írások is atomian mentse a módosítást és auditját. Naplózatlan SQL, visszaállítás
+vagy auditnapló-tisztítás után ürítse a gyorsítótárat. A teljes szabályzat a
+[gyorsítótár-útmutatóban](./GETTING_STARTED.md#gyorsítótárazás) található; a tesztek
+ideiglenes PostgreSQL és Valkey konténerekkel ellenőrzik az SQL-találatokat és
+a visszagörgetést.
+
 ## Privát üzenetek és jelentések tárolása
 
 A privát üzenetek és jelentések a Core meglévő migrációs láncát használják a közös SQLite/PostgreSQL adatbázisban. A gazda indítása előtt futtassa a telepítés migrátorát. Az új entitások `(Key, Version)` kulcsot és audit-időbélyeget használnak. A postaláda állapota felhasználónként különböző; a törlés más résztvevő előzményeit nem távolítja el.
@@ -29,6 +89,12 @@ A `ContentLocales` verziózott `ContentLocale` rekordokat tárol (`Id`, `EntityT
 A Core `Messages` táblája változtathatatlan `(Key, Version)` verziókat tárol `Name`, `Title`, `Content`, `Level`, valamint opcionális `StartsAt` és `EndsAt` mezőkkel. Az időhatárok UTC tick értékek a meglévő `DateTimeOffsetConverter` használatával; a létrehozási/módosítási idő és törlési állapot kizárólag az auditnaplóból származik. Az SQLite- és PostgreSQL-`AddMessages` migrációkat a meglévő Core migrációs lánc alkalmazza az egyesített webhely-adatbázisokban is. Az új gazdaalkalmazás indítása előtt futtassa az alkalmazás adatbázis-migrátorát. A nyers szerkesztő minden oszlopot automatikusan felismer, az auditfelirat az üzenet nevét mutatja.
 
 Az `IMessageQueries.FindLive` először a legújabb aktív verziót választja ki, majd a balról zárt, jobbról nyílt időszakot vizsgálja. A kezelői lekérdezések keresést, kezdőbetűket, lapozást és törölt állapotot támogatnak; az `IMessageCommands` az `IVersionedCommands` műveleteit használja létrehozáshoz/módosításhoz, átmeneti és végleges törléshez, valamint visszaállításhoz.
+
+## Ütemező adattárolása
+
+Az `AddSchedules` migráció (SQLite és PostgreSQL) létrehozza a verziózott `Schedules` (`Name`, `Cron`, `Action`, JSON `Parameters`, `Enabled`, `Notify`, JSON `Participants`) és `ScheduleRuns` (`ScheduleId`, `ScheduleName`, `Action`, `ScheduledFor`, `StartedAt`, `FinishedAt`, `Status`, `Summary`, `Link`, `Email`, `Recipients`) táblákat. Mindkettő `(Key, Version)` entitás audit napló alapú időbélyegekkel, soft delete, végleges törlés és visszaállítás támogatással; mindkettő szerepel a `CoreSoftDeletedEntities` listában, és a nyers adatbázis-szerkesztőben is elérhető. Az ütemezés nem törölhető véglegesen, amíg futásai vannak. A leállított gazdagép által `Running` állapotban hagyott futások induláskor sikertelenként záródnak le.
+
+Az `ISessionCommands.DeleteInvalidatedBefore(cutoff)` egyetlen `ExecuteDelete` utasítással törli azokat a `Sessions` sorokat, amelyek `InvalidatedAt` értéke a határidőnél korábbi (a meglévő `InvalidatedAt` indexet használva). Az aktív és az `InvalidatedAt` nélküli érvénytelen munkamenetek megmaradnak. A tömeges törlés nem készít entitásonkénti audit bejegyzést; a törölt sorok számát az ütemezett futás összegzése rögzíti.
 
 ## Elrendezéskonfiguráció tárolása
 

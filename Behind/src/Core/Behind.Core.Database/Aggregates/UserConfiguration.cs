@@ -96,6 +96,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         {
             ur.Property<Guid>("RoleId");
             ur.Property<Guid>("UserId");
+            ur.Property<bool>("IsManuallyAssigned").HasDefaultValue(true);
 
             ur.HasKey("RoleId", "UserId");
 
@@ -109,4 +110,43 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+    public static void ApplyOidcPersistence(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity("OidcAccountBindings", binding =>
+        {
+            binding.Property<string>("ProviderDigest").HasMaxLength(64).IsRequired();
+            binding.Property<string>("IssuerDigest").HasMaxLength(64).IsRequired();
+            binding.Property<string>("SubjectDigest").HasMaxLength(64).IsRequired();
+            binding.Property<Guid>("UserId");
+
+            binding.HasKey("ProviderDigest", "IssuerDigest", "SubjectDigest");
+            binding.HasIndex("UserId");
+
+            binding.HasOne(typeof(HumanUser))
+                .WithMany()
+                .HasForeignKey("UserId")
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity("OidcRoleOwnerships", ownership =>
+        {
+            ownership.Property<string>("ProviderDigest").HasMaxLength(64).IsRequired();
+            ownership.Property<Guid>("UserId");
+            ownership.Property<Guid>("RoleId");
+
+            ownership.HasKey("ProviderDigest", "UserId", "RoleId");
+            ownership.HasIndex("UserId", "RoleId");
+
+            ownership.HasOne(typeof(HumanUser))
+                .WithMany()
+                .HasForeignKey("UserId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            ownership.HasOne(typeof(UserRole))
+                .WithMany()
+                .HasForeignKey("RoleId")
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
 }

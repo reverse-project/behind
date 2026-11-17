@@ -226,6 +226,21 @@ public sealed class AccessTests : IDisposable
         Assert.Equal(None, await new RoleCommands(ctx, AccessCatalog.Core).Create("administrators"));
     }
 
+    [Theory]
+    [InlineData("ÉQUIPE", "équipe", true)]
+    [InlineData("σ", "ς", true)]
+    [InlineData("s", "ſ", false)]
+    [InlineData("i", "İ", false)]
+    public async Task CreateRole_UsesOrdinalCaseInsensitiveUniqueness(string first, string second, bool duplicate)
+    {
+        await using var context = _factory.CreateContext();
+        var commands = new RoleCommands(context, AccessCatalog.Core);
+
+        Assert.False((await commands.Create(first)).IsNone());
+        Assert.Equal(duplicate, (await commands.Create(second)).IsNone());
+        Assert.Equal(duplicate ? 1 : 2, await context.Roles.CountAsync());
+    }
+
     [Fact]
     public async Task DeleteRole_HidesTheRoleAndItsGrantsFromUsers()
     {

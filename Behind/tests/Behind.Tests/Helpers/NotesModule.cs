@@ -1,5 +1,6 @@
 using Behind.Common.Database.Modules;
 using Behind.Core.Database;
+using Behind.Core.Database.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -43,11 +44,17 @@ public sealed class NotesContextSqlite(DbContextOptions<NotesContextSqlite> opti
 
     public DbSet<NoteLog> NoteLogs => Set<NoteLog>();
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureOrdinalRoleNames();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyCoreProviderConventions();
+        modelBuilder.ApplySqliteCoreProviderConventions();
     }
 }
 

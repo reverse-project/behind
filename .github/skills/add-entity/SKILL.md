@@ -5,6 +5,10 @@ description: 'Add a new persisted entity (or start using an entity somewhere new
 
 # Add a new entity
 
+For persistence or queries involving caching, follow `manage-caching`. Do not cache
+PII, user-authored fields or command responses; preserve committed cross-host
+invalidation and test PostgreSQL/Valkey transactions and rollback.
+
 Load `csharp-code-standards` first. Reference implementations: `Site`, `News`, `Download` (commit `e0f7485` shows a full feature, 73 files) and `Article`.
 
 ## Checklist
@@ -19,6 +23,7 @@ Load `csharp-code-standards` first. Reference implementations: `Site`, `News`, `
 9. **Frontend page**: use `add-management-page`.
 10. **Raw database editor**: every entity must be editable in the raw database editor, use `add-raw-database-editor` (`[Sensible]` columns, read-only tables, column kinds, `RawDatabase*` tests).
 11. **Tests**: domain, commands, queries, endpoints, routes, frontend tests, audit labels; reuse/add a `Helpers/<Entity>TestBedExtensions.cs`.
+    Add and maintain real PostgreSQL regression coverage with `Testcontainers.PostgreSql` for changed schemas, seeds, mappings, converters, queries and persistence behavior; SQLite and generated SQL tests alone are insufficient. Follow `Behind/tests/Behind.Tests/CoreDatabase/ContentAgeOptionPostgresIntegrationTests.cs`, including fresh/upgrade migration paths, existing data preservation, audit UTC ticks and safe reruns where applicable. Tag container tests `Category=Integration`, configure the image in `postgresql.testsettings.json`, dispose containers with `await using`, and run the affected tests using the root README's Docker/Podman setup. An unavailable engine must fail explicitly, never silently skip.
 12. **Changelog**: use `update-changelog`.
 13. **Docs**: update `Behind/docs/en-US/developer/DATABASE_ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `PROJECT_OVERVIEW.md`, `WEBAPI_CONVENTIONS.md` and a page in `docs/en-US/user-manual/` (plus its README/administration index) when relevant.
 14. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj` from `Behind/`.

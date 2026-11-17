@@ -4,7 +4,7 @@ using Behind.Core.Common.Configuration;
 
 namespace Behind.Core.Common.Converters;
 
-public sealed class KeyTypeConverter : TypeConverter
+public sealed class DatabaseKeyTypeConverter : TypeConverter
 {
     public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
     {
@@ -17,7 +17,7 @@ public sealed class KeyTypeConverter : TypeConverter
         object value)
     {
         return value is string key
-            ? new Key(key)
+            ? new DatabaseKey(key)
             : base.ConvertFrom(context, culture, value);
     }
 }

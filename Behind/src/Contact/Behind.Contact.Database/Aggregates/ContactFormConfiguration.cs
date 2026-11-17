@@ -1,5 +1,6 @@
 using Behind.Common.Database;
 using Behind.Contact.Domain;
+using Behind.Contact.Database.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,8 +15,17 @@ public sealed class ContactFormConfiguration : IEntityTypeConfiguration<ContactF
         builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(2000).IsRequired();
         builder.Property(x => x.Recipient).HasMaxLength(320).IsRequired();
-        builder.Property(x => x.SubjectMode).HasMaxLength(20).IsRequired();
-        builder.Property(x => x.SubjectsJson).IsRequired();
-        builder.Property(x => x.FieldsJson).IsRequired();
+        builder.Property(x => x.SubjectMode)
+            .HasMaxLength(20)
+            .HasConversion(new ContactStringEnumValueConverter<ContactSubjectMode>())
+            .IsRequired();
+        builder.Property(x => x.Subjects)
+            .HasColumnName("SubjectsJson")
+            .HasConversion(new ContactJsonValueConverter<ContactSubjects, string>())
+            .IsRequired();
+        builder.Property(x => x.Fields)
+            .HasColumnName("FieldsJson")
+            .HasConversion(new ContactJsonValueConverter<ContactFieldSchema, ContactField>())
+            .IsRequired();
     }
 }

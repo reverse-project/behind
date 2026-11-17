@@ -8,7 +8,9 @@ public static class RawDatabasePolicyExtensions
 {
     private static readonly IReadOnlySet<string> ReadOnlyEntities = new HashSet<string>
     {
-        nameof(AuditLogEntry)
+        nameof(AuditLogEntry),
+        "OidcAccountBindings",
+        "OidcRoleOwnerships"
     };
 
     extension(AbstractCoreContext context)

@@ -69,20 +69,10 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
 
     private IQueryable<LabeledUser> Labeled(DeletionState state)
     {
-        var deleted = state == DeletionState.Deleted;
-
         return context.Users
+            .InDeletionState(context, AbstractCoreContext.DeletionRecorded, state)
             .Where(user => EF.Property<Guid>(user, "Id") != DomainConstants.SystemUserId
                            && EF.Property<Guid>(user, "Id") != DomainConstants.GuestUserId)
-            .Where(user =>
-                (context.AuditLogEntries.Count(audit =>
-                     audit.EntityName == nameof(User)
-                     && audit.EntityKey == EF.Property<Guid>(user, "Id").ToString().ToLower()
-                     && audit.Action == new AuditLogEntry.Deleted())
-                 > context.AuditLogEntries.Count(audit =>
-                     audit.EntityName == nameof(User)
-                     && audit.EntityKey == EF.Property<Guid>(user, "Id").ToString().ToLower()
-                     && audit.Action == new AuditLogEntry.Restored())) == deleted)
             .Select(user => new LabeledUser
             {
                 Id = EF.Property<Guid>(user, "Id"),

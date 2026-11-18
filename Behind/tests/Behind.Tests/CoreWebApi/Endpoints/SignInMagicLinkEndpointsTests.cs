@@ -6,6 +6,7 @@ using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.TwoFactor;
 using Behind.Core.WebApi.MagicLinks;
+using Behind.Core.WebApi.Middleware;
 using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -98,7 +99,8 @@ public class SignInMagicLinkEndpointsTests
         Option<MagicLinkSettings> settings,
         IConfiguration? configuration = null,
         Option<JwtSettings>? jwt = null,
-        MagicLinkFunction function = MagicLinkFunction.SignIn) =>
+        MagicLinkFunction function = MagicLinkFunction.SignIn,
+        HttpContext? context = null) =>
         SignInEndpoints.RequestMagicLink(
             UserManagerFor(user),
             Security(jwt ?? Some(Jwt)),
@@ -108,7 +110,7 @@ public class SignInMagicLinkEndpointsTests
             _mailQueue,
             configuration ?? FrontendConfigurationOf("https://app.test/"),
             _time,
-            NewHttpContext(),
+            context ?? NewHttpContext(),
             _logger,
             new SignInEndpoints.MagicLinkRequest("user@test.com", function));
 
@@ -143,6 +145,28 @@ public class SignInMagicLinkEndpointsTests
         }
 
         return mails;
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RequestMagicLink_QueuesMailOnlyAfterSuccessfulCommit(bool commit)
+    {
+        var context = NewHttpContext();
+        await using var transaction = new AuthenticationTransaction(null);
+        context.Features.Set(transaction);
+        Assert.IsType<NoContent>(await RequestLink(NewUser(), Some(Settings()), context: context));
+        Assert.Empty(QueuedMails());
+        if (commit)
+        {
+            await transaction.CommitAsync();
+            Assert.Single(QueuedMails());
+        }
+        else
+        {
+            await transaction.RollbackAsync();
+            Assert.Empty(QueuedMails());
+        }
     }
 
     [Fact]

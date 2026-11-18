@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
@@ -63,8 +64,10 @@ public class ElevationEndpointsTests
 
     private static IMagicLinkCommands ReplayStore()
     {
+        var nonces = new ConcurrentDictionary<TokenNonce, byte>();
         var commands = Substitute.For<IMagicLinkCommands>();
-        commands.TryIssue(Arg.Any<Guid>(), Arg.Any<MagicLink>(), Arg.Any<CancellationToken>()).Returns(true);
+        commands.TryIssue(Arg.Any<Guid>(), Arg.Any<MagicLink>(), Arg.Any<CancellationToken>())
+            .Returns(call => nonces.TryAdd(call.Arg<MagicLink>().Nonce, 0));
         return commands;
     }
 
@@ -130,10 +133,7 @@ public class ElevationEndpointsTests
     [Fact]
     public async Task Elevate_ConsumedStepCannotBeReplayedByAnotherAccount()
     {
-        var nonces = new HashSet<TokenNonce>();
-        var commands = Substitute.For<IMagicLinkCommands>();
-        commands.TryIssue(Arg.Any<Guid>(), Arg.Any<MagicLink>(), Arg.Any<CancellationToken>())
-            .Returns(call => nonces.Add(call.Arg<MagicLink>().Nonce));
+        var commands = ReplayStore();
         var roles = Substitute.For<IRoleCommands>();
         var second = Guid.NewGuid();
         var queries = ValidSessionQueries();
@@ -150,6 +150,54 @@ public class ElevationEndpointsTests
         Assert.IsType<NoContent>(firstResult);
         AssertForbidden(secondResult);
         await roles.DidNotReceive().AssignBuiltIn(second, Arg.Any<BuiltInRole>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Elevate_EquivalentSeedSpellingsShareReplayProtectionAcrossRoles(bool lowercaseFirst)
+    {
+        var encoded = OtpNet.Base32Encoding.ToString(AdministratorKey);
+        Assert.True(Totp.TryCreate(lowercaseFirst ? encoded.ToLowerInvariant() : encoded, out var administrator));
+        Assert.True(Totp.TryCreate(lowercaseFirst ? encoded : encoded.ToLowerInvariant(), out var developer));
+        var security = Security(administrator: Some<SecretKey>(administrator), developer: Some<SecretKey>(developer));
+        var commands = ReplayStore();
+        var roles = Substitute.For<IRoleCommands>();
+        var request = new ElevationEndpoints.ElevationRequest(CodeFor(AdministratorKey));
+
+        var first = await ElevationEndpoints.ElevateAdministrator(request, SignedIn(), security, ValidSessionQueries(),
+            roles, Time, NullLogger<ElevationEndpoints>.Instance, commands);
+        var second = await ElevationEndpoints.ElevateDeveloper(request, SignedIn(), security, ValidSessionQueries(),
+            roles, Time, NullLogger<ElevationEndpoints>.Instance, commands);
+
+        Assert.IsType<NoContent>(first);
+        AssertForbidden(second);
+        await roles.Received(1).AssignBuiltIn(UserId, BuiltInAccess.Administrators, Arg.Any<CancellationToken>());
+        await roles.DidNotReceive().AssignBuiltIn(UserId, BuiltInAccess.Developers, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Elevate_DistinctSeedsAndLaterStepsHaveIndependentReplayKeys()
+    {
+        var commands = ReplayStore();
+        var roles = Substitute.For<IRoleCommands>();
+        var security = Security();
+        var first = await ElevationEndpoints.ElevateAdministrator(
+            new ElevationEndpoints.ElevationRequest(CodeFor(AdministratorKey)), SignedIn(), security, ValidSessionQueries(),
+            roles, Time, NullLogger<ElevationEndpoints>.Instance, commands);
+        var differentSeed = await ElevationEndpoints.ElevateDeveloper(
+            new ElevationEndpoints.ElevationRequest(CodeFor(DeveloperKey)), SignedIn(), security, ValidSessionQueries(),
+            roles, Time, NullLogger<ElevationEndpoints>.Instance, commands);
+        var later = Now.AddMinutes(1);
+        var laterCode = new OtpNet.Totp(AdministratorKey, mode: Totp.HashMode).ComputeTotp(later.UtcDateTime);
+        var differentStep = await ElevationEndpoints.ElevateAdministrator(
+            new ElevationEndpoints.ElevationRequest(laterCode), SignedIn(), security, ValidSessionQueries(),
+            roles, new FixedTimeProvider(later), NullLogger<ElevationEndpoints>.Instance, commands);
+
+        Assert.IsType<NoContent>(first);
+        Assert.IsType<NoContent>(differentSeed);
+        Assert.IsType<NoContent>(differentStep);
+        await roles.Received(3).AssignBuiltIn(UserId, Arg.Any<BuiltInRole>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

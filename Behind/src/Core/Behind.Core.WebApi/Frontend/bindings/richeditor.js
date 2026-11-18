@@ -109,7 +109,7 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
 
             var quill = new Quill(element, {
                 theme: "snow",
-                formats: (options.formats || ["header", "bold", "italic", "underline", "strike", "list", "indent", "align", "blockquote", "code-block", "link"].concat(withImages ? ["image"] : [])).filter(function (format) { return format !== "video"; }),
+                formats: (options.formats || ["header", "bold", "italic", "underline", "strike", "list", "indent", "align", "blockquote", "code-block", "link", "image"]).filter(function (format) { return format !== "video"; }),
                 modules: {
                     toolbar: {
                         container: options.toolbar || toolbarOf(withImages),

@@ -328,6 +328,23 @@ public class RoleManagementEndpointsTests
     }
 
     [Fact]
+    public async Task SetAccess_AdministratorRestrictingDeveloperGrant_IsForbidden()
+    {
+        RoleExists(CustomRoleId, Custom([]));
+
+        var result = await RoleManagementEndpoints.SetAccess(
+            CustomRoleId,
+            new RoleManagementEndpoints.AccessRequest([], ["RawDatabase.Manage"]),
+            SignedIn(),
+            _gate,
+            _roles,
+            _accessCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetRoleAccess(default, default!, default);
+    }
+
+    [Fact]
     public async Task SetAccess_DeveloperGrantingAnything_Saves()
     {
         SignedInAs(ActorRoles(BuiltInAccess.Developers));

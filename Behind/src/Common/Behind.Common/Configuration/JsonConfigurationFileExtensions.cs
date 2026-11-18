@@ -41,7 +41,7 @@ public static class JsonConfigurationFileExtensions
                     root.SetValue(path.Split(PathSeparator), value);
                 }
 
-                ConfigurationSchema.Validate(root);
+                root = ConfigurationSchema.PrepareForWrite(root);
                 await file.ReplaceContentAsync(root.ToJsonString(WriteOptions), cancellationToken);
             }
             finally

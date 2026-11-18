@@ -30,6 +30,7 @@ public static class AccessPolicyExtensions
 
             return actor.CanEditRole(role)
                    && actor.CanGrant(added)
+                   && actor.CanGrant(proposed.Restricted.Except(role.Restricted).Select(value => new Grant(value)))
                    && (added.Count == 0 || !actor.HoldsRole(role));
         }
 

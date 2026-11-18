@@ -12,17 +12,23 @@ namespace Behind.Core.WebApi.Authorization;
 
 public sealed record GrantRequirement(string Grant) : IAuthorizationRequirement;
 
-public sealed class GrantAuthorizationHandler(ISessionQueries sessions, IAccessQueries accessQueries, ILogger<GrantAuthorizationHandler> logger)
+public sealed class GrantAuthorizationHandler(
+    ISessionQueries sessions,
+    IAccessQueries accessQueries,
+    ILogger<GrantAuthorizationHandler> logger,
+    IHttpContextAccessor httpContextAccessor)
     : AuthorizationHandler<GrantRequirement>
 {
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         GrantRequirement requirement)
     {
-        var httpContext = context.Resource as HttpContext;
+        var httpContext = context.Resource as HttpContext ?? httpContextAccessor.HttpContext;
         var granted = false;
 
-        if (httpContext is not null && context.User.Identity?.IsAuthenticated == true)
+        if (httpContext is not null
+            && ReferenceEquals(context.User, httpContext.User)
+            && context.User.Identity?.IsAuthenticated == true)
         {
             var session = await httpContext.FindCurrentSession(sessions);
             granted = await session.Match(

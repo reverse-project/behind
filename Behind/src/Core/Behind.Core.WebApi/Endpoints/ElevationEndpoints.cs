@@ -99,7 +99,8 @@ public sealed class ElevationEndpoints
                 var proof = secretKey.Bind(key => key is Totp totp
                     ? totp.VerifiedStep(request.Code, now).Map(step =>
                         new TokenNonce(new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(
-                            $"elevation:{totp.Value}:{step}"))[..16])))
+                            FormattableString.Invariant(
+                                $"elevation:{OtpNet.Base32Encoding.ToString(OtpNet.Base32Encoding.ToBytes(totp.Value))}:{step}")))[..16])))
                     : None);
                 var accepted = await proof.Match(
                     () => Task.FromResult(false),

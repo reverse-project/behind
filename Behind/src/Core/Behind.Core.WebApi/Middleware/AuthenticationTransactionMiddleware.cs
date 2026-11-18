@@ -1,4 +1,3 @@
-using System.Data;
 using Behind.Common.Database;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -9,21 +8,16 @@ public sealed class AuthenticationTransactionMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context, IUnitOfWork unitOfWork)
     {
-        var path = context.Request.Path;
-        var protectedRequest = !HttpMethods.IsGet(context.Request.Method)
-            && (path.StartsWithSegments("/sign/in")
-                || path.StartsWithSegments("/session/elevate")
-                || path.Equals(new PathString("/profile/password"))
-                || path.StartsWithSegments("/profile/two-factor"));
-
-        if (!protectedRequest || unitOfWork is not DbContext database || !database.Database.IsRelational())
+        if (context.GetEndpoint()?.Metadata.GetMetadata<AuthenticationTransactionMetadata>() is null)
         {
             await next(context);
             return;
         }
 
-        await using var transaction = await database.Database.BeginTransactionAsync(
-            IsolationLevel.Serializable, context.RequestAborted);
+        var database = unitOfWork as DbContext;
+        await using var transaction = new AuthenticationTransaction(
+            database?.Database.IsRelational() == true ? database : null);
+        context.Features.Set(transaction);
         var response = context.Response.Body;
         await using var buffered = new MemoryStream();
         context.Response.Body = buffered;
@@ -36,20 +30,21 @@ public sealed class AuthenticationTransactionMiddleware(RequestDelegate next)
             }
             else
             {
-                await transaction.RollbackAsync(context.RequestAborted);
+                await transaction.RollbackAsync(CancellationToken.None);
             }
             buffered.Position = 0;
             await buffered.CopyToAsync(response, context.RequestAborted);
         }
         catch (Exception exception) when (IsConcurrencyFailure(exception))
         {
-            await transaction.RollbackAsync(context.RequestAborted);
+            await transaction.RollbackAsync(CancellationToken.None);
             context.Response.Clear();
             context.Response.StatusCode = StatusCodes.Status409Conflict;
         }
         finally
         {
             context.Response.Body = response;
+            context.Features.Set<AuthenticationTransaction>(null);
         }
     }
 

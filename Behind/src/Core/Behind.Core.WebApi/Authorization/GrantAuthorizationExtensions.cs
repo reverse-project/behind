@@ -11,6 +11,7 @@ public static class GrantAuthorizationExtensions
     {
         public IServiceCollection AddGrantAuthorization()
         {
+            services.AddHttpContextAccessor();
             services.AddScoped<IAuthorizationHandler, GrantAuthorizationHandler>();
 
             services.AddAuthorization();

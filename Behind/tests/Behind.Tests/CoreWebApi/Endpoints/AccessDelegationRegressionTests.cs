@@ -13,6 +13,44 @@ public class AccessDelegationRegressionTests
     private static UserManagementActor Actor(UserAccess access) =>
         new(Guid.NewGuid(), false, false, access, AccessCatalog.Core);
 
+    [Theory]
+    [InlineData("RawDatabase.Manage", false)]
+    [InlineData("Configuration.Manage", false)]
+    [InlineData("User.Read", true)]
+    public void AddingRestrictionRequiresAuthorityOverTheRestrictedGrant(string restriction, bool expected)
+    {
+        var role = RoleWith([], []);
+        var actor = Actor(new UserAccess([], [(Grant)"User.Read"], []));
+
+        Assert.Equal(expected, actor.CanChangeRole(role, new AccessSelection([], [restriction])));
+    }
+
+    [Fact]
+    public void AddingAuthorizedRestrictionToOwnRoleDoesNotRaisePrivileges()
+    {
+        var role = RoleWith(["User.Read"], []);
+        var actor = Actor(new UserAccess([role], [], []));
+
+        Assert.True(actor.CanChangeRole(role, new AccessSelection([], ["User.Read"])));
+    }
+
+    [Fact]
+    public void RemovingRestrictionFromOwnRoleCannotRaisePrivileges()
+    {
+        var role = RoleWith([], ["User.Read"]);
+        var actor = Actor(new UserAccess([role], [], [])) with { IsDeveloper = true };
+
+        Assert.False(actor.CanChangeRole(role, new AccessSelection([], [])));
+    }
+
+    [Fact]
+    public void DeveloperMayAddRestrictionsOnOtherRoles()
+    {
+        var actor = Actor(new UserAccess([], [], [])) with { IsDeveloper = true };
+
+        Assert.True(actor.CanChangeRole(RoleWith([], []), new AccessSelection([], ["RawDatabase.Manage"])));
+    }
+
     [Fact]
     public void RemovingRestrictionRequiresAuthorityOverRestoredGrant()
     {

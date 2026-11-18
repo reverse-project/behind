@@ -301,7 +301,13 @@ A meglévő carouselek értékei megmaradnak, ha egy korlát megváltozik, csak 
 
 ### Galéria beállítások
 
-A `Frontend:Galleries:MaxDecodedPixels` ettől függetlenül alapértelmezetten 4 000 000 képpontra korlátozza az egyes dekódolt galériabitképeket; hiányzó vagy nem pozitív értéknél ez az alapérték érvényes. A kompatibilitást és a memóriakeret működését a [konfiguráció 1.0.1](../specs/configuration-json-1.0.1.md) írja le.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:23f027f3fcd6f21a156f0d1dce5472cc70a6c2220cd62c22ffee79115573c504 -->
+
+A `Frontend:Galleries:MaxDecodedPixels` ettől függetlenül alapértelmezetten 4 000 000 képpontra korlátozza az egyes dekódolt galériabitképeket; hiányzó vagy nem pozitív értéknél ez az alapérték érvényes. A kompatibilitást és a memóriakeret működését a [konfiguráció 1.0.2](../specs/configuration-json-1.0.2.md) írja le.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 

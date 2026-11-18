@@ -4,6 +4,7 @@ using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Oidc;
+using Behind.Core.WebApi.Middleware;
 using Behind.Core.WebApi.TwoFactor;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -71,22 +72,49 @@ public sealed class OidcSignInEndpoints
             return Results.NotFound();
         }
 
-        var ticket = tickets.Redeem(request.Ticket, flow => context.Request.Cookies[OidcExtensions.CookieName(flow)]);
-        if (ticket is null)
+        var reservation = tickets.Reserve(request.Ticket, flow => context.Request.Cookies[OidcExtensions.CookieName(flow)]);
+        if (reservation is null)
         {
             logger.LogWarning("OIDC ticket redemption rejected: invalid, expired or unbound ticket");
             return Results.Unauthorized();
         }
 
-        context.Response.Cookies.Delete(OidcExtensions.CookieName(ticket.FlowId), OidcExtensions.BrowserCookie(TimeSpan.Zero));
-        var user = await signIn.Resolve(ticket.Identity, context.RequestAborted);
-        if (user is null)
+        var transaction = context.Features.Get<AuthenticationTransaction>();
+        var ticket = reservation.Ticket;
+        if (transaction is not null)
         {
-            return Results.Unauthorized();
+            transaction.OnCommitted(() =>
+            {
+                reservation.Commit();
+                context.Response.Cookies.Delete(OidcExtensions.CookieName(ticket.FlowId), OidcExtensions.BrowserCookie(TimeSpan.Zero));
+            });
+            transaction.OnRolledBack(reservation.Dispose);
         }
 
-        return await SignInEndpoints.StartSession(user, jwt, security.Value.EmailConfirmation,
-            sessions, bans, timeProvider.GetUtcNow(), context, logger, Some(twoFactor),
-            primaryOidcProviderId: ticket.Identity.ProviderId);
+        try
+        {
+            var user = await signIn.Resolve(ticket.Identity, context.RequestAborted);
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await SignInEndpoints.StartSession(user, jwt, security.Value.EmailConfirmation,
+                sessions, bans, timeProvider.GetUtcNow(), context, logger, Some(twoFactor),
+                primaryOidcProviderId: ticket.Identity.ProviderId);
+            if (transaction is null && result is not IStatusCodeHttpResult { StatusCode: >= 400 })
+            {
+                reservation.Commit();
+                context.Response.Cookies.Delete(OidcExtensions.CookieName(ticket.FlowId), OidcExtensions.BrowserCookie(TimeSpan.Zero));
+            }
+            return result;
+        }
+        finally
+        {
+            if (transaction is null)
+            {
+                reservation.Dispose();
+            }
+        }
     }
 }

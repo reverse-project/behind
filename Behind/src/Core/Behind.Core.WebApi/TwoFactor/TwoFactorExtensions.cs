@@ -18,6 +18,7 @@ public static class TwoFactorExtensions
     {
         public IServiceCollection AddTwoFactor()
         {
+            services.AddHttpContextAccessor();
             services.TryAddSingleton(TimeProvider.System);
             services.TryAddSingleton<ITwoFactorTickets, TwoFactorTickets>();
             services.TryAddSingleton<IPasskeyCeremonies, PasskeyCeremonies>();

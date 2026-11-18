@@ -9,48 +9,48 @@ public sealed class MagicLinkSecretRotator(
     TimeProvider timeProvider,
     ILogger<MagicLinkSecretRotator> logger)
 {
-    public Task<bool> RotateIfNeededAsync(CancellationToken cancellationToken = default) =>
-        store.Current.Match(
-            none: () =>
-            {
-                logger.LogDebug("Magic link secret rotation skipped: magic links are not configured");
+    private readonly SemaphoreSlim _rotationGate = new(1, 1);
 
-                return Task.FromResult(false);
-            },
-            some: current => AdvanceAsync(current, cancellationToken));
+    public Task<bool> RotateIfNeededAsync(CancellationToken cancellationToken = default) =>
+        RotateAsync(false, cancellationToken);
 
     public Task<bool> RotateNowAsync(CancellationToken cancellationToken = default) =>
-        store.Current.Match(
-            none: () => Task.FromResult(false),
-            some: async current =>
-            {
-                var rotated = current.Rotate(timeProvider.GetUtcNow());
+        RotateAsync(true, cancellationToken);
 
-                await persister.PersistAsync(rotated, cancellationToken);
-                store.Replace(rotated);
-
-                logger.LogInformation("Magic link secrets rotated on request");
-
-                return true;
-            });
-
-    private async Task<bool> AdvanceAsync(MagicLinkSettings current, CancellationToken cancellationToken)
+    private async Task<bool> RotateAsync(bool force, CancellationToken cancellationToken)
     {
-        var advanced = current.Advance(timeProvider.GetUtcNow());
+        await _rotationGate.WaitAsync(cancellationToken);
+
+        try
+        {
+            return await store.Current.Match(
+                none: () =>
+                {
+                    logger.LogDebug("Magic link secret rotation skipped: magic links are not configured");
+                    return Task.FromResult(false);
+                },
+                some: current => AdvanceAsync(current, force, cancellationToken));
+        }
+        finally
+        {
+            _rotationGate.Release();
+        }
+    }
+
+    private async Task<bool> AdvanceAsync(MagicLinkSettings current, bool force, CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow();
+        var advanced = force ? current.Rotate(now) : current.Advance(now);
 
         if (advanced == current)
         {
             logger.LogDebug("Magic link secrets are current, no rotation needed");
-
             return false;
         }
 
         await persister.PersistAsync(advanced, cancellationToken);
         store.Replace(advanced);
-
         logger.LogInformation("Magic link secrets rotated");
-
         return true;
     }
-
 }

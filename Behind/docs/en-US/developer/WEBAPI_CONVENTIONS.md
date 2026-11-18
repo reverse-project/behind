@@ -301,7 +301,13 @@ The values of existing carousels are kept when a limit changes, only new saves a
 
 ### Galleries Settings
 
-`Frontend:Galleries:MaxDecodedPixels` independently bounds each decoded gallery bitmap to 4,000,000 pixels by default; missing or nonpositive values use that default. See [configuration 1.0.1](../specs/configuration-json-1.0.1.md) for compatibility and memory-budget behavior.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:8fb5524601fbc5b978075d1db088cbe4210677760f652924fb5272356fb5f059 -->
+
+`Frontend:Galleries:MaxDecodedPixels` independently bounds each decoded gallery bitmap to 4,000,000 pixels by default; missing or nonpositive values use that default. See [configuration 1.0.2](../specs/configuration-json-1.0.2.md) for compatibility and memory-budget behavior.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 

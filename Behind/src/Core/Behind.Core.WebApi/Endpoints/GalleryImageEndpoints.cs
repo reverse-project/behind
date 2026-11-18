@@ -43,7 +43,7 @@ public sealed class GalleryImageEndpoints
 
         foreach (var file in files)
         {
-            uploaded.Add(await Store(file, httpContext, commands, configuration.Value.ImageLimit));
+            uploaded.Add(await Store(file, httpContext, commands, configuration.Value.ImageLimit, configuration.Value.DecodePixelLimit));
         }
 
         return Results.Json(new GalleryUploadResponse(uploaded));
@@ -70,7 +70,7 @@ public sealed class GalleryImageEndpoints
 
         var content = await file.ReadAllBytesAsync(httpContext.RequestAborted);
 
-        return await content.DetectImageContentType().Bind(_ => content.ToThumbnail(CoverSide)).Match(
+        return await content.DetectImageContentType().Bind(_ => content.ToThumbnail(CoverSide, configuration.Value.DecodePixelLimit)).Match(
             () => Task.FromResult<IResult>(Results.StatusCode(StatusCodes.Status415UnsupportedMediaType)),
             async cover =>
             {
@@ -90,7 +90,8 @@ public sealed class GalleryImageEndpoints
         IFormFile file,
         HttpContext httpContext,
         IVfsCommands commands,
-        long limit)
+        long limit,
+        long maxPixels)
     {
         var fileName = file.FileName.ToVfsFileName("image");
 
@@ -108,7 +109,7 @@ public sealed class GalleryImageEndpoints
 
         return await content.DetectImageContentType().Match(
             () => Task.FromResult(Rejected(fileName, GalleryResponseExtensions.UnsupportedImageError)),
-            contentType => content.ToThumbnail(ThumbnailSide).Match(
+            contentType => content.ToThumbnail(ThumbnailSide, maxPixels).Match(
                 () => Task.FromResult(Rejected(fileName, GalleryResponseExtensions.UnreadableImageError)),
                 async thumbnail =>
                 {

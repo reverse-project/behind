@@ -455,6 +455,7 @@ public static class WebApiExtensions
             application.UseDownloadUploadLimit();
             application.UseRateLimiter();
             application.UseAuthentication();
+            application.UseMiddleware<AuthenticationTransactionMiddleware>();
             application.UseSessionValidation();
             application.UseAuthorization();
             application.UseAccessGate();

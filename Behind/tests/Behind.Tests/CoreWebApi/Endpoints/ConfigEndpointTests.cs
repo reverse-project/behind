@@ -34,6 +34,9 @@ public class ConfigEndpointTests
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["Security:SecretKey"] = "totp://AAAA",
+                    ["Email:Smtp:Authentication:Password"] = "smtp-private",
+                    ["Security:Oidc:Providers:0:ClientSecret"] = "oidc-private",
+                    ["DataProtection:Certificate:Password"] = "certificate-private",
                     ["Security:Jwt:SigningKey"] = "signing",
                     ["Security:MagicLink:ActualSecret"] = "actual",
                     ["Security:MagicLink:OldSecret"] = "old",
@@ -46,6 +49,18 @@ public class ConfigEndpointTests
 
     private static int StatusOf(IResult result) =>
         Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode ?? StatusCodes.Status200OK;
+
+    [Fact]
+    public void ExecuteGet_MasksCredentialsIncludingArrayEntries()
+    {
+        var now = FirstMomentWith(code => code.StartsWith('0'));
+        var result = Assert.IsAssignableFrom<IValueHttpResult>(Get(now, CodeFor(now)));
+        var json = result.Value!.ToString()!;
+        Assert.DoesNotContain("smtp-private", json);
+        Assert.DoesNotContain("oidc-private", json);
+        Assert.DoesNotContain("certificate-private", json);
+        Assert.DoesNotContain("totp://AAAA", json);
+    }
 
     [Fact]
     public void ExecuteGet_CodeWithLeadingZero_IsAccepted()

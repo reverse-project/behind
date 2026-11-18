@@ -64,7 +64,29 @@ public static class JsonConfigurationFileExtensions
 
             try
             {
-                await File.WriteAllTextAsync(temporary, content, cancellationToken);
+                var options = new FileStreamOptions
+                {
+                    Mode = FileMode.CreateNew,
+                    Access = FileAccess.Write,
+                    Share = FileShare.None,
+                    Options = FileOptions.Asynchronous
+                };
+                if (!OperatingSystem.IsWindows())
+                {
+                    options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+                }
+
+                await using (var stream = new FileStream(temporary, options))
+                await using (var writer = new StreamWriter(stream))
+                {
+                    await writer.WriteAsync(content.AsMemory(), cancellationToken);
+                }
+
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(temporary, File.GetUnixFileMode(file.FullName)
+                        & (UnixFileMode.UserRead | UnixFileMode.UserWrite));
+                }
                 File.Move(temporary, file.FullName, overwrite: true);
             }
             catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)

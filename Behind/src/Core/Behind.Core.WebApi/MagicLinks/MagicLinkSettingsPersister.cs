@@ -41,7 +41,7 @@ public sealed class ConfigurationAwareMagicLinkSettingsPersister(
         file.Refresh();
 
         return security.Value.ReadOnlyConfiguration || !file.Exists
-            ? Task.CompletedTask
+            ? Task.FromException(new InvalidOperationException("Magic link rotation requires writable persistent configuration."))
             : _file.PersistAsync(settings, cancellationToken);
     }
 }

@@ -8,7 +8,7 @@ public sealed record ImageThumbnail(byte[] Content, string ContentType);
 public static class ImageThumbnailExtensions
 {
     public const string ThumbnailContentType = "image/webp";
-    public const long MaxPixels = 100_000_000;
+    public const long MaxPixels = 4_000_000;
 
     private const int Quality = 80;
     private const int MaxMosaicImages = 4;
@@ -17,15 +17,15 @@ public static class ImageThumbnailExtensions
 
     extension(byte[] image)
     {
-        public Option<ImageThumbnail> ToThumbnail(int maxSide) =>
+        public Option<ImageThumbnail> ToThumbnail(int maxSide, long maxPixels = MaxPixels) =>
             maxSide <= 0
                 ? None
-                : Try(() => image.CreateThumbnail(maxSide))
+                : Try(() => image.CreateThumbnail(maxSide, maxPixels))
                     .Run()
                     .Match<Option<ImageThumbnail>>(_ => None, thumbnail => thumbnail);
 
-        private Option<ImageThumbnail> CreateThumbnail(int maxSide) =>
-            image.Decode().Match<Option<ImageThumbnail>>(
+        private Option<ImageThumbnail> CreateThumbnail(int maxSide, long maxPixels) =>
+            image.Decode(maxSide, maxPixels).Match<Option<ImageThumbnail>>(
                 () => None,
                 bitmap =>
                 {
@@ -37,21 +37,34 @@ public static class ImageThumbnailExtensions
                     }
                 });
 
-        private Option<SKBitmap> Decode()
+        private Option<SKBitmap> Decode(int maxSide, long maxPixels)
         {
             using var data = SKData.CreateCopy(image);
             using var codec = SKCodec.Create(data);
 
-            if (codec is null || (long)codec.Info.Width * codec.Info.Height > MaxPixels)
+            if (codec is null || maxPixels <= 0)
             {
                 return None;
             }
 
-            var decoded = SKBitmap.Decode(codec);
+            var scale = Math.Min(1f, (float)maxSide / Math.Max(codec.Info.Width, codec.Info.Height));
+            var dimensions = codec.GetScaledDimensions(scale);
+
+            if ((long)dimensions.Width * dimensions.Height > maxPixels)
+            {
+                return None;
+            }
+
+            var decoded = SKBitmap.Decode(codec, new SKImageInfo(dimensions.Width, dimensions.Height));
 
             if (decoded is null)
             {
                 return None;
+            }
+
+            if (codec.EncodedOrigin == SKEncodedOrigin.TopLeft)
+            {
+                return decoded;
             }
 
             using (decoded)
@@ -63,19 +76,26 @@ public static class ImageThumbnailExtensions
 
     extension(IReadOnlyList<byte[]> images)
     {
-        public Option<ImageThumbnail> ToMosaic(int side) =>
-            side <= 0 || images.Count == 0
+        public Option<ImageThumbnail> ToMosaic(int side, long maxPixels = MaxPixels) =>
+            side <= 0 || images.Count == 0 || (long)side * side > maxPixels
                 ? None
-                : Try(() => images.CreateMosaic(side))
+                : Try(() => images.CreateMosaic(side, maxPixels))
                     .Run()
                     .Match<Option<ImageThumbnail>>(_ => None, mosaic => mosaic);
 
-        private Option<ImageThumbnail> CreateMosaic(int side)
+        private Option<ImageThumbnail> CreateMosaic(int side, long maxPixels)
         {
             var bitmaps = images
                 .Take(MaxMosaicImages)
-                .Select(image => image.Decode())
+                .Select(image => image.Decode(side, maxPixels))
                 .SelectMany(decoded => decoded.AsEnumerable())
+                .Select(bitmap =>
+                {
+                    using (bitmap)
+                    {
+                        return bitmap.Fit(side);
+                    }
+                })
                 .ToList();
 
             try

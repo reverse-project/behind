@@ -154,7 +154,7 @@ public sealed class MagicLinkRotationTests : IDisposable
     }
 
     [Fact]
-    public async Task Rotator_PersistFailure_KeepsRotationInMemoryAndLogs()
+    public async Task Rotator_PersistFailure_RejectsRotationAndKeepsCurrentSecrets()
     {
         var settings = SettingsCreatedAt(Start);
         var store = new MagicLinkSettingsStore(Some(settings));
@@ -164,16 +164,8 @@ public sealed class MagicLinkRotationTests : IDisposable
         var logger = Substitute.For<ILogger<MagicLinkSecretRotator>>();
         var rotator = new MagicLinkSecretRotator(store, persister, new FixedTimeProvider(Start + Interval), logger);
 
-        var rotated = await rotator.RotateIfNeededAsync();
-
-        Assert.True(rotated);
-        Assert.NotEqual(Some(settings), store.Current);
-        logger.Received(1).Log(
-            LogLevel.Error,
-            Arg.Any<EventId>(),
-            Arg.Any<object>(),
-            Arg.Any<IOException>(),
-            Arg.Any<Func<object, Exception?, string>>());
+        await Assert.ThrowsAsync<IOException>(() => rotator.RotateIfNeededAsync());
+        Assert.Equal(Some(settings), store.Current);
     }
 
     [Fact]
@@ -268,25 +260,27 @@ public sealed class MagicLinkRotationTests : IDisposable
     }
 
     [Fact]
-    public async Task AddMagicLink_MissingFile_DoesNotPersist()
+    public async Task AddMagicLink_MissingFile_RejectsRotation()
     {
         var settings = SettingsCreatedAt(Start);
         using var provider = ProviderWith(new SecurityConfiguration(false, None, None, Some(settings)));
 
-        await provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings));
 
         Assert.False(File.Exists(Path.Combine(_directory, "missing.json")));
     }
 
     [Fact]
-    public async Task AddMagicLink_ReadOnlyConfiguration_DoesNotPersist()
+    public async Task AddMagicLink_ReadOnlyConfiguration_RejectsRotation()
     {
         var path = Path.Combine(_directory, "security.json");
         await File.WriteAllTextAsync(path, "{}");
         var settings = SettingsCreatedAt(Start);
         using var provider = ProviderWith(new SecurityConfiguration(true, None, None, Some(settings)), "security.json");
 
-        await provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings));
 
         Assert.Equal("{}", await File.ReadAllTextAsync(path));
     }

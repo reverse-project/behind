@@ -2,6 +2,7 @@ using Behind.Common;
 using Behind.Common.Logging;
 using Behind.Core.Database;
 using Behind.Core.Domain;
+using Behind.Core.WebApi.Endpoints;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -11,11 +12,12 @@ public sealed class DeletedRecordsVisibilityMiddleware(
     RequestDelegate next,
     ILogger<DeletedRecordsVisibilityMiddleware> logger)
 {
-    public async Task InvokeAsync(HttpContext context, AbstractCoreContext database, IUserQueries userQueries)
+    public async Task InvokeAsync(HttpContext context, AbstractCoreContext database, ISessionQueries sessions, IAccessQueries accessQueries)
     {
-        var canViewDeleted = await context.User.Email.Match(
+        var session = await context.FindCurrentSession(sessions);
+        var canViewDeleted = await session.Match(
             () => Task.FromResult(false),
-            email => userQueries.HasGrant(email, DomainConstants.ViewDeletedGrant, context.RequestAborted));
+            async current => (await accessQueries.GetUserAccess(current.UserId, context.RequestAborted)).Holds(DomainConstants.ViewDeletedGrant));
 
         if (canViewDeleted)
         {

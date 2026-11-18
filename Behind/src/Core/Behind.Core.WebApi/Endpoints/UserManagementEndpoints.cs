@@ -80,11 +80,37 @@ public sealed class UserManagementEndpoints
         string role,
         HttpContext httpContext,
         UserManagementGate gate,
-        IRoleCommands roleCommands) =>
-        ChangeRole(id, role, httpContext, gate, (managed, user) => roleCommands.AssignBuiltIn(
-            user.Id,
-            managed.Role,
-            httpContext.RequestAborted));
+        IRoleCommands roleCommands,
+        IRoleQueries roleQueries,
+        IAccessQueries accessQueries) =>
+        ManagedRole.Parse(role).Match(
+            () => Task.FromResult<IResult>(Results.NotFound()),
+            managed => gate.RunForResult(
+                httpContext,
+                id,
+                (actor, target) => actor.CanChange(managed, target),
+                async (actor, target, _) =>
+                {
+                    var found = await roleQueries.GetRoleById(managed.Role.Id, httpContext.RequestAborted);
+                    return await found.Match(
+                        () => Task.FromResult<IResult>(Results.NotFound()),
+                        async persisted =>
+                        {
+                            var current = await accessQueries.GetUserAccess(target.Id, httpContext.RequestAborted);
+                            var proposed = current with
+                            {
+                                Roles = current.Roles.Where(held => held.Name != persisted.Role.Name).Append(persisted.Role).ToList()
+                            };
+
+                            if (!actor.CanChangeAccess(current, proposed))
+                            {
+                                return Results.StatusCode(StatusCodes.Status403Forbidden);
+                            }
+
+                            await roleCommands.AssignBuiltIn(target.Id, managed.Role, httpContext.RequestAborted);
+                            return Results.NoContent();
+                        });
+                }));
 
     [Authorize]
     [IgnoreETag]

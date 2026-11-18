@@ -45,25 +45,12 @@ public sealed class MagicLinkSecretRotator(
             return false;
         }
 
+        await persister.PersistAsync(advanced, cancellationToken);
         store.Replace(advanced);
-        await PersistAsync(advanced, cancellationToken);
 
         logger.LogInformation("Magic link secrets rotated");
 
         return true;
     }
 
-    private async Task PersistAsync(MagicLinkSettings settings, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await persister.PersistAsync(settings, cancellationToken);
-
-            logger.LogDebug("Persisted the rotated magic link secrets");
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            logger.LogError(exception, "Failed to persist the rotated magic link secrets");
-        }
-    }
 }

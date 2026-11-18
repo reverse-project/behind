@@ -295,7 +295,15 @@ The `Frontend:Carousels` section (`CarouselsConfiguration`, in `frontend.json`) 
 
 The values of existing carousels are kept when a limit changes, only new saves are checked against the current limits. `GET /carousels/settings` returns the effective values and the web client reads them before showing the carousel section of the site editor.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:8282ebdaf825c1dfaaa31647eacbfabcffd84774be8cfc18ba8ea120f180b3b2 -->
+
 ### Galleries Settings
+
+`Frontend:Galleries:MaxDecodedPixels` independently bounds each decoded gallery bitmap to 4,000,000 pixels by default; missing or nonpositive values use that default. See [configuration 1.0.1](../specs/configuration-json-1.0.1.md) for compatibility and memory-budget behavior.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 The `Frontend:Galleries` section (`GalleriesConfiguration`) has `MaxImageBytes`, the largest accepted gallery image or thumbnail upload (default 10 MB, zero or negative falls back to the default). Larger files are reported per file as `too-large` in a batch upload, and answer `413` for the thumbnail upload. The gallery upload endpoints accept request bodies up to `GalleryImageEndpoints.MaxRequestBytes` (128 MB), so the web client sends five files per request.
 

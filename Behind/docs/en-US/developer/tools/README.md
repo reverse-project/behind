@@ -45,7 +45,13 @@ dotnet run --project src/Core/Behind.Core.Tools -- secret generate --type totp
 Print an authenticator URI for an existing TOTP secret:
 
 ```bash
-dotnet run --project src/Core/Behind.Core.Tools -- secret uri --value YOUR_BASE32_SECRET --account admin
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:d86601e09b928510704e9797a50e580e1fac2389e516bce0e200d3db928c535b -->
+
+dotnet run --project src/Core/Behind.Core.Tools -- secret uri --account admin
+
+<!-- /coderabbit-ai-generated:v1 -->
 ```
 
 The `--account` option defaults to `admin`. The output includes a configuration value suitable for `security.json` and the full URI to add to an authenticator app.

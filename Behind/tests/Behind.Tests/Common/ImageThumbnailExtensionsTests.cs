@@ -8,6 +8,21 @@ public class ImageThumbnailExtensionsTests
         option.Match<ImageThumbnail>(() => throw new InvalidOperationException(), thumbnail => thumbnail);
 
     [Fact]
+    public void ToThumbnail_RejectsImagesExceedingTheDecodeBudget()
+    {
+        Assert.Equal(None, TestImages.Png(1000, 1000).ToThumbnail(100, 10_000));
+    }
+
+    [Fact]
+    public void ToThumbnail_DownsamplesJpegBeforeApplyingTheDecodeBudget()
+    {
+        var found = Found(TestImages.Jpeg(2000, 2000).ToThumbnail(100, 100_000));
+        using var bitmap = SKBitmap.Decode(found.Content);
+        Assert.Equal(100, bitmap.Width);
+        Assert.Equal(100, bitmap.Height);
+    }
+
+    [Fact]
     public void ToThumbnail_ScalesTheLongSideDownAndKeepsTheAspectRatio()
     {
         var found = Found(TestImages.Png(800, 400).ToThumbnail(200));
@@ -71,7 +86,9 @@ public class ImageThumbnailExtensionsTests
 
         var found = Found(images.ToMosaic(100));
 
-        Assert.Equal((100, 100), TestImages.SizeOf(found.Content));
+        using var bitmap = SKBitmap.Decode(found.Content);
+        Assert.Equal(100, bitmap.Width);
+        Assert.Equal(100, bitmap.Height);
 
         var topLeft = TestImages.PixelOf(found.Content, 10, 10);
         var topRight = TestImages.PixelOf(found.Content, 90, 10);

@@ -110,6 +110,8 @@ public static class SoftDeleteExtensions
 
         private async Task RestoreCascadingAsync(EntityEntry root, CancellationToken cancellationToken)
         {
+            var deletedAt = await context.SoftDeleteContext.DeletedAtAsync(
+                root.Metadata.GetRootType().ClrType.Name, root.SoftDeleteKey, cancellationToken);
             var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
             var pending = new Queue<EntityEntry>([root]);
 
@@ -124,7 +126,12 @@ public static class SoftDeleteExtensions
 
                 foreach (var dependent in await SoftDeleteCascade.FindDependentsAsync(context, principal, cancellationToken))
                 {
-                    pending.Enqueue(dependent);
+                    var dependentDeletedAt = await context.SoftDeleteContext.DeletedAtAsync(
+                        dependent.Metadata.GetRootType().ClrType.Name, dependent.SoftDeleteKey, cancellationToken);
+                    if (dependentDeletedAt == deletedAt)
+                    {
+                        pending.Enqueue(dependent);
+                    }
                 }
             }
         }

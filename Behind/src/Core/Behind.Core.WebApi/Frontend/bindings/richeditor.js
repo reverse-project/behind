@@ -59,9 +59,9 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
         if (!Array.prototype.some.call(sourceImages, function (image) { return image.hasAttribute("data-content-locale-source"); })) {
             return html;
         }
-        var container = document.createElement("div");
+        var container = document.createElement("template");
         container.innerHTML = html;
-        var images = container.querySelectorAll("img");
+        var images = container.content.querySelectorAll("img");
         Array.prototype.forEach.call(sourceImages, function (image, index) {
             var source = image.getAttribute("data-content-locale-source");
             if (source !== null && images[index] && images[index].getAttribute("src") === image.getAttribute("src")) {
@@ -109,7 +109,7 @@ define(["ko", "quill", "models/i18n", "bindings/richeditorimages", "bindings/ric
 
             var quill = new Quill(element, {
                 theme: "snow",
-                formats: options.formats,
+                formats: (options.formats || ["header", "bold", "italic", "underline", "strike", "list", "indent", "align", "blockquote", "code-block", "link"].concat(withImages ? ["image"] : [])).filter(function (format) { return format !== "video"; }),
                 modules: {
                     toolbar: {
                         container: options.toolbar || toolbarOf(withImages),

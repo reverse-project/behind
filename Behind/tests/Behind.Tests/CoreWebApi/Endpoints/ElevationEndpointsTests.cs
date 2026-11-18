@@ -61,6 +61,13 @@ public class ElevationEndpointsTests
         return queries;
     }
 
+    private static IMagicLinkCommands ReplayStore()
+    {
+        var commands = Substitute.For<IMagicLinkCommands>();
+        commands.TryIssue(Arg.Any<Guid>(), Arg.Any<MagicLink>(), Arg.Any<CancellationToken>()).Returns(true);
+        return commands;
+    }
+
     private static Task<IResult> Administrator(
         string code,
         IOptions<SecurityConfiguration> security,
@@ -74,7 +81,8 @@ public class ElevationEndpointsTests
             queries ?? ValidSessionQueries(),
             roles,
             Time,
-            NullLogger<ElevationEndpoints>.Instance);
+            NullLogger<ElevationEndpoints>.Instance,
+            ReplayStore());
 
     private static Task<IResult> Developer(
         string code,
@@ -89,7 +97,8 @@ public class ElevationEndpointsTests
             queries ?? ValidSessionQueries(),
             roles,
             Time,
-            NullLogger<ElevationEndpoints>.Instance);
+            NullLogger<ElevationEndpoints>.Instance,
+            ReplayStore());
 
     private static async Task AssertNothingAssigned(IRoleCommands roles) =>
         await roles.DidNotReceiveWithAnyArgs().AssignBuiltIn(default, default!, default);
@@ -112,9 +121,35 @@ public class ElevationEndpointsTests
             queries ?? ValidSessionQueries(),
             Substitute.For<IRoleCommands>(),
             Time,
-            logger);
+            logger,
+            ReplayStore());
 
         return logger;
+    }
+
+    [Fact]
+    public async Task Elevate_ConsumedStepCannotBeReplayedByAnotherAccount()
+    {
+        var nonces = new HashSet<TokenNonce>();
+        var commands = Substitute.For<IMagicLinkCommands>();
+        commands.TryIssue(Arg.Any<Guid>(), Arg.Any<MagicLink>(), Arg.Any<CancellationToken>())
+            .Returns(call => nonces.Add(call.Arg<MagicLink>().Nonce));
+        var roles = Substitute.For<IRoleCommands>();
+        var second = Guid.NewGuid();
+        var queries = ValidSessionQueries();
+        var firstResult = await ElevationEndpoints.ElevateAdministrator(
+            new ElevationEndpoints.ElevationRequest(CodeFor(AdministratorKey)), SignedIn(), Security(), queries,
+            roles, Time, NullLogger<ElevationEndpoints>.Instance, commands);
+        queries.TryFindByIdWithUserId(SessionId, Arg.Any<CancellationToken>())
+            .Returns(Some<(Session, Guid)>((new ValidSession(
+                AccessToken.Create(new GuestUser(None)), RefreshToken.Create(new GuestUser(None)),
+                "10.0.0.1", "test-agent"), second)));
+        var secondResult = await ElevationEndpoints.ElevateAdministrator(
+            new ElevationEndpoints.ElevationRequest(CodeFor(AdministratorKey)), SignedIn(), Security(), queries,
+            roles, Time, NullLogger<ElevationEndpoints>.Instance, commands);
+        Assert.IsType<NoContent>(firstResult);
+        AssertForbidden(secondResult);
+        await roles.DidNotReceive().AssignBuiltIn(second, Arg.Any<BuiltInRole>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

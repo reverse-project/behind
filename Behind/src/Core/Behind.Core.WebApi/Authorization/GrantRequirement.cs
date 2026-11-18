@@ -2,6 +2,9 @@ using Behind.Common;
 using Behind.Common.Logging;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Middleware;
+using Behind.Core.WebApi.Endpoints;
+using Behind.Core.Domain;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 
@@ -9,16 +12,23 @@ namespace Behind.Core.WebApi.Authorization;
 
 public sealed record GrantRequirement(string Grant) : IAuthorizationRequirement;
 
-public sealed class GrantAuthorizationHandler(IUserQueries userQueries, ILogger<GrantAuthorizationHandler> logger)
+public sealed class GrantAuthorizationHandler(ISessionQueries sessions, IAccessQueries accessQueries, ILogger<GrantAuthorizationHandler> logger)
     : AuthorizationHandler<GrantRequirement>
 {
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         GrantRequirement requirement)
     {
-        var granted = await context.User.Email.Match(
-            () => Task.FromResult(false),
-            email => userQueries.HasGrant(email, requirement.Grant));
+        var httpContext = context.Resource as HttpContext;
+        var granted = false;
+
+        if (httpContext is not null && context.User.Identity?.IsAuthenticated == true)
+        {
+            var session = await httpContext.FindCurrentSession(sessions);
+            granted = await session.Match(
+                () => Task.FromResult(false),
+                async current => (await accessQueries.GetUserAccess(current.UserId, httpContext.RequestAborted)).Holds(requirement.Grant));
+        }
 
         if (granted)
         {

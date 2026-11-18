@@ -150,6 +150,15 @@ public class CaptchaServiceTests
         Assert.Single(results, accepted => accepted);
     }
 
+    [Fact]
+    public void Verify_RejectsAlternateWhitespaceEncodingOfConsumedChallenge()
+    {
+        var challenge = _service.Create();
+        var answer = AnswerOf(challenge);
+        Assert.True(_service.Verify(new CaptchaResponse(challenge.Id, answer)));
+        Assert.False(_service.Verify(new CaptchaResponse(challenge.Id.Insert(5, " \r\n"), answer)));
+    }
+
     private sealed class MovableTimeProvider(DateTimeOffset now) : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = now;

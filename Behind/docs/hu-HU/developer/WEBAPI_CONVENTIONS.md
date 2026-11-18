@@ -295,7 +295,15 @@ A `Frontend:Carousels` szakasz (`CarouselsConfiguration`, a `frontend.json` fáj
 
 A meglévő carouselek értékei megmaradnak, ha egy korlát megváltozik, csak az új mentéseket ellenőrzi a jelenlegi korlátokkal. A `GET /carousels/settings` a ténylegesen érvényes értékeket adja vissza, és a webes kliens ezeket olvassa be, mielőtt megjeleníti az oldalszerkesztő carousel szakaszát.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:a0987072db2c0649938b5d47504566842d0c91f8ba2491664210f8cc95513398 -->
+
 ### Galéria beállítások
+
+A `Frontend:Galleries:MaxDecodedPixels` ettől függetlenül alapértelmezetten 4 000 000 képpontra korlátozza az egyes dekódolt galériabitképeket; hiányzó vagy nem pozitív értéknél ez az alapérték érvényes. A kompatibilitást és a memóriakeret működését a [konfiguráció 1.0.1](../specs/configuration-json-1.0.1.md) írja le.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 A `Frontend:Galleries` szakasz (`GalleriesConfiguration`) a `MaxImageBytes` értéket tartalmazza, amely a legnagyobb elfogadott galériakép- vagy bélyegkép-feltöltés (alapértelmezés 10 MB, a nulla vagy negatív érték az alapértelmezésre esik vissza). A nagyobb fájlokat a kötegelt feltöltés fájlonként `too-large` értékkel jelzi, a bélyegkép-feltöltésnél pedig `413` választ adnak. A galéria feltöltési végpontjai legfeljebb a `GalleryImageEndpoints.MaxRequestBytes` (128 MB) méretű kérés törzseket fogadják el, ezért a webes kliens kérésenként öt fájlt küld.
 

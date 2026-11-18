@@ -8,8 +8,21 @@ namespace Behind.Core.Database.Queries;
 
 public sealed class SessionQueries(AbstractCoreContext context) : ISessionQueries
 {
-    public Task<Option<Session>> TryFindById(Guid id, CancellationToken cancellationToken = default) =>
-        context.GetRepository<Session, Guid>().TryFindAsync(id, cancellationToken);
+    public async Task<Option<Session>> TryFindById(Guid id, CancellationToken cancellationToken = default)
+    {
+        var actor = await TryFindActor(id, cancellationToken);
+        var permitted = await actor.Match(
+            () => Task.FromResult(false),
+            found => found.ImpersonatorId.Match(
+                () => Task.FromResult(true),
+                async impersonatorId => await context.Users.AnyAsync(
+                    user => EF.Property<Guid>(user, "Id") == impersonatorId, cancellationToken)
+                    && await new WallOfShameQueries(context).FindActiveBan(
+                        impersonatorId, DateTimeOffset.UtcNow, cancellationToken) == None));
+        return permitted
+            ? await context.GetRepository<Session, Guid>().TryFindAsync(id, cancellationToken)
+            : None;
+    }
 
     public async Task<Option<(Session Session, Guid UserId)>> TryFindByIdWithUserId(
         Guid id, 

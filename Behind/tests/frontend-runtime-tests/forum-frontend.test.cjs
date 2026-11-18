@@ -276,7 +276,8 @@ test("shared rich editor keeps defaults and supports a restricted BBCode toolbar
     const defaults = { nodeType: 1 };
     ko.bindingHandlers.richEditor.init(defaults, () => ({ value: ko.observable(""), upload() {} }));
     assert.ok(instances[0].options.modules.toolbar.container.some(group => group.includes("image")));
-    assert.equal(instances[0].options.formats, undefined);
+    assert.ok(instances[0].options.formats.includes("image"));
+    assert.ok(!instances[0].options.formats.includes("video"));
     assert.equal(linkAttachments, 1);
     const restricted = { nodeType: 1 };
     const toolbar = [["bold", "link"]];
@@ -285,7 +286,7 @@ test("shared rich editor keeps defaults and supports a restricted BBCode toolbar
         value: ko.observable(""), toolbar, formats, linkTargets: false
     }));
     assert.equal(instances[1].options.modules.toolbar.container, toolbar);
-    assert.equal(instances[1].options.formats, formats);
+    assert.deepEqual(Array.from(instances[1].options.formats), formats);
     assert.equal(linkAttachments, 1);
     assert.equal(imageAttachments, 2);
 });

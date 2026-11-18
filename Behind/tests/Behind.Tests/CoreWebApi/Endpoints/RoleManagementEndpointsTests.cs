@@ -701,7 +701,7 @@ public class RoleManagementEndpointsTests
         new UserRole(DomainConstants.DevelopersRole, Some<IEnumerable<Grant>>([new Grant("Role.Manage")])) { IsDeveloper = true };
 
     [Fact]
-    public async Task ResetGrants_HolderOfTheEmptiedDevelopersRole_RestoresItsGrants()
+    public async Task ResetGrants_HolderOfTheEmptiedDevelopersRole_CannotRestoreUnheldGrants()
     {
         SignedInAs(EmptiedDevelopers());
         RoleExists(BuiltInAccess.Developers.Id, EmptiedDevelopers());
@@ -713,12 +713,8 @@ public class RoleManagementEndpointsTests
             _roles,
             _accessCommands);
 
-        Assert.IsType<NoContent>(result);
-        await _accessCommands.Received(1).SetRoleAccess(
-            BuiltInAccess.Developers.Id,
-            Arg.Is<AccessSelection>(selection =>
-                selection.Grants.Order().SequenceEqual(BuiltInAccess.Developers.Grants.Select(grant => grant.Grant.Name).Order())),
-            Arg.Any<CancellationToken>());
+        Assert.Equal(StatusCodes.Status403Forbidden, Status(result).StatusCode);
+        await _accessCommands.DidNotReceiveWithAnyArgs().SetRoleAccess(default, default!, default);
     }
 
     [Fact]
@@ -737,7 +733,7 @@ public class RoleManagementEndpointsTests
     }
 
     [Fact]
-    public async Task Get_OffersResettingTheGrantsOfTheEmptiedDevelopersRoleToItsHolder()
+    public async Task Get_DoesNotOfferResettingUnheldDeveloperGrants()
     {
         SignedInAs(EmptiedDevelopers());
         RolesPage(
@@ -748,7 +744,7 @@ public class RoleManagementEndpointsTests
         var result = await RoleManagementEndpoints.Get(SignedIn(), _gate, _roles, new FakeAuthorizationService());
 
         var roles = Assert.IsType<JsonHttpResult<RoleListResponse>>(result).Value!.Roles.Items;
-        Assert.True(roles[0].CanResetGrants);
+        Assert.False(roles[0].CanResetGrants);
         Assert.False(roles[1].CanResetGrants);
     }
 

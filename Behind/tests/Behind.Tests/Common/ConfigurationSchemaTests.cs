@@ -20,6 +20,21 @@ public sealed class ConfigurationSchemaTests : IDisposable
 
     public void Dispose() => Directory.Delete(_directory, true);
 
+    [Theory]
+    [InlineData("AuditSearchMaxEntries")]
+    [InlineData("AuditSearchMaxCandidates")]
+    public void AuditSearchBudgets_HaveNumericSchemaAndPreserveDefaultsWhenOmitted(string property)
+    {
+        Assert.Equal("configuration-1.1.0", ConfigurationSchema.Name);
+        Assert.True(ConfigurationSchema.IsValid(JsonNode.Parse("""{"Backend":{}}""")));
+        var root = new JsonObject { ["Backend"] = new JsonObject { [property] = 10000 } };
+        Assert.True(ConfigurationSchema.IsValid(root));
+        root["Backend"]![property] = "10000";
+        Assert.False(ConfigurationSchema.IsValid(root));
+        Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxEntries);
+        Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxCandidates);
+    }
+
     [Fact]
     public void AllConfigurationSectionRecords_HaveDefinitionsForEveryWritableProperty()
     {

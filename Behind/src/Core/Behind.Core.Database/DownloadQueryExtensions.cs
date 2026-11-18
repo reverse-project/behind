@@ -50,11 +50,11 @@ internal static class DownloadQueryExtensions
             return Descend(byParent, null).ToList();
         }
 
-        public IReadOnlySet<Guid> DescendantKeysOf(Guid folderId)
+        public IReadOnlySet<Guid> DescendantKeysOf(Guid folderId, CancellationToken cancellationToken = default)
         {
             var byParent = rows.ToLookup(row => row.ParentId);
 
-            return Descend(byParent, folderId).Select(row => row.Key).ToHashSet();
+            return Descend(byParent, folderId, cancellationToken).Select(row => row.Key).ToHashSet();
         }
 
         public IReadOnlyList<DownloadFolderRow> InDisplayOrder() =>
@@ -125,6 +125,26 @@ internal static class DownloadQueryExtensions
         }
     }
 
-    private static IEnumerable<DownloadFolderRow> Descend(ILookup<Guid?, DownloadFolderRow> byParent, Guid? parent) =>
-        byParent[parent].SelectMany(child => new[] { child }.Concat(Descend(byParent, child.Key)));
+    private static IEnumerable<DownloadFolderRow> Descend(ILookup<Guid?, DownloadFolderRow> byParent, Guid? parent, CancellationToken cancellationToken = default)
+    {
+        var visited = new HashSet<Guid>();
+        if (parent is { } key)
+        {
+            visited.Add(key);
+        }
+        var pending = new Stack<DownloadFolderRow>(byParent[parent]);
+        while (pending.TryPop(out var row))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!visited.Add(row.Key))
+            {
+                continue;
+            }
+            yield return row;
+            foreach (var child in byParent[row.Key])
+            {
+                pending.Push(child);
+            }
+        }
+    }
 }

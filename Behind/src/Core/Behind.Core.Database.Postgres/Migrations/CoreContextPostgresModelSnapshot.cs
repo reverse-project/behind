@@ -2126,7 +2126,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasOne("Behind.Core.Domain.HumanUser", null)
                     .WithMany()
                     .HasForeignKey("GivenById")
-                    .OnDelete(DeleteBehavior.Cascade)
+                    .OnDelete(DeleteBehavior.ClientNoAction)
                     .IsRequired();
 
                 b.HasOne("Behind.Core.Domain.HumanUser", null)

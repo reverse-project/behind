@@ -45,7 +45,7 @@ public sealed class PasskeyCeremonies(ILogger<PasskeyCeremonies> logger) : IPass
             ExcludeCredentials = existing,
             AuthenticatorSelection = new AuthenticatorSelection
             {
-                ResidentKey = ResidentKeyRequirement.Discouraged,
+                ResidentKey = ResidentKeyRequirement.Required,
                 UserVerification = UserVerificationRequirement.Preferred
             },
             AttestationPreference = AttestationConveyancePreference.None

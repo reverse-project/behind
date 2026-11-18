@@ -11,7 +11,7 @@ public sealed class RequestLoggingMiddleware(RequestDelegate next, ILogger<Reque
     {
         var started = Stopwatch.GetTimestamp();
 
-        logger.LogDebug("HTTP {Method} {Path} started", () => [context.Request.Method, context.Request.Path.Value]);
+        logger.LogDebug("HTTP {Method} {Path} started", () => [context.Request.Method, Escape(context.Request.Path.Value)]);
 
         await next(context);
 
@@ -21,11 +21,16 @@ public sealed class RequestLoggingMiddleware(RequestDelegate next, ILogger<Reque
             () =>
             [
                 context.Request.Method,
-                context.Request.Path.Value,
+                Escape(context.Request.Path.Value),
                 context.Response.StatusCode,
                 Stopwatch.GetElapsedTime(started).TotalMilliseconds
             ]);
     }
+
+    private static string Escape(string? value) => string.Concat((value ?? "").Select(character =>
+        char.IsControl(character) || character is '\u2028' or '\u2029'
+            ? $"\\u{(int)character:x4}"
+            : character.ToString()));
 
     private static LogLevel LevelFor(int statusCode) =>
         statusCode switch

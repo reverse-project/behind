@@ -17,8 +17,8 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>,
     public virtual Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
     {
         var template = DefaultEmailTemplates.ConfirmationEmail
-            .AddParameter(new Parameter("Email", email))
-            .AddParameter(new Parameter("ConfirmationLink", confirmationLink))
+            .AddParameter(new Parameter("Email", WebUtility.HtmlEncode(email)))
+            .AddParameter(new Parameter("ConfirmationLink", WebUtility.HtmlEncode(confirmationLink)))
             .Render();
 
         return SendEmailAsync(email, "Confirm your email", template);
@@ -27,8 +27,8 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>,
     public virtual Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
     {
         var template = DefaultEmailTemplates.PasswordResetCodeEmail
-            .AddParameter(new Parameter("Email", email))
-            .AddParameter(new Parameter("ResetCode", resetCode))
+            .AddParameter(new Parameter("Email", WebUtility.HtmlEncode(email)))
+            .AddParameter(new Parameter("ResetCode", WebUtility.HtmlEncode(resetCode)))
             .Render();
 
         return SendEmailAsync(email, "Password reset code", template);
@@ -37,8 +37,8 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>,
     public virtual Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
     {
         var template = DefaultEmailTemplates.PasswordResetLinkEmail
-            .AddParameter(new Parameter("Email", email))
-            .AddParameter(new Parameter("ResetLink", resetLink))
+            .AddParameter(new Parameter("Email", WebUtility.HtmlEncode(email)))
+            .AddParameter(new Parameter("ResetLink", WebUtility.HtmlEncode(resetLink)))
             .Render();
 
         return SendEmailAsync(email, "Password reset link", template);
@@ -47,8 +47,8 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>,
     public virtual Task SendMagicLinkAsync(ApplicationUser user, string email, string magicLink)
     {
         var template = DefaultEmailTemplates.MagicLinkEmail
-            .AddParameter(new Parameter("Email", email))
-            .AddParameter(new Parameter("MagicLink", magicLink))
+            .AddParameter(new Parameter("Email", WebUtility.HtmlEncode(email)))
+            .AddParameter(new Parameter("MagicLink", WebUtility.HtmlEncode(magicLink)))
             .Render();
 
         return SendEmailAsync(email, "Your sign in link", template);
@@ -108,8 +108,8 @@ public sealed class SmtpEmailSender : EmailSender
                 none: () => DefaultEmailTemplates.ConfirmationEmail,
                 some: t => (SimpleTemplate)t.GetOrDefault("ConfirmationEmail", DefaultEmailTemplates.ConfirmationEmail)
             )
-            .AddParameter(new Parameter("Email", email))
-            .AddParameter(new Parameter("ConfirmationLink", confirmationLink))
+            .AddParameter(new Parameter("Email", WebUtility.HtmlEncode(email)))
+            .AddParameter(new Parameter("ConfirmationLink", WebUtility.HtmlEncode(confirmationLink)))
             .Render();
 
         return SendEmailAsync(email, "Confirm your email", template);
@@ -121,8 +121,8 @@ public sealed class SmtpEmailSender : EmailSender
                 none: () => DefaultEmailTemplates.PasswordResetCodeEmail,
                 some: t => (SimpleTemplate)t.GetOrDefault("PasswordResetCodeEmail", DefaultEmailTemplates.PasswordResetCodeEmail)
             )
-            .AddParameter(new Parameter("Email", email))
-            .AddParameter(new Parameter("ResetCode", resetCode))
+            .AddParameter(new Parameter("Email", WebUtility.HtmlEncode(email)))
+            .AddParameter(new Parameter("ResetCode", WebUtility.HtmlEncode(resetCode)))
             .Render();
 
         return SendEmailAsync(email, "Password reset code", template);
@@ -134,8 +134,8 @@ public sealed class SmtpEmailSender : EmailSender
                 none: () => DefaultEmailTemplates.PasswordResetLinkEmail,
                 some: t => (SimpleTemplate)t.GetOrDefault("PasswordResetLinkEmail", DefaultEmailTemplates.PasswordResetLinkEmail)
             )
-            .AddParameter(new Parameter("Email", email))
-            .AddParameter(new Parameter("ResetLink", resetLink))
+            .AddParameter(new Parameter("Email", WebUtility.HtmlEncode(email)))
+            .AddParameter(new Parameter("ResetLink", WebUtility.HtmlEncode(resetLink)))
             .Render();
 
         return SendEmailAsync(email, "Password reset link", template);
@@ -147,8 +147,8 @@ public sealed class SmtpEmailSender : EmailSender
                 none: () => DefaultEmailTemplates.MagicLinkEmail,
                 some: t => (SimpleTemplate)t.GetOrDefault("MagicLinkEmail", DefaultEmailTemplates.MagicLinkEmail)
             )
-            .AddParameter(new Parameter("Email", email))
-            .AddParameter(new Parameter("MagicLink", magicLink))
+            .AddParameter(new Parameter("Email", WebUtility.HtmlEncode(email)))
+            .AddParameter(new Parameter("MagicLink", WebUtility.HtmlEncode(magicLink)))
             .Render();
 
         return SendEmailAsync(email, "Your sign in link", template);

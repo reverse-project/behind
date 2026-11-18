@@ -8,8 +8,8 @@ public static class SettingsActionExtensions
     extension(string file)
     {
         public Option<SettingsAction> FindAction(string path) =>
-            file == SettingsAction.SecurityFile
-                ? SettingsAction.All.Find(action => action.Path == path)
+            string.Equals(file, SettingsAction.SecurityFile, StringComparison.OrdinalIgnoreCase)
+                ? SettingsAction.All.Find(action => string.Equals(action.Path, path, StringComparison.OrdinalIgnoreCase))
                 : None;
 
         public Option<SettingsAction> FindAction(string path, SettingsActionKind kind) =>

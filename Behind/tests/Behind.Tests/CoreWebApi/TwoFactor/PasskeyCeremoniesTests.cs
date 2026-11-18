@@ -35,13 +35,14 @@ public sealed class PasskeyCeremoniesTests : IDisposable
         Option<Fido2NetLib.Objects.RegisteredPublicKeyCredential> Credential);
 
     [Fact]
-    public void BeginRegistration_AsksForANonResidentCredentialOfTheRelyingParty()
+    public void BeginRegistration_AsksForADiscoverableCredentialOfTheRelyingParty()
     {
         var options = _ceremonies.BeginRegistration(Origin, User(), []);
 
         Assert.Equal("example.test", options.Rp.Id);
         Assert.Equal(PasskeyCeremonies.RelyingPartyName, options.Rp.Name);
         Assert.Equal(_userId.ToByteArray(), options.User.Id);
+        Assert.Equal(Fido2NetLib.Objects.ResidentKeyRequirement.Required, options.AuthenticatorSelection.ResidentKey);
         Assert.NotEmpty(options.Challenge);
     }
 

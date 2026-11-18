@@ -9,6 +9,11 @@ public static class SensitiveFieldMaskingExtensions
             return value;
         }
 
+        if (value.Length <= 2)
+        {
+            return "....";
+        }
+
         if (value.Length < 6)
         {
             return $"{value[0]}..{value[^1]}";

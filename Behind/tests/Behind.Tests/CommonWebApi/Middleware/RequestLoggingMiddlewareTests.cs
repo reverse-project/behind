@@ -27,6 +27,23 @@ public class RequestLoggingMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_ControlCharactersCannotCreateLogLines()
+    {
+        var logger = new CapturingLogger<RequestLoggingMiddleware>();
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/forged\r\nentry\t\u2028";
+        await new RequestLoggingMiddleware(_ => Task.CompletedTask, logger).InvokeAsync(context);
+        Assert.All(logger.Entries, entry =>
+        {
+            Assert.DoesNotContain("\r", entry.Message);
+            Assert.DoesNotContain("\n", entry.Message);
+            Assert.DoesNotContain("\t", entry.Message);
+            Assert.DoesNotContain("\u2028", entry.Message);
+            Assert.Equal("/forged\\u000d\\u000aentry\\u0009\\u2028", entry.State["Path"]);
+        });
+    }
+
+    [Fact]
     public async Task InvokeAsync_LogsDebugOnStart()
     {
         var logger = await InvokeAsync(StatusCodes.Status200OK);

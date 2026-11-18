@@ -5,6 +5,10 @@ public sealed record BackendConfiguration
     public const string SectionName = "Backend";
     public const string VfsDirectoryName = "vfs";
 
+    public int AuditSearchMaxEntries { get; init; } = 10000;
+
+    public int AuditSearchMaxCandidates { get; init; } = 10000;
+
     public string? DataDirectory { get; init; }
 
     public string VfsRoot =>

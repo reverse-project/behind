@@ -5,6 +5,14 @@ namespace Behind.Tests.CoreWebApi.Settings;
 public sealed class SettingsActionTests
 {
     [Theory]
+    [InlineData("SECURITY.JSON", "security:jwt:signingkey")]
+    [InlineData("security.json", "SECURITY:SECRETKEY")]
+    public void FindsProtectedMixedCasePaths(string file, string path)
+    {
+        Assert.True(file.FindAction(path).Match(() => false, _ => true));
+    }
+
+    [Theory]
     [InlineData("Security:SecretKey", SettingsActionKind.Generate)]
     [InlineData("Security:Elevation:DeveloperSecretKey", SettingsActionKind.Generate)]
     [InlineData("Security:Jwt:SigningKey", SettingsActionKind.Generate)]

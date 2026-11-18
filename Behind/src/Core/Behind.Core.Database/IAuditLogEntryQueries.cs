@@ -13,6 +13,8 @@ public interface IAuditLogEntryQueries
         OrderByCollection OrderByCollection
     )
     {
+        public int? KnownTotal { get; init; }
+
         public static RequestAuditLog Create(DateOnly fromDate, DateOnly toDate,
             Filter<AuditLogEntry> filter, Flipper flipper, string orderBy) =>
             new(fromDate, toDate, filter, flipper, orderBy.Create());

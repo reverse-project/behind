@@ -27,6 +27,21 @@ public sealed class OidcAccountStoreTests : IDisposable
     public void Dispose() => _factory.Dispose();
 
     [Fact]
+    public async Task AdministrativeRoleSaveRetainsProviderRoleAfterClaimRemoval()
+    {
+        var userId = await SeedUserAsync("saved-role@test.com");
+        var roleId = await SeedRoleAsync("saved-role");
+        await WithStoreAsync(store => store.SynchronizeRoles(userId, "provider", ["saved-role"], [], CancellationToken.None));
+        await using (var context = _factory.CreateContext())
+        {
+            await context.ReplaceUserAccessAsync(userId, [roleId], new AccessSelection([], []));
+        }
+        await WithStoreAsync(store => store.SynchronizeRoles(userId, "provider", [], [], CancellationToken.None));
+        Assert.True(await HasMembershipAsync(userId, roleId));
+        Assert.True(await IsManualMembershipAsync(userId, roleId));
+    }
+
+    [Fact]
     public async Task Link_UsesProviderIssuerAndSubjectAndEnforcesUniqueBinding()
     {
         var firstUser = await SeedUserAsync("first@test.com");

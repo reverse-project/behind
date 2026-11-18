@@ -14,6 +14,8 @@ public sealed class RawDatabaseCommands(
     IAuditActorProvider actors,
     TimeProvider timeProvider) : IRawDatabaseCommands
 {
+    private AuditActor? _actor;
+
     public Task<RawWriteResult> Insert(
         string table,
         IReadOnlyDictionary<string, JsonElement> values,
@@ -79,6 +81,11 @@ public sealed class RawDatabaseCommands(
         IReadOnlyList<RawValue> changes,
         CancellationToken cancellationToken)
     {
+        if (table.Name == "Sessions" && changes.Any(change => change.Column.Name is "UserId" or "ImpersonatorId"))
+        {
+            return new RawWriteResult.Invalid(["Session identity cannot be changed."]);
+        }
+
         var before = await context.FindRawRowAsync(table, key, cancellationToken);
 
         return await before.Match<Task<RawWriteResult>>(
@@ -136,7 +143,7 @@ public sealed class RawDatabaseCommands(
     {
         context.AddAuditEntry(
             new AuditLogEntry(table.EntityName, key, action, timeProvider.GetUtcNow()),
-            await actors.GetCurrentAsync(cancellationToken));
+            _actor ?? throw new InvalidOperationException("Missing initiating audit actor."));
 
         await context.SaveChangesAsync(cancellationToken);
     }
@@ -158,6 +165,7 @@ public sealed class RawDatabaseCommands(
         try
         {
             await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+            _actor = await actors.GetCurrentAsync(cancellationToken);
             var result = await write();
             await transaction.CommitAsync(cancellationToken);
 

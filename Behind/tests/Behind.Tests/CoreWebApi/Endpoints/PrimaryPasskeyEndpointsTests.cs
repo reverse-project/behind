@@ -63,7 +63,24 @@ public sealed class PrimaryPasskeyEndpointsTests : IDisposable
             _bed.Ceremonies, _bed.Tickets, new MagicLinkCommands(_bed.Context), _bed.Time);
 
         var challenge = Assert.IsType<JsonHttpResult<PasskeyAssertionChallenge>>(response).Value!;
-        Assert.Single(challenge.Options.AllowCredentials);
+        Assert.Empty(challenge.Options.AllowCredentials);
         Assert.NotEmpty(challenge.Ticket);
     }
+    [Fact]
+    public async Task PublicOptionsNeverExposeCredentialIdsAcrossAccountsOrAliases()
+    {
+        var user = await _bed.SeedUser();
+        using var authenticator = await _bed.EnablePasskey(user);
+        _users.FindByEmailAsync("ada@test.com").Returns(user);
+        _users.FindByEmailAsync("alias@test.com").Returns(user);
+        foreach (var email in new[] { "ada@test.com", "ada@test.com", "alias@test.com", "unknown@test.com" })
+        {
+            var response = await PrimaryPasskeyEndpoints.Options(
+                new(email), new DefaultHttpContext(), _configuration, _users, _bed.Verification,
+                _bed.Ceremonies, _bed.Tickets, new MagicLinkCommands(_bed.Context), _bed.Time);
+            var challenge = Assert.IsType<JsonHttpResult<PasskeyAssertionChallenge>>(response).Value!;
+            Assert.Empty(challenge.Options.AllowCredentials);
+        }
+    }
+
 }

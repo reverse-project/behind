@@ -64,7 +64,8 @@ public sealed class UserManagementGate(
         Guid targetId,
         Func<UserManagementActor, IUserManagementQueries.ManagedUser, bool> isAllowed,
         Func<UserManagementActor, IUserManagementQueries.ManagedUser, DateTimeOffset, Task> action,
-        DeletionState state = DeletionState.Active) =>
+        DeletionState state = DeletionState.Active,
+        bool protectEffectiveDevelopers = false) =>
         RunForResult(
             httpContext,
             targetId,
@@ -75,14 +76,16 @@ public sealed class UserManagementGate(
 
                 return Results.NoContent();
             },
-            state);
+            state,
+            protectEffectiveDevelopers);
 
     public async Task<IResult> RunForResult(
         HttpContext httpContext,
         Guid targetId,
         Func<UserManagementActor, IUserManagementQueries.ManagedUser, bool> isAllowed,
         Func<UserManagementActor, IUserManagementQueries.ManagedUser, DateTimeOffset, Task<IResult>> action,
-        DeletionState state = DeletionState.Active)
+        DeletionState state = DeletionState.Active,
+        bool protectEffectiveDevelopers = false)
     {
         var actor = await FindActor(httpContext);
 
@@ -104,7 +107,10 @@ public sealed class UserManagementGate(
                     },
                     async user =>
                     {
-                        if (!isAllowed(current, user))
+                        var targetAccess = protectEffectiveDevelopers && !current.IsDeveloper
+                            ? await accessQueries.GetUserAccess(user.Id, httpContext.RequestAborted)
+                            : null;
+                        if ((targetAccess is not null && targetAccess.IsDeveloper) || !isAllowed(current, user))
                         {
                             logger.LogWarning(
                                 "Actor {ActorId} is not allowed to {Method} {Path} on user {TargetId}",

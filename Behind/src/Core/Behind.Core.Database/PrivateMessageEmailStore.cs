@@ -23,6 +23,7 @@ public sealed class PrivateMessageEmailStore(AbstractCoreContext context)
             .Where(row => activeRoles.Contains(EF.Property<Guid>(row, "RoleId")))
             .Select(row => new { UserId = EF.Property<Guid>(row, "UserId"), RoleId = EF.Property<Guid>(row, "RoleId") })
             .ToListAsync(cancellationToken);
+        var rolesByUser = memberships.ToLookup(member => member.UserId, member => member.RoleId);
         var candidates = recipients.Where(recipient => !recipient.IsRole).Select(recipient => recipient.Id)
             .Concat(memberships.Select(member => member.UserId)).Append(conversation.SenderId)
             .Where(id => id != message.AuthorId && id != DomainConstants.SystemUserId && id != DomainConstants.GuestUserId)
@@ -30,10 +31,11 @@ public sealed class PrivateMessageEmailStore(AbstractCoreContext context)
         var left = await context.PrivateMailboxes.LatestOf(context.PrivateMailboxes)
             .Where(mailbox => mailbox.ConversationId == message.ConversationId && mailbox.Left)
             .Select(mailbox => mailbox.UserId).ToArrayAsync(cancellationToken);
-        var audience = candidates.Where(id => !left.Contains(id) && PrivateMessagingVisibility.CanReadMessage(
+        var departed = left.ToHashSet();
+        var audience = candidates.Where(id => !departed.Contains(id) && PrivateMessagingVisibility.CanReadMessage(
             new(message.ConversationId, conversation.SenderId, conversation.IsSystem, conversation.IsReport), recipients,
             new(messageId, message.ConversationId, message.AuthorId, message.PrivateRecipientId, message.IsInitial),
-            new(id, memberships.Where(member => member.UserId == id).Select(member => member.RoleId).ToHashSet(), false)))
+            new(id, rolesByUser[id].ToHashSet(), false)))
             .ToArray();
         var destinations = await (from user in context.Users
                                   join email in context.Emails on EF.Property<Guid>(user, "Id") equals EF.Property<Guid>(email, "UserId")

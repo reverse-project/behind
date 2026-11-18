@@ -107,6 +107,7 @@ public static class TwoFactorRoutesExtensions
                 .ProfileStep<Enrolled>();
 
             application.MapDelete($"{ProfileRoute}/totp", TwoFactorProfileEndpoints.RemoveTotp)
+                .AddEndpointFilter<TwoFactorMutationFilter>()
                 .Produces(204)
                 .Produces(401)
                 .Produces(403)
@@ -126,6 +127,7 @@ public static class TwoFactorRoutesExtensions
                 .ProfileStep<Enrolled>();
 
             application.MapDelete($"{ProfileRoute}/passkeys/{{id:guid}}", TwoFactorProfileEndpoints.RemovePasskey)
+                .AddEndpointFilter<TwoFactorMutationFilter>()
                 .Produces(204)
                 .Produces(401)
                 .Produces(403)

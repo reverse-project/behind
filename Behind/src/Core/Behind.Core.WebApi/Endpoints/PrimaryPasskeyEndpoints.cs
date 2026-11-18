@@ -44,11 +44,7 @@ public sealed class PrimaryPasskeyEndpoints
         context.Response.Headers.CacheControl = "no-store";
         var user = await users.FindByEmailAsync(request.Email);
         var origin = configuration.PasskeyOrigin();
-        var available = user is null
-            ? None
-            : await verification.BeginPasskey(origin, user.Id, context.RequestAborted);
-        var options = available.GetOrElse(() => ceremonies.BeginAssertion(
-            origin, [new PublicKeyCredentialDescriptor(RandomNumberGenerator.GetBytes(32))]));
+        var options = ceremonies.BeginAssertion(origin, []);
         options.UserVerification = UserVerificationRequirement.Required;
         var nonce = Guid.NewGuid();
 

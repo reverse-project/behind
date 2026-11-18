@@ -446,7 +446,30 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
                 return incomplete("auth.magicLink.incomplete");
             }
 
-            return http.post("/sign/in/magiclink/redeem", { token: token }).then(function (response) {
+            return http.post("/sign/in/magiclink/redeem", { token: token }).then(async function (response) {
+                if (response.ok && response.data && response.data.accessToken) {
+                    try {
+                        var identityResponse = await fetch("/session", {
+                            headers: { Authorization: "Bearer " + response.data.accessToken },
+                            credentials: "omit",
+                            cache: "no-store"
+                        });
+                        if (!identityResponse.ok) {
+                            return incomplete("auth.magicLink.invalid");
+                        }
+                        var identity = await identityResponse.json();
+                        if (!identity.user || !identity.user.id) {
+                            return incomplete("auth.magicLink.invalid");
+                        }
+                        var account = user.label(identity.user);
+                        if (!window.confirm(i18n.t("magiclink.confirmAccount").replace("{account}", account))) {
+                            return incomplete("auth.magicLink.invalid");
+                        }
+                    } catch (error) {
+                        return incomplete("auth.magicLink.invalid");
+                    }
+                }
+
                 if (response.ok) {
                     return completed(response);
                 }

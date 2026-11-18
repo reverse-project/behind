@@ -46,7 +46,7 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerabl
                 context.AuditLogEntries.Where(x => x.Timestamp >= fromDate && x.Timestamp < toDate)
             );
 
-        var total = await baseQuery.CountAsync(cancellationToken);
+        var total = request.KnownTotal ?? await baseQuery.CountAsync(cancellationToken);
 
         var projectionQuery = (from audit in baseQuery
             join user in context.Users

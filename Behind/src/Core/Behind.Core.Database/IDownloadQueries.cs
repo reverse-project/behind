@@ -29,6 +29,8 @@ public interface IDownloadQueries
         Guid folderId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<DownloadInfo>> Latest(int limit, CancellationToken cancellationToken = default);
+
     Task<DeletedDownloads> ListDeleted(CancellationToken cancellationToken = default);
 
     Task<Option<IVfsQueries.Content>> Open(Guid downloadId, CancellationToken cancellationToken = default);

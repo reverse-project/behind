@@ -32,6 +32,27 @@ public sealed class DownloadFolderCommandsTests : IDisposable
     }
 
     [Fact]
+    public async Task HardDeleteTraversesEachHistoricalFolderKeyOnce()
+    {
+        var root = await _bed.CreateDownloadFolderAsync("Root", "root");
+        var parent = root;
+        for (var level = 0; level < 24; level++)
+        {
+            var child = await _bed.CreateDownloadFolderAsync($"Level {level}", $"level-{level}", parent);
+            Assert.IsType<DownloadFolderSaveResult.Saved>(await _bed.WithDownloadFolderCommandsAsync(
+                commands => commands.Update(child, Draft($"updated-{level}", $"Updated {level}"))));
+            parent = child;
+        }
+        Assert.True(await _bed.WithDownloadFolderCommandsAsync(commands => commands.Delete(root)));
+        Assert.Equal(HardDeleteResult.Deleted, await _bed.WithDownloadFolderCommandsAsync(commands => commands.HardDelete(root)));
+        await using var reader = _bed.Read();
+        using (reader.SoftDelete.IncludeDeleted())
+        {
+            Assert.Empty(await reader.DownloadFolders.ToListAsync());
+        }
+    }
+
+    [Fact]
     public async Task Create_StoresVersionOneAndAuditsTheCreation()
     {
         var key = await _bed.CreateDownloadFolderAsync();

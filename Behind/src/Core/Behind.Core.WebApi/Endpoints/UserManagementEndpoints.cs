@@ -142,7 +142,8 @@ public sealed class UserManagementEndpoints
                     actor.UserId,
                     now,
                     httpContext.RequestAborted);
-            });
+            },
+            protectEffectiveDevelopers: true);
 
     [Authorize]
     [IgnoreETag]
@@ -181,7 +182,8 @@ public sealed class UserManagementEndpoints
             httpContext,
             id,
             (actor, target) => actor.CanDelete(target),
-            (_, target, _) => userCommands.Delete(target.Id, httpContext.RequestAborted));
+            (_, target, _) => userCommands.Delete(target.Id, httpContext.RequestAborted),
+            protectEffectiveDevelopers: true);
 
     [Authorize]
     [IgnoreETag]

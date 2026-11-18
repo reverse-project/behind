@@ -32,7 +32,14 @@ public static class CertificateFileExtensions
 
         public string EnsureDirectory()
         {
-            Directory.CreateDirectory(path);
+            if (OperatingSystem.IsWindows())
+            {
+                Directory.CreateDirectory(path);
+            }
+            else
+            {
+                Directory.CreateDirectory(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
             return path;
         }
 
@@ -46,11 +53,16 @@ public static class CertificateFileExtensions
 
             try
             {
-                using (var stream = new FileStream(temporaryPath, new FileStreamOptions
-                       {
-                           Mode = FileMode.CreateNew,
-                           Access = FileAccess.Write,
-                       }))
+                var options = new FileStreamOptions
+                {
+                    Mode = FileMode.CreateNew,
+                    Access = FileAccess.Write
+                };
+                if (!OperatingSystem.IsWindows())
+                {
+                    options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+                }
+                using (var stream = new FileStream(temporaryPath, options))
                 {
                     stream.Write(content);
                 }

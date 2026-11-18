@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using static Behind.Common.FunctionalExtensions;
 using Behind.Common.Logging;
 using Behind.Core.Domain;
@@ -34,6 +35,10 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
             return await exists.Match<Task<IdentityResult>>(
                 none: async () =>
                 {
+                    var context = unitOfWork as DbContext;
+                    await using var transaction = context is not null && context.Database.CurrentTransaction is null
+                        ? await context.Database.BeginTransactionAsync(cancellationToken)
+                        : null;
                     await userCommands.CreateWithId(
                         user.Id,
                         new HumanUser(user.DisplayName, user.Emails, None),
@@ -44,6 +49,11 @@ public partial class IdentityStore : IUserEmailStore<ApplicationUser>
                     if (user.PendingApproval)
                     {
                         await approvalCommands.RequireApproval(user.Id, cancellationToken);
+                    }
+
+                    if (transaction is not null)
+                    {
+                        await transaction.CommitAsync(cancellationToken);
                     }
 
                     return IdentityResult.Success;

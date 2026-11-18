@@ -24,14 +24,7 @@ public static class WidgetEndpoints
 
     public static async Task<IResult> LatestDownloads(IDownloadQueries queries, CancellationToken cancellationToken)
     {
-        var folders = await queries.ListFolders(cancellationToken);
-        var all = new List<IDownloadQueries.DownloadInfo>();
-
-        foreach (var folder in folders)
-        {
-            var result = await queries.ListFiles(folder.Id, cancellationToken);
-            all.AddRange(result.AsEnumerable().SelectMany(found => found));
-        }
+        var all = await queries.Latest(50, cancellationToken);
 
         var files = all
             .OrderByDescending(file => file.UploadedAt.ToNullable())

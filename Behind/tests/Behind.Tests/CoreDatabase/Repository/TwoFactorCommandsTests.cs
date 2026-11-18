@@ -25,6 +25,20 @@ public sealed class TwoFactorCommandsTests : IDisposable
         new(name, credentialId, "public-key");
 
     [Fact]
+    public async Task ChangedEnrollmentRejectsPreviouslyVerifiedSecret()
+    {
+        var userId = await SeedUser();
+        await using var ctx = _factory.CreateContext();
+        var commands = new TwoFactorCommands(ctx);
+        await commands.SaveTotp(userId, "FIRST");
+        await commands.SaveTotp(userId, "SECOND");
+        Assert.False(await commands.ConfirmTotp(userId, "FIRST", 42));
+        Assert.True(await commands.ConfirmTotp(userId, "SECOND", 42));
+        Assert.False(await commands.AdvanceTotpStep(userId, "FIRST", 43));
+        Assert.True(await commands.AdvanceTotpStep(userId, "SECOND", 43));
+    }
+
+    [Fact]
     public async Task GetStatus_UserWithoutTwoFactor_IsDisabled()
     {
         var userId = await SeedUser();
@@ -87,7 +101,7 @@ public sealed class TwoFactorCommandsTests : IDisposable
         {
             var commands = new TwoFactorCommands(ctx);
             await commands.SaveTotp(userId, "SECRET");
-            Assert.True(await commands.ConfirmTotp(userId, 42));
+            Assert.True(await commands.ConfirmTotp(userId, "SECRET", 42));
         }
 
         await using var read = _factory.CreateContext();
@@ -107,12 +121,12 @@ public sealed class TwoFactorCommandsTests : IDisposable
         await using var ctx = _factory.CreateContext();
         var commands = new TwoFactorCommands(ctx);
 
-        Assert.False(await commands.ConfirmTotp(userId, 1));
+        Assert.False(await commands.ConfirmTotp(userId, "SECRET", 1));
 
         await commands.SaveTotp(userId, "SECRET");
-        await commands.ConfirmTotp(userId, 1);
+        await commands.ConfirmTotp(userId, "SECRET", 1);
 
-        Assert.False(await commands.ConfirmTotp(userId, 2));
+        Assert.False(await commands.ConfirmTotp(userId, "SECRET", 2));
     }
 
     [Fact]
@@ -124,14 +138,14 @@ public sealed class TwoFactorCommandsTests : IDisposable
         var commands = new TwoFactorCommands(ctx);
         await commands.SaveTotp(userId, "SECRET");
 
-        Assert.False(await commands.AdvanceTotpStep(userId, 10));
+        Assert.False(await commands.AdvanceTotpStep(userId, "SECRET", 10));
 
-        await commands.ConfirmTotp(userId, 10);
+        await commands.ConfirmTotp(userId, "SECRET", 10);
 
-        Assert.False(await commands.AdvanceTotpStep(userId, 10));
-        Assert.False(await commands.AdvanceTotpStep(userId, 9));
-        Assert.True(await commands.AdvanceTotpStep(userId, 11));
-        Assert.False(await commands.AdvanceTotpStep(userId, 11));
+        Assert.False(await commands.AdvanceTotpStep(userId, "SECRET", 10));
+        Assert.False(await commands.AdvanceTotpStep(userId, "SECRET", 9));
+        Assert.True(await commands.AdvanceTotpStep(userId, "SECRET", 11));
+        Assert.False(await commands.AdvanceTotpStep(userId, "SECRET", 11));
     }
 
     [Fact]

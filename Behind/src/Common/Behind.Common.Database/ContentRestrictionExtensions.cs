@@ -68,6 +68,10 @@ public static class ContentRestrictionExtensions
             CancellationToken cancellationToken = default)
         {
             var blocked = hidden.ToHashSet();
+            if (blocked.Count == 0)
+            {
+                return [];
+            }
             var parentProperties = (string[])context.Model.FindAnnotation("Behind:AgeRestrictionParents")!.Value!;
             var links = context.Model.GetEntityTypes()
                 .Where(type => type.FindAnnotation("Behind:AgeRestricted") is not null)
@@ -76,29 +80,25 @@ public static class ContentRestrictionExtensions
                                        && (property.ClrType == typeof(Guid) || property.ClrType == typeof(Guid?)))
                     .Select(property => (Type: type.ClrType, Property: property.Name, Nullable: property.ClrType == typeof(Guid?))))
                 .ToArray();
-            var previous = -1;
-
-            while (blocked.Count > 0 && blocked.Count != previous)
+            var edges = new List<RestrictionLink>();
+            foreach (var link in links)
             {
-                previous = blocked.Count;
-                var keys = blocked.ToArray();
-
-                foreach (var link in links)
+                var method = typeof(ContentRestrictionExtensions)
+                    .GetMethod(nameof(Relationships), BindingFlags.Static | BindingFlags.NonPublic)!
+                    .MakeGenericMethod(link.Type);
+                edges.AddRange(await (Task<List<RestrictionLink>>)method.Invoke(null,
+                    [context, link.Property, link.Nullable, cancellationToken])!);
+            }
+            var children = edges.ToLookup(link => link.Parent, link => link.Child);
+            var pending = new Queue<Guid>(blocked);
+            while (pending.TryDequeue(out var parent))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                foreach (var child in children[parent])
                 {
-                    var method = typeof(ContentRestrictionExtensions)
-                        .GetMethod(nameof(Children), BindingFlags.Static | BindingFlags.NonPublic)!
-                        .MakeGenericMethod(link.Type);
-                    var children = await (Task<List<Guid>>)method.Invoke(null,
-                        [context, link.Property, link.Nullable, keys, cancellationToken])!;
-                    blocked.UnionWith(children);
-                    if (MediaProperties.Contains(link.Property))
+                    if (blocked.Add(child))
                     {
-                        var mediaMethod = typeof(ContentRestrictionExtensions)
-                            .GetMethod(nameof(Media), BindingFlags.Static | BindingFlags.NonPublic)!
-                            .MakeGenericMethod(link.Type);
-                        var media = await (Task<List<Guid>>)mediaMethod.Invoke(null,
-                            [context, link.Property, link.Nullable, keys, cancellationToken])!;
-                        blocked.UnionWith(media);
+                        pending.Enqueue(child);
                     }
                 }
             }
@@ -107,27 +107,24 @@ public static class ContentRestrictionExtensions
         }
     }
 
-    private static Task<List<Guid>> Children<TEntity>(
-        DbContext context, string property, bool nullable, Guid[] parents, CancellationToken cancellationToken)
-        where TEntity : class
-    {
-        var query = context.Set<TEntity>().AsNoTracking();
-        query = nullable
-            ? query.Where(row => EF.Property<Guid?>(row, property).HasValue
-                                 && parents.Contains(EF.Property<Guid?>(row, property)!.Value))
-            : query.Where(row => parents.Contains(EF.Property<Guid>(row, property)));
-        return query.Select(row => EF.Property<Guid>(row, VersionedColumns.Key)).Distinct().ToListAsync(cancellationToken);
-    }
+    private sealed record RestrictionLink(Guid Parent, Guid Child);
 
-    private static Task<List<Guid>> Media<TEntity>(
-        DbContext context, string property, bool nullable, Guid[] owners, CancellationToken cancellationToken)
+    private static async Task<List<RestrictionLink>> Relationships<TEntity>(
+        DbContext context, string property, bool nullable, CancellationToken cancellationToken)
         where TEntity : class
     {
         var query = context.Set<TEntity>().AsNoTracking()
-            .Where(row => owners.Contains(EF.Property<Guid>(row, VersionedColumns.Key)));
-        return nullable
+            .IgnoreQueryFilters([FilterName, SoftDeleteExtensions.FilterName]);
+        query = nullable
             ? query.Where(row => EF.Property<Guid?>(row, property).HasValue)
-                .Select(row => EF.Property<Guid?>(row, property)!.Value).Distinct().ToListAsync(cancellationToken)
-            : query.Select(row => EF.Property<Guid>(row, property)).Distinct().ToListAsync(cancellationToken);
+            : query.Where(row => EF.Property<Guid>(row, property) != Guid.Empty);
+        var links = await query.Select(row => new RestrictionLink(
+            nullable ? EF.Property<Guid?>(row, property)!.Value : EF.Property<Guid>(row, property),
+            EF.Property<Guid>(row, VersionedColumns.Key))).Distinct().ToListAsync(cancellationToken);
+        if (MediaProperties.Contains(property))
+        {
+            links.AddRange(links.ToArray().Select(link => new RestrictionLink(link.Child, link.Parent)));
+        }
+        return links;
     }
 }

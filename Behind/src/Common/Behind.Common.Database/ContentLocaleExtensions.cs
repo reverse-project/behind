@@ -98,7 +98,7 @@ public static class ContentLocaleExtensions
             var explicitIds = new HashSet<Node>();
             foreach (var type in context.LocalizedContentTypes)
             {
-                var keys = await Invoke<List<Guid>>(nameof(Keys), type, [context, cancellationToken]);
+                var keys = (await Invoke<List<Guid>>(nameof(Keys), type, [context, cancellationToken])).ToHashSet();
                 foreach (var key in keys)
                 {
                     items.TryAdd(new(type.Name, key), null);
@@ -125,10 +125,11 @@ public static class ContentLocaleExtensions
                 }
             }
 
+            var parentsById = items.Keys.ToLookup(node => node.Id);
             foreach (var link in pending)
             {
                 var child = new Node(link.Media ? "VfsFile" : link.Type, link.Row.Child);
-                var parents = items.Keys.Where(node => node.Id == link.Row.Parent).ToArray();
+                var parents = parentsById[link.Row.Parent].ToArray();
                 var name = link.Property.EndsWith("Id", StringComparison.Ordinal) ? link.Property[..^2] : link.Property;
                 var preferred = link.Media ? link.Type
                     : name == "Parent" && link.Type != "VfsFile" ? link.Type
@@ -160,18 +161,18 @@ public static class ContentLocaleExtensions
                     .Select(node => new Link(node, new(owner, node.Id))));
             }
 
+            var children = links.ToLookup(link => link.Parent, link => link.Child);
             var inherited = explicitIds.ToHashSet();
-            var changed = true;
-            while (changed)
+            var inheritanceQueue = new Queue<Node>(explicitIds);
+            while (inheritanceQueue.TryDequeue(out var parent))
             {
-                changed = false;
-                foreach (var link in links.Where(link => items.ContainsKey(link.Child) && items.ContainsKey(link.Parent)))
+                cancellationToken.ThrowIfCancellationRequested();
+                foreach (var child in children[parent])
                 {
-                    if (!inherited.Contains(link.Child) && inherited.Contains(link.Parent))
+                    if (items.ContainsKey(child) && inherited.Add(child))
                     {
-                        items[link.Child] = items[link.Parent];
-                        inherited.Add(link.Child);
-                        changed = true;
+                        items[child] = items[parent];
+                        inheritanceQueue.Enqueue(child);
                     }
                 }
             }
@@ -179,15 +180,15 @@ public static class ContentLocaleExtensions
             var hidden = items.Where(item => item.Value is not null
                     && !string.Equals(item.Value, locale, StringComparison.Ordinal))
                 .Select(item => item.Key).ToHashSet();
-            changed = true;
-            while (changed)
+            var hiddenQueue = new Queue<Node>(hidden);
+            while (hiddenQueue.TryDequeue(out var parent))
             {
-                changed = false;
-                foreach (var link in links)
+                cancellationToken.ThrowIfCancellationRequested();
+                foreach (var child in children[parent])
                 {
-                    if (hidden.Contains(link.Parent) && hidden.Add(link.Child))
+                    if (hidden.Add(child))
                     {
-                        changed = true;
+                        hiddenQueue.Enqueue(child);
                     }
                 }
             }

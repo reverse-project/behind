@@ -76,6 +76,23 @@ public class RoleManagementEndpointsTests
     }
 
     [Fact]
+    public void RolePolicyAndAccessResponseDistinguishCaseVariants()
+    {
+        var lower = new UserRole("editor");
+        var upper = new UserRole("Editor");
+        var access = new UserAccess([lower], [], []);
+        var actor = new UserManagementActor(ActorId, false, false, access, AccessCatalog.Core);
+        Assert.True(actor.HoldsRole(lower));
+        Assert.False(actor.HoldsRole(upper));
+        var lowerId = Guid.NewGuid();
+        var upperId = Guid.NewGuid();
+        var result = access.ToResponse(ActorId, true,
+            [new IRoleQueries.RoleResult(lowerId, lower), new IRoleQueries.RoleResult(upperId, upper)],
+            AccessCatalog.Core);
+        Assert.Equal(lowerId, Assert.Single(result.Roles).Id);
+    }
+
+    [Fact]
     public async Task Get_ListsRolesWithWhatTheActorMayDo()
     {
         RolesPage(

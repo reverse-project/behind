@@ -11,6 +11,7 @@ public static class AccountModeSettings
     [
         $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.Password)}",
         $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.MagicLink)}",
+        $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.Oidc)}",
         $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.TwoFactor)}",
         $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.Passkey)}",
         $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.EmailTwoFactor)}"

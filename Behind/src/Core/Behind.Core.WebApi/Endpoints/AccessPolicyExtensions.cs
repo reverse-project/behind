@@ -18,7 +18,7 @@ public static class AccessPolicyExtensions
             (actor.IsDeveloper || !role.IsDeveloperRole) && actor.CanGrant(role.EffectiveGrants);
 
         public bool HoldsRole(Role role) =>
-            actor.Access.Roles.Any(held => string.Equals(held.Name, role.Name, StringComparison.OrdinalIgnoreCase));
+            actor.Access.Roles.Any(held => string.Equals(held.Name, role.Name, StringComparison.Ordinal));
 
         public bool CanChangeRole(Role role, AccessSelection selection)
         {

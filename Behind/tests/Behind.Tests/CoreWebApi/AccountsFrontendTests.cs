@@ -25,12 +25,14 @@ public class AccountsFrontendTests
         Assert.Contains("http.get(\"/accounts/settings\")", model);
         Assert.Contains("var password = ko.observable(true)", model);
         Assert.Contains("var magicLink = ko.observable(true)", model);
+        Assert.Contains("var oidc = ko.observable(true)", model);
         Assert.Contains("var twoFactor = ko.observable(true)", model);
         Assert.Contains("var passkey = ko.observable(true)", model);
         Assert.Contains("signIn(response.data.signIn)", model);
         Assert.Contains("signUp(response.data.signUp)", model);
         Assert.Contains("password(response.data.password !== false)", model);
         Assert.Contains("magicLink(response.data.magicLink !== false)", model);
+        Assert.Contains("oidc(response.data.oidc !== false)", model);
         Assert.Contains("twoFactor(response.data.twoFactor !== false)", model);
         Assert.Contains("passkey(response.data.passkey !== false)", model);
         Assert.Contains("accounts.load()", Read("app.js"));

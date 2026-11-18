@@ -1,5 +1,176 @@
 [
   {
+    "name": "JsonSchema.Net",
+    "version": "7.4.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) Greg Dennis",
+    "url": "https://github.com/json-everything/json-everything",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "JsonPointer.Net",
+    "version": "5.3.1",
+    "license": "MIT",
+    "copyright": "Copyright (c) Greg Dennis",
+    "url": "https://github.com/json-everything/json-everything",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Json.More.Net",
+    "version": "2.1.1",
+    "license": "MIT",
+    "copyright": "Copyright (c) Greg Dennis",
+    "url": "https://github.com/json-everything/json-everything",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Caching.Hybrid",
+    "version": "11.0.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) Microsoft Corporation. All rights reserved.",
+    "url": "https://dot.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Microsoft.Extensions.Caching.StackExchangeRedis",
+    "version": "11.0.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) Microsoft Corporation. All rights reserved.",
+    "url": "https://asp.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "StackExchange.Redis",
+    "version": "2.7.27",
+    "license": "MIT",
+    "copyright": "2014 - 2024 Stack Exchange, Inc.",
+    "url": "https://stackexchange.github.io/StackExchange.Redis/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Pipelines.Sockets.Unofficial",
+    "version": "2.2.8",
+    "license": "MIT",
+    "copyright": "Marc Gravell 2018",
+    "url": "https://github.com/mgravell/Pipelines.Sockets.Unofficial",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Testcontainers.PostgreSql",
+    "version": "4.17.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2019 - 2026 Andre Hofmeister and other authors",
+    "url": "https://dotnet.testcontainers.org/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Testcontainers",
+    "version": "4.17.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2019 - 2026 Andre Hofmeister and other authors",
+    "url": "https://dotnet.testcontainers.org/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Docker.DotNet.Enhanced",
+    "version": "4.3.3",
+    "license": "MIT",
+    "copyright": "Copyright (c) .NET Foundation and Contributors; Andre Hofmeister",
+    "url": "https://github.com/testcontainers/Docker.DotNet/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Docker.DotNet.Enhanced.Handler.Abstractions",
+    "version": "4.3.3",
+    "license": "MIT",
+    "copyright": "Copyright (c) .NET Foundation and Contributors; Andre Hofmeister",
+    "url": "https://github.com/testcontainers/Docker.DotNet/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Docker.DotNet.Enhanced.LegacyHttp",
+    "version": "4.3.3",
+    "license": "MIT",
+    "copyright": "Copyright (c) .NET Foundation and Contributors; Andre Hofmeister",
+    "url": "https://github.com/testcontainers/Docker.DotNet/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Docker.DotNet.Enhanced.NativeHttp",
+    "version": "4.3.3",
+    "license": "MIT",
+    "copyright": "Copyright (c) .NET Foundation and Contributors; Andre Hofmeister",
+    "url": "https://github.com/testcontainers/Docker.DotNet/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Docker.DotNet.Enhanced.NPipe",
+    "version": "4.3.3",
+    "license": "MIT",
+    "copyright": "Copyright (c) .NET Foundation and Contributors; Andre Hofmeister",
+    "url": "https://github.com/testcontainers/Docker.DotNet/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Docker.DotNet.Enhanced.Unix",
+    "version": "4.3.3",
+    "license": "MIT",
+    "copyright": "Copyright (c) .NET Foundation and Contributors; Andre Hofmeister",
+    "url": "https://github.com/testcontainers/Docker.DotNet/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "Docker.DotNet.Enhanced.X509",
+    "version": "4.3.3",
+    "license": "MIT",
+    "copyright": "Copyright (c) .NET Foundation and Contributors; Andre Hofmeister",
+    "url": "https://github.com/testcontainers/Docker.DotNet/",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "SSH.NET",
+    "version": "2026.0.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) Renci 2010-2026",
+    "url": "https://github.com/sshnet/SSH.NET",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "SharpZipLib",
+    "version": "1.4.2",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2000-2022 SharpZipLib Contributors",
+    "url": "https://github.com/icsharpcode/SharpZipLib",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
+    "name": "BouncyCastle.Cryptography",
+    "version": "2.7.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) Legion of the Bouncy Castle Inc. 2000-2026",
+    "url": "https://www.bouncycastle.org/stable/nuget/csharp/website",
+    "scope": "development",
+    "text": "licenses/MIT.txt"
+  },
+  {
     "name": "Bootstrap",
     "version": "5.3.8",
     "license": "MIT",
@@ -1267,5 +1438,14 @@
     "url": "https://www.nuget.org/packages/xunit.runner.visualstudio",
     "scope": "development",
     "text": "licenses/Apache-2.0.txt"
+  },
+  {
+    "name": "Microsoft.AspNetCore.Authentication.OpenIdConnect",
+    "version": "11.0.0",
+    "license": "MIT",
+    "copyright": "Copyright Microsoft Corporation. All rights reserved.",
+    "url": "https://asp.net/",
+    "scope": "server",
+    "text": "licenses/MIT.txt"
   }
 ]

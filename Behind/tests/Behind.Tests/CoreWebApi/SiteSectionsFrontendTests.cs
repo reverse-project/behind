@@ -126,7 +126,8 @@ public class SiteSectionsFrontendTests
     [Fact]
     public void AuditLog_NamesTheSiteSectionEntity()
     {
-        Assert.Contains("SiteSection: \"audit.entities.SiteSection\"", Read("viewmodels/auditlog.js"));
+        Assert.Contains("i18n.tOr(\"audit.entities.\" + name, name)", Read("viewmodels/auditlog.js"));
+        Assert.Contains("\"audit.entities.SiteSection\"", Read("locales/en-US.json"));
     }
 
     [Fact]

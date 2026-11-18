@@ -23,17 +23,17 @@ public static class ContactEndpoints
     private static ContactFormResponse Public(Keyed<ContactForm> x)
     {
         var schema = ContactValidation.Schema(x.Entity);
-        return new(x.Key, x.Version, schema.Name, schema.Description, schema.SubjectMode, schema.Subjects, schema.Fields);
+        return new(x.Key, x.Version, schema.Name, schema.Description, ContactStringEnum.ToToken(x.Entity.SubjectMode), schema.Subjects, schema.Fields);
     }
 
     private static ManagedContactForm Managed(Keyed<ContactForm> x, bool deleted)
     {
         var schema = ContactValidation.Schema(x.Entity);
-        return new(x.Key, x.Version, schema.Name, schema.Description, x.Entity.Recipient, schema.SubjectMode, schema.Subjects, schema.Fields, deleted);
+        return new(x.Key, x.Version, schema.Name, schema.Description, x.Entity.Recipient, ContactStringEnum.ToToken(x.Entity.SubjectMode), schema.Subjects, schema.Fields, deleted);
     }
 
     private static ContactRequestResponse Managed(Keyed<ContactRequest> x, bool deleted, DateTimeOffset? createdAt, IReadOnlyDictionary<Guid, string> readers) =>
-        new(x.Key, x.Version, x.Entity.FormId, x.Entity.FormName, x.Entity.Recipient, x.Entity.Name, x.Entity.Email, x.Entity.Subject, x.Entity.Message, ContactValidation.Values(x.Entity.FieldsJson), x.Entity.DeliveryStatus, x.Entity.ReadBy, deleted, createdAt,
+        new(x.Key, x.Version, x.Entity.FormId, x.Entity.FormName, x.Entity.Recipient, x.Entity.Name, x.Entity.Email, x.Entity.Subject, x.Entity.Message, ContactValidation.Values(x.Entity.Fields), ContactStringEnum.ToToken(x.Entity.DeliveryStatus), x.Entity.ReadBy, deleted, createdAt,
             x.Entity.ReadBy is { } reader ? readers.GetValueOrDefault(reader, reader.ToUserLabel(null)) : null);
 
     private static async Task<IReadOnlyDictionary<Guid, string>> Readers(IReadOnlyCollection<Keyed<ContactRequest>> rows, IModuleUsers users, CancellationToken cancellationToken)
@@ -75,7 +75,7 @@ public static class ContactEndpoints
             return Results.BadRequest();
         }
         var deliveryRequested = form.Entity.Recipient.Length > 0;
-        var draft = new ContactRequest(id, form.Entity.Name, form.Entity.Recipient, request.Name, request.Email, request.Subject, request.Message, ContactValidation.Json(fields), deliveryRequested ? "failed" : "notRequested", null);
+        var draft = new ContactRequest(id, form.Entity.Name, form.Entity.Recipient, request.Name, request.Email, request.Subject, request.Message, ContactFieldValues.From(fields), deliveryRequested ? ContactDeliveryStatus.Failed : ContactDeliveryStatus.NotRequested, null);
         var saved = await commands.Create(draft, CancellationToken.None);
         if (saved is not VersionedSaveResult.Saved created)
         {
@@ -83,16 +83,16 @@ public static class ContactEndpoints
         }
         if (!deliveryRequested)
         {
-            return Results.Created($"/contact/manage/requests/{created.Id.Key}", new ContactReceipt("notRequested"));
+            return Results.Created($"/contact/manage/requests/{created.Id.Key}", new ContactReceipt(ContactStringEnum.ToToken(ContactDeliveryStatus.NotRequested)));
         }
         var outcome = await Deliver(created.Id.Key, context, commands, sender, logs.CreateLogger("Contact.Delivery"));
         var status = outcome switch
         {
-            DeliveryResult.Sent => "sent",
-            DeliveryResult.Failed => "failed",
-            _ => "sending"
+            DeliveryResult.Sent => ContactDeliveryStatus.Sent,
+            DeliveryResult.Failed => ContactDeliveryStatus.Failed,
+            _ => ContactDeliveryStatus.Sending
         };
-        return Results.Created($"/contact/manage/requests/{created.Id.Key}", new ContactReceipt(status));
+        return Results.Created($"/contact/manage/requests/{created.Id.Key}", new ContactReceipt(ContactStringEnum.ToToken(status)));
     }
 
     [IgnoreETag]
@@ -137,7 +137,13 @@ public static class ContactEndpoints
         return (await commands.UpdateExpected(id, request.Version.Value, Draft(request), http.RequestAborted)).ToResult();
     }
 
-    private static ContactForm Draft(SaveContactForm x) => new(x.Name, x.Description, x.Recipient ?? "", x.SubjectMode, ContactValidation.Json(x.Subjects), ContactValidation.Json(x.Fields));
+    private static ContactForm Draft(SaveContactForm x) => new(
+        x.Name,
+        x.Description,
+        x.Recipient ?? "",
+        ContactStringEnum.Parse<ContactSubjectMode>(x.SubjectMode),
+        ContactSubjects.From(x.Subjects),
+        ContactFieldSchema.From(x.Fields));
 
     [IgnoreETag]
     public static Task<IResult> ManageRequests(HttpContext http, IContactContext context, IAuthorizationService auth, IModuleCreationOrder order, IModuleUsers users,
@@ -209,7 +215,7 @@ public static class ContactEndpoints
         {
             return Results.NotFound();
         }
-        if (row.Entity.DeliveryStatus != "failed")
+        if (row.Entity.DeliveryStatus != ContactDeliveryStatus.Failed)
         {
             return Results.Conflict();
         }
@@ -281,8 +287,8 @@ public static class ContactEndpoints
         {
             return DeliveryResult.Missing;
         }
-        var fields = ContactValidation.Values(row.Entity.FieldsJson);
-        var claimed = await Change(id, context, commands, current => current.DeliveryStatus == "failed" ? current with { DeliveryStatus = "sending" } : null);
+        var fields = ContactValidation.Values(row.Entity.Fields);
+        var claimed = await Change(id, context, commands, current => current.DeliveryStatus == ContactDeliveryStatus.Failed ? current with { DeliveryStatus = ContactDeliveryStatus.Sending } : null);
         if (claimed != MutationResult.Changed)
         {
             return claimed == MutationResult.Missing ? DeliveryResult.Missing : DeliveryResult.Conflict;
@@ -315,7 +321,9 @@ public static class ContactEndpoints
         }
         try
         {
-            var recorded = await Change(id, context, commands, current => current.DeliveryStatus == "sending" ? current with { DeliveryStatus = success ? "sent" : "failed" } : null);
+            var recorded = await Change(id, context, commands, current => current.DeliveryStatus == ContactDeliveryStatus.Sending
+                ? current with { DeliveryStatus = success ? ContactDeliveryStatus.Sent : ContactDeliveryStatus.Failed }
+                : null);
             if (recorded != MutationResult.Changed)
             {
                 logger.LogError("Could not record delivery outcome for contact request {RequestId}: {Result}", id, recorded);

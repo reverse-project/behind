@@ -156,6 +156,7 @@ test("sign-in passkey works with passwords, magic links and two-factor disabled 
     }
     const CaptchaForm = load("viewmodels/captchaform.js", { "viewmodels/form": Form, "viewmodels/captcha": Captcha });
     const SignIn = load("viewmodels/signin.js", {
+        ko, "models/i18n": i18n,
         "viewmodels/captchaform": CaptchaForm, "viewmodels/twofactorchallenge": TwoFactor,
         "models/accounts": accounts,
         "models/auth": { signInWithPasskey: async (email, captcha) => {
@@ -183,6 +184,7 @@ test("sign-in passkey shares normal completion and recovery-code acknowledgement
     const { TwoFactor } = challenge({});
     const Form = load("viewmodels/form.js", { ko });
     const SignIn = load("viewmodels/signin.js", {
+        ko, "models/i18n": i18n,
         "viewmodels/captchaform": Form,
         "viewmodels/twofactorchallenge": TwoFactor,
         "models/accounts": { password: ko.observable(false), magicLink: ko.observable(false), passkey: ko.observable(true) },

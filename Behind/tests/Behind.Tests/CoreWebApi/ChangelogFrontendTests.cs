@@ -41,7 +41,18 @@ public class ChangelogFrontendTests
         var latest = document.RootElement.EnumerateArray().First();
 
         Assert.Equal(typeof(ICoreWebApi).Assembly.ProductVersion, latest.GetProperty("version").GetString());
-        Assert.True(latest.GetProperty("changes").GetArrayLength() > 0);
+        Assert.Equal(JsonValueKind.Array, latest.GetProperty("changes").ValueKind);
+    }
+
+    [Fact]
+    public void Changelog_ListsChangesForEveryPreviousRelease()
+    {
+        using var document = JsonDocument.Parse(Read("changelog.json"));
+
+        var previous = document.RootElement.EnumerateArray().Skip(1).ToList();
+
+        Assert.NotEmpty(previous);
+        Assert.All(previous, release => Assert.True(release.GetProperty("changes").GetArrayLength() > 0, release.GetProperty("version").GetString()));
     }
 
     [Fact]

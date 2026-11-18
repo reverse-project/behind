@@ -104,9 +104,9 @@ public partial class IdentityStore : IRoleStore<ApplicationRole>
     }
 
     public Task<string?> GetNormalizedRoleNameAsync(ApplicationRole role, CancellationToken cancellationToken) =>
-        Task.FromResult<string?>(role.Name.ToUpperInvariant());
+        Task.FromResult<string?>(role.Name);
 
-    public Task SetNormalizedRoleNameAsync(ApplicationRole role, string? normalizedName,
+    public Task SetNormalizedRoleNameAsync(ApplicationRole role, string? name,
         CancellationToken cancellationToken) => Task.CompletedTask;
 
     async Task<ApplicationRole?> IRoleStore<ApplicationRole>.FindByIdAsync(string roleId, CancellationToken cancellationToken)

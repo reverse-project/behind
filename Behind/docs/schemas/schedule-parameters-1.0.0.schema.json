@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind schedule parameter JSON 1.0.0",
+  "type": ["object", "null"],
+  "additionalProperties": { "type": ["string", "null"] }
+}

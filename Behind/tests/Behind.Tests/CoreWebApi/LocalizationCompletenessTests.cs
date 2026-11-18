@@ -1,7 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
 using Behind.Core.WebApi;
+using Behind.Core.WebApi.Scheduling;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.FileProviders;
 
 namespace Behind.Tests.CoreWebApi;
@@ -91,10 +95,26 @@ public partial class LocalizationCompletenessTests
         var english = Messages("en-US");
         var prefixes = Prefixes();
 
-        var used = SourceFiles()
-            .SelectMany(path => KeyLikeLiterals(Read(path), prefixes))
+        var sources = SourceFiles()
+            .Select(path => Read(path))
+            .ToArray();
+        var used = sources
+            .SelectMany(source => KeyLikeLiterals(source, prefixes))
             .ToHashSet();
         used.UnionWith(CoreModule.Descriptor.Widgets.Select(widget => widget.Name));
+        var schedulerOptions = Substitute.For<IOptionsMonitor<SchedulerConfiguration>>();
+        schedulerOptions.CurrentValue.Returns(new SchedulerConfiguration());
+        var scheduledAction = new SessionCleanupScheduledAction(Substitute.For<ISessionCommands>(), schedulerOptions).Descriptor;
+        used.Add(scheduledAction.NameKey);
+        used.UnionWith(scheduledAction.Parameters.Select(parameter => parameter.LabelKey));
+        if (sources.Any(source => source.Contains("\"audit.entities.\" + name", StringComparison.Ordinal)))
+        {
+            used.UnionWith(english.Keys.Where(key => key.StartsWith("audit.entities.", StringComparison.Ordinal)));
+        }
+        if (sources.Any(source => source.Contains("\"audit.sort.\" + name", StringComparison.Ordinal)))
+        {
+            used.UnionWith(english.Keys.Where(key => key.StartsWith("audit.sort.", StringComparison.Ordinal)));
+        }
 
         var unused = english.Keys.Where(key => !used.Contains(key)).Order().ToList();
 

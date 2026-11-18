@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json.Serialization;
 using Behind.Common.Converters;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
@@ -33,6 +34,7 @@ public sealed record OpenTelemetryConfiguration(
     );
 
     [TypeConverter(typeof(OpenTelemetryInstrumentationTypeConverter))]
+    [JsonConverter(typeof(OpenTelemetryInstrumentationJsonConverter))]
     public abstract record Instrumentation
     {
         public static readonly Instrumentation AspNetCoreInstrumentation =

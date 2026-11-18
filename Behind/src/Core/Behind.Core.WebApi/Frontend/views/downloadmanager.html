@@ -18,11 +18,7 @@
         <content-age params="entityType: 'DownloadFolder', id: browser.selected() && browser.selected().id, allowed: $root.canWrite"></content-age>
         <content-locale params="entityType: 'DownloadFolder', id: browser.selected() && browser.selected().id, allowed: $root.canWrite"></content-locale>
         <div class="col-md-4 col-lg-3">
-            <nav aria-label="Download folders" class="card card-body" data-bind="tAttr: { 'aria-label': 'downloads.folders' }">
-                <a class="text-decoration-none mb-2" data-bind="attr: { href: browser.rootHref }, css: { 'download-tree-selected': browser.rootSelected }"><i class="fa-solid fa-house me-1" aria-hidden="true"></i><span data-bind="t: 'downloads.all'">All downloads</span></a>
-                <p class="text-body-secondary mb-0" data-bind="visible: !browser.hasFolders(), t: 'downloads.noFolders'">There are no folders yet.</p>
-                <download-tree params="nodes: browser.roots"></download-tree>
-            </nav>
+            <folder-browser params="roots: browser.roots, rootLinks: [{ href: browser.rootHref, selected: browser.rootSelected, label: 'downloads.all' }], hasFolders: browser.hasFolders, label: 'downloads.folders', emptyLabel: 'downloads.noFolders'"></folder-browser>
         </div>
         <div class="col-md-8 col-lg-9">
             <nav aria-label="breadcrumb" data-bind="visible: browser.inFolder, tAttr: { 'aria-label': 'downloads.breadcrumb' }">

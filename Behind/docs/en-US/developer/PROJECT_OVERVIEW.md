@@ -1,5 +1,16 @@
 # Project Overview
 
+## Shared caching
+
+Core registers Common.WebApi HybridCache for every host, including sites.
+`CachingConfiguration` in Common has only database-style `Provider` and `Key`
+records. The optional `caching.json` contains `Caching` plus named
+`ConnectionStrings`; Memory is the default and RedisCompatible supports Valkey.
+The Settings tab reuses the shared form and permissions with a validated provider
+selector and masked connections. Service changes require restart. See
+[caching setup and security](./GETTING_STARTED.md#caching) and the
+[1.0.0 contract](../specs/caching-configuration-1.0.0.md).
+
 ## Private messaging and reports
 
 Private messaging is Core functionality, separate from scheduled notices and public chat. The account inbox supports read, sent and deleted folders, BBCode conversations, user/role recipients, hidden recipients, evolving groups and block lists. Role membership is evaluated live, including earlier history. System responses are visible only to the replying user, original sender and administrators with `PrivateMessageModeration.Manage`.
@@ -21,6 +32,10 @@ Common.WebApi's `IModuleEmailSender` is implemented by Core `ModuleEmailSender`,
 ## Optional content locales
 
 Content locales are part of the existing editors, not a separate administration application. Routes do not contain a locale; the selected locale is sent with content requests. The default comes from the signed-in user's profile, browser cache or site default. Content without a locale is shared with all selected locales; locale-assigned content is filtered for public feeds, widgets and installed modules. Locale choices use the available interface languages. Sites and route aliases have locale-scoped slug uniqueness, with shared slugs reserved across locales. Layouts expose `core.locale-switch` and an optional header switch. For signed-in users, changing the switch also saves the selected interface language to the profile.
+
+## Scheduler
+
+Core hosts a scheduler (`ScheduleService`, a hosted service that ticks every `Backend:Scheduler:TickSeconds`, 60 by default) that runs predefined actions when an enabled schedule's five-field UTC cron expression matches the current minute. Schedules are managed at `#/manage/schedules` (raw cron text with a field calculator and next-run preview, action, parameters, and a Participants tab), and run history at `#/manage/schedules/runs`. Actions implement `Behind.Common.WebApi.IScheduledAction` and are registered as scoped services by Core or modules: Core contributes `core.session-cleanup`, which deletes sessions invalidated more than the configured number of days ago (default 30). Results can be emailed to role members, users and custom addresses according to the schedule's notify setting (never, always, on success, on failure). Configuration lives in `Backend:Scheduler`: `Enabled`, `TickSeconds`, `MaxConcurrentRuns`, `RunTimeoutMinutes`, `MaxCatchUpMinutes`, `PreviewCount`, `MaxPreviewCount`, `ParticipantSearchLimit` and `MaxSessionCleanupAgeDays`. The scheduler is single-instance: it does not take a distributed lock.
 
 ## Layouts and widgets
 
@@ -192,7 +207,7 @@ Core business logic and domain implementation.
 - **Behind.Core.Tools**
   - CLI tools and utilities
   - `dataprotection create`: creates the data protection certificate (random or prompted password) and a `security.json` with the `Security:DataProtection` section
-  - `startup create`: generates `security.json` (data protection certificate and keys path, TOTP secret key, JWT signing key, developer elevation TOTP key, magic link secret), `database.json` (SQLite), `backend.json` and `frontend.json`, plus `appsettings.json`, `email.json`, `forum.json` and `markdownviewer.json`. Every section is written with all its default values (accounts, limits, static files, magic link, logging, OpenTelemetry, module settings), so the Settings page can edit them; `StartupSetupTests` binds each file back to the configuration records. Module files are mirrored in Core.Tools without referencing the modules. Options: `--data-directory` (default `data`), `--config-directory` (default `.`), `--issuer`, `--audience`, `--frontend-url` (default `http://localhost:8080/`), `--email-confirmation`, `--prompt`, `--force`, `--skip-existing`. Exits with a non-zero code on failure
+  - `startup create`: generates `security.json` (data protection certificate and keys path, TOTP secret key, JWT signing key, developer elevation TOTP key, magic link secret), `database.json` (SQLite), `backend.json` and `frontend.json`, plus `appsettings.json`, `email.json`, `forum.json` and `markdownviewer.json`. Every section is written with all its default values (accounts, scheduler, limits, static files, magic link, OIDC, logging, OpenTelemetry, module settings), so the Settings page can edit them; `StartupSetupTests` binds each file back to the configuration records. Module files are mirrored in Core.Tools without referencing the modules. Options: `--data-directory` (default `data`), `--config-directory` (default `.`), `--issuer`, `--audience`, `--frontend-url` (default `http://localhost:8080/`), `--email-confirmation`, `--prompt`, `--force`, `--skip-existing`. Exits with a non-zero code on failure
   - Runs as a container too (`tools/publish-core-tools-container.sh` publishes `reverse-project/behind/core-tools`); the paths written to the configuration files are absolute, so mount the data directory where the other containers see it:
 
     ```bash

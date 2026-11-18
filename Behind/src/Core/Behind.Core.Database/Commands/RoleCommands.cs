@@ -22,9 +22,10 @@ public sealed class RoleCommands(AbstractCoreContext context, AccessCatalog cata
         bool isDeveloper = false,
         CancellationToken cancellationToken = default)
     {
-        var exists = await context.Roles.AnyAsync(
-            role => role.Name.ToLower() == name.ToLower(),
-            cancellationToken);
+        using var scope = context.SoftDelete.IncludeDeleted();
+        var names = await context.Roles.Where(role => role.Name == name)
+            .Select(role => role.Name).ToListAsync(cancellationToken);
+        var exists = names.Contains(name, StringComparer.Ordinal);
 
         if (exists)
         {
@@ -34,7 +35,15 @@ public sealed class RoleCommands(AbstractCoreContext context, AccessCatalog cata
         var role = new UserRole(name) { IsDeveloper = isDeveloper };
 
         await context.Roles.AddAsync(role, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (RoleNameUniqueness.IsConflict(exception))
+        {
+            context.Entry(role).State = EntityState.Detached;
+            return None;
+        }
 
         return Some(context.GetKey(role));
     }

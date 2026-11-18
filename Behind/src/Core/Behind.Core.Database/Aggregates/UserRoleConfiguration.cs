@@ -10,6 +10,6 @@ public sealed class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
     {
         builder.ToTable("Roles");
 
-        builder.HasIndex(r => r.Name);
+        builder.HasIndex(r => r.Name).IsUnique();
     }
 }

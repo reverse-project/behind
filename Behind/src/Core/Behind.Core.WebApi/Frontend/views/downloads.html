@@ -8,11 +8,7 @@
     <div class="alert alert-warning" role="alert" data-bind="visible: missing"><span data-bind="t: 'downloads.folderMissing'">This folder does not exist.</span> <a href="#/downloads" data-bind="t: 'downloads.goToDownloads'">Go to the downloads</a>.</div>
     <div class="row g-4" data-bind="visible: found">
         <div class="col-md-4 col-lg-3">
-            <nav aria-label="Download folders" class="card card-body" data-bind="tAttr: { 'aria-label': 'downloads.folders' }">
-                <a class="text-decoration-none mb-2" data-bind="attr: { href: rootHref }, css: { 'download-tree-selected': rootSelected }"><i class="fa-solid fa-house me-1" aria-hidden="true"></i><span data-bind="t: 'downloads.all'">All downloads</span></a>
-                <p class="text-body-secondary mb-0" data-bind="visible: !hasFolders(), t: 'downloads.noFolders'">There are no folders yet.</p>
-                <download-tree params="nodes: roots"></download-tree>
-            </nav>
+            <folder-browser params="roots: roots, rootLinks: [{ href: rootHref, selected: rootSelected, label: 'downloads.all' }], hasFolders: hasFolders, label: 'downloads.folders', emptyLabel: 'downloads.noFolders'"></folder-browser>
         </div>
         <div class="col-md-8 col-lg-9">
             <nav aria-label="breadcrumb" data-bind="visible: inFolder, tAttr: { 'aria-label': 'downloads.breadcrumb' }">

@@ -5,6 +5,11 @@ description: 'Keep the RAW database entry editor of the Behind management UI (Ad
 
 # Raw database entry editors
 
+Follow `manage-caching` when changing raw queries or writes. Only numeric table
+counts are currently cacheable; never cache raw rows or masked PII. Preserve
+transactional auditing so committed revision keys invalidate across hosts, and
+test rollback and actual PostgreSQL/Valkey cache hits.
+
 Load `csharp-code-standards` first. Every persisted entity must be editable in the raw database editor: developers (`RawDatabase.Manage`) list, search, sort, insert, edit and permanently delete the stored rows of every table. The editor is generic and driven by the EF Core relational model, so most entities need no editor code, only the checks below.
 
 ## How it works
@@ -20,6 +25,7 @@ Load `csharp-code-standards` first. Every persisted entity must be editable in t
 4. **Column kinds**: `RawTableExtensions.Kinds` maps the provider CLR type (after value converters) to a `RawValueKind`. If the new column uses a provider type that is not listed (for example a new numeric type), add it there, or it is edited as text. Add a `RawColumnExtensionsTests` case when a new kind is parsed.
 5. **Audit names**: the editor audits with the same entity name and key as the EF audit (`IReadOnlyEntityType.AuditEntityName`). Update `AuditLabelExtensions` and its tests as `add-entity` requires, so raw edits of the entity show readable labels.
 6. **Tests** (`tests/Behind.Tests`): `CoreDatabase/RawDatabaseCatalogTests` already fails when the model has an entity type outside the editor, when a table has no key and when a table cannot be listed, searched and sorted, run it. Add a `RawDatabaseCommandsTests` case when the entity has a rule of its own (sensitive column, composite key, generated key, read-only).
+   Add and maintain `Testcontainers.PostgreSql` integration tests for affected PostgreSQL catalog queries, raw reads/writes, provider value conversions and audited persistence; SQLite or generated SQL assertions are not sufficient. Follow `CoreDatabase/ContentAgeOptionPostgresIntegrationTests.cs`, tag tests `Category=Integration`, read the image from `postgresql.testsettings.json`, and dispose containers with `await using`. Cover fresh/upgrade migrations, data preservation, audit UTC-tick round-tripping and safe reruns when relevant. Run the affected tests using the root README's Docker/Podman setup; an unavailable engine must fail explicitly, never silently skip.
 7. **Frontend**: the page is generic, no per entity files. If the entity name needs a readable title in the audit log, `audit.entities.<Name>` in both locales as `add-entity` requires. User visible text of the editor changes go to every locale in `Frontend/locales`.
 8. **Docs and changelog**: mention the entity in `docs/en-US/developer/DOMAIN_MODEL.md` / `DATABASE_ARCHITECTURE.md` as `add-entity` requires; `update-changelog` for editor behavior changes; `docs/en-US/user-manual/managing-raw-database.md` when the editor itself changes.
 9. Run `dotnet test tests/Behind.Tests/Behind.Tests.csproj --filter "FullyQualifiedName~RawDatabase"` from `Behind/`, then the full suite.

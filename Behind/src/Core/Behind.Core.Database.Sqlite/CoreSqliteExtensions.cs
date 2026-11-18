@@ -10,6 +10,15 @@ namespace Behind.Core.Database.Sqlite;
 
 public static class CoreSqliteExtensions
 {
+    extension(ModelBuilder modelBuilder)
+    {
+        public ModelBuilder ApplySqliteCoreProviderConventions()
+        {
+            modelBuilder.ApplyCoreProviderConventions();
+            return modelBuilder;
+        }
+    }
+
     private static readonly DatabaseProviderOptions SqliteProviderOptions = new(
         (options, connectionString) => options.UseSqlite(connectionString),
         (options, connectionString) => options.UseVersioningSqlite(connectionString),

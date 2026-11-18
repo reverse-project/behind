@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Behind.Sport.Database;
+using Behind.Sport.Database.Queries;
 using Behind.Sport.Domain;
 
 namespace Behind.Tests.Sport;
@@ -135,6 +136,35 @@ public sealed class SportQueriesTests : IDisposable
         Assert.Equal(["Ada"], (await _bed.ListAsync<PlayerListing>()).Select(row => row.FirstName));
         var deleted = Assert.Single(await _bed.ListAsync<PlayerListing>(DeletionState.Deleted));
         Assert.Equal((world.Bob, true), (deleted.Id, deleted.IsDeleted));
+    }
+
+    [Fact]
+    public async Task DeletedListing_RestoresSoftDeleteScopeAfterCancellation()
+    {
+        await using var context = _bed.Read();
+        var queries = new DisciplineQueries(context);
+        var request = new ListRequest(new Flipper(1, 10), None, None, DeletionState.Deleted, SportFilter.Empty);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queries.List(request, cancellation.Token));
+
+        Assert.False(context.SoftDelete.IncludesDeleted);
+    }
+
+    [Fact]
+    public async Task DeletedLetters_RestoresOuterSoftDeleteScopeAfterCancellation()
+    {
+        await using var context = _bed.Read();
+        var queries = new DisciplineQueries(context);
+        var request = new ListRequest(new Flipper(1, 10), None, None, DeletionState.Deleted, SportFilter.Empty);
+        using var outer = context.SoftDelete.IncludeDeleted();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queries.GetLetters(request, cancellation.Token));
+
+        Assert.True(context.SoftDelete.IncludesDeleted);
     }
 
     [Fact]

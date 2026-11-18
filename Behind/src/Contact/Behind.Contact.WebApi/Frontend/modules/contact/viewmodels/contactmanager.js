@@ -1,5 +1,5 @@
 define(["ko", "models/session", "models/i18n", "modules/contact/models/contact", "models/pager"], function (ko, session, i18n, contact, createPager) {
-    var fieldTypes = ["text", "textarea", "email"];
+    var fieldTypes = ["text", "textarea", "email", "boolean"];
 
     return function ContactManagerViewModel() {
         var self = this;
@@ -282,7 +282,7 @@ define(["ko", "models/session", "models/i18n", "modules/contact/models/contact",
                         label: field.label().trim(),
                         type: field.type(),
                         required: field.required(),
-                        maxLength: Number(field.maxLength())
+                        maxLength: field.type() === "boolean" ? 5 : Number(field.maxLength())
                     };
                 })
             };

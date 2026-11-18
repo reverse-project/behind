@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Behind.Common.Configuration;
 using Behind.Core.Common.Configuration;
 
 namespace Behind.Core.Tools;
@@ -19,6 +20,7 @@ public sealed record StartupSetupRequest(
     public const string SecurityFileName = "security.json";
     public const string DatabaseFileName = "database.json";
     public const string BackendFileName = "backend.json";
+    public const string CachingFileName = "caching.json";
     public const string FrontendFileName = "frontend.json";
     public const string EmailFileName = "email.json";
     public const string ForumFileName = "forum.json";
@@ -70,7 +72,8 @@ public sealed record StartupSecuritySection(
     SecretKey SecretKey,
     JwtSettings Jwt,
     ElevationSettings Elevation,
-    StartupMagicLinkSettings MagicLink
+    StartupMagicLinkSettings MagicLink,
+    OidcConfiguration Oidc
 );
 
 public sealed record StartupMagicLinkSettings(
@@ -92,12 +95,17 @@ public sealed record StartupDatabaseFile(
 
 public sealed record StartupBackendFile(StartupBackendSection Backend);
 
+public sealed record StartupCachingFile(
+    IReadOnlyDictionary<string, string> ConnectionStrings,
+    CachingConfiguration Caching);
+
 public sealed record StartupBackendSection(
     string DataDirectory,
     ContentRestrictionsConfiguration ContentRestrictions,
     DownloadsConfiguration Downloads,
     CommentsConfiguration Comments,
-    AccountsConfiguration Accounts
+    AccountsConfiguration Accounts,
+    SchedulerConfiguration Scheduler
 );
 
 public sealed record StartupFrontendFile(StartupFrontendSection Frontend);

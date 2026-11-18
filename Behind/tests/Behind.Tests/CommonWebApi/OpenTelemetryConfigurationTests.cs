@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Behind.Common.WebApi;
 using Behind.Common.Logging;
 using Microsoft.AspNetCore.Builder;
@@ -43,6 +44,25 @@ public class OpenTelemetryConfigurationTests
         Assert.True(converter.CanConvertFrom(typeof(string)));
         Assert.False(converter.CanConvertFrom(typeof(int)));
         Assert.Throws<NotSupportedException>(() => converter.ConvertFrom(42));
+    }
+
+    [Theory]
+    [InlineData("AspNetCoreInstrumentation")]
+    [InlineData("HttpClientInstrumentation")]
+    [InlineData("RuntimeInstrumentation")]
+    [InlineData("OtlpExporter")]
+    public void InstrumentationJsonConverter_RoundTripsKnownNames(string name)
+    {
+        var instrumentation = JsonSerializer.Deserialize<Instrumentation>($"\"{name}\"");
+
+        Assert.NotNull(instrumentation);
+        Assert.Equal($"\"{name}\"", JsonSerializer.Serialize(instrumentation));
+    }
+
+    [Fact]
+    public void InstrumentationJsonConverter_RejectsUnknownNames()
+    {
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Instrumentation>("\"UnknownInstrumentation\""));
     }
 
     [Fact]

@@ -98,6 +98,8 @@ public sealed class ContentAgeOptionMigrationTests
         Assert.Contains("UNION SELECT 18", sql);
         Assert.Contains("'ContentAgeOption'", sql);
         Assert.Contains("'Created'", sql);
+        Assert.Contains("(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 10000000)::bigint + 621355968000000000", sql);
+        Assert.DoesNotContain("'Created', CURRENT_TIMESTAMP", sql);
         var namesSql = context.GetService<IMigrator>().GenerateScript(
             "20261113105945_ContentAgeOptions", "20261113120001_ContentAgeOptionNames");
         Assert.Contains("UPDATE \"ContentAgeOptions\" SET \"Name\" = CAST(\"Age\" AS text)", namesSql);

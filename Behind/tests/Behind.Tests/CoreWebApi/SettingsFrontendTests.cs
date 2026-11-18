@@ -22,6 +22,7 @@ public class SettingsFrontendTests
     [InlineData("models/settings.js")]
     [InlineData("viewmodels/settings.js")]
     [InlineData("viewmodels/emailsettings.js")]
+    [InlineData("viewmodels/oidcsettings.js")]
     [InlineData("viewmodels/loggingsettings.js")]
     [InlineData("viewmodels/opentelemetrysettings.js")]
     [InlineData("views/settings.html")]
@@ -219,6 +220,11 @@ public class SettingsFrontendTests
     public void View_OffersTheOpenTelemetryConfigurationFields()
     {
         var view = Read("views/settings.html");
+        var editorStart = view.IndexOf("submit: saveAppSettings", StringComparison.Ordinal);
+        Assert.True(editorStart >= 0);
+        var editorEnd = view.IndexOf("</form>", editorStart, StringComparison.Ordinal);
+        Assert.True(editorEnd > editorStart);
+        var editor = view[editorStart..editorEnd];
 
         Assert.All(
             new[]
@@ -228,9 +234,8 @@ public class SettingsFrontendTests
                 "options: $parent.protocols", "foreach: instruments", "checked: selected",
                 "checked: includeFormattedMessage", "checked: includeScopes", "checked: parseStateValues"
             },
-            binding => Assert.Contains(binding, view));
+            binding => Assert.Contains(binding, editor));
 
-        var editor = view[view.IndexOf("submit: saveAppSettings", StringComparison.Ordinal)..view.IndexOf("with: selected", StringComparison.Ordinal)];
         Assert.Equal(1, editor.Split("type=\"submit\"", StringSplitOptions.None).Length - 1);
     }
 }

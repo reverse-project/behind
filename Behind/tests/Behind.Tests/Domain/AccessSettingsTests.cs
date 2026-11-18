@@ -44,9 +44,9 @@ public class AccessSettingsTests
     }
 
     [Fact]
-    public void IsRestrictedFor_RoleNameComparisonIgnoresCase()
+    public void IsRestrictedFor_RoleNameComparisonIsCaseSensitive()
     {
-        Assert.False(Restricting("users").IsRestrictedFor(AccessOf("USERS")));
+        Assert.True(Restricting("users").IsRestrictedFor(AccessOf("USERS")));
     }
 
     [Fact]
@@ -80,7 +80,8 @@ public class AccessSettingsTests
     [Fact]
     public void HasRole_FindsTheRoleByName()
     {
-        Assert.True(AccessOf("Users").HasRole("users"));
+        Assert.True(AccessOf("Users").HasRole("Users"));
+        Assert.False(AccessOf("Users").HasRole("users"));
         Assert.False(AccessOf("Users").HasRole("Developers"));
         Assert.False(UserAccess.Empty.HasRole("Users"));
     }

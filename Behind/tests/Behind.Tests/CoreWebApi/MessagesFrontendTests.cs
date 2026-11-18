@@ -106,7 +106,8 @@ public class MessagesFrontendTests
     [Fact]
     public void AuditLog_NamesTheMessageEntity()
     {
-        Assert.Contains("Message: \"audit.entities.Message\"", Read("viewmodels/auditlog.js"));
+        Assert.Contains("i18n.tOr(\"audit.entities.\" + name, name)", Read("viewmodels/auditlog.js"));
+        Assert.Contains("\"audit.entities.Message\"", Read("locales/en-US.json"));
     }
 
     [Fact]

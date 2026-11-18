@@ -1,4 +1,5 @@
 using Behind.Core.Database;
+using Behind.Tests.Helpers;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Sqlite;
 using Behind.Core.Domain;
@@ -19,7 +20,7 @@ public sealed class MessageMigrationTests
         await using var context = new CoreContextSqlite(
             new DbContextOptionsBuilder<CoreContextSqlite>().UseSqlite(connection).Options);
         await context.GetService<IMigrator>().MigrateAsync("20261112082917_ProfilesPrivacyAndContentRestrictions");
-        await context.EnsureBuiltInRolesAsync(AccessCatalog.Core);
+        await DatabaseSeedHelper.SeedLegacyBuiltInRolesAsync(context);
         var roles = await context.Roles.CountAsync();
 
         await context.Database.MigrateAsync();

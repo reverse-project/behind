@@ -28,4 +28,15 @@ public class RouterFrontendTests
             app.IndexOf("app._checkFormSubmission = ignoreFormSubmissions;", StringComparison.Ordinal)
             < app.IndexOf("patternRoutes.forEach", StringComparison.Ordinal));
     }
+    [Fact]
+    public void Router_ResolvesScheduleManagementAndRunHistoryRoutes()
+    {
+        var app = Read("app.js");
+        var alias = app.IndexOf("var aliasRoute = \"#/:slug\"", StringComparison.Ordinal);
+
+        Assert.Contains("\"#/manage/schedules\": \"controllers/schedules\"", app);
+        Assert.Contains("\"#/manage/schedules/runs\": \"controllers/scheduleruns\"", app);
+        Assert.True(app.IndexOf("\"#/manage/schedules/runs\"", StringComparison.Ordinal) < alias);
+    }
+
 }

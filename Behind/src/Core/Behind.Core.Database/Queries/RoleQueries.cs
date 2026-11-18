@@ -12,9 +12,18 @@ public sealed class RoleQueries(AbstractCoreContext context) : IRoleQueries
     public async Task<Option<IRoleQueries.RoleResult>> GetRoleByName(string name,
         CancellationToken cancellationToken = default)
     {
-        var found = await FindRoles(role => role.Name.ToLower() == name.ToLower(), cancellationToken);
+        var roles = await context.Roles
+            .Where(role => role.Name == name)
+            .Select(role => new { Id = EF.Property<Guid>(role, "Id"), role.Name })
+            .ToListAsync(cancellationToken);
+        var match = roles.FirstOrDefault(role =>
+            string.Equals(role.Name, name, StringComparison.Ordinal));
+        if (match is null)
+        {
+            return None;
+        }
 
-        return found.Head();
+        return (await FindRoles(role => EF.Property<Guid>(role, "Id") == match.Id, cancellationToken)).Head();
     }
 
     public async Task<Option<IRoleQueries.RoleResult>> GetRoleById(Guid id,

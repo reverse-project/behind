@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind layout JSON records 1.0.0",
+  "$ref": "#/$defs/LayoutConfiguration",
+  "$defs": {
+    "LayoutConfiguration": {
+      "type": "object",
+      "properties": {
+        "revision": { "type": "integer", "minimum": 0 },
+        "schemaVersion": { "type": "integer", "enum": [0, 1] },
+        "defaultLayout": { "type": "string" },
+        "layouts": { "type": "array", "items": { "$ref": "#/$defs/SiteLayout" } },
+        "assignments": { "type": "array", "items": { "$ref": "#/$defs/LayoutAssignment" } }
+      }
+    },
+    "SiteLayout": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "locale": { "type": ["string", "null"] },
+        "deleted": { "type": "boolean" },
+        "badges": { "type": "array", "items": { "$ref": "#/$defs/LayoutBadge" } },
+        "sections": { "type": "array", "items": { "$ref": "#/$defs/LayoutSection" } }
+      }
+    },
+    "LayoutSection": {
+      "type": "object",
+      "properties": {
+        "rows": { "type": "integer" },
+        "columns": { "type": "integer" },
+        "width": { "type": "string" },
+        "cssClass": { "type": "string" },
+        "overlap": { "type": "integer" },
+        "layer": { "type": "integer" },
+        "widgets": { "type": "array", "items": { "$ref": "#/$defs/LayoutWidget" } }
+      }
+    },
+    "LayoutWidget": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "cssClass": { "type": "string" },
+        "borderless": { "type": "boolean" },
+        "noMargin": { "type": "boolean" },
+        "noPadding": { "type": "boolean" },
+        "hamburgerPosition": { "type": "string" },
+        "showLocaleSwitch": { "type": "boolean" },
+        "localeSwitchView": { "type": ["string", "null"] },
+        "row": { "type": "integer" },
+        "column": { "type": "integer" },
+        "rowSpan": { "type": "integer" },
+        "columnSpan": { "type": "integer" },
+        "layer": { "type": "integer" },
+        "menu": { "type": "string" },
+        "content": { "type": "string" },
+        "editor": { "type": "string" },
+        "limit": { "type": "integer" },
+        "message": { "type": ["string", "null"] }
+      }
+    },
+    "LayoutBadge": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "image": { "type": "string" },
+        "link": { "type": "string" },
+        "position": { "type": "string" },
+        "width": { "type": "integer" }
+      }
+    },
+    "LayoutAssignment": {
+      "type": "object",
+      "properties": {
+        "route": { "type": "string" },
+        "layout": { "type": "string" }
+      }
+    }
+  }
+}

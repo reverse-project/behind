@@ -16,7 +16,13 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
     var generation = 0;
     var activeRefresh = 0;
     var fixedBindings = false;
-    var managementRoute = /^#\/(?:manage(?:\/|$)|administration$|settings$|sites(?:\/|$)|users$|roles$|audit-log$|profile(?:\/|$)|private-messages(?:\/|$)|session|sign(?:[-/]|$))/;
+    var managementRoute = /^#\/(?:manage(?:\/|$)|administration$|settings$|sites(?:\/|$)|users$|roles$|audit-log$|profile(?:\/|$)|private-messages(?:\/|$)|session|sign(?:[-/]|$)|signin(?:[/?]|$))/;
+    var authRoute = /^#\/(?:session|sign(?:[-/]|$)|signin(?:[/?]|$))/;
+    var accountRoute = /^#\/(?:profile|private-messages)(?:\/|$)/;
+    var isDedicatedAssignment = function (assignmentRoute) {
+        var target = assignmentRoute.endsWith("*") ? assignmentRoute.slice(0, -1) : assignmentRoute;
+        return managementRoute.test(target) && !accountRoute.test(target);
+    };
 
     var addTokens = function (element, value) {
         if (typeof value !== "string") {
@@ -212,13 +218,15 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
 
         clear();
 
-        if (restriction.restricted() || managementRoute.test(route) && !preview) {
+        if (restriction.restricted() || authRoute.test(route) || !preview && accountRoute.test(route)) {
             mountFixedShell();
             return;
         }
 
         var configuration = layouts.current();
-        var layout = preview || configuration && layouts.select(configuration, route);
+        var layout = preview || configuration && (managementRoute.test(route)
+            ? layouts.selectAssigned(configuration, route, isDedicatedAssignment)
+            : layouts.select(configuration, route));
         if (!layout) {
             mountFixedShell();
             return;

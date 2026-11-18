@@ -29,7 +29,8 @@ public sealed record TwoFactorTicket(
     string? Ceremony = null,
     string? PrimaryCredentialId = null,
     Guid? Nonce = null,
-    string? Email = null);
+    string? Email = null,
+    string? PrimaryOidcProviderId = null);
 
 public sealed record TwoFactorChallengeResponse(
     string Ticket,

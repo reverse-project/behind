@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind schedule participant JSON 1.0.0",
+  "type": ["array", "null"],
+  "items": {
+    "type": ["object", "null"],
+    "patternProperties": {
+      "^[kK][iI][nN][dD]$": { "type": ["string", "null"] },
+      "^[vV][aA][lL][uU][eE]$": { "type": ["string", "null"] }
+    }
+  }
+}

@@ -13,6 +13,15 @@ Mindkét engedély a `Developers` szerepkörhöz tartozik. Az adminisztrátorok 
 
 ## Fülek
 
+A **caching.json** fül a HybridCache beállításait tartalmazza. A **Provider**
+választó értékei **Memory** (alapérték) és **RedisCompatible** (Valkey).
+A **Key** a **ConnectionStrings** egyik kapcsolatának neve; a létrehozott név
+**CachingConnection**. A maszkolt jelszómező új értéke lecseréli a végpontot és
+hitelesítést; üresen hagyva megmarad a titok. A Key törlése kikapcsolja az
+elosztott gyorsítótárat. Hiányzó kulcs vagy üres/hiányzó kapcsolat esetén csak
+memória használható. Mentés után indítsa újra az alkalmazást. Meglévő telepítésnél
+a `startup create --skip-existing` létrehozza a fájlt.
+
 Minden, az alkalmazás mellett létező konfigurációs fájl kap egy fület: `appsettings.json`, `backend.json`, `database.json`, `email.json`, `frontend.json` és `security.json`, valamint minden olyan modul fájlja, amelynek van ilyen (például a [Dokumentáció](./managing-markdown-viewer.md) modul `markdownviewer.json` fájlja). Az `email.json` és az `appsettings` fájlok kivételével, amelyeknek saját űrlapjuk van (lásd alább), a fül a fájl beállításait szakaszok szerint csoportosítva listázza, például `Security › Jwt`. A szöveges beállítások szövegmezők, a be- és kikapcsolós beállítások kapcsolók, a számok pedig számmezők.
 
 Az oldalak képforgóinak korlátai a `frontend.json` számai (`Frontend › Carousels`): **MaxSlides** (képek száma képforgónként), **MinIntervalSeconds** és **MaxIntervalSeconds** (az engedélyezett másodpercek képenként), **IntervalSeconds** (ezzel az értékkel indul egy új képforgó), **MaxCaptionLength** és **MaxImageBytes**. Lásd az [Oldalak kezelése](./managing-sites.md) részt.
@@ -31,10 +40,11 @@ Hozzáadáskor minden korhatárhoz adjon meg egy megjelenített nevet, például
 
 ## Fiók-bejelentkezési módok
 
-A **backend.json > Backend > Accounts** szakasz **Password**, **MagicLink**, **TwoFactor**, **Passkey** és **EmailTwoFactor** kapcsolói vezérlik a bejelentkezési és második hitelesítési módokat. Mindegyik alapértelmezett értéke **true**, a módosítások újraindítás nélkül érvénybe lépnek.
+A **backend.json > Backend > Accounts** szakasz **Password**, **MagicLink**, **Oidc**, **TwoFactor**, **Passkey** és **EmailTwoFactor** kapcsolói vezérlik a bejelentkezési és második hitelesítési módokat. Mindegyik alapértelmezett értéke **true**, a módosítások újraindítás nélkül érvénybe lépnek.
 
 - A **Password** engedélyezi vagy letiltja a jelszavas bejelentkezést.
 - A **MagicLink** engedélyezi vagy letiltja az e-mailes bejelentkezési hivatkozásokat. Az **LostPassword** jelszó-helyreállító hivatkozásokat **nem** tiltja le; ezek csak jelszó-visszaállítást tesznek lehetővé, teljes bejelentkezett munkamenetet nem adnak.
+- Az **Oidc** az összes OpenID Connect szolgáltatót engedélyezi vagy tiltja. A globális kapcsoló a `backend.json` `Backend:Accounts` részén található, alapértéke true, újraindítás nélkül frissül. Kikapcsolva az új OIDC bejelentkezések, függő callbackek, ticketbeváltások és második lépések elutasítottak; meglévő munkamenetek megmaradnak.
 - A **TwoFactor** engedélyezi vagy letiltja a kétlépcsős hitelesítést. Kikapcsolása nem kerüli meg a védelmet: a kétlépcsős hitelesítést már beállított felhasználók nem tudnak bejelentkezni, amíg az ki van kapcsolva; akkor sem lehet bejelentkezni, ha a kétlépcsős hitelesítés kötelező, de ki van kapcsolva.
 - A **Passkey** a hozzáférési kulcsokat bejelentkezési és második hitelesítési módként is engedélyezi vagy tiltja. A bejelentkezéshez használt kulcs ugyanannak a bejelentkezésnek a második lépéséhez nem használható. Kikapcsolva a helyreállító kódok továbbra is használhatók.
 - Az **EmailTwoFactor** az e-mailes második hitelesítési kódokat engedélyezi vagy tiltja. A felhasználó az első hitelesítés után választhat a fiók megerősített címei közül. E-mailes bejelentkezési vagy jelszó-helyreállító hivatkozás után nem használható e-mailes kód, mert ugyanazt a csatornát használná.
@@ -42,6 +52,18 @@ A **backend.json > Backend > Accounts** szakasz **Password**, **MagicLink**, **T
 Jelszó-helyreállítás után minden meglévő munkamenet, valamint a még érvényes bejelentkezési és helyreállítási hivatkozás érvényét veszti.
 
 Ha egy mód le van tiltva, a korábban kiadott hivatkozásokat és az adott módhoz tartozó aktív kihívásokat a rendszer elutasítja.
+
+## OpenID Connect szolgáltatók
+
+A **security.json** fül az általános biztonsági mezők és Generálás/Forgatás műveletek mellett **OpenID Connect szolgáltatók** szerkesztőt kap. A **Szolgáltató hozzáadása** gombbal új szolgáltató vehető fel, mezői, scope-jai és szerepkör-leképezései módosíthatók, a szolgáltató eltávolítható, majd a szerkesztő saját **Mentés** gombjával menthető. Üres kliens-titok megtartja a korábbit, új érték lecseréli, kifejezett törlés eltávolítja. Titok nem kerül vissza a böngészőbe. A meglévő szolgáltatóazonosítók maradjanak állandók. A szerkesztő a Configuration.Read/Manage és csak olvasható konfiguráció szabályait követi.
+
+A szerkesztő a `security.json` fájl `Security:Oidc` szakaszát írja; teljes példa és API-szerződés az [OIDC bejelentkezési specifikációban](../specs/oidc-sign-in-2.0.0.md) található. A `Providers` alapértelmezésben üres, így a meglévő telepítések működése változatlan. Minden szolgáltatónak állandó `Id`, `DisplayName`, HTTPS `Authority`, `ClientId`, opcionális titok, scope-ok és önálló fiók-/szerepkör-beállítások tartoznak. Pontos átirányítási címként a `https://<backend>/sign/in/oidc/callback/<Id>` címet regisztrálja. A backend és a `Frontend:Url` HTTPS-t igényel; azonos eredetű kiszolgálás ajánlott.
+
+A `LinkByVerifiedEmail` külön engedélyezendő. Első bejelentkezéskor csak a szolgáltató `email_verified=true` állítása és a pontos helyi cím korábbi megerősítése esetén kapcsolható meglévő fiókhoz. Később a tárolt szolgáltató/issuer/subject kapcsolat azonosít, nem az e-mail. Az `AutoCreateUsers` alapértéke true, de globálisan is engedélyezett regisztráció szükséges; moderált regisztrációnál a jóváhagyás továbbra is kötelező.
+
+A `RoleMappings` külső szerepköröket meglévő helyi szerepkörnevek tömbjeihez rendel. A külső és helyi szerepkörneveknek pontosan, a kis- és nagybetűk figyelembevételével kell egyezniük (`Editor` és `editor` különböző). Az `AutoCreateRoles=true` a nem leképezett szerepkörökből engedély és fejlesztői hozzáférés nélküli normál szerepköröket hoz létre, az `AutoCreateRolePrefix` előtaggal (alapérték `oidc:<Id>:`). Emelt jogosultságú szerepkör automatikus felhasználása tiltott. A szinkronizáció csak az adott szolgáltató megszűnt hozzárendeléseit vonja vissza; a kézi és más szolgáltatói szerepkörök megmaradnak. A változások a következő sikeres OIDC fiókfeloldáskor érvényesülnek; egy szolgáltató eltávolítása önmagában nem von vissza szerepköröket vagy munkameneteket.
+
+A szolgáltatóbeállítások induláskor olvasódnak, módosításuk után újraindítás szükséges. A globális ki-/bekapcsoló külön, a **backend.json > Backend > Accounts > Oidc** helyen van, és újraindítás nélkül frissül. A `TicketLifetime` (alapérték két perc), az `AuthenticationTimeout` (tíz perc) és a `MaxPendingTickets` (1000) korlátozza az ideiglenes böngészős átadást. Újraindítás után a folyamatot újra kell kezdeni.
 
 ## E-mail beállítások
 
@@ -71,9 +93,9 @@ A jelszavak, titkos kulcsok, aláírókulcsok, tokenek és kapcsolati karakterl�
 2. Válassza a **Mentés** gombot. Csak a módosított értékek íródnak a fájlba; minden más a fájlban úgy marad, ahogy volt.
 3. Az **Elvetés** visszaállítja az eredeti értékeket a mezőkben.
 
-Minden módosítás azonnal érvénybe lép, az alkalmazást nem kell újraindítani. Ugyanez igaz, ha kézzel szerkeszt egy konfigurációs fájlt: az alkalmazás figyeli a `database.json`, `backend.json`, `email.json`, `security.json`, `frontend.json` és `appsettings.json` fájlokat, és módosításukkor újratölti őket. Az érvénytelen JSON fájlt vagy a használhatatlan értékeket a rendszer elutasítja, és az előző értékek maradnak aktívak (a hiba a naplóba kerül). Csatolt kötettel rendelkező tárolóban a fájlfigyelőhöz a `DOTNET_USE_POLLING_FILE_WATCHER=true` beállítás szükséges; a módosítást ilyenkor néhány másodpercen belül észleli.
+A lent felsorolt, induláskor olvasott beállítások kivételével a módosítások azonnal érvénybe lépnek, újraindítás nélkül. Ugyanez igaz, ha kézzel szerkeszt egy konfigurációs fájlt: az alkalmazás figyeli a `database.json`, `backend.json`, `email.json`, `security.json`, `frontend.json` és `appsettings.json` fájlokat, és módosításukkor újratölti őket. Az érvénytelen JSON fájlt vagy a használhatatlan értékeket a rendszer elutasítja, és az előző értékek maradnak aktívak (a hiba a naplóba kerül). Csatolt kötettel rendelkező tárolóban a fájlfigyelőhöz a `DOTNET_USE_POLLING_FILE_WATCHER=true` beállítás szükséges; a módosítást ilyenkor néhány másodpercen belül észleli.
 
-Az egyetlen érték, amelyet még mindig egyszer, induláskor olvas be a rendszer, az adatvédelmi tanúsítvány és kulcsok (`Security:DataProtection`), az OpenTelemetry beállításai és az adatbázis-szolgáltató.
+Induláskor olvasódik az OpenID Connect (`Security:Oidc`), az adatvédelmi tanúsítvány és kulcsok (`Security:DataProtection`), az OpenTelemetry beállításai és az adatbázis-szolgáltató.
 
 ## Generálás és forgatás
 

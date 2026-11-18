@@ -3,6 +3,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Nodes;
+using Behind.Common.Configuration;
 using Behind.Core.Domain;
 
 namespace Behind.Core.Database.Converters;
@@ -58,7 +60,7 @@ public sealed class AuditLogEntryAuditActionJsonConverter : JsonConverter<AuditL
     {
         if (RequiresJson(value.GetType()))
         {
-            JsonSerializer.Serialize(writer, value, PolymorphicOptions);
+            SerializePayload(value).WriteTo(writer, PolymorphicOptions);
             return;
         }
 
@@ -81,8 +83,16 @@ public sealed class AuditLogEntryAuditActionJsonConverter : JsonConverter<AuditL
     public static string ToStorageValue(AuditLogEntry.AuditAction action)
     {
         return RequiresJson(action.GetType())
-            ? JsonSerializer.Serialize(action, PolymorphicOptions)
+            ? SerializePayload(action).ToJsonString(PolymorphicOptions)
             : action.GetType().Name;
+    }
+
+    private static JsonNode SerializePayload(AuditLogEntry.AuditAction action)
+    {
+        var node = JsonSerializer.SerializeToNode(action, PolymorphicOptions)
+            ?? throw new JsonException("Could not serialize audit action.");
+        JsonSchemas.Validate("audit-action-1.0.0", node);
+        return node;
     }
 
     private static bool IsJson(string value) => value.TrimStart().StartsWith('{');

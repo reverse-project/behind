@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Behind.Tests.CoreWebApi;
@@ -126,8 +127,9 @@ public sealed class WebApiExtensionsReloadTests : IAsyncLifetime
     [Fact]
     public async Task Backend_AfterBackend_json_LosesItsDataDirectory_KeepsThePreviousOne()
     {
+        Assert.Equal(DataDirectory("data-one"), Current<BackendConfiguration>().DataDirectory);
         await File.WriteAllTextAsync(PathOf("backend.json"), """{ "Backend": { } }""");
-        await Task.Delay(500);
+        ((IConfigurationRoot)_app.Configuration).Reload();
 
         Assert.Equal(DataDirectory("data-one"), Current<BackendConfiguration>().DataDirectory);
     }

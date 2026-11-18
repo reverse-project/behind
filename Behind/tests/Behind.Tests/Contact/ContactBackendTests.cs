@@ -15,6 +15,7 @@ using Behind.Contact.Database.Sqlite;
 using Behind.Contact.Domain;
 using Behind.Contact.WebApi;
 using Behind.Contact.WebApi.Endpoints;
+using System.ComponentModel;
 using Behind.Web.Database.Sqlite;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Http;
@@ -47,10 +48,56 @@ public sealed class ContactBackendTests : IDisposable
         context.Database.EnsureCreated();
     }
 
+    [Fact]
+    public void ContactJsonValues_HaveTypeDescriptorAndJsonConverters()
+    {
+        var fields = ContactFieldSchema.From([new ContactField("account", "Account", ContactFieldType.Text, true, 50)]);
+        var converter = TypeDescriptor.GetConverter(typeof(ContactFieldSchema));
+        var json = converter.ConvertToInvariantString(fields)!;
+
+        Assert.True(converter.CanConvertFrom(typeof(string)));
+        Assert.StartsWith("[", json);
+        Assert.Contains("\"type\":\"text\"", json);
+        Assert.Equal(fields.Items.ToArray(), Assert.IsType<ContactFieldSchema>(converter.ConvertFromInvariantString(json!)).Items.ToArray());
+        var standardJson = System.Text.Json.JsonSerializer.Serialize(fields);
+        Assert.Equal(fields.Items.ToArray(), System.Text.Json.JsonSerializer.Deserialize<ContactFieldSchema>(standardJson)!.Items.ToArray());
+        Assert.Contains("\"Type\":\"text\"", standardJson);
+
+        var subjects = ContactSubjects.From(["Question"]);
+        var subjectConverter = TypeDescriptor.GetConverter(typeof(ContactSubjects));
+        Assert.Equal(subjects.Items.ToArray(), Assert.IsType<ContactSubjects>(
+            subjectConverter.ConvertFromInvariantString(subjectConverter.ConvertToInvariantString(subjects)!)).Items.ToArray());
+
+        var values = ContactFieldValues.From([new ContactValue("account", "Account", "Ada")]);
+        var valuesConverter = TypeDescriptor.GetConverter(typeof(ContactFieldValues));
+        Assert.Equal(values.Items.ToArray(), Assert.IsType<ContactFieldValues>(
+            valuesConverter.ConvertFromInvariantString(valuesConverter.ConvertToInvariantString(values)!)).Items.ToArray());
+
+        var fieldTypeConverter = TypeDescriptor.GetConverter(typeof(ContactFieldType));
+        Assert.Equal("text", fieldTypeConverter.ConvertToInvariantString(ContactFieldType.Text));
+        Assert.Equal(ContactFieldType.Text, fieldTypeConverter.ConvertFromInvariantString("text"));
+        Assert.Equal("choices", TypeDescriptor.GetConverter(typeof(ContactSubjectMode))
+            .ConvertToInvariantString(ContactSubjectMode.Choices));
+        Assert.Equal("sent", TypeDescriptor.GetConverter(typeof(ContactDeliveryStatus))
+            .ConvertToInvariantString(ContactDeliveryStatus.Sent));
+        Assert.Equal("\"freeText\"", System.Text.Json.JsonSerializer.Serialize(ContactSubjectMode.FreeText));
+        Assert.Equal(ContactSubjectMode.Choices,
+            System.Text.Json.JsonSerializer.Deserialize<ContactSubjectMode>("\"choices\""));
+        Assert.Equal("\"notRequested\"", System.Text.Json.JsonSerializer.Serialize(ContactDeliveryStatus.NotRequested));
+        Assert.Throws<System.Text.Json.JsonException>(() =>
+            System.Text.Json.JsonSerializer.Deserialize<ContactFieldType>("\"unknown\""));
+    }
+
     private WebContextSqlite Context() => new(new DbContextOptionsBuilder<WebContextSqlite>().UseSqlite(_connection).AddInterceptors(new AuditSaveChangesInterceptor(() => new FixedAuditActorProvider(AuditActor.Anonymous), TimeProvider.System)).Options, _catalog);
-    private static SaveContactForm Form() => new(null, "Help", "Ask us", "admin@example.org", "choices", ["Question"], [new("account", "Account", "text", true, 50)]);
+    private static SaveContactForm Form() => new(null, "Help", "Ask us", "admin@example.org", "choices", ["Question"], [new("account", "Account", ContactFieldType.Text, true, 50)]);
     private static SubmitContactRequest Submission() => new("<Visitor>", "person@example.org", "Question", "<script>alert(1)</script>", new() { ["account"] = "<account>" });
-    private static ContactForm Draft(SaveContactForm x) => new(x.Name, x.Description, x.Recipient ?? "", x.SubjectMode, ContactValidation.Json(x.Subjects), ContactValidation.Json(x.Fields));
+    private static ContactForm Draft(SaveContactForm x) => new(
+        x.Name,
+        x.Description,
+        x.Recipient ?? "",
+        x.SubjectMode,
+        ContactSubjects.From(x.Subjects),
+        ContactFieldSchema.From(x.Fields));
 
     [Fact]
     public void FlattenedModels_AreCachedSeparatelyForInstalledModules()
@@ -138,13 +185,84 @@ public sealed class ContactBackendTests : IDisposable
         Assert.True(ContactValidation.Valid(form with { Recipient = null }));
         Assert.False(ContactValidation.Valid(form with { Recipient = " " }));
         Assert.False(ContactValidation.Valid(form with { Recipient = "not-email" }));
-        Assert.False(ContactValidation.Valid(form with { Fields = [new("x", "X", "unknown", false, 1)] }));
-        Assert.False(ContactValidation.Valid(form with { Fields = [new("x", "X", "text", false, 1), new("x", "Again", "text", false, 1)] }));
+        Assert.False(ContactValidation.Valid(form with { Fields = [new("x", "X", ContactFieldType.Text, false, 0)] }));
+        Assert.False(ContactValidation.Valid(form with { Fields = [new("x", "X", ContactFieldType.Text, false, 1), new("x", "Again", ContactFieldType.Text, false, 1)] }));
         Assert.True(ContactValidation.Valid(Submission(), Draft(form), out var values));
         Assert.Equal("Account", Assert.Single(values).Label);
         Assert.False(ContactValidation.Valid(Submission() with { Subject = "Other" }, Draft(form), out _));
         Assert.False(ContactValidation.Valid(Submission() with { Fields = new() { ["other"] = "x" } }, Draft(form), out _));
         Assert.False(ContactValidation.Valid(Submission() with { Fields = [] }, Draft(form), out _));
+    }
+
+    [Fact]
+    public void BooleanSchema_SupportsLinkedLabelsAndPreservesTextLabelLimits()
+    {
+        var field = new ContactField("terms", new string('a', 2000), ContactFieldType.Boolean, true, 5);
+        Assert.True(ContactValidation.Valid(Form() with { Fields = [field] }));
+        Assert.False(ContactValidation.Valid(Form() with { Fields = [field with { Label = new string('a', 2001) }] }));
+        Assert.False(ContactValidation.Valid(Form() with { Fields = [field with { Type = ContactFieldType.Text }] }));
+        Assert.False(ContactValidation.Valid(Form() with { Fields = [field with { Label = " " }] }));
+    }
+
+    [Theory]
+    [InlineData(true, "true", true, "true")]
+    [InlineData(true, "false", false, null)]
+    [InlineData(true, null, false, null)]
+    [InlineData(false, "true", true, "true")]
+    [InlineData(false, "false", true, "false")]
+    [InlineData(false, null, true, "false")]
+    [InlineData(false, "", false, null)]
+    [InlineData(false, "yes", false, null)]
+    [InlineData(false, "on", false, null)]
+    [InlineData(false, "1", false, null)]
+    [InlineData(false, "TRUE", false, null)]
+    [InlineData(false, " true ", false, null)]
+    public void BooleanSubmission_RequiresExplicitConsentAndCanonicalValues(bool required, string? value, bool valid, string? expected)
+    {
+        const string label = "Accept [url=https://example.org/terms]terms[/url]";
+        var form = Draft(Form() with { Fields = [new("terms", label, ContactFieldType.Boolean, required, 1)] });
+        var submission = Submission() with { Fields = [] };
+        if (value is not null)
+        {
+            submission.Fields.Add("terms", value);
+        }
+
+        Assert.Equal(valid, ContactValidation.Valid(submission, form, out var values));
+        if (valid)
+        {
+            Assert.Equal(new ContactValue("terms", label, expected!), Assert.Single(values));
+        }
+        else
+        {
+            Assert.Empty(values);
+        }
+    }
+
+    [Fact]
+    public async Task BooleanConsent_IsValidatedBeforeSavingAndRetainedInInboxAndEmail()
+    {
+        const string label = "Accept [url=https://example.org/terms]terms[/url]";
+        await using var context = Context();
+        var schema = Form() with { Fields = [new("terms", label, ContactFieldType.Boolean, true, 5), new("newsletter", "Newsletter", ContactFieldType.Boolean, false, 5)] };
+        var created = await ContactEndpoints.CreateForm(schema, new DefaultHttpContext(), new ContactFormCommands(context));
+        var form = Assert.IsType<VersionedSavedResponse>(((IValueHttpResult)created).Value);
+        var sender = new RecordingSender(() => { });
+        var commands = new ContactRequestCommands(context);
+        var submission = Submission() with { Fields = new() { ["terms"] = "false" } };
+
+        var rejected = await ContactEndpoints.Submit(form.Id, submission, new DefaultHttpContext(), context, commands, sender, NullLoggerFactory.Instance);
+        Assert.Equal(400, ((IStatusCodeHttpResult)rejected).StatusCode);
+        Assert.Empty(await context.ContactRequests.ToListAsync());
+        Assert.Equal("", sender.Recipient);
+
+        submission.Fields["terms"] = "true";
+        var accepted = await ContactEndpoints.Submit(form.Id, submission, new DefaultHttpContext(), context, commands, sender, NullLoggerFactory.Instance);
+        Assert.Equal(201, ((IStatusCodeHttpResult)accepted).StatusCode);
+        var saved = Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToListAsync());
+        Assert.Equal([new ContactValue("terms", label, "true"), new ContactValue("newsletter", "Newsletter", "false")], ContactValidation.Values(saved.Fields));
+        Assert.Contains("true", sender.Body);
+        Assert.Contains("false", sender.Body);
+        Assert.Contains(label, sender.Body);
     }
 
     [Fact]
@@ -164,13 +282,13 @@ public sealed class ContactBackendTests : IDisposable
         Assert.Equal(201, ((IStatusCodeHttpResult)receipt).StatusCode);
         Assert.Equal("notRequested", Assert.IsType<ContactReceipt>(((IValueHttpResult)receipt).Value).DeliveryStatus);
         var saved = Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToKeyedAsync());
-        Assert.Equal("notRequested", saved.Entity.DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.NotRequested, saved.Entity.DeliveryStatus);
         Assert.Equal("", saved.Entity.Recipient);
         Assert.Equal(Submission().Message, saved.Entity.Message);
         Assert.Equal("", sender.Recipient);
         Assert.IsType<VersionedSaveResult.Saved>(await forms.UpdateExpected(form.Key, form.Version, Draft(Form()), CancellationToken.None));
         Assert.Equal(409, ((IStatusCodeHttpResult)await ContactEndpoints.Retry(saved.Key, context, commands, sender, NullLoggerFactory.Instance)).StatusCode);
-        Assert.Equal("notRequested", Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToListAsync()).DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.NotRequested, Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToListAsync()).DeliveryStatus);
     }
 
     [Fact]
@@ -178,17 +296,19 @@ public sealed class ContactBackendTests : IDisposable
     {
         await using var context = Context();
         var form = Assert.IsType<VersionedSaveResult.Saved>(await new ContactFormCommands(context).Create(Draft(Form())));
+        Assert.Equal("choices", await context.Database.SqlQueryRaw<string>("SELECT SubjectMode AS Value FROM ContactForms").SingleAsync());
         var sender = new RecordingSender(() => Assert.True(context.ContactRequests.Any()));
         var result = await ContactEndpoints.Submit(form.Id.Key, Submission(), new DefaultHttpContext(), context, new ContactRequestCommands(context), sender, NullLoggerFactory.Instance);
         Assert.Equal(201, ((IStatusCodeHttpResult)result).StatusCode);
         Assert.Equal("sent", Assert.IsType<ContactReceipt>(((IValueHttpResult)result).Value).DeliveryStatus);
         var row = Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToListAsync());
-        Assert.Equal("sent", row.DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.Sent, row.DeliveryStatus);
+        Assert.Equal("sent", await context.Database.SqlQueryRaw<string>("SELECT DeliveryStatus AS Value FROM ContactRequests ORDER BY Version DESC LIMIT 1").SingleAsync());
         Assert.Equal("admin@example.org", sender.Recipient);
         Assert.Contains("&lt;script&gt;", sender.Body);
         Assert.Contains("&lt;account&gt;", sender.Body);
         Assert.DoesNotContain("<script>", sender.Body);
-        Assert.Contains("Account", row.FieldsJson);
+        Assert.Contains(row.Fields.Items, field => field.Label == "Account");
     }
 
     [Fact]
@@ -203,7 +323,7 @@ public sealed class ContactBackendTests : IDisposable
 
         Assert.Equal("sent", Assert.IsType<ContactReceipt>(((IValueHttpResult)receipt).Value).DeliveryStatus);
         var saved = Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToKeyedAsync());
-        Assert.Equal("sent", saved.Entity.DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.Sent, saved.Entity.DeliveryStatus);
         Assert.Equal(409, ((IStatusCodeHttpResult)await ContactEndpoints.Retry(saved.Key, context, commands, sender, NullLoggerFactory.Instance)).StatusCode);
     }
 
@@ -220,13 +340,13 @@ public sealed class ContactBackendTests : IDisposable
         Assert.Equal("failed", Assert.IsType<ContactReceipt>(((IValueHttpResult)receipt).Value).DeliveryStatus);
         Assert.StartsWith("/contact/manage/requests/", ((Microsoft.AspNetCore.Http.HttpResults.Created<ContactReceipt>)receipt).Location);
         var first = Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToKeyedAsync());
-        Assert.Equal("failed", first.Entity.DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.Failed, first.Entity.DeliveryStatus);
         Assert.IsType<VersionedSaveResult.Saved>(await forms.UpdateExpected(form.Id.Key, form.Id.Version, Draft(Form() with { Recipient = "new@example.org" }), CancellationToken.None));
         sender.Action = () => { };
         var result = await ContactEndpoints.Retry(first.Key, context, commands, sender, NullLoggerFactory.Instance);
         Assert.Equal(204, ((IStatusCodeHttpResult)result).StatusCode);
         Assert.Equal("admin@example.org", sender.Recipient);
-        Assert.Equal("sent", Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToListAsync()).DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.Sent, Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToListAsync()).DeliveryStatus);
     }
 
     [Fact]
@@ -240,7 +360,7 @@ public sealed class ContactBackendTests : IDisposable
         var receipt = await ContactEndpoints.Submit(form.Id.Key, Submission(), new DefaultHttpContext(), context, commands, sender, NullLoggerFactory.Instance);
 
         Assert.Equal("failed", Assert.IsType<ContactReceipt>(((IValueHttpResult)receipt).Value).DeliveryStatus);
-        Assert.Equal("failed", Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToListAsync()).DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.Failed, Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToListAsync()).DeliveryStatus);
     }
 
     [Fact]
@@ -254,7 +374,7 @@ public sealed class ContactBackendTests : IDisposable
         Assert.Equal("sending", Assert.IsType<ContactReceipt>(((IValueHttpResult)receipt).Value).DeliveryStatus);
         Assert.True(sender.CancellationToken.CanBeCanceled);
         var current = Assert.Single(await context.ContactRequests.LatestOf(context.ContactRequests).ToKeyedAsync());
-        Assert.Equal("sending", current.Entity.DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.Sending, current.Entity.DeliveryStatus);
         Assert.Equal(409, ((IStatusCodeHttpResult)await ContactEndpoints.Retry(current.Key, context, commands, sender, NullLoggerFactory.Instance)).StatusCode);
     }
 
@@ -264,7 +384,7 @@ public sealed class ContactBackendTests : IDisposable
         await using var context = Context();
         var form = Assert.IsType<VersionedSaveResult.Saved>(await new ContactFormCommands(context).Create(Draft(Form())));
         var commands = new ContactRequestCommands(context);
-        var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(new ContactRequest(form.Id.Key, "Help", "admin@example.org", "Visitor", "v@example.org", "Question", "Hi", "[]", "failed", null)));
+        var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(new ContactRequest(form.Id.Key, "Help", "admin@example.org", "Visitor", "v@example.org", "Question", "Hi", ContactFieldValues.Empty, "failed", null)));
         var admin = Guid.NewGuid();
         var result = await ContactEndpoints.Read(saved.Id.Key, new(true), new DefaultHttpContext(), context, commands, new Identity(admin));
         Assert.Equal(204, ((IStatusCodeHttpResult)result).StatusCode);
@@ -286,11 +406,11 @@ public sealed class ContactBackendTests : IDisposable
         var form = Guid.NewGuid();
         var admin = Guid.NewGuid();
         var first = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(
-            new ContactRequest(form, "Billing", "", "Alice", "alice@example.org", "Invoice", "payment details", "[]", "notRequested", null)));
+            new ContactRequest(form, "Billing", "", "Alice", "alice@example.org", "Invoice", "payment details", ContactFieldValues.Empty, "notRequested", null)));
         var second = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(
-            new ContactRequest(form, "Support", "", "Bob", "bob@example.org", "Help", "Need advice", "[]", "notRequested", null)));
+            new ContactRequest(form, "Support", "", "Bob", "bob@example.org", "Help", "Need advice", ContactFieldValues.Empty, "notRequested", null)));
         var third = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(
-            new ContactRequest(form, "Support", "", "Carol", "carol@example.org", "Help", "Other message", "[]", "notRequested", null)));
+            new ContactRequest(form, "Support", "", "Carol", "carol@example.org", "Help", "Other message", ContactFieldValues.Empty, "notRequested", null)));
         await ContactEndpoints.Read(second.Id.Key, new(true), new DefaultHttpContext(), context, commands, new Identity(admin));
         Assert.True(await commands.Delete(third.Id.Key));
         var http = new DefaultHttpContext();
@@ -342,7 +462,7 @@ public sealed class ContactBackendTests : IDisposable
         async Task<Guid> Create(string name, Guid? reader)
         {
             var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(
-                new ContactRequest(form, "Help", "", name, "user@example.org", "Question", "Message", "[]", "notRequested", reader)));
+                new ContactRequest(form, "Help", "", name, "user@example.org", "Question", "Message", ContactFieldValues.Empty, "notRequested", reader)));
             return saved.Id.Key;
         }
 
@@ -394,8 +514,8 @@ public sealed class ContactBackendTests : IDisposable
         var readerLabel = reader.ToUserLabel("Administrator");
         _users.Find(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<IModuleUsers.Profile>>([new(reader, readerLabel, null)]));
-        await commands.Create(new ContactRequest(form, "Help", "", "Ada", "ada@example.org", "Question", "Test message", "[]", "notRequested", null));
-        await commands.Create(new ContactRequest(form, "Help", "", "Bob", "bob@example.org", "Question", "Test message", "[]", "notRequested", reader));
+        await commands.Create(new ContactRequest(form, "Help", "", "Ada", "ada@example.org", "Question", "Test message", ContactFieldValues.Empty, "notRequested", null));
+        await commands.Create(new ContactRequest(form, "Help", "", "Bob", "bob@example.org", "Question", "Test message", ContactFieldValues.Empty, "notRequested", reader));
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddSingleton<IContactContext>(context);
@@ -432,7 +552,7 @@ public sealed class ContactBackendTests : IDisposable
         await using var context = Context();
         var commands = new ContactRequestCommands(context);
         var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(
-            new ContactRequest(Guid.NewGuid(), "Help", "", "Ada", "ada@example.org", "Question", "Message", "[]", "notRequested", null)));
+            new ContactRequest(Guid.NewGuid(), "Help", "", "Ada", "ada@example.org", "Question", "Message", ContactFieldValues.Empty, "notRequested", null)));
         var audit = await context.AuditLogEntries.AsNoTracking().Where(entry =>
             entry.EntityName == nameof(ContactRequest) && entry.EntityKey == $"{saved.Id.Key}:1"
             && entry.Action == new AuditLogEntry.Created()).SingleAsync();
@@ -475,7 +595,7 @@ public sealed class ContactBackendTests : IDisposable
         var forms = new ContactFormCommands(context);
         var form = Assert.IsType<VersionedSaveResult.Saved>(await forms.Create(Draft(Form())));
         var commands = new ContactRequestCommands(context);
-        var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(new ContactRequest(form.Id.Key, "Help", "admin@example.org", "Visitor", "v@example.org", "Question", "Hi", "[]", "sending", null)));
+        var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(new ContactRequest(form.Id.Key, "Help", "admin@example.org", "Visitor", "v@example.org", "Question", "Hi", ContactFieldValues.Empty, "sending", null)));
         Assert.Equal(204, ((IStatusCodeHttpResult)await ContactEndpoints.DeleteRequest(saved.Id.Key, context, commands, 0)).StatusCode);
         Assert.True(await forms.Delete(form.Id.Key));
         var http = new DefaultHttpContext();
@@ -501,7 +621,7 @@ public sealed class ContactBackendTests : IDisposable
     {
         await using var context = Context();
         var commands = new ContactRequestCommands(context);
-        var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(new ContactRequest(Guid.NewGuid(), "Help", "admin@example.org", "Visitor", "v@example.org", "Question", "Hi", "[]", "sending", null)));
+        var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(new ContactRequest(Guid.NewGuid(), "Help", "admin@example.org", "Visitor", "v@example.org", "Question", "Hi", ContactFieldValues.Empty, "sending", null)));
         var sender = new RecordingSender(() => throw new Exception("must not send"));
         Assert.Equal(409, ((IStatusCodeHttpResult)await ContactEndpoints.Retry(saved.Id.Key, context, commands, sender, NullLoggerFactory.Instance)).StatusCode);
         Assert.Equal("", sender.Recipient);
@@ -513,7 +633,7 @@ public sealed class ContactBackendTests : IDisposable
         await using var first = Context();
         await using var second = Context();
         var commands = new ContactRequestCommands(first);
-        var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(new ContactRequest(Guid.NewGuid(), "Help", "admin@example.org", "Visitor", "v@example.org", "Question", "Hi", "[]", "failed", null)));
+        var saved = Assert.IsType<VersionedSaveResult.Saved>(await commands.Create(new ContactRequest(Guid.NewGuid(), "Help", "admin@example.org", "Visitor", "v@example.org", "Question", "Hi", ContactFieldValues.Empty, "failed", null)));
         var sender = new BlockingSender();
         var delivery = ContactEndpoints.Retry(saved.Id.Key, first, commands, sender, NullLoggerFactory.Instance);
         await sender.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -527,7 +647,7 @@ public sealed class ContactBackendTests : IDisposable
         Assert.Equal(204, ((IStatusCodeHttpResult)await delivery).StatusCode);
         var current = Assert.Single(await second.ContactRequests.LatestOf(second.ContactRequests).ToKeyedAsync());
         Assert.Equal(admin, current.Entity.ReadBy);
-        Assert.Equal("sent", current.Entity.DeliveryStatus);
+        Assert.Equal(ContactDeliveryStatus.Sent, current.Entity.DeliveryStatus);
         Assert.Equal(1, sender.Count);
     }
 
@@ -560,9 +680,14 @@ public sealed class ContactBackendTests : IDisposable
     [Fact]
     public void CorruptSchemasAreRejectedAndHeadersValidated()
     {
-        Assert.Throws<InvalidOperationException>(() => ContactValidation.Schema(Draft(Form()) with { FieldsJson = "null" }));
-        Assert.Throws<InvalidOperationException>(() => ContactValidation.Schema(Draft(Form()) with { SubjectMode = "unknown" }));
-        Assert.Throws<System.Text.Json.JsonException>(() => ContactValidation.Schema(Draft(Form()) with { SubjectsJson = "{" }));
+        Assert.Throws<FormatException>(() => ContactStringEnum.Parse<ContactFieldType>("unknown"));
+        Assert.Throws<InvalidOperationException>(() => ContactValidation.Schema(Draft(Form()) with
+        {
+            Fields = new ContactFieldSchema(default)
+        }));
+        Assert.False(ContactValidation.Valid(Form() with { SubjectMode = "unknown" }));
+        Assert.Throws<System.Text.Json.JsonException>(() =>
+            TypeDescriptor.GetConverter(typeof(ContactSubjects)).ConvertFromInvariantString("{"));
         Assert.False(ContactValidation.Valid(Form() with { Subjects = ["Bad\r\nBcc: evil"] }));
         Assert.False(ContactValidation.Valid(Form() with { Recipient = "Name <a@example.org>" }));
         Assert.False(ContactValidation.Valid(Submission() with { Name = "bad\rname" }, Draft(Form()), out _));

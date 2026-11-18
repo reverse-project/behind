@@ -15,6 +15,8 @@ public class SensitiveConfigurationPathExtensionsTests
     [InlineData("Email:ApiToken")]
     [InlineData("ConnectionStrings:DefaultConnection")]
     [InlineData("ConnectionStrings:Anything:Else")]
+    [InlineData("Backend:Caching:ConnectionString")]
+    [InlineData("backend:caching:connectionstring")]
     public void IsSensitiveConfigurationPath_MasksSecrets(string path)
     {
         Assert.True(path.IsSensitiveConfigurationPath);

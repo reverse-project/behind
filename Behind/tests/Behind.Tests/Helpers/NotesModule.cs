@@ -1,5 +1,6 @@
 using Behind.Common.Database.Modules;
 using Behind.Core.Database;
+using Behind.Core.Database.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -47,7 +48,7 @@ public sealed class NotesContextSqlite(DbContextOptions<NotesContextSqlite> opti
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyCoreProviderConventions();
+        modelBuilder.ApplySqliteCoreProviderConventions();
     }
 }
 

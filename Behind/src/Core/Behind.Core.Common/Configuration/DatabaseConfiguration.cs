@@ -6,7 +6,7 @@ using Behind.Core.Common.Converters;
 
 namespace Behind.Core.Common.Configuration;
 
-public sealed record DatabaseConfiguration(Option<Provider> Provider, Option<Key> Key)
+public sealed record DatabaseConfiguration(Option<Provider> Provider, Option<DatabaseKey> Key)
 {
     public DatabaseConfiguration() : this(None, None)
     {
@@ -29,11 +29,11 @@ public sealed record Sqlite() : Provider(nameof(Sqlite));
 
 public sealed record Postgres() : Provider(nameof(Postgres));
 
-[TypeConverter(typeof(KeyTypeConverter))]
-[JsonConverter(typeof(KeyJsonConverter))]
-public sealed record Key(string Value)
+[TypeConverter(typeof(DatabaseKeyTypeConverter))]
+[JsonConverter(typeof(DatabaseKeyJsonConverter))]
+public sealed record DatabaseKey(string Value)
 {
-    public static implicit operator string(Key key) => key.Value;
+    public static implicit operator string(DatabaseKey key) => key.Value;
     
     public override string ToString() => Value;
 }

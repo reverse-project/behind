@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261113150946_AddPrivateMessageEmails";
+    public override string LastMigrationId => "20261117120000_RoleNameUniqueness";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1222,6 +1222,121 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .HasAnnotation("Behind:SoftDeletable", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.Schedule", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("Action")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
+
+                b.Property<string>("Cron")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.Property<bool>("Enabled")
+                    .HasColumnType("boolean");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.Property<string>("Notify")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<string>("Parameters")
+                    .IsRequired()
+                    .HasMaxLength(20000)
+                    .HasColumnType("character varying(20000)");
+
+                b.Property<string>("Participants")
+                    .IsRequired()
+                    .HasMaxLength(50000)
+                    .HasColumnType("character varying(50000)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("Name");
+
+                b.ToTable("Schedules");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.ScheduleRun", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("Action")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
+
+                b.Property<string>("Email")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<long?>("FinishedAt")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("Link")
+                    .HasMaxLength(2000)
+                    .HasColumnType("character varying(2000)");
+
+                b.Property<int>("Recipients")
+                    .HasColumnType("integer");
+
+                b.Property<Guid>("ScheduleId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("ScheduleName")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.Property<long>("ScheduledFor")
+                    .HasColumnType("bigint");
+
+                b.Property<long>("StartedAt")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<string>("Summary")
+                    .IsRequired()
+                    .HasMaxLength(4000)
+                    .HasColumnType("character varying(4000)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("ScheduleId");
+
+                b.HasIndex("StartedAt");
+
+                b.HasIndex("Status");
+
+                b.ToTable("ScheduleRuns");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.Site", b =>
             {
                 b.Property<Guid>("SiteId")
@@ -1677,6 +1792,51 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.ToTable("MenuItemRoles");
             });
 
+        modelBuilder.Entity("OidcAccountBindings", b =>
+            {
+                b.Property<string>("ProviderDigest")
+                    .HasMaxLength(64)
+                    .HasColumnType("character varying(64)");
+
+                b.Property<string>("IssuerDigest")
+                    .HasMaxLength(64)
+                    .HasColumnType("character varying(64)");
+
+                b.Property<string>("SubjectDigest")
+                    .HasMaxLength(64)
+                    .HasColumnType("character varying(64)");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("ProviderDigest", "IssuerDigest", "SubjectDigest");
+
+                b.HasIndex("UserId");
+
+                b.ToTable("OidcAccountBindings");
+            });
+
+        modelBuilder.Entity("OidcRoleOwnerships", b =>
+            {
+                b.Property<string>("ProviderDigest")
+                    .HasMaxLength(64)
+                    .HasColumnType("character varying(64)");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid>("RoleId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("ProviderDigest", "UserId", "RoleId");
+
+                b.HasIndex("RoleId");
+
+                b.HasIndex("UserId", "RoleId");
+
+                b.ToTable("OidcRoleOwnerships");
+            });
+
         modelBuilder.Entity("PendingUserApprovals", b =>
             {
                 b.Property<Guid>("UserId")
@@ -1755,6 +1915,11 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.Property<Guid>("UserId")
                     .HasColumnType("uuid");
 
+                b.Property<bool>("IsManuallyAssigned")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("boolean")
+                    .HasDefaultValue(true);
+
                 b.HasKey("RoleId", "UserId");
 
                 b.HasIndex("UserId");
@@ -1788,7 +1953,8 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.Property<bool>("IsDeveloper")
                     .HasColumnType("boolean");
 
-                b.HasIndex("Name");
+                b.HasIndex("Name")
+                    .IsUnique();
 
                 b.ToTable("Roles");
             });
@@ -1981,6 +2147,30 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasOne("Behind.Core.Domain.MenuItem", null)
                     .WithMany()
                     .HasForeignKey("MenuItemKey", "MenuItemVersion")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
+
+        modelBuilder.Entity("OidcAccountBindings", b =>
+            {
+                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
+
+        modelBuilder.Entity("OidcRoleOwnerships", b =>
+            {
+                b.HasOne("Behind.Core.Domain.UserRole", null)
+                    .WithMany()
+                    .HasForeignKey("RoleId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                    .WithMany()
+                    .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
             });

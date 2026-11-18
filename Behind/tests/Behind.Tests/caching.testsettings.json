@@ -1,0 +1,5 @@
+{
+  "Valkey": {
+    "Image": "docker.io/valkey/valkey:latest"
+  }
+}

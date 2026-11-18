@@ -1,7 +1,9 @@
 using Behind.Core.WebApi;
+using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Behind.Tests.CoreWebApi;
@@ -63,6 +65,15 @@ public sealed class WebApiExtensionsSecurityTests : IDisposable
         await using var app = BuildApplication(null);
 
         Assert.NotNull(app.Services.GetService<IAuthorizationService>());
+    }
+
+    [Fact]
+    public async Task AddCore_UsesCaseSensitiveRoleManagerWithoutChangingUserNormalizer()
+    {
+        await using var app = BuildApplication(null);
+        using var scope = app.Services.CreateScope();
+        Assert.IsType<CaseSensitiveRoleManager>(scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>());
+        Assert.IsType<UpperInvariantLookupNormalizer>(scope.ServiceProvider.GetRequiredService<ILookupNormalizer>());
     }
 
     [Fact]

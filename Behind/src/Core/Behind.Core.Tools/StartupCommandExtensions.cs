@@ -15,7 +15,7 @@ public static class StartupCommandExtensions
             };
             var configDirectory = new Option<string>("--config-directory", "-c")
             {
-                Description = "Directory where appsettings.json, security.json, database.json, backend.json, frontend.json, email.json, forum.json and markdownviewer.json are generated",
+                Description = "Directory where appsettings.json, security.json, database.json, backend.json, caching.json, frontend.json, email.json, forum.json and markdownviewer.json are generated",
                 DefaultValueFactory = _ => "."
             };
             var issuer = new Option<string>("--issuer")
@@ -30,7 +30,7 @@ public static class StartupCommandExtensions
             };
             var frontendUrl = new Option<string>("--frontend-url")
             {
-                Description = "Public URL of the site written to Frontend:Url (used in email links and passkeys)",
+                Description = "Public URL of the site written to Frontend:Url (used in email links, passkeys and OIDC)",
                 DefaultValueFactory = _ => StartupSetupRequest.DefaultFrontendUrl
             };
             var emailConfirmation = new Option<bool>("--email-confirmation")

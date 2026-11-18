@@ -1,3 +1,4 @@
+using Behind.Core.Database.Sqlite;
 using Behind.Common.Modules;
 using Behind.Contact.Database;
 using Behind.Contact.Domain;
@@ -54,6 +55,6 @@ public sealed class WebContextSqlite(DbContextOptions<WebContextSqlite> options,
         }
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyCoreProviderConventions();
+        modelBuilder.ApplySqliteCoreProviderConventions();
     }
 }

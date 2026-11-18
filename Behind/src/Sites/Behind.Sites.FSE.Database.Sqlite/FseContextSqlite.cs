@@ -1,3 +1,4 @@
+using Behind.Core.Database.Sqlite;
 using Behind.Common.Modules;
 using Behind.Core.Database;
 using Behind.Sport.Database;
@@ -29,6 +30,6 @@ public sealed class FseContextSqlite(DbContextOptions<FseContextSqlite> options,
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyCoreProviderConventions();
+        modelBuilder.ApplySqliteCoreProviderConventions();
     }
 }

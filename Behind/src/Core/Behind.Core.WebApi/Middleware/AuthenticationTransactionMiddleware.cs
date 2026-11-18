@@ -8,7 +8,8 @@ public sealed class AuthenticationTransactionMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context, IUnitOfWork unitOfWork)
     {
-        if (context.GetEndpoint()?.Metadata.GetMetadata<AuthenticationTransactionMetadata>() is null)
+        var metadata = context.GetEndpoint()?.Metadata.GetMetadata<AuthenticationTransactionMetadata>();
+        if (metadata is null)
         {
             await next(context);
             return;
@@ -37,9 +38,15 @@ public sealed class AuthenticationTransactionMiddleware(RequestDelegate next)
         }
         catch (Exception exception) when (IsConcurrencyFailure(exception))
         {
-            await transaction.RollbackAsync(CancellationToken.None);
+            try
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+            }
+            catch (Exception rollbackException) when (rollbackException is System.Data.Common.DbException or InvalidOperationException)
+            {
+            }
             context.Response.Clear();
-            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            context.Response.StatusCode = metadata.ConcurrencyFailureStatusCode;
         }
         finally
         {

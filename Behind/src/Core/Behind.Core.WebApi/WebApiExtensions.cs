@@ -1205,7 +1205,7 @@ public static class WebApiExtensions
                 .RequireAccountMode(AccountMode.MagicLink)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkRequest>>()
                 .RequireCaptcha<SignInEndpoints.MagicLinkRequest>()
-                .RequireAuthenticationTransaction()
+                .RequireAuthenticationTransaction(StatusCodes.Status204NoContent)
                 .RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy)
                 .Produces(204)
                 .Produces(400)

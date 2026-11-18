@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Behind.Core.WebApi.Middleware;
 
-public sealed record AuthenticationTransactionMetadata;
+public sealed record AuthenticationTransactionMetadata(int ConcurrencyFailureStatusCode = 409);
 
 public sealed class AuthenticationTransaction(DbContext? database) : IAsyncDisposable
 {
@@ -12,6 +12,7 @@ public sealed class AuthenticationTransaction(DbContext? database) : IAsyncDispo
     private readonly List<Action> committed = [];
     private readonly List<Action> rolledBack = [];
     private bool completed;
+    private bool transactionEnded;
 
     public async Task BeginAsync(CancellationToken cancellationToken = default)
     {
@@ -29,7 +30,15 @@ public sealed class AuthenticationTransaction(DbContext? database) : IAsyncDispo
     {
         if (transaction is not null)
         {
-            await transaction.CommitAsync(cancellationToken);
+            try
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (System.Data.Common.DbException exception) when (exception.SqlState is "40001" or "40P01")
+            {
+                transactionEnded = true;
+                throw;
+            }
         }
         completed = true;
         foreach (var action in committed)
@@ -46,7 +55,7 @@ public sealed class AuthenticationTransaction(DbContext? database) : IAsyncDispo
         }
         try
         {
-            if (transaction is not null)
+            if (transaction is not null && !transactionEnded)
             {
                 await transaction.RollbackAsync(cancellationToken);
             }

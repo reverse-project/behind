@@ -1,5 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using Behind.Common.Database;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Data.Common;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
@@ -167,6 +171,52 @@ public class SignInMagicLinkEndpointsTests
             await transaction.RollbackAsync();
             Assert.Empty(QueuedMails());
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RequestMagicLink_SerializationConflictReturnsNoContentWithoutQueuingMail(bool duringCommit)
+    {
+        var options = new DbContextOptionsBuilder<ConflictDatabase>()
+            .UseSqlite("Data Source=:memory:")
+            .AddInterceptors(new CommitConflict()).Options;
+        await using var database = new ConflictDatabase(options);
+        var context = NewHttpContext();
+        context.SetEndpoint(new Endpoint(null,
+            new EndpointMetadataCollection(new AuthenticationTransactionMetadata(StatusCodes.Status204NoContent)), null));
+        context.Response.Body = new MemoryStream();
+        if (!duringCommit)
+        {
+            _magicLinks.Issue(Arg.Any<Guid>(), Arg.Any<MagicLink>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromException(new Npgsql.PostgresException("serialization conflict", "ERROR", "ERROR", "40001")));
+        }
+        await new AuthenticationTransactionMiddleware(async http =>
+        {
+            await http.Features.Get<AuthenticationTransaction>()!.BeginAsync();
+            var result = await RequestLink(NewUser(), Some(Settings()), context: http);
+            Assert.IsType<NoContent>(result);
+            http.Response.StatusCode = StatusCodes.Status204NoContent;
+        }).InvokeAsync(context, database);
+
+        Assert.Equal(StatusCodes.Status204NoContent, context.Response.StatusCode);
+        Assert.Empty(QueuedMails());
+        Assert.Equal(0, context.Response.Body.Length);
+    }
+
+    private sealed class CommitConflict : DbTransactionInterceptor
+    {
+        public override ValueTask<InterceptionResult> TransactionCommittingAsync(
+            DbTransaction transaction, TransactionEventData eventData, InterceptionResult result,
+            CancellationToken cancellationToken = default) =>
+            throw new Npgsql.PostgresException("serialization conflict", "ERROR", "ERROR", "40001");
+    }
+
+    private sealed class ConflictDatabase(DbContextOptions<ConflictDatabase> options) : DbContext(options), IUnitOfWork
+    {
+        public IRepository<TAggregate, TKey> GetRepository<TAggregate, TKey>() => throw new NotSupportedException();
+        public IHardDeleteRepository<TAggregate, TKey> GetHardDeleteRepository<TAggregate, TKey>() => throw new NotSupportedException();
+        public IRestoreRepository<TAggregate, TKey> GetRestoreRepository<TAggregate, TKey>() => throw new NotSupportedException();
     }
 
     [Fact]

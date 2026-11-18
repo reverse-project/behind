@@ -7,8 +7,8 @@ public static class AuthenticationTransactionExtensions
 {
     extension(RouteHandlerBuilder builder)
     {
-        public RouteHandlerBuilder RequireAuthenticationTransaction() =>
-            builder.WithMetadata(new AuthenticationTransactionMetadata())
+        public RouteHandlerBuilder RequireAuthenticationTransaction(int concurrencyFailureStatusCode = StatusCodes.Status409Conflict) =>
+            builder.WithMetadata(new AuthenticationTransactionMetadata(concurrencyFailureStatusCode))
                 .AddEndpointFilter<AuthenticationTransactionFilter>();
     }
 }

@@ -54,6 +54,11 @@ public static class ReportEndpoints
             return Error("invalidReport");
         }
 
+        if (request.SourceType is not null && request.UserIds?.Length >= UserReport.MaxTargets)
+        {
+            return Error("invalidReportTargets");
+        }
+
         ReportEvidence? evidence = null;
         if (request.SourceType is { } sourceType && request.SourceId is { } sourceId)
         {

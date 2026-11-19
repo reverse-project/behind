@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Behind.Common.Database;
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
@@ -9,6 +10,7 @@ using Behind.Core.Database.Sqlite;
 using Behind.Core.WebApi;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.Middleware;
 using Behind.Core.WebApi.TwoFactor;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -55,6 +57,7 @@ public sealed class TwoFactorSignInEndpointsTests : IAsyncLifetime
         builder.Services.AddScoped<ITwoFactorSignIn>(_ => _signIn);
         builder.Services.AddScoped<CoreContextSqlite>(_ => _bed.Factory.CreateContext());
         builder.Services.AddScoped<AbstractCoreContext>(provider => provider.GetRequiredService<CoreContextSqlite>());
+        builder.Services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<CoreContextSqlite>());
         builder.Services.AddScoped<ITwoFactorQueries, TwoFactorQueries>();
         builder.Services.AddScoped<ITwoFactorCommands, TwoFactorCommands>();
         builder.Services.AddScoped<IEmailQueries, EmailQueries>();
@@ -63,6 +66,7 @@ public sealed class TwoFactorSignInEndpointsTests : IAsyncLifetime
         builder.Services.AddTwoFactor();
 
         _application = builder.Build();
+        _application.UseMiddleware<AuthenticationTransactionMiddleware>();
         _application.MapTwoFactorEndpoints();
         await _application.StartAsync();
 

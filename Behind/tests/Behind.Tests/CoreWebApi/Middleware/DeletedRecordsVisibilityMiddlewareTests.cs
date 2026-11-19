@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Behind.Core.Database.Queries;
+using Behind.Core.Database;
 using Behind.Core.WebApi.Middleware;
 using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +11,9 @@ public sealed class DeletedRecordsVisibilityMiddlewareTests : IDisposable
 {
     private const string Email = "viewer@test.com";
 
+    private readonly ISessionQueries _sessions = Substitute.For<ISessionQueries>();
+    private readonly Guid _sessionId = Guid.NewGuid();
+
     private readonly TestDbContextFactory _factory = new();
     private readonly CapturingLogger<DeletedRecordsVisibilityMiddleware> _logger = new();
 
@@ -19,14 +23,17 @@ public sealed class DeletedRecordsVisibilityMiddlewareTests : IDisposable
     {
         await using var seed = _factory.CreateContext();
         var userId = await DatabaseSeedHelper.SeedHumanUserAsync(seed, Email);
+        _sessions.TryFindByIdWithUserId(_sessionId, Arg.Any<CancellationToken>()).Returns(
+            Some<(Session, Guid)>((new ValidSession(AccessToken.Create(new GuestUser(None)),
+                RefreshToken.Create(new GuestUser(None)), "ip", "agent"), userId)));
         var roleId = await DatabaseSeedHelper.SeedUserRoleAsync(seed, "role");
         var grantId = await DatabaseSeedHelper.SeedGrantAsync(seed, grant);
         await DatabaseSeedHelper.AssignRoleToUserAsync(seed, userId, roleId);
         await DatabaseSeedHelper.AssignGrantToRoleAsync(seed, roleId, grantId);
     }
 
-    private static DefaultHttpContext Authenticated(string email) =>
-        new() { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Email, email)], "test")) };
+    private DefaultHttpContext Authenticated(string email) =>
+        new() { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Email, email), new Claim("session_id", _sessionId.ToString())], "test")) };
 
     private async Task<(bool DuringRequest, bool AfterRequest)> InvokeAsync(DefaultHttpContext context)
     {
@@ -38,7 +45,7 @@ public sealed class DeletedRecordsVisibilityMiddlewareTests : IDisposable
             return Task.CompletedTask;
         }, _logger);
 
-        await middleware.InvokeAsync(context, db, new UserQueries(db));
+        await middleware.InvokeAsync(context, db, _sessions, new AccessQueries(db));
 
         return (duringRequest, db.SoftDelete.IncludesDeleted);
     }
@@ -104,7 +111,7 @@ public sealed class DeletedRecordsVisibilityMiddlewareTests : IDisposable
             NullLogger<DeletedRecordsVisibilityMiddleware>.Instance);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            middleware.InvokeAsync(Authenticated(Email), db, new UserQueries(db)));
+            middleware.InvokeAsync(Authenticated(Email), db, _sessions, new AccessQueries(db)));
 
         Assert.False(db.SoftDelete.IncludesDeleted);
     }

@@ -33,7 +33,9 @@ public sealed class TwoFactorChallengeFilter(
             () => Task.FromResult<object?>(TwoFactorSignInEndpoints.TicketRejected()),
             async found =>
             {
-                await using var transaction = await database.Database.BeginTransactionAsync(context.HttpContext.RequestAborted);
+                await using var transaction = database.Database.CurrentTransaction is null
+                    ? await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, context.HttpContext.RequestAborted)
+                    : null;
                 if (!await commands.LockForFunction(found.Nonce!.Value, found.UserId, MagicLinkFunction.TwoFactorChallenge,
                         timeProvider.GetUtcNow(), context.HttpContext.RequestAborted))
                 {
@@ -41,7 +43,19 @@ public sealed class TwoFactorChallengeFilter(
                     return TwoFactorSignInEndpoints.TicketRejected();
                 }
 
+                if (found.Stage == TwoFactorStage.Setup
+                    && context.HttpContext.Request.Path.StartsWithSegments($"{TwoFactorRoutesExtensions.SignInRoute}/setup")
+                    && (await new Behind.Core.Database.Queries.TwoFactorQueries(database)
+                        .GetStatus(found.UserId, context.HttpContext.RequestAborted)).IsEnabled)
+                {
+                    return Results.Conflict(new TwoFactorFailure(TwoFactorFailure.AlreadyEnabled));
+                }
+
                 var result = await next(context);
+                if (transaction is null)
+                {
+                    return result;
+                }
                 if (result is IStatusCodeHttpResult { StatusCode: StatusCodes.Status401Unauthorized })
                 {
                     await transaction.RollbackAsync(context.HttpContext.RequestAborted);

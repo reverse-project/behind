@@ -1,4 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
+using System.Text;
+using static Behind.Common.FunctionalExtensions;
 using Behind.Common;
 using Behind.Common.Logging;
 using Behind.Common.WebApi.Middleware;
@@ -25,7 +28,8 @@ public sealed class ElevationEndpoints
         ISessionQueries sessionQueries,
         IRoleCommands roleCommands,
         TimeProvider timeProvider,
-        ILogger<ElevationEndpoints> logger) =>
+        ILogger<ElevationEndpoints> logger,
+        IMagicLinkCommands magicLinks) =>
         ElevateTo(
             BuiltInAccess.Administrators,
             securityConfiguration.Value.SecretKey,
@@ -35,7 +39,8 @@ public sealed class ElevationEndpoints
             sessionQueries,
             roleCommands,
             timeProvider,
-            logger);
+            logger,
+            magicLinks);
 
     [Authorize]
     [IgnoreETag]
@@ -46,7 +51,8 @@ public sealed class ElevationEndpoints
         ISessionQueries sessionQueries,
         IRoleCommands roleCommands,
         TimeProvider timeProvider,
-        ILogger<ElevationEndpoints> logger) =>
+        ILogger<ElevationEndpoints> logger,
+        IMagicLinkCommands magicLinks) =>
         ElevateTo(
             BuiltInAccess.Developers,
             securityConfiguration.Value.DeveloperElevationSecretKey,
@@ -56,7 +62,8 @@ public sealed class ElevationEndpoints
             sessionQueries,
             roleCommands,
             timeProvider,
-            logger);
+            logger,
+            magicLinks);
 
     private static async Task<IResult> ElevateTo(
         BuiltInRole role,
@@ -67,7 +74,8 @@ public sealed class ElevationEndpoints
         ISessionQueries sessionQueries,
         IRoleCommands roleCommands,
         TimeProvider timeProvider,
-        ILogger logger)
+        ILogger logger,
+        IMagicLinkCommands magicLinks)
     {
         if (!securityConfiguration.Value.IsElevationEnabled)
         {
@@ -87,7 +95,20 @@ public sealed class ElevationEndpoints
             },
             async session =>
             {
-                if (!secretKey.VerifyTotp(request.Code, timeProvider.GetUtcNow()))
+                var now = timeProvider.GetUtcNow();
+                var proof = secretKey.Bind(key => key is Totp totp
+                    ? totp.VerifiedStep(request.Code, now).Map(step =>
+                        new TokenNonce(new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(
+                            FormattableString.Invariant(
+                                $"elevation:{OtpNet.Base32Encoding.ToString(OtpNet.Base32Encoding.ToBytes(totp.Value))}:{step}")))[..16])))
+                    : None);
+                var accepted = await proof.Match(
+                    () => Task.FromResult(false),
+                    nonce => magicLinks.TryIssue(session.UserId,
+                        new MagicLink(nonce, now, DateTimeOffset.MaxValue, MagicLinkFunction.TwoFactorChallenge, Some(now)),
+                        httpContext.RequestAborted));
+
+                if (!accepted)
                 {
                     logger.LogWarning(
                         "Elevation of user {UserId} to {Role} rejected: invalid one-time code",

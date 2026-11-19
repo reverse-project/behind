@@ -27,8 +27,9 @@ public static class RawDatabaseExtensions
         {
             var total = await context.CountRawRowsAsync(table, query.Search, cancellationToken);
             var sql = new RawSqlBuilder(context);
+            var order = sql.Order(table, query.OrderBy, query.Descending);
             var text = $"SELECT {sql.Columns(table)} FROM {sql.Quote(table)}{sql.SearchPredicate(table, query.Search)} "
-                       + $"ORDER BY {sql.Order(table, query.OrderBy, query.Descending)} "
+                       + (order.Length == 0 ? string.Empty : $"ORDER BY {order} ")
                        + $"LIMIT {query.Flipper.Size} OFFSET {query.Flipper.Skip}";
 
             var rows = await context.ExecuteRawAsync(

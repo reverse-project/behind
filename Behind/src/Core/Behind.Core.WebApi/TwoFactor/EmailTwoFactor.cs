@@ -11,6 +11,7 @@ using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 using OtpNet;
 
 namespace Behind.Core.WebApi.TwoFactor;
@@ -22,6 +23,8 @@ public sealed record EmailTwoFactorAddresses(IReadOnlyList<EmailTwoFactorAddress
 public sealed record EmailTwoFactorDelivery(string? Ticket = null, string? Address = null, string? Error = null);
 
 public sealed record EmailTwoFactorVerification(TwoFactorTicket? Ticket = null, string? Error = null);
+
+public sealed record EmailTwoFactorVerificationAttempt(Guid UserId);
 
 public interface IEmailTwoFactor
 {
@@ -39,7 +42,8 @@ public sealed class EmailTwoFactor(
     IOptionsSnapshot<AccountsConfiguration> accounts,
     IOptions<SecurityConfiguration> security,
     TimeProvider timeProvider,
-    ILogger<EmailTwoFactor> logger) : IEmailTwoFactor
+    ILogger<EmailTwoFactor> logger,
+    IHttpContextAccessor? httpContextAccessor = null) : IEmailTwoFactor
 {
     public static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(3);
     public static readonly TimeSpan DeliveryWindow = TimeSpan.FromMinutes(1);
@@ -108,7 +112,7 @@ public sealed class EmailTwoFactor(
 
         var now = timeProvider.GetUtcNow();
 
-        if (!await Reserve(user.Id, "delivery", DeliveryWindow, 1, now, cancellationToken))
+        if (!await Reserve(commands, user.Id, "delivery", DeliveryWindow, 1, now, cancellationToken))
         {
             return new(Error: RateLimited);
         }
@@ -169,7 +173,8 @@ public sealed class EmailTwoFactor(
             return new(Error: TwoFactorFailure.TicketInvalid);
         }
 
-        if (!await Reserve(user.Id, "verification", VerificationWindow, VerificationLimit, now, cancellationToken))
+        if (httpContextAccessor?.HttpContext?.Features.Get<EmailTwoFactorVerificationAttempt>()?.UserId != user.Id
+            && !await ReserveVerificationAttempt(commands, user.Id, now, cancellationToken))
         {
             return new(Error: RateLimited);
         }
@@ -214,7 +219,15 @@ public sealed class EmailTwoFactor(
             : security.Value.TwoFactorRequired && !status.IsEnabled;
     }
 
-    private async Task<bool> Reserve(
+    public static Task<bool> ReserveVerificationAttempt(
+        IMagicLinkCommands commands,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default) =>
+        Reserve(commands, userId, "verification", VerificationWindow, VerificationLimit, now, cancellationToken);
+
+    private static async Task<bool> Reserve(
+        IMagicLinkCommands commands,
         Guid userId,
         string operation,
         TimeSpan window,

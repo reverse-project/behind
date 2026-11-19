@@ -11,6 +11,7 @@ using Behind.Common;
 using Behind.Common.Logging;
 using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.MagicLinks;
+using Behind.Core.WebApi.Middleware;
 using Behind.Core.WebApi.TwoFactor;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -148,12 +149,24 @@ public sealed class SignInEndpoints
                         var link = MagicLinkCredential.Create(magicLink.Nonce, settings.ActualSecret, jwtSettings.SigningKey)
                             .ToLink(frontend);
 
-                        var queued = mailQueue.TryEnqueue(new MagicLinkMail(user, request.Email, link, request.Function));
+                        void Enqueue()
+                        {
+                            var queued = mailQueue.TryEnqueue(new MagicLinkMail(user, request.Email, link, request.Function));
+                            logger.Log(
+                                queued ? LogLevel.Information : LogLevel.Warning,
+                                "Magic link ({Function}) for user {UserId} issued, expires at {ExpiresAt}, email queued: {Queued}",
+                                () => [request.Function, user.Id, magicLink.ExpiresAt, queued]);
+                        }
 
-                        logger.Log(
-                            queued ? LogLevel.Information : LogLevel.Warning,
-                            "Magic link ({Function}) for user {UserId} issued, expires at {ExpiresAt}, email queued: {Queued}",
-                            () => [request.Function, user.Id, magicLink.ExpiresAt, queued]);
+                        var transaction = httpContext.Features.Get<AuthenticationTransaction>();
+                        if (transaction is null)
+                        {
+                            Enqueue();
+                        }
+                        else
+                        {
+                            transaction.OnCommitted(Enqueue);
+                        }
                     }
 
                     return Results.NoContent();

@@ -110,6 +110,12 @@ public sealed class TwoFactorEnrollment(
         AuthenticatorAttestationRawResponse response,
         CancellationToken cancellationToken = default)
     {
+        if (ticket.Stage == TwoFactorStage.Setup
+            && (await queries.GetStatus(ticket.UserId, cancellationToken)).IsEnabled)
+        {
+            return None;
+        }
+
         var options = Try(() => CredentialCreateOptions.FromJson(ticket.Ceremony ?? string.Empty))
             .Run()
             .Match<Option<CredentialCreateOptions>>(_ => None, parsed => parsed.ToOption());

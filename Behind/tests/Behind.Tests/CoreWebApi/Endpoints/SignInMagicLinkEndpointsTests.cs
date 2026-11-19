@@ -1,11 +1,16 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using Behind.Common.Database;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Data.Common;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.TwoFactor;
 using Behind.Core.WebApi.MagicLinks;
+using Behind.Core.WebApi.Middleware;
 using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -98,7 +103,8 @@ public class SignInMagicLinkEndpointsTests
         Option<MagicLinkSettings> settings,
         IConfiguration? configuration = null,
         Option<JwtSettings>? jwt = null,
-        MagicLinkFunction function = MagicLinkFunction.SignIn) =>
+        MagicLinkFunction function = MagicLinkFunction.SignIn,
+        HttpContext? context = null) =>
         SignInEndpoints.RequestMagicLink(
             UserManagerFor(user),
             Security(jwt ?? Some(Jwt)),
@@ -108,7 +114,7 @@ public class SignInMagicLinkEndpointsTests
             _mailQueue,
             configuration ?? FrontendConfigurationOf("https://app.test/"),
             _time,
-            NewHttpContext(),
+            context ?? NewHttpContext(),
             _logger,
             new SignInEndpoints.MagicLinkRequest("user@test.com", function));
 
@@ -143,6 +149,74 @@ public class SignInMagicLinkEndpointsTests
         }
 
         return mails;
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RequestMagicLink_QueuesMailOnlyAfterSuccessfulCommit(bool commit)
+    {
+        var context = NewHttpContext();
+        await using var transaction = new AuthenticationTransaction(null);
+        context.Features.Set(transaction);
+        Assert.IsType<NoContent>(await RequestLink(NewUser(), Some(Settings()), context: context));
+        Assert.Empty(QueuedMails());
+        if (commit)
+        {
+            await transaction.CommitAsync();
+            Assert.Single(QueuedMails());
+        }
+        else
+        {
+            await transaction.RollbackAsync();
+            Assert.Empty(QueuedMails());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RequestMagicLink_SerializationConflictReturnsNoContentWithoutQueuingMail(bool duringCommit)
+    {
+        var options = new DbContextOptionsBuilder<ConflictDatabase>()
+            .UseSqlite("Data Source=:memory:")
+            .AddInterceptors(new CommitConflict()).Options;
+        await using var database = new ConflictDatabase(options);
+        var context = NewHttpContext();
+        context.SetEndpoint(new Endpoint(null,
+            new EndpointMetadataCollection(new AuthenticationTransactionMetadata(StatusCodes.Status204NoContent)), null));
+        context.Response.Body = new MemoryStream();
+        if (!duringCommit)
+        {
+            _magicLinks.Issue(Arg.Any<Guid>(), Arg.Any<MagicLink>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromException(new Npgsql.PostgresException("serialization conflict", "ERROR", "ERROR", "40001")));
+        }
+        await new AuthenticationTransactionMiddleware(async http =>
+        {
+            await http.Features.Get<AuthenticationTransaction>()!.BeginAsync();
+            var result = await RequestLink(NewUser(), Some(Settings()), context: http);
+            Assert.IsType<NoContent>(result);
+            http.Response.StatusCode = StatusCodes.Status204NoContent;
+        }).InvokeAsync(context, database);
+
+        Assert.Equal(StatusCodes.Status204NoContent, context.Response.StatusCode);
+        Assert.Empty(QueuedMails());
+        Assert.Equal(0, context.Response.Body.Length);
+    }
+
+    private sealed class CommitConflict : DbTransactionInterceptor
+    {
+        public override ValueTask<InterceptionResult> TransactionCommittingAsync(
+            DbTransaction transaction, TransactionEventData eventData, InterceptionResult result,
+            CancellationToken cancellationToken = default) =>
+            throw new Npgsql.PostgresException("serialization conflict", "ERROR", "ERROR", "40001");
+    }
+
+    private sealed class ConflictDatabase(DbContextOptions<ConflictDatabase> options) : DbContext(options), IUnitOfWork
+    {
+        public IRepository<TAggregate, TKey> GetRepository<TAggregate, TKey>() => throw new NotSupportedException();
+        public IHardDeleteRepository<TAggregate, TKey> GetHardDeleteRepository<TAggregate, TKey>() => throw new NotSupportedException();
+        public IRestoreRepository<TAggregate, TKey> GetRestoreRepository<TAggregate, TKey>() => throw new NotSupportedException();
     }
 
     [Fact]

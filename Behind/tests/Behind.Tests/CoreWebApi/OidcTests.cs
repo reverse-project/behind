@@ -113,6 +113,23 @@ public sealed class OidcTests
     }
 
     [Fact]
+    public void TicketReservationsAreExclusiveAndRollbackRestoresTheTicket()
+    {
+        var store = new OidcTicketStore(new(new()), new FixedTimeProvider(Now));
+        var code = store.Issue(Identity, "flow", "proof");
+        using (var reservation = store.Reserve(code, _ => "proof"))
+        {
+            Assert.NotNull(reservation);
+            Assert.Null(store.Reserve(code, _ => "proof"));
+            Assert.Null(store.Redeem(code, _ => "proof"));
+        }
+        using var retry = store.Reserve(code, _ => "proof");
+        Assert.NotNull(retry);
+        retry.Commit();
+        Assert.Null(store.Redeem(code, _ => "proof"));
+    }
+
+    [Fact]
     public void ExpiredTicketsCannotBeRedeemedAndCapacityIsBounded()
     {
         var clock = new MutableClock(Now);

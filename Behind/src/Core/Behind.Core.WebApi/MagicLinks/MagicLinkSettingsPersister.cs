@@ -38,10 +38,14 @@ public sealed class ConfigurationAwareMagicLinkSettingsPersister(
 
     public Task PersistAsync(MagicLinkSettings settings, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         file.Refresh();
 
         return security.Value.ReadOnlyConfiguration || !file.Exists
-            ? Task.CompletedTask
+            ? Task.FromException(new MagicLinkRotationUnavailableException())
             : _file.PersistAsync(settings, cancellationToken);
     }
 }
+
+public sealed class MagicLinkRotationUnavailableException()
+    : InvalidOperationException("Magic link rotation requires writable persistent configuration.");

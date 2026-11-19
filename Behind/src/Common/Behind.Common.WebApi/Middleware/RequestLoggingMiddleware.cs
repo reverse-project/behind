@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Behind.Common.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 
 namespace Behind.Common.WebApi.Middleware;
@@ -11,7 +12,7 @@ public sealed class RequestLoggingMiddleware(RequestDelegate next, ILogger<Reque
     {
         var started = Stopwatch.GetTimestamp();
 
-        logger.LogDebug("HTTP {Method} {Path} started", () => [context.Request.Method, context.Request.Path.Value]);
+        logger.LogDebug("HTTP {Method} {Path} started", () => [context.Request.Method, (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "<unmatched>"]);
 
         await next(context);
 
@@ -21,7 +22,7 @@ public sealed class RequestLoggingMiddleware(RequestDelegate next, ILogger<Reque
             () =>
             [
                 context.Request.Method,
-                context.Request.Path.Value,
+                (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "<unmatched>",
                 context.Response.StatusCode,
                 Stopwatch.GetElapsedTime(started).TotalMilliseconds
             ]);

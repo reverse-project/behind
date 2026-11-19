@@ -12,8 +12,10 @@ define([], function () {
         source = source || "";
         var root = { children: [] };
         var stack = [root];
-        var tokens = /\[(\/?)(b|i|u|s|quote|code|list|\*|url|lb|rb)(?:=([^\]\r\n]*))?\]/gi;
+        var tokens = /\[(\/?)(b|i|u|s|quote|code|list|\*|url|lb|rb)(?:=([^\[\]\r\n]*))?\]/gi;
         var position = 0;
+        var lowerSource = source.toLowerCase();
+        var codeExhausted = false;
         var match;
         var append = function (text) {
             stack[stack.length - 1].children.push(escape(text).replace(/\r\n|\r|\n/g, "<br>"));
@@ -37,8 +39,9 @@ define([], function () {
                     append(match[0]);
                 }
             } else if (name === "code") {
-                var end = source.toLowerCase().indexOf("[/code]", position);
+                var end = codeExhausted ? -1 : lowerSource.indexOf("[/code]", position);
                 if (end < 0) {
+                    codeExhausted = true;
                     append(match[0]);
                 } else {
                     parent.children.push("<pre><code>" + escape(source.slice(position, end)
@@ -85,8 +88,9 @@ define([], function () {
     };
 
     var fromHtml = function (html) {
-        var container = document.createElement("div");
-        container.innerHTML = html;
+        var template = document.createElement("template");
+        var container = template.content;
+        template.innerHTML = html;
         var literal = function (text) {
             return text.replace(/[\[\]]/g, function (bracket) { return bracket === "[" ? "[lb]" : "[rb]"; });
         };

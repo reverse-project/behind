@@ -1,6 +1,8 @@
 using Behind.Common.WebApi.Middleware;
 using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
 
 namespace Behind.Tests.CommonWebApi.Middleware;
 
@@ -11,7 +13,8 @@ public class RequestLoggingMiddlewareTests
         var logger = new CapturingLogger<RequestLoggingMiddleware>();
         var context = new DefaultHttpContext();
         context.Request.Method = HttpMethods.Post;
-        context.Request.Path = "/sign/out";
+        context.Request.Path = "/generator/qrcode/REUSABLE_SECRET";
+        context.SetEndpoint(new RouteEndpoint(_ => Task.CompletedTask, RoutePatternFactory.Parse("/generator/qrcode/{data}"), 0, null, null));
 
         var middleware = new RequestLoggingMiddleware(
             ctx =>
@@ -26,12 +29,21 @@ public class RequestLoggingMiddlewareTests
         return logger;
     }
 
-    [Fact]
-    public async Task InvokeAsync_ControlCharactersCannotCreateLogLines()
+    [Theory]
+    [InlineData(false, "<unmatched>")]
+    [InlineData(true, "/configured\\u000d\\u000a\\u0009\\u2028")]
+    public async Task InvokeAsync_ControlCharactersCannotCreateLogLines(bool matched, string expectedPath)
     {
         var logger = new CapturingLogger<RequestLoggingMiddleware>();
         var context = new DefaultHttpContext();
         context.Request.Path = "/forged\r\nentry\t\u2028";
+        if (matched)
+        {
+            var route = RoutePatternFactory.Parse("/configured");
+            route = RoutePatternFactory.Pattern("/configured\r\n\t\u2028", route.PathSegments);
+            context.SetEndpoint(new RouteEndpoint(_ => Task.CompletedTask, route, 0, null, null));
+        }
+
         await new RequestLoggingMiddleware(_ => Task.CompletedTask, logger).InvokeAsync(context);
         Assert.All(logger.Entries, entry =>
         {
@@ -39,7 +51,7 @@ public class RequestLoggingMiddlewareTests
             Assert.DoesNotContain("\n", entry.Message);
             Assert.DoesNotContain("\t", entry.Message);
             Assert.DoesNotContain("\u2028", entry.Message);
-            Assert.Equal("/forged\\u000d\\u000aentry\\u0009\\u2028", entry.State["Path"]);
+            Assert.Equal(expectedPath, entry.State["Path"]);
         });
     }
 
@@ -50,7 +62,8 @@ public class RequestLoggingMiddlewareTests
 
         var entry = logger.Single(LogLevel.Debug);
         Assert.Equal(HttpMethods.Post, entry.State["Method"]);
-        Assert.Equal("/sign/out", entry.State["Path"]);
+        Assert.Equal("/generator/qrcode/{data}", entry.State["Path"]);
+        Assert.DoesNotContain(logger.Entries, entry => entry.State.Values.Any(value => value?.ToString()?.Contains("REUSABLE_SECRET") == true));
     }
 
     [Theory]

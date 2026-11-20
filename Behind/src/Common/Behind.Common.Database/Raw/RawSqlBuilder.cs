@@ -44,7 +44,8 @@ internal sealed class RawSqlBuilder(DbContext context)
     {
         var columns = orderBy
             .Bind(name => table.FindColumn(name))
-            .Match(() => table.KeyColumns, column => [column]);
+            .Match(() => table.KeyColumns, column => column.IsSensitive ? table.KeyColumns : [column])
+            .Where(column => !column.IsSensitive);
         var direction = descending ? "DESC" : "ASC";
 
         return string.Join(", ", columns.Select(column => $"{Quote(column.Name)} {direction}"));

@@ -1,4 +1,5 @@
 using Behind.Core.Domain;
+using Behind.Common.Database;
 using Microsoft.EntityFrameworkCore;
 using static Behind.Common.FunctionalExtensions;
 
@@ -14,7 +15,7 @@ public static class AccessExtensions
         {
             var rolesQuery = from userRole in context.Set<Dictionary<string, object>>("UserRoles")
                 where EF.Property<Guid>(userRole, "UserId") == userId
-                join role in context.Roles
+                join role in context.Roles.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active)
                     on EF.Property<Guid>(userRole, "RoleId") equals EF.Property<Guid>(role, "Id")
                 select new
                 {
@@ -35,7 +36,7 @@ public static class AccessExtensions
 
             var grantsQuery = from roleGrant in context.Set<Dictionary<string, object>>("RoleGrants")
                 where roleIds.Contains(EF.Property<Guid>(roleGrant, "RoleId"))
-                join grant in context.Grants
+                join grant in context.Grants.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active)
                     on EF.Property<Guid>(roleGrant, "GrantId") equals EF.Property<Guid>(grant, "Id")
                 select new
                 {
@@ -45,7 +46,7 @@ public static class AccessExtensions
 
             var restrictionsQuery = from roleRestriction in context.Set<Dictionary<string, object>>("RoleRestrictions")
                 where roleIds.Contains(EF.Property<Guid>(roleRestriction, "RoleId"))
-                join restriction in context.Restrictions
+                join restriction in context.Restrictions.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active)
                     on EF.Property<Guid>(roleRestriction, "RestrictionId") equals EF.Property<Guid>(restriction, "Id")
                 select new
                 {
@@ -77,7 +78,7 @@ public static class AccessExtensions
             var grants = await (
                     from userGrant in context.Set<Dictionary<string, object>>("UserGrants")
                     where EF.Property<Guid>(userGrant, "UserId") == userId
-                    join grant in context.Grants
+                    join grant in context.Grants.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active)
                         on EF.Property<Guid>(userGrant, "GrantId") equals EF.Property<Guid>(grant, "Id")
                     orderby grant.Name
                     select grant)
@@ -87,7 +88,7 @@ public static class AccessExtensions
             var restrictions = await (
                     from userRestriction in context.Set<Dictionary<string, object>>("UserRestrictions")
                     where EF.Property<Guid>(userRestriction, "UserId") == userId
-                    join restriction in context.Restrictions
+                    join restriction in context.Restrictions.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active)
                         on EF.Property<Guid>(userRestriction, "RestrictionId") equals EF.Property<Guid>(restriction, "Id")
                     orderby restriction.Name
                     select restriction)

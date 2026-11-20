@@ -4,6 +4,7 @@ using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.Oidc;
+using Behind.Core.WebApi.Middleware;
 using Behind.Core.WebApi.TwoFactor;
 using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
@@ -223,6 +224,46 @@ public sealed class OidcSignInTests
         secondFactor.ChallengeOidc(user.Id, "company", default).Returns(None);
         Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Redeem());
         await sessions.Received(1).CreateForUserId(user.Id, Arg.Any<ValidSession>(), default);
+    }
+
+    [Fact]
+    public async Task RedemptionReservesUntilCommitAndRollbackPreservesBrowserProof()
+    {
+        var store = new OidcTicketStore(new(new() { Providers = [Provider] }), new FixedTimeProvider(Now));
+        var code = store.Issue(Identity, "flow", "proof");
+        var signIn = Substitute.For<IOidcSignInService>();
+        var user = User;
+        signIn.Resolve(Arg.Any<OidcIdentity>(), default).Returns(user);
+        var secondFactor = Substitute.For<ITwoFactorGate>();
+        secondFactor.ChallengeOidc(user.Id, "company", default).Returns(Some(
+            new TwoFactorChallengeResponse("challenge", [TwoFactorMethod.Totp], false)));
+        var security = Options.Create(new SecurityConfiguration(false, None,
+            Some(new JwtSettings("issuer", "audience", new string('k', 64))), None));
+        foreach (var commit in new[] { false, true })
+        {
+            var context = new DefaultHttpContext();
+            context.Request.Headers.Cookie = $"{OidcExtensions.CookieName("flow")}=proof";
+            await using var transaction = new AuthenticationTransaction(null);
+            context.Features.Set(transaction);
+            var result = await OidcSignInEndpoints.Redeem(new(code), store, signIn,
+                Options.Create(new AccountsConfiguration()), security, Substitute.For<ISessionCommands>(),
+                Substitute.For<IWallOfShameQueries>(), secondFactor, new FixedTimeProvider(Now), context,
+                NullLogger<OidcSignInEndpoints>.Instance);
+            Assert.IsType<JsonHttpResult<TwoFactorChallengeResponse>>(result);
+            Assert.Null(store.Reserve(code, _ => "proof"));
+            Assert.False(context.Response.Headers.ContainsKey("Set-Cookie"));
+            if (commit)
+            {
+                await transaction.CommitAsync();
+                Assert.True(context.Response.Headers.ContainsKey("Set-Cookie"));
+            }
+            else
+            {
+                await transaction.RollbackAsync();
+                Assert.False(context.Response.Headers.ContainsKey("Set-Cookie"));
+            }
+        }
+        Assert.Null(store.Redeem(code, _ => "proof"));
     }
 
     [Fact]

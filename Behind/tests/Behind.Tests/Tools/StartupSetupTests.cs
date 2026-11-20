@@ -186,6 +186,7 @@ public sealed class StartupSetupTests : IDisposable
         Assert.Equal(CarouselsConfiguration.DefaultIntervalSeconds, carousels.GetProperty("IntervalSeconds").GetInt32());
         Assert.Equal(CarouselsConfiguration.DefaultMaxCaptionLength, carousels.GetProperty("MaxCaptionLength").GetInt32());
         Assert.Equal(CarouselsConfiguration.DefaultMaxImageBytes, carousels.GetProperty("MaxImageBytes").GetInt64());
+        Assert.Equal(ImageThumbnailExtensions.MaxPixels, Section(FrontendPath, "Frontend").GetProperty("Galleries").GetProperty("MaxDecodedPixels").GetInt64());
     }
 
     [Fact]

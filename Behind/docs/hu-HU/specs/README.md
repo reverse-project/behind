@@ -7,6 +7,8 @@
 | Specifikáció | Verzió | Állapot |
 | --- | --- | --- |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.1.0.md) | 1.1.0 | Aktuális |
+| [Konfigurációs JSON ellenőrzése](./configuration-json-1.0.2.md) | 1.0.2 | Korábbi |
+| [Konfigurációs JSON ellenőrzése](./configuration-json-1.0.1.md) | 1.0.1 | Korábbi |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.0.0.md) | 1.0.0 | Korábbi |
 | [Tárolt JSON-rekordok](./persisted-json-1.0.0.md) | 1.0.0 | Aktuális |
 | [Beágyazott frontend-JSON](./bundled-json-1.0.0.md) | 1.0.0 | Aktuális |

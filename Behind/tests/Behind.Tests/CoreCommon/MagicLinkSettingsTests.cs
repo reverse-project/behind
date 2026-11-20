@@ -132,6 +132,15 @@ public class MagicLinkSettingsTests
     }
 
     [Fact]
+    public void Advance_StaleConfigurationCannotRenewAnExpiredOverlap()
+    {
+        var settings = SettingsCreatedAt(Start);
+        var advanced = settings.Advance(Start + Interval + Overlap);
+        Assert.Equal(None, advanced.OldSecret);
+        Assert.DoesNotContain(settings.ActualSecret, advanced.ValidSecrets(Start + Interval + Overlap));
+    }
+
+    [Fact]
     public void ValidSecrets_WithoutOld_ContainsOnlyActual()
     {
         var settings = SettingsCreatedAt(Start);

@@ -2,7 +2,7 @@
 
 # Konfigurációs JSON ellenőrzése 1.1.0
 
-Állapot: aktuális. Ez a kiegészítő változat az 1.0.0 futásidejű konfigurációsséma-szerződést bővíti.
+Állapot: aktuális. Ez a kiegészítő változat az [1.0.2 futásidejű konfigurációsséma-szerződést](./configuration-json-1.0.2.md) bővíti.
 
 ## Definíció és lefedettség
 
@@ -77,3 +77,7 @@ tartalmazza. Az 1.0.0 dokumentumok és sémák változatlanok; a futásidejű el
 az 1.1.0 sémát használja. A korábban nagyobb audithalmazokat kereső telepítéseknél
 szűkíteni kell a keresést, vagy tudatosan növelni kell a konfigurált kereteket.
 A korlátozott keresés biztonsági javítás.
+
+## A galéria képpontkerete
+
+A `Frontend:Galleries:MaxDecodedPixels` mező előjeles Int64-ellenőrzése és mentés előtti normalizálása az [1.0.2 konfigurációból](./configuration-json-1.0.2.md) változatlanul érvényes. Hiányzó vagy nem pozitív értéknél továbbra is az alapértelmezés érvényesül.

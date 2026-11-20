@@ -2,7 +2,7 @@
 
 # Configuration JSON validation 1.1.0
 
-Status: current. This additive revision extends the 1.0.0 runtime configuration-schema contract.
+Status: current. This additive revision extends the [1.0.2 runtime configuration-schema contract](./configuration-json-1.0.2.md).
 
 ## Definition and coverage
 
@@ -77,3 +77,7 @@ generation includes both defaults. Configuration 1.0.0 documents and schemas
 remain unchanged; runtime validation now uses configuration 1.1.0. Deployments
 that previously searched larger audit sets must narrow the search or deliberately
 increase the configured budgets. This bounded-search behavior is a security repair.
+
+## Gallery pixel budget
+
+The signed Int64 validation and write normalization for `Frontend:Galleries:MaxDecodedPixels` carry forward from [configuration 1.0.2](./configuration-json-1.0.2.md). Missing or nonpositive values still use the existing default.

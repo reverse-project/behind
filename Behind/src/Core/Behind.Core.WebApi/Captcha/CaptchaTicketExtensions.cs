@@ -46,7 +46,7 @@ public static class CaptchaTicketExtensions
     {
         var bytes = Base64Url.DecodeFromChars(token);
 
-        if (bytes.Length <= NonceSize + TagSize)
+        if (Base64Url.EncodeToString(bytes) != token || bytes.Length <= NonceSize + TagSize)
         {
             return None;
         }

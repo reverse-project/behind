@@ -1,11 +1,13 @@
 using Behind.Common;
+using Behind.Core.Common.Configuration;
+using Microsoft.Extensions.Options;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.WebApi.Endpoints;
 
-public sealed class GalleryThumbnails(IVfsQueries images, IVfsCommands commands)
+public sealed class GalleryThumbnails(IVfsQueries images, IVfsCommands commands, IOptionsSnapshot<GalleriesConfiguration>? configuration = null)
 {
     public const int MosaicSide = 600;
     public const string MosaicFileName = "gallery-thumbnail.webp";
@@ -31,7 +33,7 @@ public sealed class GalleryThumbnails(IVfsQueries images, IVfsCommands commands)
             contents.AddRange(image.Map(found => found.Bytes).AsEnumerable());
         }
 
-        return await contents.ToMosaic(MosaicSide).Match(
+        return await contents.ToMosaic(MosaicSide, configuration?.Value.DecodePixelLimit ?? ImageThumbnailExtensions.MaxPixels).Match(
             () => Task.FromResult(draft),
             async mosaic =>
             {

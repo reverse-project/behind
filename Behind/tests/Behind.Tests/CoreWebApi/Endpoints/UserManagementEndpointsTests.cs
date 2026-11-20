@@ -19,6 +19,7 @@ public class UserManagementEndpointsTests
     private readonly ISessionQueries _sessions = Substitute.For<ISessionQueries>();
     private readonly IAccessQueries _access = Substitute.For<IAccessQueries>();
     private readonly IUserManagementQueries _users = Substitute.For<IUserManagementQueries>();
+    private readonly IRoleQueries _roleQueries = Substitute.For<IRoleQueries>();
     private readonly IRoleCommands _roleCommands = Substitute.For<IRoleCommands>();
     private readonly ISessionCommands _sessionCommands = Substitute.For<ISessionCommands>();
     private readonly IWallOfShameCommands _wallOfShame = Substitute.For<IWallOfShameCommands>();
@@ -32,6 +33,12 @@ public class UserManagementEndpointsTests
         _gate = new UserManagementGate(
             _sessions, _access, _users, AccessCatalog.Core, new FixedTimeProvider(Now), _gateLogger);
         SignedInAs(ActorId, developer: false);
+        _access.GetUserAccess(TargetId, Arg.Any<CancellationToken>()).Returns(UserAccess.Empty);
+        foreach (var role in ManagedRole.All)
+        {
+            _roleQueries.GetRoleById(role.Role.Id, Arg.Any<CancellationToken>())
+                .Returns(Some(new IRoleQueries.RoleResult(role.Role.Id, role.Role.Role)));
+        }
     }
 
     private static DefaultHttpContext SignedIn() =>
@@ -97,6 +104,22 @@ public class UserManagementEndpointsTests
         Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
         await _userCommands.DidNotReceiveWithAnyArgs().Delete(default, default);
         await _wallOfShame.DidNotReceiveWithAnyArgs().Ban(default, default, default!, default);
+    }
+
+    [Fact]
+    public async Task Elevate_CannotAssignPersistedPermissionsBeyondActorAuthority()
+    {
+        TargetIs(Managed(TargetId));
+        var role = BuiltInAccess.Administrators.Role with
+        {
+            Grants = Some<IEnumerable<Grant>>([(Grant)"RawDatabase.Manage"])
+        };
+        _roleQueries.GetRoleById(BuiltInAccess.Administrators.Id, Arg.Any<CancellationToken>())
+            .Returns(Some(new IRoleQueries.RoleResult(BuiltInAccess.Administrators.Id, role)));
+        var result = await UserManagementEndpoints.Elevate(TargetId, "administrator", SignedIn(), _gate,
+            _roleCommands, _roleQueries, _access);
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _roleCommands.DidNotReceiveWithAnyArgs().AssignBuiltIn(default, default!, default);
     }
 
     [Fact]
@@ -218,7 +241,7 @@ public class UserManagementEndpointsTests
     {
         TargetIs(Managed(TargetId));
 
-        var result = await UserManagementEndpoints.Elevate(TargetId, "administrator", SignedIn(), _gate, _roleCommands);
+        var result = await UserManagementEndpoints.Elevate(TargetId, "administrator", SignedIn(), _gate, _roleCommands, _roleQueries, _access);
 
         Assert.IsType<NoContent>(result);
         await _roleCommands.Received(1).AssignBuiltIn(TargetId, BuiltInAccess.Administrators, Arg.Any<CancellationToken>());
@@ -229,7 +252,7 @@ public class UserManagementEndpointsTests
     {
         TargetIs(Managed(TargetId));
 
-        var result = await UserManagementEndpoints.Elevate(TargetId, "developer", SignedIn(), _gate, _roleCommands);
+        var result = await UserManagementEndpoints.Elevate(TargetId, "developer", SignedIn(), _gate, _roleCommands, _roleQueries, _access);
 
         Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
         await _roleCommands.DidNotReceiveWithAnyArgs().AssignBuiltIn(default, default!, default);
@@ -241,7 +264,7 @@ public class UserManagementEndpointsTests
         SignedInAs(ActorId, developer: true);
         TargetIs(Managed(TargetId));
 
-        var result = await UserManagementEndpoints.Elevate(TargetId, "developer", SignedIn(), _gate, _roleCommands);
+        var result = await UserManagementEndpoints.Elevate(TargetId, "developer", SignedIn(), _gate, _roleCommands, _roleQueries, _access);
 
         Assert.IsType<NoContent>(result);
         await _roleCommands.Received(1).AssignBuiltIn(TargetId, BuiltInAccess.Developers, Arg.Any<CancellationToken>());
@@ -250,7 +273,7 @@ public class UserManagementEndpointsTests
     [Fact]
     public async Task Elevate_UnknownRole_ReturnsNotFound()
     {
-        var result = await UserManagementEndpoints.Elevate(TargetId, "users", SignedIn(), _gate, _roleCommands);
+        var result = await UserManagementEndpoints.Elevate(TargetId, "users", SignedIn(), _gate, _roleCommands, _roleQueries, _access);
 
         Assert.IsType<NotFound>(result);
     }
@@ -260,7 +283,7 @@ public class UserManagementEndpointsTests
     {
         TargetIs(null);
 
-        var result = await UserManagementEndpoints.Elevate(TargetId, "administrator", SignedIn(), _gate, _roleCommands);
+        var result = await UserManagementEndpoints.Elevate(TargetId, "administrator", SignedIn(), _gate, _roleCommands, _roleQueries, _access);
 
         Assert.IsType<NotFound>(result);
     }
@@ -271,7 +294,7 @@ public class UserManagementEndpointsTests
         _users.TryFindUser(ActorId, DeletionState.Active, Now, Arg.Any<CancellationToken>())
             .Returns(Some(Managed(ActorId, "Self")));
 
-        var result = await UserManagementEndpoints.Elevate(ActorId, "administrator", SignedIn(), _gate, _roleCommands);
+        var result = await UserManagementEndpoints.Elevate(ActorId, "administrator", SignedIn(), _gate, _roleCommands, _roleQueries, _access);
 
         Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
     }
@@ -284,7 +307,7 @@ public class UserManagementEndpointsTests
             "administrator",
             new DefaultHttpContext { User = new ClaimsPrincipal() },
             _gate,
-            _roleCommands);
+            _roleCommands, _roleQueries, _access);
 
         Assert.IsType<UnauthorizedHttpResult>(result);
     }

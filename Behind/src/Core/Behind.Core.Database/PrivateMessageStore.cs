@@ -47,7 +47,7 @@ public sealed class PrivateMessageStore(AbstractCoreContext context) : IReportCo
             throw new ArgumentOutOfRangeException(nameof(folder));
         }
 
-        var snapshots = await Load(viewer, systemModerator, reportModerator, null, cancellationToken, folder == "left");
+        var snapshots = await Load(viewer, systemModerator, reportModerator, null, cancellationToken, folder == "left", includeContent: false);
         if (folder == "left")
         {
             var left = snapshots.Where(x => x.Mailbox?.Left == true && x.Conversation.IsGroup
@@ -492,7 +492,7 @@ public sealed class PrivateMessageStore(AbstractCoreContext context) : IReportCo
 
     private async Task<List<Snapshot>> Load(
         Guid viewer, bool systemModerator, bool reportModerator, Guid? id, CancellationToken cancellationToken,
-        bool includeLeft = false)
+        bool includeLeft = false, bool includeContent = true)
     {
         var roles = await (from membership in context.Set<Dictionary<string, object>>("UserRoles")
                            join role in context.Roles on EF.Property<Guid>(membership, "RoleId") equals EF.Property<Guid>(role, "Id")
@@ -521,23 +521,26 @@ public sealed class PrivateMessageStore(AbstractCoreContext context) : IReportCo
             .Where(x => x.UserId == viewer && conversationIds.Contains(x.ConversationId))
             .Select(x => new MailboxRow(EF.Property<Guid>(x, "Key"), EF.Property<long>(x, "Version"),
                 x.ConversationId, x.UserId, x.Deleted, x.Left)).ToListAsync(cancellationToken);
+        var recipientsByConversation = allRecipients.ToLookup(x => x.ConversationId);
+        var mailboxByConversation = mailboxes.ToDictionary(x => x.ConversationId);
         var permitted = conversations.Where(c =>
         {
-            var mailbox = mailboxes.SingleOrDefault(x => x.ConversationId == c.Id);
-            var recipients = allRecipients.Where(x => x.ConversationId == c.Id).ToArray();
+            var mailbox = mailboxByConversation.GetValueOrDefault(c.Id);
+            var recipients = recipientsByConversation[c.Id].ToArray();
             return (includeLeft || mailbox?.Left != true)
                    && PrivateMessagingVisibility.CanReadConversation(ToPolicy(c), ToPolicy(recipients), policyViewer);
         }).ToList();
         var ids = permitted.Select(x => x.Id).ToArray();
         var messages = await context.PrivateMessages.LatestOf(context.PrivateMessages).AsNoTracking().Where(x => ids.Contains(x.ConversationId))
-            .Select(x => new MessageRow(EF.Property<Guid>(x, "Key"), EF.Property<long>(x, "Version"), x.ConversationId, x.AuthorId, x.Content,
+            .Select(x => new MessageRow(EF.Property<Guid>(x, "Key"), EF.Property<long>(x, "Version"), x.ConversationId, x.AuthorId, includeContent ? x.Content : string.Empty,
                 x.ReplyToId, x.PrivateRecipientId, x.IsInitial)).ToListAsync(cancellationToken);
         var messageIds = messages.Select(x => x.Id).ToArray();
         var readIds = (await context.PrivateMessageReads.LatestOf(context.PrivateMessageReads).AsNoTracking()
             .Where(x => x.UserId == viewer && messageIds.Contains(x.MessageId))
             .Select(x => x.MessageId).ToListAsync(cancellationToken)).ToHashSet();
-        return permitted.Select(c => new Snapshot(c, allRecipients.Where(x => x.ConversationId == c.Id).ToArray(),
-            messages.Where(x => x.ConversationId == c.Id).ToArray(), mailboxes.SingleOrDefault(x => x.ConversationId == c.Id),
+        var messagesByConversation = messages.ToLookup(x => x.ConversationId);
+        return permitted.Select(c => new Snapshot(c, recipientsByConversation[c.Id].ToArray(),
+            messagesByConversation[c.Id].ToArray(), mailboxByConversation.GetValueOrDefault(c.Id),
             readIds, policyViewer)).ToList();
     }
 

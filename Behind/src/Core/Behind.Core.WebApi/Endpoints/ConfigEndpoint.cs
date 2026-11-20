@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Behind.Common;
+using Behind.Common.Configuration;
 using Behind.Common.WebApi;
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Http;
@@ -28,14 +29,13 @@ public static class ConfigEndpoint
                     WriteIndented = true
                 }.WithSensitiveContext(sensitiveContext);
 
-                return Results.Json(
-                    configuration.Serialize()
-                        .MaskSensitiveConfigurationValues("ConnectionStrings")
-                        .MaskFields("Security", "SecretKey")
-                        .MaskNestedFields(new[] { "Security", "MagicLink" }, "ActualSecret", "OldSecret")
-                        .MaskNestedFields(new[] { "Security", "Jwt" }, "SigningKey")
-                        .MaskNestedFields(new[] { "Security", "Elevation" }, "DeveloperSecretKey"),
-                    options);
+                var root = configuration.Serialize().AsObject();
+                foreach (var field in root.Fields().Where(field => field.Path.IsSensitiveConfigurationPath))
+                {
+                    field.Value.ReplaceWith(field.Value.ToString().MaskSensitiveValue());
+                }
+
+                return Results.Json(root, options);
             }
         }
         catch

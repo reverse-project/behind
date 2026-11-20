@@ -10,6 +10,7 @@ using Behind.Core.WebApi.Settings;
 using Behind.Forum.Common;
 using Behind.MarkdownViewer.Common;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Behind.Tests.Common;
@@ -204,5 +205,89 @@ public sealed class ConfigurationSchemaTests : IDisposable
         var node = JsonNode.Parse(json);
         Assert.Equal(valid, ConfigurationSchema.IsValid(node));
         Assert.Equal(valid, JsonSchemas.IsValid("caching-configuration-1.1.0", node));
+    }
+
+    [Theory]
+    [InlineData("4000000.0", 4000000L)]
+    [InlineData("4e6", 4000000L)]
+    [InlineData("1.000e3", 1000L)]
+    [InlineData("0.0", 0L)]
+    [InlineData("-1.0", -1L)]
+    [InlineData("9223372036854775807.0", long.MaxValue)]
+    [InlineData("-9223372036854775808.0", long.MinValue)]
+    public async Task GalleryPixelBudget_NormalizesIntegralNumbersBeforeWriting(string incoming, long expected)
+    {
+        var path = Path.Combine(_directory, "frontend.json");
+        await File.WriteAllTextAsync(path, """{"frontend":{"galleries":{"maxdecodedpixels":4000000}},"Custom":{"keep":1.5}}""");
+        await new FileInfo(path).SetJsonNodesAsync(new Dictionary<string, JsonNode?>
+        {
+            ["frontend:galleries:maxdecodedpixels"] = JsonNode.Parse(incoming)
+        });
+
+        var root = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+        Assert.Equal(expected, root["frontend"]!["galleries"]!["maxdecodedpixels"]!.GetValue<long>());
+        Assert.Equal(1.5, root["Custom"]!["keep"]!.GetValue<double>());
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile(path).Build().GetSection("Frontend:Galleries").Get<GalleriesConfiguration>()!;
+        Assert.Equal(expected, configuration.MaxDecodedPixels);
+        Assert.Equal(expected > 0 ? expected : ImageThumbnailExtensions.MaxPixels, configuration.DecodePixelLimit);
+    }
+
+    [Theory]
+    [InlineData("1.5")]
+    [InlineData("4000000.0000000000000000000001")]
+    [InlineData("1e-100")]
+    [InlineData("9223372036854775808")]
+    [InlineData("-9223372036854775809")]
+    [InlineData("1e1000")]
+    [InlineData("\"4000000\"")]
+    public async Task GalleryPixelBudget_RejectsInvalidNumbersWithoutChangingFile(string incoming)
+    {
+        var path = Path.Combine(_directory, "frontend.json");
+        const string original = """{"Frontend":{"Galleries":{"MaxDecodedPixels":4000000}}}""";
+        await File.WriteAllTextAsync(path, original);
+        await Assert.ThrowsAsync<ConfigurationSchemaException>(() => new FileInfo(path).SetJsonNodesAsync(
+            new Dictionary<string, JsonNode?> { ["Frontend:Galleries:MaxDecodedPixels"] = JsonNode.Parse(incoming) }));
+        Assert.Equal(original, await File.ReadAllTextAsync(path));
+    }
+
+    [Theory]
+    [InlineData("4000000.0", true)]
+    [InlineData("1.5", false)]
+    [InlineData("9223372036854775808", false)]
+    public async Task Settings_GalleryPixelBudgetValidatesAndNormalizesBeforeSaving(string incoming, bool accepted)
+    {
+        var path = Path.Combine(_directory, "frontend.json");
+        const string original = """{"Frontend":{"Galleries":{"MaxDecodedPixels":4000000}}}""";
+        await File.WriteAllTextAsync(path, original);
+        var result = await SettingsEndpoints.Update("frontend.json",
+            new SettingsUpdateRequest(new Dictionary<string, JsonElement>
+            {
+                ["Frontend:Galleries:MaxDecodedPixels"] = JsonSerializer.Deserialize<JsonElement>(incoming)
+            }), ConfigurationFileCatalog.For(_directory), TestLocales.Embedded,
+            Options.Create(new SecurityConfiguration()), NullLogger<SettingsEndpoints>.Instance, CancellationToken.None);
+
+        if (accepted)
+        {
+            Assert.IsType<NoContent>(result);
+            var root = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+            Assert.Equal(4000000L, root["Frontend"]!["Galleries"]!["MaxDecodedPixels"]!.GetValue<long>());
+        }
+        else
+        {
+            Assert.IsType<BadRequest>(result);
+            Assert.Equal(original, await File.ReadAllTextAsync(path));
+        }
+    }
+
+    [Fact]
+    public void GalleryPixelBudget_OmissionPreservesDefaultAndEarlierSchemaRemainsUnchanged()
+    {
+        Assert.True(ConfigurationSchema.IsValid(JsonNode.Parse("""{"Frontend":{"Galleries":{}}}""")));
+        Assert.True(JsonSchemas.IsValid("configuration-1.0.1",
+            JsonNode.Parse("""{"Frontend":{"Galleries":{"MaxDecodedPixels":1.5}}}""")));
+        Assert.False(JsonSchemas.IsValid(ConfigurationSchema.Name,
+            JsonNode.Parse("""{"Frontend":{"Galleries":{"MaxDecodedPixels":1.5}}}""")));
+        Assert.Equal(ImageThumbnailExtensions.MaxPixels, new GalleriesConfiguration().DecodePixelLimit);
     }
 }

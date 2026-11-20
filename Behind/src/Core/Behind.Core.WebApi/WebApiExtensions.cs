@@ -455,6 +455,7 @@ public static class WebApiExtensions
             application.UseDownloadUploadLimit();
             application.UseRateLimiter();
             application.UseAuthentication();
+            application.UseMiddleware<AuthenticationTransactionMiddleware>();
             application.UseSessionValidation();
             application.UseAuthorization();
             application.UseAccessGate();
@@ -477,6 +478,7 @@ public static class WebApiExtensions
             application.MapPost("/sign/in/oidc/redeem", OidcSignInEndpoints.Redeem)
                 .WithSummary("Redeem a single-use, browser-bound OpenID Connect sign-in ticket")
                 .AddEndpointFilter<DataAnnotationValidationFilter<OidcSignInEndpoints.RedeemRequest>>()
+                .RequireAuthenticationTransaction()
                 .Produces<SignInEndpoints.SignInResponse>()
                 .Produces<TwoFactorChallengeResponse>()
                 .Produces(400).Produces(401).Produces(403).Produces(404).Produces(500);
@@ -1083,6 +1085,7 @@ public static class WebApiExtensions
 
             application.MapPut("/profile/password", ProfileEndpoints.ChangePassword)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEndpoints.NewPasswordRequest>>()
+                .RequireAuthenticationTransaction()
                 .Produces(204)
                 .Produces(400)
                 .Produces(401)
@@ -1107,6 +1110,7 @@ public static class WebApiExtensions
 
             application.MapPost("/session/elevate/administrator", ElevationEndpoints.ElevateAdministrator)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ElevationEndpoints.ElevationRequest>>()
+                .RequireAuthenticationTransaction()
                 .RequireRateLimiting(ElevationExtensions.RateLimitPolicy)
                 .Produces(204)
                 .Produces(400)
@@ -1118,6 +1122,7 @@ public static class WebApiExtensions
 
             application.MapPost("/session/elevate/developer", ElevationEndpoints.ElevateDeveloper)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ElevationEndpoints.ElevationRequest>>()
+                .RequireAuthenticationTransaction()
                 .RequireRateLimiting(ElevationExtensions.RateLimitPolicy)
                 .Produces(204)
                 .Produces(400)
@@ -1165,6 +1170,7 @@ public static class WebApiExtensions
                 .RequireAccountMode(AccountMode.Password)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.PasswordRequest>>()
                 .RequireCaptcha<SignInEndpoints.PasswordRequest>()
+                .RequireAuthenticationTransaction()
                 .Produces(200)
                 .Produces(400)
                 .Produces(401)
@@ -1174,6 +1180,7 @@ public static class WebApiExtensions
                 .RequireAccountMode(AccountMode.PrimaryPasskey)
                 .AddEndpointFilter<DataAnnotationValidationFilter<PrimaryPasskeyEndpoints.OptionsRequest>>()
                 .RequireCaptcha<PrimaryPasskeyEndpoints.OptionsRequest>()
+                .RequireAuthenticationTransaction()
                 .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy)
                 .Produces<PasskeyAssertionChallenge>()
                 .Produces(400)
@@ -1198,6 +1205,7 @@ public static class WebApiExtensions
             application.MapPost("/sign/in/passkey", PrimaryPasskeyEndpoints.Verify)
                 .RequireAccountMode(AccountMode.PrimaryPasskey)
                 .AddEndpointFilter<DataAnnotationValidationFilter<PrimaryPasskeyEndpoints.AssertionRequest>>()
+                .RequireAuthenticationTransaction()
                 .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy)
                 .Produces(200)
                 .Produces(400)
@@ -1211,6 +1219,7 @@ public static class WebApiExtensions
                 .RequireAccountMode(AccountMode.MagicLink)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkRequest>>()
                 .RequireCaptcha<SignInEndpoints.MagicLinkRequest>()
+                .RequireAuthenticationTransaction(StatusCodes.Status204NoContent)
                 .RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy)
                 .Produces(204)
                 .Produces(400)
@@ -1220,6 +1229,7 @@ public static class WebApiExtensions
 
             application.MapPost("/sign/in/magiclink/redeem", SignInEndpoints.SignInMagicLink)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SignInEndpoints.MagicLinkSignInRequest>>()
+                .RequireAuthenticationTransaction()
                 .RequireRateLimiting(MagicLinkExtensions.RedeemRateLimitPolicy)
                 .Produces(200)
                 .Produces(400)
@@ -1230,6 +1240,7 @@ public static class WebApiExtensions
 
             application.MapPost(PasswordResetEndpoints.Route, PasswordResetEndpoints.Reset)
                 .AddEndpointFilter<DataAnnotationValidationFilter<PasswordResetEndpoints.PasswordResetRequest>>()
+                .RequireAuthenticationTransaction()
                 .RequireRateLimiting(MagicLinkExtensions.RedeemRateLimitPolicy)
                 .Produces(204)
                 .Produces(400)

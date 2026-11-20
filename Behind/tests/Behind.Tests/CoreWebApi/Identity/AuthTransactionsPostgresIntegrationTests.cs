@@ -3,8 +3,8 @@ using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Queries;
-using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.Middleware;
 using Behind.Core.WebApi.TwoFactor;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http;
@@ -94,25 +94,27 @@ public sealed class AuthTransactionsPostgresIntegrationTests
             });
             var enrollment = new TwoFactorEnrollment(queries, new TwoFactorCommands(context),
                 null!, null!, null!, Options.Create(new SecurityConfiguration { TwoFactorRequired = true }), TimeProvider.System);
-            try
+            var httpContext = new DefaultHttpContext();
+            httpContext.SetEndpoint(new Endpoint(null,
+                new EndpointMetadataCollection(new AuthenticationTransactionMetadata(StatusCodes.Status409Conflict)), null));
+            var middleware = new AuthenticationTransactionMiddleware(async request =>
             {
-                await new TwoFactorMutationFilter(context).InvokeAsync(
-                    new DefaultEndpointFilterInvocationContext(new DefaultHttpContext(), []),
+                await new AuthenticationTransactionFilter().InvokeAsync(
+                    new DefaultEndpointFilterInvocationContext(request, []),
                     async _ =>
                     {
                         Assert.Equal(TwoFactorRemoval.Removed, await enrollment.RemovePasskey(userId, key));
                         return Results.NoContent();
                     });
-                return true;
-            }
-            catch (Exception error) when (error is Npgsql.PostgresException { SqlState: "40001" }
-                || error.InnerException is Npgsql.PostgresException { SqlState: "40001" })
-            {
-                return false;
-            }
+                request.Response.StatusCode = StatusCodes.Status204NoContent;
+            });
+            await middleware.InvokeAsync(httpContext, context);
+            Assert.Contains(httpContext.Response.StatusCode,
+                new[] { StatusCodes.Status204NoContent, StatusCodes.Status409Conflict });
+            return httpContext.Response.StatusCode == StatusCodes.Status204NoContent;
         }
         var removed = await Task.WhenAll(Remove(keys[0].Id), Remove(keys[1].Id));
-        Assert.Single(removed.Where(value => value));
+        Assert.Single(removed, value => value);
         Assert.Single(await new TwoFactorQueries(seed).GetPasskeys(userId));
     }
 

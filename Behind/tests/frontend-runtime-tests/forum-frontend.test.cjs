@@ -276,7 +276,8 @@ test("shared rich editor keeps defaults and supports a restricted BBCode toolbar
     const defaults = { nodeType: 1 };
     ko.bindingHandlers.richEditor.init(defaults, () => ({ value: ko.observable(""), upload() {} }));
     assert.ok(instances[0].options.modules.toolbar.container.some(group => group.includes("image")));
-    assert.equal(instances[0].options.formats, undefined);
+    assert.ok(instances[0].options.formats.includes("image"));
+    assert.ok(!instances[0].options.formats.includes("video"));
     assert.equal(linkAttachments, 1);
     const restricted = { nodeType: 1 };
     const toolbar = [["bold", "link"]];
@@ -285,9 +286,57 @@ test("shared rich editor keeps defaults and supports a restricted BBCode toolbar
         value: ko.observable(""), toolbar, formats, linkTargets: false
     }));
     assert.equal(instances[1].options.modules.toolbar.container, toolbar);
-    assert.equal(instances[1].options.formats, formats);
+    assert.deepEqual(Array.from(instances[1].options.formats), formats);
     assert.equal(linkAttachments, 1);
     assert.equal(imageAttachments, 2);
+    ko.bindingHandlers.richEditor.init({ nodeType: 1 }, () => ({ value: ko.observable("") }));
+    assert.ok(instances[2].options.formats.includes("image"));
+    assert.ok(!instances[2].options.formats.includes("video"));
+    assert.ok(!instances[2].options.modules.toolbar.container.some(group => group.includes("image")));
+    assert.deepEqual(Array.from(instances[2].options.modules.uploader.mimetypes), []);
+});
+
+test("shared rich editor preserves stored images through text edits without uploads", () => {
+    let instance;
+    class Quill {
+        constructor(element, options) {
+            instance = this;
+            this.html = "";
+            this.events = new Map();
+            this.root = {
+                querySelector: () => this.html.includes("<img") ? {} : null,
+                querySelectorAll: () => this.html.includes("<img") ? [{ hasAttribute: () => false }] : []
+            };
+            this.clipboard = {
+                convert: ({ html }) => options.formats.includes("image") ? html : html.replace(/<img[^>]*>/g, "")
+            };
+        }
+        getModule() { return { container: { querySelectorAll: () => [] } }; }
+        on(name, callback) { this.events.set(name, callback); }
+        enable() {}
+        getText() { return this.html.replace(/<[^>]*>/g, ""); }
+        getSemanticHTML() { return this.html; }
+        setContents(html) { this.html = html; }
+        editText() {
+            this.html = this.html.replace("Before", "After");
+            this.events.get("text-change")();
+        }
+    }
+    load(path.join(core, "bindings/richeditor.js"), {
+        ko, quill: Quill, "models/i18n": i18n,
+        "bindings/richeditorimages": { register() {}, attach() {} },
+        "bindings/richeditorlinks": { register() {}, attach() {} }
+    });
+    const element = { nodeType: 1 };
+    const image = '<img src="/gallery/images/existing" width="320">';
+    const value = ko.observable("<p>Before</p>" + image);
+    const options = () => ({ value });
+    ko.bindingHandlers.richEditor.init(element, options);
+    ko.bindingHandlers.richEditor.update(element, options);
+    instance.editText();
+    assert.equal(value(), "<p>After</p>" + image);
+    ko.bindingHandlers.richEditor.update(element, options);
+    assert.equal(instance.getSemanticHTML(), "<p>After</p>" + image);
 });
 
 test("forum links always confirm their destination and only open a protected new tab", () => {

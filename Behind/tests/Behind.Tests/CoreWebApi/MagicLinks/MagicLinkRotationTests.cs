@@ -154,7 +154,7 @@ public sealed class MagicLinkRotationTests : IDisposable
     }
 
     [Fact]
-    public async Task Rotator_PersistFailure_KeepsRotationInMemoryAndLogs()
+    public async Task Rotator_PersistFailure_RejectsRotationAndKeepsCurrentSecrets()
     {
         var settings = SettingsCreatedAt(Start);
         var store = new MagicLinkSettingsStore(Some(settings));
@@ -164,16 +164,8 @@ public sealed class MagicLinkRotationTests : IDisposable
         var logger = Substitute.For<ILogger<MagicLinkSecretRotator>>();
         var rotator = new MagicLinkSecretRotator(store, persister, new FixedTimeProvider(Start + Interval), logger);
 
-        var rotated = await rotator.RotateIfNeededAsync();
-
-        Assert.True(rotated);
-        Assert.NotEqual(Some(settings), store.Current);
-        logger.Received(1).Log(
-            LogLevel.Error,
-            Arg.Any<EventId>(),
-            Arg.Any<object>(),
-            Arg.Any<IOException>(),
-            Arg.Any<Func<object, Exception?, string>>());
+        await Assert.ThrowsAsync<IOException>(() => rotator.RotateIfNeededAsync());
+        Assert.Equal(Some(settings), store.Current);
     }
 
     [Fact]
@@ -211,13 +203,147 @@ public sealed class MagicLinkRotationTests : IDisposable
     {
         var store = new MagicLinkSettingsStore(Some(SettingsCreatedAt(Start)));
         var rotator = RotatorAt(Start + Interval, store, Substitute.For<IMagicLinkSettingsPersister>());
-        using var service = new MagicLinkSecretRotationService(rotator, TimeProvider.System);
+        using var service = new MagicLinkSecretRotationService(rotator, TimeProvider.System, NullLogger<MagicLinkSecretRotationService>.Instance);
 
         await service.StartAsync(CancellationToken.None);
         await Wait.UntilAsync(() => CurrentOf(store).ActualSecret.CreatedAt, created => created == Some(Start + Interval));
         await service.StopAsync(CancellationToken.None);
 
         Assert.Equal(Some(Start + Interval), CurrentOf(store).ActualSecret.CreatedAt);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task Rotator_ConcurrentCallsReadCurrentSettingsInsideTheGate(bool firstManual, bool secondManual)
+    {
+        var initial = SettingsCreatedAt(Start);
+        var store = new MagicLinkSettingsStore(Some(initial));
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var persisted = new List<MagicLinkSettings>();
+        var persister = Substitute.For<IMagicLinkSettingsPersister>();
+        persister.PersistAsync(Arg.Any<MagicLinkSettings>(), Arg.Any<CancellationToken>()).Returns(async call =>
+        {
+            persisted.Add(call.Arg<MagicLinkSettings>());
+            if (persisted.Count == 1)
+            {
+                entered.SetResult();
+                await release.Task;
+            }
+        });
+        var rotator = RotatorAt(Start + Interval, store, persister);
+        var first = firstManual ? rotator.RotateNowAsync() : rotator.RotateIfNeededAsync();
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var second = secondManual ? rotator.RotateNowAsync() : rotator.RotateIfNeededAsync();
+        Assert.Single(persisted);
+        Assert.Equal(initial, CurrentOf(store));
+        release.SetResult();
+        Assert.True(await first);
+        Assert.Equal(secondManual, await second);
+        Assert.Equal(secondManual ? 2 : 1, persisted.Count);
+        Assert.Equal(persisted[^1], CurrentOf(store));
+        Assert.Equal(Some(initial.ActualSecret), persisted[0].OldSecret);
+        if (secondManual)
+        {
+            Assert.Equal(Some(persisted[0].ActualSecret), persisted[1].OldSecret);
+        }
+    }
+
+    [Fact]
+    public async Task Rotator_CancelledWaitDoesNotPersistAndGateRemainsUsable()
+    {
+        var store = new MagicLinkSettingsStore(Some(SettingsCreatedAt(Start)));
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var persister = Substitute.For<IMagicLinkSettingsPersister>();
+        persister.PersistAsync(Arg.Any<MagicLinkSettings>(), Arg.Any<CancellationToken>()).Returns(async _ =>
+        {
+            entered.TrySetResult();
+            await release.Task;
+        });
+        var rotator = RotatorAt(Start + Interval, store, persister);
+        var first = rotator.RotateNowAsync();
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        using var cancelled = new CancellationTokenSource();
+        var waiting = rotator.RotateNowAsync(cancelled.Token);
+        await cancelled.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
+        release.SetResult();
+        await first;
+        Assert.False(await rotator.RotateIfNeededAsync());
+        await persister.Received(1).PersistAsync(Arg.Any<MagicLinkSettings>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData("read-only")]
+    [InlineData("access")]
+    [InlineData("io")]
+    [InlineData("schema")]
+    public async Task Service_ExpectedPersistenceFailureKeepsSecretsAndRetries(string failure)
+    {
+        var initial = SettingsCreatedAt(Start);
+        var store = new MagicLinkSettingsStore(Some(initial));
+        var exception = failure switch
+        {
+            "read-only" => (Exception)new MagicLinkRotationUnavailableException(),
+            "access" => new UnauthorizedAccessException(),
+            "schema" => new ConfigurationSchemaException(),
+            _ => new IOException()
+        };
+        var persister = Substitute.For<IMagicLinkSettingsPersister>();
+        persister.PersistAsync(Arg.Any<MagicLinkSettings>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(exception), Task.CompletedTask);
+        var clock = new RotationTimeProvider();
+        using var service = new MagicLinkSecretRotationService(RotatorAt(Start + Interval, store, persister),
+            clock, NullLogger<MagicLinkSecretRotationService>.Instance);
+        await service.StartAsync(CancellationToken.None);
+        var timer = await clock.Created.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(initial, CurrentOf(store));
+        Assert.False(service.ExecuteTask!.IsCompleted);
+        timer.Tick();
+        await Wait.UntilAsync(() => CurrentOf(store), settings => settings != initial);
+        await service.StopAsync(CancellationToken.None);
+        await persister.Received(2).PersistAsync(Arg.Any<MagicLinkSettings>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Service_CancellationPropagates()
+    {
+        var initial = SettingsCreatedAt(Start);
+        var store = new MagicLinkSettingsStore(Some(initial));
+        var persister = Substitute.For<IMagicLinkSettingsPersister>();
+        persister.PersistAsync(Arg.Any<MagicLinkSettings>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromCanceled(new CancellationToken(true)));
+        using var service = new MagicLinkSecretRotationService(RotatorAt(Start + Interval, store, persister),
+            TimeProvider.System, NullLogger<MagicLinkSecretRotationService>.Instance);
+        await service.StartAsync(CancellationToken.None);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteTask!);
+        Assert.Equal(initial, CurrentOf(store));
+    }
+
+    private sealed class RotationTimeProvider : TimeProvider
+    {
+        public TaskCompletionSource<RotationTimer> Created { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            var timer = new RotationTimer(callback, state);
+            Created.SetResult(timer);
+            return timer;
+        }
+    }
+
+    private sealed class RotationTimer(TimerCallback callback, object? state) : ITimer
+    {
+        public void Tick() => callback(state);
+        public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+        public void Dispose()
+        {
+        }
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     private ServiceProvider ProviderWith(SecurityConfiguration security, string fileName = "missing.json")
@@ -268,25 +394,27 @@ public sealed class MagicLinkRotationTests : IDisposable
     }
 
     [Fact]
-    public async Task AddMagicLink_MissingFile_DoesNotPersist()
+    public async Task AddMagicLink_MissingFile_RejectsRotation()
     {
         var settings = SettingsCreatedAt(Start);
         using var provider = ProviderWith(new SecurityConfiguration(false, None, None, Some(settings)));
 
-        await provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings);
+        await Assert.ThrowsAsync<MagicLinkRotationUnavailableException>(() =>
+            provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings));
 
         Assert.False(File.Exists(Path.Combine(_directory, "missing.json")));
     }
 
     [Fact]
-    public async Task AddMagicLink_ReadOnlyConfiguration_DoesNotPersist()
+    public async Task AddMagicLink_ReadOnlyConfiguration_RejectsRotation()
     {
         var path = Path.Combine(_directory, "security.json");
         await File.WriteAllTextAsync(path, "{}");
         var settings = SettingsCreatedAt(Start);
         using var provider = ProviderWith(new SecurityConfiguration(true, None, None, Some(settings)), "security.json");
 
-        await provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings);
+        await Assert.ThrowsAsync<MagicLinkRotationUnavailableException>(() =>
+            provider.GetRequiredService<IMagicLinkSettingsPersister>().PersistAsync(settings));
 
         Assert.Equal("{}", await File.ReadAllTextAsync(path));
     }

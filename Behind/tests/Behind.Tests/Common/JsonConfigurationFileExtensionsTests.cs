@@ -20,6 +20,20 @@ public sealed class JsonConfigurationFileExtensionsTests : IDisposable
     private JsonNode Read(FileInfo file) => JsonNode.Parse(File.ReadAllText(file.FullName))!;
 
     [Fact]
+    public async Task SetJsonValuesAsync_PreservesOwnerOnlyPermissions()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var file = FileWith("{}");
+        File.SetUnixFileMode(file.FullName, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        await file.SetJsonValuesAsync(new Dictionary<string, string?> { ["Password"] = "private" });
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file.FullName));
+    }
+
+    [Fact]
     public async Task SetJsonValuesAsync_UpdatesExistingValueAndKeepsSiblings()
     {
         var file = FileWith("""{ "A": { "B": "old", "C": "keep" }, "D": 1 }""");

@@ -57,7 +57,12 @@ public static class MagicLinkSettingsExtensions
         public MagicLinkSettings Advance(DateTimeOffset now) =>
             settings switch
             {
-                _ when settings.IsRotationDue(now) => settings.Rotate(now),
+                _ when settings.IsRotationDue(now) => settings.Rotate(now) with
+                {
+                    OldSecret = settings.ActualSecret.CreatedAt
+                        .Where(createdAt => now < createdAt + settings.EffectiveRotationInterval + settings.EffectiveRotationOverlap)
+                        .Map(_ => settings.ActualSecret)
+                },
                 _ when settings.OldSecret != None && !settings.IsOverlapActive(now) =>
                     settings with { OldSecret = None },
                 _ => settings

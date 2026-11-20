@@ -45,7 +45,13 @@ dotnet run --project src/Core/Behind.Core.Tools -- secret generate --type totp
 Hitelesítőalkalmazás-URI kiírása meglévő TOTP titokhoz:
 
 ```bash
-dotnet run --project src/Core/Behind.Core.Tools -- secret uri --value BASE32_TITOK --account admin
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:8c7ed70ebb3b9495961fccd784b5d56b2e4614a31045352f01e9f9ce7a2ace72 -->
+
+dotnet run --project src/Core/Behind.Core.Tools -- secret uri --account admin
+
+<!-- /coderabbit-ai-generated:v1 -->
 ```
 
 Az `--account` alapértelmezett értéke `admin`. A kimenet tartalmaz egy `security.json` konfigurációhoz használható értéket és a hitelesítőalkalmazáshoz hozzáadható teljes URI-t.

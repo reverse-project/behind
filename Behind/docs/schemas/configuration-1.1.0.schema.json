@@ -127,7 +127,8 @@
     },
     "GalleriesConfiguration": {
       "type": ["object", "null"],
-      "properties": { "MaxImageBytes": { "$ref": "#/$defs/Number" } }
+      "properties": { "MaxImageBytes": { "$ref": "#/$defs/Number" },
+        "MaxDecodedPixels": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807, "default": 4000000, "description": "Maximum pixels in a decoded gallery bitmap. Missing or nonpositive values use 4000000; independent of compressed upload bytes." } }
     },
     "CarouselsConfiguration": {
       "type": ["object", "null"],

@@ -8,5 +8,8 @@ public interface ISoftDeleteContext
 
     EntityMarkRegistry Restores { get; }
 
+    Task<DateTimeOffset?> DeletedAtAsync(string entityName, string entityKey, CancellationToken cancellationToken = default) =>
+        Task.FromResult<DateTimeOffset?>(null);
+
     Task<bool> IsDeletedAsync(string entityName, string entityKey, CancellationToken cancellationToken = default);
 }

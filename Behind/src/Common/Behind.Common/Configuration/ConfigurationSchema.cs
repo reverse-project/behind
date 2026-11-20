@@ -21,13 +21,20 @@ public static class ConfigurationSchema
         }
     }
 
-    private static bool TryNormalize(JsonNode? value, JsonObject schema, out JsonNode? normalized)
+    public static JsonObject PrepareForWrite(JsonObject value)
+    {
+        Validate(value);
+        TryNormalize(value, Definition.Value, out var normalized, true);
+        return normalized!.AsObject();
+    }
+
+    private static bool TryNormalize(JsonNode? value, JsonObject schema, out JsonNode? normalized, bool forWrite = false)
     {
         if (schema["$ref"] is JsonValue reference)
         {
             var definitionName = reference.GetValue<string>().Split('/')[^1];
             schema = Definition.Value["$defs"]![definitionName]!.AsObject();
-            if (definitionName == "CachingProvider" && value is JsonValue provider
+            if (!forWrite && definitionName == "CachingProvider" && value is JsonValue provider
                 && provider.TryGetValue<string>(out var text))
             {
                 var canonical = schema["enum"]!.AsArray()
@@ -36,6 +43,11 @@ public static class ConfigurationSchema
                 normalized = JsonValue.Create(canonical ?? text);
                 return true;
             }
+        }
+
+        if (schema["type"] is JsonValue type && type.TryGetValue<string>(out var kind) && kind == "integer")
+        {
+            return value.TryNormalizeInt64(out normalized);
         }
 
         if (value is JsonObject source)
@@ -51,7 +63,7 @@ public static class ConfigurationSchema
                 JsonNode? replacement;
                 if (childSchema is not null)
                 {
-                    if (!TryNormalize(child, childSchema, out replacement))
+                    if (!TryNormalize(child, childSchema, out replacement, forWrite))
                     {
                         normalized = null;
                         return false;
@@ -62,7 +74,7 @@ public static class ConfigurationSchema
                     replacement = child?.DeepClone();
                 }
 
-                if (!result.TryAdd(canonical, replacement))
+                if (!result.TryAdd(forWrite ? name : canonical, replacement))
                 {
                     normalized = null;
                     return false;
@@ -78,7 +90,7 @@ public static class ConfigurationSchema
             var result = new JsonArray();
             foreach (var item in array)
             {
-                if (!TryNormalize(item, itemSchema, out var replacement))
+                if (!TryNormalize(item, itemSchema, out var replacement, forWrite))
                 {
                     normalized = null;
                     return false;

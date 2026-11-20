@@ -66,6 +66,15 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
 
     public IRepository<TAggregate, TKey> GetRepository<TAggregate, TKey>() => (IRepository<TAggregate, TKey>)this;
 
+    public Task<DateTimeOffset?> DeletedAtAsync(
+        string entityName, string entityKey, CancellationToken cancellationToken = default) =>
+        AuditLogEntries
+            .Where(audit => audit.EntityName == entityName && audit.EntityKey == entityKey
+                            && audit.Action == new AuditLogEntry.Deleted())
+            .OrderByDescending(audit => audit.Timestamp)
+            .Select(audit => (DateTimeOffset?)audit.Timestamp)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<bool> IsDeletedAsync(
         string entityName,
         string entityKey,

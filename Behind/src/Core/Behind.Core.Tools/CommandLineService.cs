@@ -30,12 +30,12 @@ public sealed class CommandLineService(IHost host) : BackgroundService
         });
         var uriCommand = new Command("uri", "Print the authenticator URI of an existing totp secret key value")
         {
-            new Option<string>("--value", "-v") { Required = true },
+            new Option<string>("--value", "-v"),
             new Option<string>("--account", "-a") { DefaultValueFactory = _ => DefaultAccount },
         };
         uriCommand.SetAction(arguments =>
         {
-            var value = new SecretKeyTypeConverter().ConvertFrom(arguments.GetValue<string>("--value")!);
+            var value = new SecretKeyTypeConverter().ConvertFrom(arguments.GetValue<string>("--value") ?? ReadSecret());
 
             if (value is TotpValue totp)
             {
@@ -64,6 +64,38 @@ public sealed class CommandLineService(IHost host) : BackgroundService
         Environment.ExitCode = await result.InvokeAsync(null, stoppingToken);
 
         await host.StopAsync(stoppingToken);
+    }
+
+    internal static string ReadSecret()
+    {
+        if (Console.IsInputRedirected)
+        {
+            return Console.ReadLine() ?? string.Empty;
+        }
+
+        Console.Write("Secret: ");
+        var value = new System.Text.StringBuilder();
+        while (true)
+        {
+            var key = Console.ReadKey(intercept: true);
+            if (key.Key == ConsoleKey.Enter)
+            {
+                Console.WriteLine();
+                return value.ToString();
+            }
+
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (value.Length > 0)
+                {
+                    value.Length--;
+                }
+            }
+            else if (!char.IsControl(key.KeyChar))
+            {
+                value.Append(key.KeyChar);
+            }
+        }
     }
 
     private static void PrintTotp(TotpValue totp, string account)

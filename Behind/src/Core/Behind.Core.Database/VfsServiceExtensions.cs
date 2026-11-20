@@ -14,9 +14,7 @@ public static class VfsServiceExtensions
 {
     private static BackendConfiguration Bind(IConfiguration configuration)
     {
-        var backend = configuration
-            .GetSection(BackendConfiguration.SectionName)
-            .GetOptionAware<BackendConfiguration>() ?? new BackendConfiguration();
+        var backend = BackendConfiguration.Read(configuration);
 
         _ = backend.VfsRoot;
 

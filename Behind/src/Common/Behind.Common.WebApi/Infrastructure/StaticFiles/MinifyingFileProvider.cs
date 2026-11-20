@@ -39,15 +39,29 @@ public sealed class MinifyingFileProvider(IFileProvider inner, IReadOnlyList<ICo
 
     private IFileInfo Minified(string subpath, IFileInfo file, IContentMinifier minifier)
     {
-        if (_snapshots.TryGetValue(subpath, out var cached) && cached.IsFor(file))
+        var identity = file.PhysicalPath ?? CanonicalPath(subpath, file);
+        if (_snapshots.TryGetValue(identity, out var cached) && cached.IsFor(file))
         {
             return cached.File;
         }
 
         var snapshot = new Snapshot(file.LastModified, file.Length, Minify(file, minifier));
-        _snapshots[subpath] = snapshot;
+        _snapshots[identity] = snapshot;
 
         return snapshot.File;
+    }
+
+    private string CanonicalPath(string subpath, IFileInfo file)
+    {
+        var segments = subpath.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var parent = "/";
+        foreach (var segment in segments.SkipLast(1))
+        {
+            var directory = inner.GetDirectoryContents(parent)
+                .FirstOrDefault(entry => entry.IsDirectory && string.Equals(entry.Name, segment, StringComparison.OrdinalIgnoreCase));
+            parent = parent.TrimEnd('/') + "/" + (directory?.Name ?? segment);
+        }
+        return parent + "/" + file.Name;
     }
 
     private static IFileInfo Minify(IFileInfo file, IContentMinifier minifier)

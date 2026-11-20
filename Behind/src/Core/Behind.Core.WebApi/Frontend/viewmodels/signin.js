@@ -63,6 +63,31 @@ define(["ko", "viewmodels/captchaform", "viewmodels/twofactorchallenge", "models
             });
         };
 
+        self.requestLegacyPasskeyLink = function (model, event) {
+            if (self.busy() || !event.currentTarget.form.reportValidity()) {
+                return Promise.resolve();
+            }
+
+            return self.run(function (captcha) {
+                return auth.requestLegacyPasskeyLink(self.email(), captcha);
+            });
+        };
+
+        var legacyTicket = null;
+        self.legacyLinkOpened = ko.observable(false);
+        self.useLegacyPasskey = function () {
+            if (!legacyTicket || self.busy()) {
+                return Promise.resolve();
+            }
+
+            var ticket = legacyTicket;
+            legacyTicket = null;
+            self.legacyLinkOpened(false);
+            return signIn(function () {
+                return auth.signInWithPasskey(null, null, ticket);
+            });
+        };
+
         self.usePasskey = function (model, event) {
             if (!accounts.passkey() || self.busy()) {
                 return Promise.resolve();
@@ -117,6 +142,14 @@ define(["ko", "viewmodels/captchaform", "viewmodels/twofactorchallenge", "models
             activate();
 
             var params = context.params || {};
+
+            if (params.legacyPasskey) {
+                legacyTicket = params.legacyPasskey;
+                context.scrub("#/sign-in");
+                delete params.legacyPasskey;
+                self.legacyLinkOpened(true);
+                return;
+            }
 
             if (params.oidcError) {
                 context.scrub("#/sign-in");

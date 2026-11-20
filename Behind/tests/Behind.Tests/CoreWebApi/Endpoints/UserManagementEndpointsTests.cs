@@ -84,6 +84,28 @@ public class UserManagementEndpointsTests
         _users.TryFindUser(TargetId, DeletionState.Active, Now, Arg.Any<CancellationToken>())
             .Returns(target is null ? None : Some(target));
 
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task ModerationProtectsEffectiveDeveloperWithoutBuiltInMembership(bool delete, bool customRole)
+    {
+        TargetIs(Managed(TargetId));
+        _access.GetUserAccess(TargetId, Arg.Any<CancellationToken>())
+            .Returns(customRole
+                ? new UserAccess([new UserRole("Custom") { Grants = Some<IEnumerable<Grant>>([BuiltInAccess.RawDatabaseManage.Grant]) }], [], [])
+                : new UserAccess([], [BuiltInAccess.RawDatabaseManage.Grant], []));
+
+        var result = delete
+            ? await UserManagementEndpoints.Delete(TargetId, SignedIn(), _gate, _userCommands)
+            : await UserManagementEndpoints.Ban(TargetId, new(null), SignedIn(), _gate, _wallOfShame, _sessionCommands);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
+        await _userCommands.DidNotReceiveWithAnyArgs().Delete(default, default);
+        await _wallOfShame.DidNotReceiveWithAnyArgs().Ban(default, default, default!, default);
+    }
+
     [Fact]
     public async Task Elevate_CannotAssignPersistedPermissionsBeyondActorAuthority()
     {

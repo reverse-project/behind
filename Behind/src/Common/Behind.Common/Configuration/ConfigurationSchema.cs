@@ -4,7 +4,7 @@ namespace Behind.Common.Configuration;
 
 public static class ConfigurationSchema
 {
-    public const string Name = "configuration-1.0.2";
+    public const string Name = "configuration-1.1.0";
 
     private static readonly Lazy<JsonObject> Definition = new(() => JsonSchemas.Describe(Name));
 

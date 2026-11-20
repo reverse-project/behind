@@ -10,6 +10,9 @@ namespace Behind.Core.Database.Queries;
 public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerable<IAuditLabelSource> labelSources)
     : IAuditLogEntryQueries
 {
+    public async Task<IAsyncDisposable> BeginReadSnapshot(CancellationToken cancellationToken) =>
+        await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
+
     public async Task<IReadOnlyList<string>> GetEntityTypes(CancellationToken cancellationToken = default) =>
         await context.AuditLogEntries.AsNoTracking()
             .Select(entry => entry.EntityName)
@@ -46,7 +49,7 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerabl
                 context.AuditLogEntries.Where(x => x.Timestamp >= fromDate && x.Timestamp < toDate)
             );
 
-        var total = await baseQuery.CountAsync(cancellationToken);
+        var total = request.KnownTotal ?? await baseQuery.CountAsync(cancellationToken);
 
         var projectionQuery = (from audit in baseQuery
             join user in context.Users

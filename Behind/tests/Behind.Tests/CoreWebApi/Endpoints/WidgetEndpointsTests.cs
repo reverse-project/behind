@@ -18,19 +18,11 @@ public class WidgetEndpointsTests
         var oldest = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
         var queries = Substitute.For<IDownloadQueries>();
-        queries.ListFolders(default).ReturnsForAnyArgs(new IDownloadQueries.DownloadFolderInfo[]
+        queries.Latest(50, default).ReturnsForAnyArgs(new IDownloadQueries.DownloadInfo[]
         {
-            new(firstFolder, None, "first", "First"),
-            new(secondFolder, None, "second", "Second")
+            new(oldest, firstFolder, "Old", "old.txt", "text/plain", 1, "Ada", Some(now.AddDays(-1))),
+            new(newest, secondFolder, "New", "new.txt", "text/plain", 1, "Ada", Some(now))
         });
-        queries.ListFiles(firstFolder, default).Returns(
-            Some<IReadOnlyList<IDownloadQueries.DownloadInfo>>([
-                new(oldest, firstFolder, "Old", "old.txt", "text/plain", 1, "Ada", Some(now.AddDays(-1)))
-            ]));
-        queries.ListFiles(secondFolder, default).Returns(
-            Some<IReadOnlyList<IDownloadQueries.DownloadInfo>>([
-                new(newest, secondFolder, "New", "new.txt", "text/plain", 1, "Ada", Some(now))
-            ]));
 
         var result = Assert.IsType<Ok<DownloadFilesResponse>>(await WidgetEndpoints.LatestDownloads(queries, default));
 

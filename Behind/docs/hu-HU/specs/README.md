@@ -1,22 +1,15 @@
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cc6578a0d95d66e61ecae6379d271a0475c2391cb2d8a33781af5dfaf26da184 -->
+
 # Behind specifikációk
 
 | Specifikáció | Verzió | Állapot |
 | --- | --- | --- |
-<!-- coderabbit-ai-generated:v1 -->
-
-<!-- coderabbit-ai-generated-section:v1:9f04536af953c2a883f9482ac731b374515c2822d8085289ebd302a27847c672 -->
-
-<!-- coderabbit-ai-generated:v1 -->
-
-<!-- coderabbit-ai-generated-section:v1:e42abfded63a1f6ee89ffaf4ede6c1517945f38de0430e18aa917c764d18b333 -->
-
-| [Konfigurációs JSON ellenőrzése](./configuration-json-1.0.2.md) | 1.0.2 | Aktuális |
+| [Konfigurációs JSON ellenőrzése](./configuration-json-1.1.0.md) | 1.1.0 | Aktuális |
+| [Konfigurációs JSON ellenőrzése](./configuration-json-1.0.2.md) | 1.0.2 | Korábbi |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.0.1.md) | 1.0.1 | Korábbi |
-
-<!-- /coderabbit-ai-generated:v1 -->
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.0.0.md) | 1.0.0 | Korábbi |
-
-<!-- /coderabbit-ai-generated:v1 -->
 | [Tárolt JSON-rekordok](./persisted-json-1.0.0.md) | 1.0.0 | Aktuális |
 | [Beágyazott frontend-JSON](./bundled-json-1.0.0.md) | 1.0.0 | Aktuális |
 | [Gyorsítótár-konfiguráció](./caching-configuration-1.1.0.md) | 1.1.0 | Aktuális |
@@ -24,3 +17,6 @@
 | [OIDC bejelentkezés](./oidc-sign-in-2.0.0.md) | 2.0.0 | Aktuális |
 | [OIDC bejelentkezés](./oidc-sign-in-1.1.0.md) | 1.1.0 | Korábbi |
 | [OIDC bejelentkezés](./oidc-sign-in-1.0.0.md) | 1.0.0 | Korábbi |
+
+
+<!-- /coderabbit-ai-generated:v1 -->

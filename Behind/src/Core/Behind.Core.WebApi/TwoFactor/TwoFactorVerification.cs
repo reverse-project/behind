@@ -47,7 +47,7 @@ public sealed class TwoFactorVerification(
 
         return await step.Match(
             () => Task.FromResult(false),
-            matched => commands.AdvanceTotpStep(userId, matched, cancellationToken));
+            matched => commands.AdvanceTotpStep(userId, stored.Match(() => string.Empty, totp => totp.Secret), matched, cancellationToken));
     }
 
     public Task<Option<RecoveryOutcome>> VerifyRecoveryCode(

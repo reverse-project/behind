@@ -112,7 +112,7 @@ public sealed class DownloadFolderCommands(AbstractCoreContext context, IVfsComm
     private async Task<IReadOnlyList<Guid>> HardDeleteContents(Guid folderId, CancellationToken cancellationToken)
     {
         var everyFolder = await context.DownloadFolders.ToRows().AsNoTracking().ToListAsync(cancellationToken);
-        var descendants = everyFolder.DescendantKeysOf(folderId);
+        var descendants = everyFolder.DescendantKeysOf(folderId, cancellationToken);
         var removed = descendants.Append(folderId).ToList();
 
         var folders = await context.DownloadFolders.OfKeys(descendants.ToList()).ToListAsync(cancellationToken);

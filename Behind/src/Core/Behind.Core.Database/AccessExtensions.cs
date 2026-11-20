@@ -195,19 +195,35 @@ public static class AccessExtensions
                 .Where(link => EF.Property<Guid>(link, ownerColumn) == ownerId)
                 .ToListAsync(cancellationToken);
 
+            if (table == "UserRoles")
+            {
+                foreach (var link in existing.Where(link => targetIds.Contains((Guid)link[targetColumn])))
+                {
+                    link["IsManuallyAssigned"] = true;
+                }
+            }
+
             var current = existing.Select(link => (Guid)link[targetColumn]).ToHashSet();
 
             links.RemoveRange(existing.Where(link => !targetIds.Contains((Guid)link[targetColumn])));
 
-            await links.AddRangeAsync(
-                targetIds
+            var additions = targetIds
                     .Where(targetId => !current.Contains(targetId))
                     .Select(targetId => new Dictionary<string, object>
                     {
                         [ownerColumn] = ownerId,
                         [targetColumn] = targetId
-                    }),
-                cancellationToken);
+                    }).ToList();
+
+            if (table == "UserRoles")
+            {
+                foreach (var link in additions)
+                {
+                    link["IsManuallyAssigned"] = true;
+                }
+            }
+
+            await links.AddRangeAsync(additions, cancellationToken);
         }
     }
 }

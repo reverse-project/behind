@@ -149,7 +149,9 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
             () => Task.FromResult(false),
             async user =>
             {
-                repository.Update(userId, user with { Birthday = details.Birthday, HideEmail = details.HideEmail });
+                var tracked = await context.Users.SingleAsync(value => EF.Property<Guid>(value, "Id") == userId, cancellationToken);
+                context.Entry(tracked).Property(value => value.Birthday).CurrentValue = details.Birthday;
+                context.Entry(tracked).Property(value => value.HideEmail).CurrentValue = details.HideEmail;
                 await context.SaveChangesAsync(cancellationToken);
                 return true;
             });
@@ -169,7 +171,8 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
                     await files.Attach(FileType, userId, [picture], cancellationToken);
                 }
 
-                repository.Update(userId, user with { ProfilePictureId = pictureId });
+                var tracked = await context.Users.SingleAsync(value => EF.Property<Guid>(value, "Id") == userId, cancellationToken);
+                context.Entry(tracked).Property(value => value.ProfilePictureId).CurrentValue = pictureId;
                 await context.SaveChangesAsync(cancellationToken);
 
                 return true;

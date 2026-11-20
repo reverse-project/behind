@@ -19,19 +19,24 @@ public sealed class QuoteCommands(IQuotesContext context) : IQuoteCommands
         IQuoteCommands.QuoteDraft draft,
         CancellationToken cancellationToken = default)
     {
+        await using var transaction = await Database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
         var latest = await context.Quotes.LatestVersionAsync(quoteId, cancellationToken);
 
-        return latest == 0
+        var result = latest == 0
             ? new QuoteSaveResult.NotFound()
             : await AddVersion(quoteId, latest, draft, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return result;
     }
 
     public async Task<bool> Delete(Guid quoteId, CancellationToken cancellationToken = default)
     {
+        await using var transaction = await Database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
         var deleted = await Database.MarkSoftDeletedAsync(context.Quotes.OfKey(quoteId), cancellationToken);
 
         await Database.SaveChangesAsync(cancellationToken);
 
+        await transaction.CommitAsync(cancellationToken);
         return deleted > 0;
     }
 

@@ -68,6 +68,10 @@ public static class ContentRestrictionExtensions
             CancellationToken cancellationToken = default)
         {
             var blocked = hidden.ToHashSet();
+            if (blocked.Count == 0)
+            {
+                return [];
+            }
             var parentProperties = (string[])context.Model.FindAnnotation("Behind:AgeRestrictionParents")!.Value!;
             var links = context.Model.GetEntityTypes()
                 .Where(type => type.FindAnnotation("Behind:AgeRestricted") is not null)
@@ -76,58 +80,48 @@ public static class ContentRestrictionExtensions
                                        && (property.ClrType == typeof(Guid) || property.ClrType == typeof(Guid?)))
                     .Select(property => (Type: type.ClrType, Property: property.Name, Nullable: property.ClrType == typeof(Guid?))))
                 .ToArray();
-            var previous = -1;
-
-            while (blocked.Count > 0 && blocked.Count != previous)
+            var frontier = blocked.ToArray();
+            while (frontier.Length > 0)
             {
-                previous = blocked.Count;
-                var keys = blocked.ToArray();
-
+                var next = new List<Guid>();
                 foreach (var link in links)
                 {
                     var method = typeof(ContentRestrictionExtensions)
-                        .GetMethod(nameof(Children), BindingFlags.Static | BindingFlags.NonPublic)!
+                        .GetMethod(nameof(ReachableIds), BindingFlags.Static | BindingFlags.NonPublic)!
                         .MakeGenericMethod(link.Type);
-                    var children = await (Task<List<Guid>>)method.Invoke(null,
-                        [context, link.Property, link.Nullable, keys, cancellationToken])!;
-                    blocked.UnionWith(children);
-                    if (MediaProperties.Contains(link.Property))
-                    {
-                        var mediaMethod = typeof(ContentRestrictionExtensions)
-                            .GetMethod(nameof(Media), BindingFlags.Static | BindingFlags.NonPublic)!
-                            .MakeGenericMethod(link.Type);
-                        var media = await (Task<List<Guid>>)mediaMethod.Invoke(null,
-                            [context, link.Property, link.Nullable, keys, cancellationToken])!;
-                        blocked.UnionWith(media);
-                    }
+                    var reachable = await (Task<List<Guid>>)method.Invoke(null,
+                        [context, link.Property, link.Nullable, frontier, cancellationToken])!;
+                    next.AddRange(reachable.Where(blocked.Add));
                 }
+
+                frontier = next.ToArray();
             }
 
             return blocked.ToArray();
         }
     }
 
-    private static Task<List<Guid>> Children<TEntity>(
-        DbContext context, string property, bool nullable, Guid[] parents, CancellationToken cancellationToken)
+    private static Task<List<Guid>> ReachableIds<TEntity>(
+        DbContext context, string property, bool nullable, Guid[] frontier, CancellationToken cancellationToken)
         where TEntity : class
     {
-        var query = context.Set<TEntity>().AsNoTracking();
-        query = nullable
-            ? query.Where(row => EF.Property<Guid?>(row, property).HasValue
-                                 && parents.Contains(EF.Property<Guid?>(row, property)!.Value))
-            : query.Where(row => parents.Contains(EF.Property<Guid>(row, property)));
-        return query.Select(row => EF.Property<Guid>(row, VersionedColumns.Key)).Distinct().ToListAsync(cancellationToken);
-    }
+        var rows = context.Set<TEntity>().AsNoTracking()
+            .IgnoreQueryFilters([FilterName, SoftDeleteExtensions.FilterName]);
+        var linked = nullable
+            ? rows.Where(row => EF.Property<Guid?>(row, property).HasValue)
+            : rows.Where(row => EF.Property<Guid>(row, property) != Guid.Empty);
+        var edges = linked.Select(row => new
+        {
+            Owner = EF.Property<Guid>(row, VersionedColumns.Key),
+            Reference = nullable ? EF.Property<Guid?>(row, property)!.Value : EF.Property<Guid>(row, property)
+        });
+        var children = edges.Where(edge => frontier.Contains(edge.Reference)).Select(edge => edge.Owner);
+        if (MediaProperties.Contains(property))
+        {
+            var media = edges.Where(edge => frontier.Contains(edge.Owner)).Select(edge => edge.Reference);
+            return children.Union(media).ToListAsync(cancellationToken);
+        }
 
-    private static Task<List<Guid>> Media<TEntity>(
-        DbContext context, string property, bool nullable, Guid[] owners, CancellationToken cancellationToken)
-        where TEntity : class
-    {
-        var query = context.Set<TEntity>().AsNoTracking()
-            .Where(row => owners.Contains(EF.Property<Guid>(row, VersionedColumns.Key)));
-        return nullable
-            ? query.Where(row => EF.Property<Guid?>(row, property).HasValue)
-                .Select(row => EF.Property<Guid?>(row, property)!.Value).Distinct().ToListAsync(cancellationToken)
-            : query.Select(row => EF.Property<Guid>(row, property)).Distinct().ToListAsync(cancellationToken);
+        return children.Distinct().ToListAsync(cancellationToken);
     }
 }

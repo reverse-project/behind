@@ -44,32 +44,28 @@ public sealed class SessionCommands(AbstractCoreContext context) : ISessionComma
         RefreshToken refreshToken,
         CancellationToken cancellationToken = default)
     {
-        var session = await context.Sessions
-            .Where(s => EF.Property<Guid>(s, "Id") == sessionId
-                        && EF.Property<Guid?>(s, "InvalidatedById") == null
-                        && EF.Property<DateTimeOffset?>(s, "InvalidatedAt") == null
-                        && s.AccessToken.Nonce == expectedAccessNonce
-                        && s.RefreshToken.Nonce == expectedRefreshNonce)
-            .FirstOrDefaultAsync(cancellationToken);
+        var matching = context.Sessions.Where(s => EF.Property<Guid>(s, "Id") == sessionId
+            && EF.Property<Guid?>(s, "InvalidatedById") == null
+            && EF.Property<DateTimeOffset?>(s, "InvalidatedAt") == null
+            && s.AccessToken.Nonce == expectedAccessNonce
+            && s.RefreshToken.Nonce == expectedRefreshNonce);
 
-        if (session is null)
-        {
-            return false;
-        }
+        return await context.UpdateMatchingRowAsync(
+            matching,
+            setters => setters.SetProperty(s => s.AccessToken.Nonce, expectedAccessNonce),
+            entry =>
+            {
+                var access = entry.ComplexProperty(s => s.AccessToken);
+                access.Property(t => t.Nonce).CurrentValue = accessToken.Nonce;
+                access.Property(t => t.IssuedAt).CurrentValue = accessToken.IssuedAt;
+                access.Property(t => t.ExpiresAt).CurrentValue = accessToken.ExpiresAt;
 
-        var entry = context.Entry(session);
-
-        var access = entry.ComplexProperty(s => s.AccessToken);
-        access.Property(t => t.Nonce).CurrentValue = accessToken.Nonce;
-        access.Property(t => t.IssuedAt).CurrentValue = accessToken.IssuedAt;
-        access.Property(t => t.ExpiresAt).CurrentValue = accessToken.ExpiresAt;
-
-        var refresh = entry.ComplexProperty(s => s.RefreshToken);
-        refresh.Property(t => t.Nonce).CurrentValue = refreshToken.Nonce;
-        refresh.Property(t => t.IssuedAt).CurrentValue = refreshToken.IssuedAt;
-        refresh.Property(t => t.ExpiresAt).CurrentValue = refreshToken.ExpiresAt;
-
-        return await context.SaveChangesAsync(cancellationToken) > 0;
+                var refresh = entry.ComplexProperty(s => s.RefreshToken);
+                refresh.Property(t => t.Nonce).CurrentValue = refreshToken.Nonce;
+                refresh.Property(t => t.IssuedAt).CurrentValue = refreshToken.IssuedAt;
+                refresh.Property(t => t.ExpiresAt).CurrentValue = refreshToken.ExpiresAt;
+            },
+            cancellationToken);
     }
 
     public Task InvalidateSession(

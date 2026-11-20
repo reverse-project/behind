@@ -27,6 +27,25 @@ public sealed class UserCommandsTests : IDisposable
     }
 
     [Fact]
+    public async Task DisplayNameSaveDoesNotRestoreStaleEmailVisibility()
+    {
+        var userId = await SeedUserAsync("privacy@test.com");
+        await using var stale = _factory.CreateContext();
+        var snapshot = await stale.Users.SingleAsync(user => EF.Property<Guid>(user, "Id") == userId);
+        await using (var privacy = _factory.CreateContext())
+        {
+            var current = await privacy.Users.SingleAsync(user => EF.Property<Guid>(user, "Id") == userId);
+            privacy.Entry(current).Property(user => user.HideEmail).CurrentValue = !snapshot.HideEmail;
+            await privacy.SaveChangesAsync();
+        }
+        Assert.True(await new UserCommands(stale).ChangeDisplayName(userId, "New name"));
+        await using var reader = _factory.CreateContext();
+        var saved = await reader.Users.SingleAsync(user => EF.Property<Guid>(user, "Id") == userId);
+        Assert.Equal(!snapshot.HideEmail, saved.HideEmail);
+        Assert.Equal("New name", saved.DisplayName);
+    }
+
+    [Fact]
     public async Task ChangeDisplayName_ExistingUser_PersistsTrimmedName()
     {
         var userId = await SeedUserAsync("rename@test.com");

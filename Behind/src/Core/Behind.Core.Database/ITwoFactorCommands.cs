@@ -6,9 +6,9 @@ public interface ITwoFactorCommands
 {
     Task SaveTotp(Guid userId, string secret, CancellationToken cancellationToken = default);
 
-    Task<bool> ConfirmTotp(Guid userId, long step, CancellationToken cancellationToken = default);
+    Task<bool> ConfirmTotp(Guid userId, string expectedSecret, long step, CancellationToken cancellationToken = default);
 
-    Task<bool> AdvanceTotpStep(Guid userId, long step, CancellationToken cancellationToken = default);
+    Task<bool> AdvanceTotpStep(Guid userId, string expectedSecret, long step, CancellationToken cancellationToken = default);
 
     Task<bool> RemoveTotp(Guid userId, CancellationToken cancellationToken = default);
 

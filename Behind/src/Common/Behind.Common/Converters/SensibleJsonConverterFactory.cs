@@ -25,7 +25,6 @@ public sealed class SensibleJsonConverterFactory : JsonConverterFactory
 internal sealed class SensibleJsonConverter<T> : JsonConverter<T> where T : notnull
 {
     private static readonly Dictionary<string, MemberInfo> SensibleMembers = [];
-    private static readonly JsonConverter<T> DefaultConverter = new DefaultJsonConverter<T>();
 
     static SensibleJsonConverter()
     {
@@ -51,7 +50,15 @@ internal sealed class SensibleJsonConverter<T> : JsonConverter<T> where T : notn
 
     public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return JsonSerializer.Deserialize<T>(ref reader, options) ?? throw new JsonException("Deserialization resulted in null");
+        var readOptions = new JsonSerializerOptions(options);
+        for (var index = readOptions.Converters.Count - 1; index >= 0; index--)
+        {
+            if (readOptions.Converters[index] is SensibleJsonConverterFactory)
+            {
+                readOptions.Converters.RemoveAt(index);
+            }
+        }
+        return JsonSerializer.Deserialize<T>(ref reader, readOptions) ?? throw new JsonException("Deserialization resulted in null");
     }
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
@@ -114,18 +121,5 @@ internal sealed class SensibleJsonConverter<T> : JsonConverter<T> where T : notn
         }
 
         writer.WriteEndObject();
-    }
-}
-
-internal sealed class DefaultJsonConverter<T> : JsonConverter<T> where T : notnull
-{
-    public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        return JsonSerializer.Deserialize<T>(ref reader, options) ?? throw new JsonException("Deserialization resulted in null");
-    }
-
-    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
-    {
-        JsonSerializer.Serialize(writer, value, typeof(T), options);
     }
 }

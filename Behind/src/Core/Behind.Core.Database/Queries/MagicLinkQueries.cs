@@ -26,7 +26,8 @@ public sealed class MagicLinkQueries(AbstractCoreContext context) : IMagicLinkQu
     public Task<bool> HasIssuedSince(Guid userId, DateTimeOffset since, CancellationToken cancellationToken = default) =>
         context.MagicLinks.AnyAsync(
             link => EF.Property<Guid>(link, "UserId") == userId
-                    && (link.Function == MagicLinkFunction.SignIn || link.Function == MagicLinkFunction.LostPassword)
+                    && (link.Function == MagicLinkFunction.SignIn || link.Function == MagicLinkFunction.LostPassword
+                        || link.Function == MagicLinkFunction.LegacyPasskeyLink)
                     && link.IssuedAt > since,
             cancellationToken);
 

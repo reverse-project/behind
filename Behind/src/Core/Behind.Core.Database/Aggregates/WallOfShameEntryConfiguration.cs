@@ -32,6 +32,6 @@ public sealed class WallOfShameEntryConfiguration : IEntityTypeConfiguration<Wal
         builder.HasOne<HumanUser>()
             .WithMany()
             .HasForeignKey("GivenById")
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientNoAction);
     }
 }

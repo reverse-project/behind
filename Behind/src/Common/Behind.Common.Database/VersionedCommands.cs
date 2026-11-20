@@ -38,11 +38,19 @@ public abstract class VersionedCommands<TEntity, TDraft>(IModuleContext context)
         TDraft draft,
         CancellationToken cancellationToken = default)
     {
+        await using var transaction = Database.Database.CurrentTransaction is null
+            ? await Database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
         var latest = await Rows.LatestVersionAsync(key, cancellationToken);
 
-        return latest == 0
+        var result = latest == 0
             ? new VersionedSaveResult.NotFound()
             : await AddVersion(key, latest, draft, cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+        return result;
     }
 
     public async Task<VersionedSaveResult> Update(
@@ -51,19 +59,29 @@ public abstract class VersionedCommands<TEntity, TDraft>(IModuleContext context)
         TDraft draft,
         CancellationToken cancellationToken = default)
     {
+        await using var transaction = Database.Database.CurrentTransaction is null
+            ? await Database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
         var latest = await Rows.LatestVersionAsync(key, cancellationToken);
 
-        // The (key, version) primary key rejects a concurrent save of the same successor version.
-        return latest switch
+        var result = latest switch
         {
             0 => new VersionedSaveResult.NotFound(),
             _ when latest != expectedVersion => new VersionedSaveResult.VersionConflict(),
             _ => await AddVersion(key, expectedVersion, draft, cancellationToken)
         };
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+        return result;
     }
 
     public async Task<bool> Delete(Guid key, CancellationToken cancellationToken = default)
     {
+        await using var transaction = Database.Database.CurrentTransaction is null
+            ? await Database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
         if (!await CanDelete(key, cancellationToken))
         {
             return false;
@@ -73,6 +91,10 @@ public abstract class VersionedCommands<TEntity, TDraft>(IModuleContext context)
 
         await Database.SaveChangesAsync(cancellationToken);
 
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         return deleted > 0;
     }
 

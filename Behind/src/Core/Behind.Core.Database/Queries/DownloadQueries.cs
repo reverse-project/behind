@@ -32,6 +32,23 @@ public sealed class DownloadQueries(AbstractCoreContext context, IVfsQueries fil
         return Some(infos);
     }
 
+    public async Task<IReadOnlyList<IDownloadQueries.DownloadInfo>> Latest(int limit, CancellationToken cancellationToken = default)
+    {
+        if (limit <= 0)
+        {
+            return [];
+        }
+        var folders = (await context.ReachableFoldersAsync(cancellationToken)).Select(folder => folder.Key).ToArray();
+        var visible = context.LatestDownloadsIn(DeletionState.Active).Where(download =>
+            folders.Contains(EF.Property<Guid>(download, DownloadConfiguration.FolderIdProperty))
+            && context.VfsFiles.Any(file => EF.Property<Guid>(file, VersionedColumns.Key)
+                == EF.Property<Guid>(download, DownloadConfiguration.FileIdProperty)));
+        var selected = context.NewestCreationFirstThenKey(visible).Take(limit);
+        var infos = await context.ToInfosAsync(selected, cancellationToken);
+        return infos.OrderByDescending(info => info.UploadedAt.GetOrElse(DateTimeOffset.MinValue))
+            .ThenBy(info => info.Id).ToArray();
+    }
+
     public async Task<IDownloadQueries.DeletedDownloads> ListDeleted(CancellationToken cancellationToken = default)
     {
         using var scope = context.SoftDelete.IncludeDeleted();

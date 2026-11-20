@@ -1,6 +1,5 @@
 using System.Buffers.Text;
 using System.ComponentModel.DataAnnotations;
-using System.Security.Cryptography;
 using Behind.Common;
 using Behind.Common.Logging;
 using Behind.Common.WebApi.Middleware;
@@ -9,6 +8,7 @@ using Behind.Core.Database;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Captcha;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.MagicLinks;
 using Behind.Core.WebApi.TwoFactor;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -44,11 +44,7 @@ public sealed class PrimaryPasskeyEndpoints
         context.Response.Headers.CacheControl = "no-store";
         var user = await users.FindByEmailAsync(request.Email);
         var origin = configuration.PasskeyOrigin();
-        var available = user is null
-            ? None
-            : await verification.BeginPasskey(origin, user.Id, context.RequestAborted);
-        var options = available.GetOrElse(() => ceremonies.BeginAssertion(
-            origin, [new PublicKeyCredentialDescriptor(RandomNumberGenerator.GetBytes(32))]));
+        var options = ceremonies.BeginAssertion(origin, []);
         options.UserVerification = UserVerificationRequirement.Required;
         var nonce = Guid.NewGuid();
 
@@ -61,8 +57,76 @@ public sealed class PrimaryPasskeyEndpoints
         }
 
         var ticket = tickets.Create(user?.Id ?? Guid.NewGuid(), TwoFactorStage.PrimaryPasskey, ceremony: options.ToJson())
-            with { Nonce = nonce, Email = request.Email };
+            with
+        { Nonce = nonce, Email = request.Email };
         return Results.Json(new PasskeyAssertionChallenge(tickets.Seal(ticket), options));
+    }
+
+    public sealed record LegacyLinkRequest([property: Required] string Ticket);
+
+    [IgnoreETag]
+    public static async Task<IResult> RequestLegacyLink(
+        OptionsRequest request, HttpContext context, IConfiguration configuration,
+        UserManager<ApplicationUser> users, ITwoFactorTickets tickets, IMagicLinkCommands commands,
+        IMagicLinkMailQueue mailQueue, IMagicLinkQueries queries, IMagicLinkSettingsStore settings,
+        TimeProvider timeProvider)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        var user = await users.FindByEmailAsync(request.Email);
+        var address = user?.Emails.FirstOrDefault(email => email.ConfirmedAt is not null
+            && string.Equals(email.Value, request.Email.Trim(), StringComparison.OrdinalIgnoreCase));
+        var now = timeProvider.GetUtcNow();
+        var cooldown = settings.Current.Map(value => value.EffectiveRequestCooldown)
+            .GetOrElse(MagicLinkSettings.DefaultRequestCooldown);
+        if (user is not null && address is not null
+            && !await queries.HasIssuedSince(user.Id, now - cooldown, context.RequestAborted))
+        {
+            var link = MagicLink.Create(now, TwoFactorTickets.Lifetime, MagicLinkFunction.LegacyPasskeyLink);
+            await commands.Issue(user.Id, link, context.RequestAborted);
+            var ticket = tickets.Create(user.Id, TwoFactorStage.LegacyPasskeyLink)
+                with
+            { Nonce = link.Nonce.Nonce, Email = address.Value };
+            var url = configuration.PasskeyOrigin().ToFrontendLink("/sign-in", [new("legacyPasskey", tickets.Seal(ticket))]);
+            mailQueue.TryEnqueue(new MagicLinkMail(user, address.Value, url, MagicLinkFunction.LegacyPasskeyLink));
+        }
+
+        return Results.NoContent();
+    }
+
+    [IgnoreETag]
+    public static async Task<IResult> LegacyOptions(
+        LegacyLinkRequest request, HttpContext context, IConfiguration configuration,
+        ITwoFactorTickets tickets, IMagicLinkCommands commands, ITwoFactorVerification verification,
+        TimeProvider timeProvider)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        var opened = tickets.Open(request.Ticket)
+            .Where(ticket => ticket.Stage == TwoFactorStage.LegacyPasskeyLink && ticket.Nonce.HasValue);
+        return await opened.Match(
+            () => Task.FromResult<IResult>(Results.Unauthorized()),
+            async ticket =>
+            {
+                var now = timeProvider.GetUtcNow();
+                if (!await commands.ConsumeForFunction(ticket.Nonce!.Value, ticket.UserId,
+                        MagicLinkFunction.LegacyPasskeyLink, now, context.RequestAborted))
+                {
+                    return Results.Unauthorized();
+                }
+
+                var assertion = await verification.BeginPasskey(configuration.PasskeyOrigin(), ticket.UserId, context.RequestAborted);
+                return await assertion.Match(
+                    () => Task.FromResult<IResult>(Results.Unauthorized()),
+                    async options =>
+                    {
+                        options.UserVerification = UserVerificationRequirement.Required;
+                        var challenge = MagicLink.Create(now, TwoFactorTickets.Lifetime, MagicLinkFunction.PasskeyChallenge);
+                        await commands.Issue(ticket.UserId, challenge, context.RequestAborted);
+                        var next = tickets.Create(ticket.UserId, TwoFactorStage.PrimaryPasskey, ceremony: options.ToJson())
+                            with
+                        { Nonce = challenge.Nonce.Nonce, Email = ticket.Email };
+                        return Results.Json(new PasskeyAssertionChallenge(tickets.Seal(next), options));
+                    });
+            });
     }
 
     [IgnoreETag]

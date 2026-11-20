@@ -11,8 +11,11 @@ public sealed class RequestLoggingMiddleware(RequestDelegate next, ILogger<Reque
     public async Task InvokeAsync(HttpContext context)
     {
         var started = Stopwatch.GetTimestamp();
+        var route = (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText is { } template
+            ? Escape(template)
+            : "<unmatched>";
 
-        logger.LogDebug("HTTP {Method} {Path} started", () => [context.Request.Method, (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "<unmatched>"]);
+        logger.LogDebug("HTTP {Method} {Path} started", () => [context.Request.Method, route]);
 
         await next(context);
 
@@ -22,11 +25,16 @@ public sealed class RequestLoggingMiddleware(RequestDelegate next, ILogger<Reque
             () =>
             [
                 context.Request.Method,
-                (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "<unmatched>",
+                route,
                 context.Response.StatusCode,
                 Stopwatch.GetElapsedTime(started).TotalMilliseconds
             ]);
     }
+
+    private static string Escape(string value) => string.Concat(value.Select(character =>
+        char.IsControl(character) || character is '\u2028' or '\u2029'
+            ? $"\\u{(int)character:x4}"
+            : character.ToString()));
 
     private static LogLevel LevelFor(int statusCode) =>
         statusCode switch

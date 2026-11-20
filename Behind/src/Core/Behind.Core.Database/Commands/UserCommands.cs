@@ -27,7 +27,8 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
             () => Task.FromResult(false),
             async user =>
             {
-                repository.Update(userId, user with { DisplayName = displayName.ToDisplayName() });
+                var tracked = await context.Users.SingleAsync(value => EF.Property<Guid>(value, "Id") == userId, cancellationToken);
+                context.Entry(tracked).Property(value => value.DisplayName).CurrentValue = displayName.ToDisplayName();
                 await context.SaveChangesAsync(cancellationToken);
                 return true;
             });

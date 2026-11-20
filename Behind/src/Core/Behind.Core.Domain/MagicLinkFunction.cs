@@ -10,5 +10,6 @@ public enum MagicLinkFunction
     PasswordReset,
     EmailTwoFactor,
     PasskeyChallenge,
-    TwoFactorChallenge
+    TwoFactorChallenge,
+    LegacyPasskeyLink
 }

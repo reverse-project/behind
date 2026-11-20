@@ -106,7 +106,12 @@ public sealed record StartupBackendSection(
     CommentsConfiguration Comments,
     AccountsConfiguration Accounts,
     SchedulerConfiguration Scheduler
-);
+)
+{
+    public int AuditSearchMaxEntries { get; init; } = new BackendConfiguration().AuditSearchMaxEntries;
+
+    public int AuditSearchMaxCandidates { get; init; } = new BackendConfiguration().AuditSearchMaxCandidates;
+}
 
 public sealed record StartupFrontendFile(StartupFrontendSection Frontend);
 

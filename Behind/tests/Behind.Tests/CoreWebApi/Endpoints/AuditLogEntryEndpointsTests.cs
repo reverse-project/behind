@@ -10,6 +10,45 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public class AuditLogEntryEndpointsTests
 {
+    [Theory]
+    [InlineData("1.5")]
+    [InlineData("2147483648")]
+    public async Task AdvancedSearchUsesDefaultForInvalidBudgets(string invalid)
+    {
+        var (queries, requests) = Queries(None);
+        using var settings = new Microsoft.Extensions.Configuration.ConfigurationManager
+        {
+            ["Backend:AuditSearchMaxEntries"] = invalid,
+            ["Backend:AuditSearchMaxCandidates"] = invalid
+        };
+        var result = await AuditLogEntryEndpoints.Get(new DefaultHttpContext(), queries,
+            new FixedTimeProvider(Now), search: "entry", configuration: settings);
+        Assert.IsType<JsonHttpResult<PageResponse<AuditLogItem>>>(result);
+        Assert.Single(requests);
+    }
+
+    [Fact]
+    public async Task AdvancedSearchRejectsExcessiveCandidateRetention()
+    {
+        var (queries, requests) = Queries(None);
+        var result = await AuditLogEntryEndpoints.Get(new DefaultHttpContext(), queries,
+            new FixedTimeProvider(Now), search: "x", page: 1000, pageSize: 100);
+        Assert.IsType<Microsoft.AspNetCore.Http.HttpResults.BadRequest>(result);
+        Assert.Empty(requests);
+    }
+
+    [Fact]
+    public async Task AdvancedSearchRejectsExcessiveHistoryBeforeScanning()
+    {
+        var queries = Substitute.For<IAuditLogEntryQueries>();
+        queries.GetAuditLog(Arg.Any<IAuditLogEntryQueries.RequestAuditLog>(), Arg.Any<CancellationToken>())
+            .Returns(Some(new PagedResult<AuditLogEntry>(10001, 1, 101, 100, None)));
+        var result = await AuditLogEntryEndpoints.Get(new DefaultHttpContext(), queries,
+            new FixedTimeProvider(Now), search: "x");
+        Assert.IsType<Microsoft.AspNetCore.Http.HttpResults.BadRequest>(result);
+        await queries.Received(1).GetAuditLog(Arg.Any<IAuditLogEntryQueries.RequestAuditLog>(), Arg.Any<CancellationToken>());
+    }
+
     private static readonly DateTimeOffset Now = new(2026, 11, 1, 9, 0, 0, TimeSpan.Zero);
 
     private static (IAuditLogEntryQueries Queries, List<IAuditLogEntryQueries.RequestAuditLog> Requests) Queries(

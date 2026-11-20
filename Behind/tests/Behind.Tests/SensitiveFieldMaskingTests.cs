@@ -42,11 +42,11 @@ public sealed class SensitiveFieldMaskingTests
     }
 
     [Fact]
-    public void MaskSensitiveValue_WithSingleCharacter_ReturnsOriginalValue()
+    public void MaskSensitiveValue_WithSingleCharacter_RevealsNoCharacters()
     {
         var value = "a";
         var result = value.MaskSensitiveValue();
-        Assert.Equal("a..a", result);
+        Assert.Equal("....", result);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class SensitiveFieldMaskingTests
     {
         var value = "ab";
         var result = value.MaskSensitiveValue();
-        Assert.Equal("a..b", result);
+        Assert.Equal("....", result);
     }
 
     [Fact]
@@ -71,6 +71,17 @@ public sealed class SensitiveFieldMaskingTests
         string? value = null;
         var result = value?.MaskSensitiveValue();
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void JsonDeserialization_WithSensibleAttribute_DoesNotReenterConverter()
+    {
+        var options = new JsonSerializerOptions();
+        options.Converters.Add(new SensibleJsonConverterFactory());
+        var value = JsonSerializer.Deserialize<TestMixedFields>(
+            """{"SensitiveField":"ab","NormalField":"ordinary"}""", options);
+        Assert.Equal("ab", value!.SensitiveField);
+        Assert.Equal("ordinary", value.NormalField);
     }
 
     [Fact]

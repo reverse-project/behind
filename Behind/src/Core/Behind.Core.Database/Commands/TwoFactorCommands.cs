@@ -1,4 +1,3 @@
-using Behind.Common.Database.Implementation;
 using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -18,30 +17,22 @@ public sealed class TwoFactorCommands(AbstractCoreContext context) : ITwoFactorC
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<bool> ConfirmTotp(Guid userId, long step, CancellationToken cancellationToken = default)
+    public async Task<bool> ConfirmTotp(Guid userId, string expectedSecret, long step, CancellationToken cancellationToken = default)
     {
-        var rows = await context.TotpsOf(userId)
-            .Where(totp => !totp.IsConfirmed)
-            .Select(totp => new { Id = EF.Property<Guid>(totp, "Id"), Totp = totp })
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        var row = rows.FirstOrDefault();
-
-        if (row is null)
-        {
-            return false;
-        }
-
-        context.UpdateImmutable([row.Id], row.Totp with { IsConfirmed = true, LastUsedStep = step });
-        await context.SaveChangesAsync(cancellationToken);
-
-        return true;
+        return await context.UpdateMatchingRowAsync(
+            context.TotpsOf(userId).Where(totp => !totp.IsConfirmed && totp.Secret == expectedSecret),
+            setters => setters.SetProperty(totp => totp.IsConfirmed, false),
+            entry =>
+            {
+                entry.Property(totp => totp.IsConfirmed).CurrentValue = true;
+                entry.Property(totp => totp.LastUsedStep).CurrentValue = step;
+            },
+            cancellationToken);
     }
 
-    public async Task<bool> AdvanceTotpStep(Guid userId, long step, CancellationToken cancellationToken = default) =>
+    public async Task<bool> AdvanceTotpStep(Guid userId, string expectedSecret, long step, CancellationToken cancellationToken = default) =>
         await context.TotpsOf(userId)
-            .Where(totp => totp.IsConfirmed && totp.LastUsedStep < step)
+            .Where(totp => totp.IsConfirmed && totp.Secret == expectedSecret && totp.LastUsedStep < step)
             .ExecuteUpdateAsync(setters => setters.SetProperty(totp => totp.LastUsedStep, step), cancellationToken)
         > 0;
 
@@ -89,6 +80,9 @@ public sealed class TwoFactorCommands(AbstractCoreContext context) : ITwoFactorC
         IReadOnlyList<string> hashes,
         CancellationToken cancellationToken = default)
     {
+        await using var transaction = context.Database.CurrentTransaction is null
+            ? await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
         context.UserRecoveryCodes.RemoveRange(await context.RecoveryCodesOf(userId).ToListAsync(cancellationToken));
 
         foreach (var hash in hashes)
@@ -98,6 +92,10 @@ public sealed class TwoFactorCommands(AbstractCoreContext context) : ITwoFactorC
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
     }
 
     public async Task<bool> ConsumeRecoveryCode(

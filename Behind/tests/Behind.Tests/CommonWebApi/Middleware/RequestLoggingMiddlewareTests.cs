@@ -29,6 +29,32 @@ public class RequestLoggingMiddlewareTests
         return logger;
     }
 
+    [Theory]
+    [InlineData(false, "<unmatched>")]
+    [InlineData(true, "/configured\\u000d\\u000a\\u0009\\u2028")]
+    public async Task InvokeAsync_ControlCharactersCannotCreateLogLines(bool matched, string expectedPath)
+    {
+        var logger = new CapturingLogger<RequestLoggingMiddleware>();
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/forged\r\nentry\t\u2028";
+        if (matched)
+        {
+            var route = RoutePatternFactory.Parse("/configured");
+            route = RoutePatternFactory.Pattern("/configured\r\n\t\u2028", route.PathSegments);
+            context.SetEndpoint(new RouteEndpoint(_ => Task.CompletedTask, route, 0, null, null));
+        }
+
+        await new RequestLoggingMiddleware(_ => Task.CompletedTask, logger).InvokeAsync(context);
+        Assert.All(logger.Entries, entry =>
+        {
+            Assert.DoesNotContain("\r", entry.Message);
+            Assert.DoesNotContain("\n", entry.Message);
+            Assert.DoesNotContain("\t", entry.Message);
+            Assert.DoesNotContain("\u2028", entry.Message);
+            Assert.Equal(expectedPath, entry.State["Path"]);
+        });
+    }
+
     [Fact]
     public async Task InvokeAsync_LogsDebugOnStart()
     {

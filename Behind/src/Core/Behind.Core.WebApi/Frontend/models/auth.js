@@ -373,8 +373,16 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
     return {
         twoFactor: twoFactor,
 
-        signInWithPasskey: function (email, captcha) {
-            if (!email || !email.trim()) {
+        requestLegacyPasskeyLink: function (email, captcha) {
+            return http.post("/sign/in/passkey/legacy-link", { email: email, captcha: captcha }).then(function (response) {
+                return response.ok ? success("auth.magicLink.requested") : failure(response, {
+                    400: "auth.passkey.invalidEmail", 429: "auth.tooManyAttempts"
+                });
+            });
+        },
+
+        signInWithPasskey: function (email, captcha, legacyTicket) {
+            if (!legacyTicket && (!email || !email.trim())) {
                 return incomplete("auth.passkey.invalidEmail");
             }
 
@@ -389,8 +397,8 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
             };
 
             return passkeyCeremony(
-                "/sign/in/passkey/options",
-                { email: email, captcha: captcha },
+                legacyTicket ? "/sign/in/passkey/legacy-options" : "/sign/in/passkey/options",
+                legacyTicket ? { ticket: legacyTicket } : { email: email, captcha: captcha },
                 webauthn.get,
                 function (ticket, credential) {
                     return http.post("/sign/in/passkey", { ticket: ticket, credential: credential }).then(function (response) {
@@ -446,7 +454,30 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
                 return incomplete("auth.magicLink.incomplete");
             }
 
-            return http.post("/sign/in/magiclink/redeem", { token: token }).then(function (response) {
+            return http.post("/sign/in/magiclink/redeem", { token: token }).then(async function (response) {
+                if (response.ok && response.data && response.data.accessToken) {
+                    try {
+                        var identityResponse = await fetch("/session", {
+                            headers: { Authorization: "Bearer " + response.data.accessToken },
+                            credentials: "omit",
+                            cache: "no-store"
+                        });
+                        if (!identityResponse.ok) {
+                            return incomplete("auth.magicLink.invalid");
+                        }
+                        var identity = await identityResponse.json();
+                        if (!identity.user || !identity.user.id) {
+                            return incomplete("auth.magicLink.invalid");
+                        }
+                        var account = user.label(identity.user);
+                        if (!window.confirm(i18n.t("magiclink.confirmAccount").replace("{account}", account))) {
+                            return incomplete("auth.magicLink.invalid");
+                        }
+                    } catch (error) {
+                        return incomplete("auth.magicLink.invalid");
+                    }
+                }
+
                 if (response.ok) {
                     return completed(response);
                 }

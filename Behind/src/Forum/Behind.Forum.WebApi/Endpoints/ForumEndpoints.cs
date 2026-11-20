@@ -209,7 +209,7 @@ public static class ForumEndpoints
             return Results.Forbid();
         }
 
-        return (await commands.Update(id, post.Entity with
+        return (await commands.Update(id, post.Version, post.Entity with
         {
             Title = post.Entity.TopicId.HasValue ? "" : request.Title ?? "",
             Body = request.Body,
@@ -251,7 +251,7 @@ public static class ForumEndpoints
         var post = await queries.Post(id, http.RequestAborted);
 
         return post is null ? Results.NotFound()
-            : (await commands.Update(id, post.Entity with { State = request.State }, http.RequestAborted)).ToResult();
+            : (await commands.Update(id, post.Version, post.Entity with { State = request.State }, http.RequestAborted)).ToResult();
     }
 
     [IgnoreETag]

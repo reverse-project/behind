@@ -364,10 +364,11 @@ public sealed class PrivateMessageStore(AbstractCoreContext context) : IReportCo
             return Result.Failure("invalid-reply");
         }
 
-        if (!snapshot.Conversation.IsSystem && snapshot.Recipients.Count == 1 && !snapshot.Recipients[0].IsRole)
+        if (!snapshot.Conversation.IsSystem && (audience is not null
+            || snapshot.Recipients.Count == 1 && !snapshot.Recipients[0].IsRole))
         {
             var other = snapshot.Conversation.SenderId == viewer
-                ? snapshot.Recipients.Single(x => !x.IsRole).RecipientId : snapshot.Conversation.SenderId;
+                ? audience ?? snapshot.Recipients.Single(x => !x.IsRole).RecipientId : snapshot.Conversation.SenderId;
             if (await IsBlocked(viewer, other, cancellationToken))
             {
                 return Result.Failure("blocked");

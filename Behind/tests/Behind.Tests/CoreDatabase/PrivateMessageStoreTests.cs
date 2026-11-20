@@ -34,6 +34,19 @@ public sealed class PrivateMessageStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task BlockedHiddenRecipientCannotReplyPrivatelyInMultiRecipientConversation()
+    {
+        await using var context = Context(true);
+        var store = new PrivateMessageStore(context);
+        var created = await store.Create(_sender, "subject", "initial", [_recipient], [], [_hidden], [], true, false);
+        Assert.True(created.Succeeded);
+        Assert.True((await store.SetBlock(_sender, _hidden, true)).Succeeded);
+        var reply = await store.Reply(_hidden, created.Id!.Value, "blocked private contact");
+        Assert.False(reply.Succeeded);
+        Assert.Single((await store.Find(_sender, created.Id.Value))!.Messages);
+    }
+
+    [Fact]
     public async Task HiddenRepliesDoNotAffectOtherViewersOrExposeEvidence()
     {
         await using var context = Context(true);

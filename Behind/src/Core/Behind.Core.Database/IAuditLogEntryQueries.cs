@@ -13,11 +13,15 @@ public interface IAuditLogEntryQueries
         OrderByCollection OrderByCollection
     )
     {
+        public int? KnownTotal { get; init; }
+
         public static RequestAuditLog Create(DateOnly fromDate, DateOnly toDate,
             Filter<AuditLogEntry> filter, Flipper flipper, string orderBy) =>
             new(fromDate, toDate, filter, flipper, orderBy.Create());
     }
-    
+
+    Task<IAsyncDisposable> BeginReadSnapshot(CancellationToken cancellationToken);
+
     Task<Option<PagedResult<AuditLogEntry>>> GetAuditLog(RequestAuditLog request, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<string>> GetEntityTypes(CancellationToken cancellationToken = default);

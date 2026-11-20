@@ -19,6 +19,17 @@ public class MinifyingFileProviderTests
         new(directory.Provider, ContentMinifiers.Default);
 
     [Fact]
+    public void GetFileInfo_CaseAliasesShareEmbeddedSnapshot()
+    {
+        var embedded = new ManifestEmbeddedFileProvider(typeof(Behind.Core.WebApi.CoreModule).Assembly, "Frontend");
+        var provider = new MinifyingFileProvider(embedded, ContentMinifiers.Default);
+        var first = provider.GetFileInfo("models/session.js");
+        var second = provider.GetFileInfo("MODELS/SESSION.JS");
+        Assert.True(first.Exists);
+        Assert.Same(first, second);
+    }
+
+    [Fact]
     public void GetFileInfo_Script_ReturnsMinifiedContentWithMatchingLength()
     {
         using var directory = new TempFrontendDirectory(new Dictionary<string, string> { ["app.js"] = Script });

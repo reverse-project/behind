@@ -1,12 +1,14 @@
 using Behind.Common;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
+using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using static Behind.Common.FunctionalExtensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace Behind.Core.WebApi.Endpoints;
 
@@ -51,7 +53,8 @@ public static class AuditLogEntryEndpoints
         [FromQuery] string? behalfOf = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool descending = false,
-        [FromQuery] bool entityExact = false)
+        [FromQuery] bool entityExact = false,
+        IConfiguration? configuration = null)
     {
         httpContext.Response.Headers.CacheControl = "no-store";
 
@@ -82,10 +85,10 @@ public static class AuditLogEntryEndpoints
             || !string.IsNullOrEmpty(actor) || !string.IsNullOrEmpty(behalfOf)
             || (sortBy is not null && sortBy != "timestamp"))
         {
-            return Results.Json(await Search(
+            return await Search(
                 queries, from, to, searchTerm.Match(() => "", term => term),
                 entity, entityExact, action, actor, behalfOf, sortBy ?? "timestamp",
-                sortBy is null ? !oldestFirst : descending, flipper, httpContext.RequestAborted));
+                sortBy is null ? !oldestFirst : descending, flipper, httpContext.RequestAborted, configuration);
         }
 
         var entries = await queries.GetAuditLog(
@@ -109,13 +112,20 @@ public static class AuditLogEntryEndpoints
                 .ToPageResponse(entry => entry.ToItem(labels))));
     }
 
-    private static async Task<PageResponse<AuditLogItem>> Search(
+    private static async Task<IResult> Search(
         IAuditLogEntryQueries queries, DateOnly from, DateOnly to, string search, string? entity, bool entityExact,
         string? action, string? actor, string? behalfOf, string sortBy, bool descending,
-        Flipper flipper, CancellationToken cancellationToken)
+        Flipper flipper, CancellationToken cancellationToken, IConfiguration? configuration)
     {
         var skip = ((long)flipper.Index - 1) * flipper.Size;
         var keep = (int)Math.Min(skip + flipper.Size, int.MaxValue);
+        var budgets = BackendConfiguration.Read(configuration);
+        if (keep > budgets.AuditSearchMaxCandidates)
+        {
+            return Results.BadRequest();
+        }
+        await using var snapshot = await queries.BeginReadSnapshot(cancellationToken);
+        int? knownTotal = null;
         var comparer = Comparer<Candidate>.Create((left, right) =>
         {
             var comparison = sortBy switch
@@ -141,7 +151,12 @@ public static class AuditLogEntryEndpoints
         {
             var request = IAuditLogEntryQueries.RequestAuditLog.Create(
                 from, to, new EmptyFilter<AuditLogEntry>(), new Flipper(batch, MaxPageSize), NewestFirst);
-            var result = await queries.GetAuditLog(request, cancellationToken);
+            var result = await queries.GetAuditLog(request with { KnownTotal = knownTotal }, cancellationToken);
+            knownTotal ??= result.Match(() => 0, page => (int)page.Total);
+            if (knownTotal > budgets.AuditSearchMaxEntries)
+            {
+                return Results.BadRequest();
+            }
             var entries = result.Match(
                 () => (IReadOnlyList<AuditLogEntry>)[],
                 page => page.Results.Match(() => (IReadOnlyList<AuditLogEntry>)[], items => items.ToList()));
@@ -189,8 +204,8 @@ public static class AuditLogEntryEndpoints
 
         var itemsOnPage = matches.UnorderedItems.Select(pair => pair.Element).OrderBy(item => item, comparer)
             .Skip((int)skip).Take(flipper.Size).Select(item => item.Item).ToList();
-        return new PageResponse<AuditLogItem>(
-            total, flipper.Index, flipper.PageCount(total), flipper.Size, itemsOnPage);
+        return Results.Json(new PageResponse<AuditLogItem>(
+            total, flipper.Index, flipper.PageCount(total), flipper.Size, itemsOnPage));
     }
 
     private sealed record Candidate(AuditLogItem Item, long Position);

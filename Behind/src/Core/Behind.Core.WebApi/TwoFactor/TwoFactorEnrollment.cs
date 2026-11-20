@@ -77,7 +77,7 @@ public sealed class TwoFactorEnrollment(
 
         return await step.Match(
             () => Task.FromResult<Option<Enrolled>>(None),
-            async matched => await commands.ConfirmTotp(userId, matched, cancellationToken)
+            async matched => await commands.ConfirmTotp(userId, stored.Match(() => string.Empty, totp => totp.Secret), matched, cancellationToken)
                 ? Some(await Enabled(userId, cancellationToken))
                 : None);
     }

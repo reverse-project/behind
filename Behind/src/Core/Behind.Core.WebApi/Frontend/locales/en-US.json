@@ -2,6 +2,7 @@
   "name": "English (International)",
   "flag": "🇺🇸",
   "messages": {
+    "magiclink.confirmAccount": "Sign in as {account}? This will replace your current session.",
     "settings.caching.help": "Caching changes require a restart. Choose Memory or RedisCompatible. Key selects a masked value in ConnectionStrings; missing connections use memory only. Leave a connection value blank to keep its stored secret; clear Key to disable the distributed backend.",
     "audit.entities.ActiveVersion": "Active version",
     "audit.entities.ContentAgeOption": "Content age option",
@@ -461,6 +462,7 @@
     "signin.email": "Email",
     "signin.password": "Password",
     "signin.submit": "Sign in",
+    "signin.legacyPasskey": "Email me a link to use an older security key",
     "signin.passkey": "Sign in with a passkey",
     "signin.magicLink": "Email me a sign in link",
     "signin.oidc.provider": "Sign in with {0}",

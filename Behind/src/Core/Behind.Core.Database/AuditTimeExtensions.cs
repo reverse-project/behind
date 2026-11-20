@@ -114,6 +114,15 @@ public static class AuditTimeExtensions
                 .ToDictionary(group => group.Key, group => group.Min(entry => entry.Timestamp));
         }
 
+        internal IOrderedQueryable<TEntity> NewestCreationFirstThenKey<TEntity>(IQueryable<TEntity> source)
+            where TEntity : class
+        {
+            var creation = context.CreationTime<TEntity>(null);
+            var timestamp = Expression.Lambda<Func<TEntity, DateTimeOffset>>(
+                Expression.Coalesce(creation.Body, Expression.Constant(DateTimeOffset.MinValue)), creation.Parameters);
+            return source.OrderByDescending(timestamp).ThenByKey(false);
+        }
+
         private Expression<Func<TEntity, DateTimeOffset?>> CreationTime<TEntity>(
             Expression<Func<TEntity, DateTimeOffset?>>? overriddenBy)
             where TEntity : class

@@ -217,21 +217,24 @@ public sealed class AccessTests : IDisposable
         Assert.Equal("Support", found.Match(() => "", result => result.Role.Name));
     }
 
-    [Fact]
-    public async Task CreateRole_ExistingNameIgnoringCase_ReturnsNone()
+    [Theory]
+    [InlineData(DomainConstants.AdministratorsRole, true)]
+    [InlineData("administrators", false)]
+    public async Task CreateRole_BuiltInNameMustMatchExactlyToBeDuplicate(string name, bool duplicate)
     {
         await SeedUserWithAsync();
         await using var ctx = _factory.CreateContext();
 
-        Assert.Equal(None, await new RoleCommands(ctx, AccessCatalog.Core).Create("administrators"));
+        Assert.Equal(duplicate, (await new RoleCommands(ctx, AccessCatalog.Core).Create(name)).IsNone());
     }
 
     [Theory]
-    [InlineData("ÉQUIPE", "équipe", true)]
-    [InlineData("σ", "ς", true)]
+    [InlineData("ÉQUIPE", "ÉQUIPE", true)]
+    [InlineData("ÉQUIPE", "équipe", false)]
+    [InlineData("σ", "ς", false)]
     [InlineData("s", "ſ", false)]
     [InlineData("i", "İ", false)]
-    public async Task CreateRole_UsesOrdinalCaseInsensitiveUniqueness(string first, string second, bool duplicate)
+    public async Task CreateRole_UsesOrdinalCaseSensitiveUniqueness(string first, string second, bool duplicate)
     {
         await using var context = _factory.CreateContext();
         var commands = new RoleCommands(context, AccessCatalog.Core);

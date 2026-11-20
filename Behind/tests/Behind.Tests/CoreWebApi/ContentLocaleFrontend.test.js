@@ -340,7 +340,7 @@ async function main() {
     const editorElement = {
         set innerHTML(value) {},
         get innerHTML() { return '<img src="' + outputImage.src + '">'; },
-        querySelectorAll() { return [outputImage]; }
+        content: { querySelectorAll() { return [outputImage]; } }
     };
     let replaced = false;
     const quill = {

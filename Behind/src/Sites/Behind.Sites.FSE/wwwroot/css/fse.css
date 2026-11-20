@@ -273,6 +273,11 @@ h4, .h4, h5, .h5, h6, .h6 {
     padding: 1rem;
 }
 
+.behind-layout-section-full:has(> .behind-layout-cell > #main-container .behind-site-leading-carousel) {
+    border-top-width: 0;
+    padding-top: 0;
+}
+
 .behind-layout-section-full .behind-widget {
     border-color: transparent;
     background-color: transparent;
@@ -414,6 +419,10 @@ a.card:hover,
 
 #main-container:has(.behind-site-leading-carousel) {
     margin-top: 0 !important;
+}
+
+.behind-layout #main-container.behind-layout-content:has(.behind-site-leading-carousel) {
+    padding-top: 0;
 }
 
 .behind-carousel .carousel-inner {

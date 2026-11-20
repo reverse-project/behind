@@ -1,4 +1,3 @@
-using Behind.Common.Database.Implementation;
 using Behind.Core.Database.Aggregates;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -20,11 +19,15 @@ public sealed class TwoFactorCommands(AbstractCoreContext context) : ITwoFactorC
 
     public async Task<bool> ConfirmTotp(Guid userId, string expectedSecret, long step, CancellationToken cancellationToken = default)
     {
-        return await context.TotpsOf(userId)
-            .Where(totp => !totp.IsConfirmed && totp.Secret == expectedSecret)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(totp => totp.IsConfirmed, true)
-                .SetProperty(totp => totp.LastUsedStep, step), cancellationToken) == 1;
+        return await context.UpdateMatchingRowAsync(
+            context.TotpsOf(userId).Where(totp => !totp.IsConfirmed && totp.Secret == expectedSecret),
+            setters => setters.SetProperty(totp => totp.IsConfirmed, false),
+            entry =>
+            {
+                entry.Property(totp => totp.IsConfirmed).CurrentValue = true;
+                entry.Property(totp => totp.LastUsedStep).CurrentValue = step;
+            },
+            cancellationToken);
     }
 
     public async Task<bool> AdvanceTotpStep(Guid userId, string expectedSecret, long step, CancellationToken cancellationToken = default) =>

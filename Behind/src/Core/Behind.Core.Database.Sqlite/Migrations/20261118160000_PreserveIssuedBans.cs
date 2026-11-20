@@ -5,7 +5,7 @@ namespace Behind.Core.Database.Sqlite.Migrations;
 
 [DbContext(typeof(CoreContextSqlite))]
 [Migration("20261118160000_PreserveIssuedBans")]
-public sealed class PreserveIssuedBans : Migration
+public sealed partial class PreserveIssuedBans : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {

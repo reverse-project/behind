@@ -68,8 +68,8 @@ Schema-only corrections are versioned; do not overwrite published contracts.
 Both values are read through configuration for each search and clamped to at least
 1 at runtime. A search exceeding its scan budget or requesting a page beyond the
 candidate budget returns HTTP 400 rather than an incomplete successful result.
-The published schema retains the existing numeric acceptance rules; it does not
-replace runtime binding, integer conversion or resource-budget enforcement.
+The schema accepts 32-bit signed integers for both budgets. Values that cannot
+be read as integers at runtime use the corresponding default.
 
 This is an additive configuration change: files omitting these properties retain
 the defaults, and existing installations require no file migration. Startup

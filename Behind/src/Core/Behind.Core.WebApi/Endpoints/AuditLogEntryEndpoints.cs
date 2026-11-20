@@ -1,6 +1,7 @@
 using Behind.Common;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
+using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using static Behind.Common.FunctionalExtensions;
@@ -118,12 +119,12 @@ public static class AuditLogEntryEndpoints
     {
         var skip = ((long)flipper.Index - 1) * flipper.Size;
         var keep = (int)Math.Min(skip + flipper.Size, int.MaxValue);
-        var maxEntries = Math.Max(1, configuration?.GetValue<int?>("Backend:AuditSearchMaxEntries") ?? 10000);
-        var maxCandidates = Math.Max(1, configuration?.GetValue<int?>("Backend:AuditSearchMaxCandidates") ?? 10000);
-        if (keep > maxCandidates)
+        var budgets = BackendConfiguration.Read(configuration);
+        if (keep > budgets.AuditSearchMaxCandidates)
         {
             return Results.BadRequest();
         }
+        await using var snapshot = await queries.BeginReadSnapshot(cancellationToken);
         int? knownTotal = null;
         var comparer = Comparer<Candidate>.Create((left, right) =>
         {
@@ -152,7 +153,7 @@ public static class AuditLogEntryEndpoints
                 from, to, new EmptyFilter<AuditLogEntry>(), new Flipper(batch, MaxPageSize), NewestFirst);
             var result = await queries.GetAuditLog(request with { KnownTotal = knownTotal }, cancellationToken);
             knownTotal ??= result.Match(() => 0, page => (int)page.Total);
-            if (knownTotal > maxEntries)
+            if (knownTotal > budgets.AuditSearchMaxEntries)
             {
                 return Results.BadRequest();
             }

@@ -5,7 +5,7 @@ namespace Behind.Core.Database.Sqlite.Migrations;
 
 [DbContext(typeof(CoreContextSqlite))]
 [Migration("20261117120000_RoleNameUniqueness")]
-public sealed class RoleNameUniqueness : Migration
+public sealed partial class RoleNameUniqueness : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {

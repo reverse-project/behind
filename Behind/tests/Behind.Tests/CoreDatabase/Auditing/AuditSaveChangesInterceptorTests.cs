@@ -255,6 +255,34 @@ public sealed class AuditSaveChangesInterceptorTests : IDisposable
     }
 
     [Fact]
+    public async Task RollingBackTokenRenewalAndTotpConfirmationAlsoRollsBackTheirAudits()
+    {
+        var sessionId = await SeedSessionAsync();
+        await using var context = Audited();
+        var commands = new TwoFactorCommands(context);
+        await commands.SaveTotp(_actorId, "PENDING");
+        var original = await context.Sessions.AsNoTracking().SingleAsync();
+        var replacement = NewSession();
+        await using (var transaction = await context.Database.BeginTransactionAsync())
+        {
+            Assert.True(await commands.ConfirmTotp(_actorId, "PENDING", 42));
+            Assert.True(await new SessionCommands(context).RenewTokens(sessionId,
+                original.AccessToken.Nonce, original.RefreshToken.Nonce, replacement.AccessToken, replacement.RefreshToken));
+            var actions = await context.AuditLogEntries
+                .Where(entry => entry.EntityName == nameof(UserTotp) || entry.EntityName == nameof(ValidSession))
+                .Select(entry => entry.Action).ToListAsync();
+            Assert.Equal(2, actions.OfType<AuditLogEntry.Updated>().Count());
+            await transaction.RollbackAsync();
+        }
+
+        await using var read = _factory.CreateContext();
+        Assert.False((await read.UserTotps.SingleAsync()).IsConfirmed);
+        Assert.Equal(original.RefreshToken.Nonce, (await read.Sessions.SingleAsync()).RefreshToken.Nonce);
+        var persisted = await read.AuditLogEntries.Select(entry => entry.Action).ToListAsync();
+        Assert.Empty(persisted.OfType<AuditLogEntry.Updated>());
+    }
+
+    [Fact]
     public async Task Replace_Session_MasksTokenNonces()
     {
         var sessionId = await SeedSessionAsync();

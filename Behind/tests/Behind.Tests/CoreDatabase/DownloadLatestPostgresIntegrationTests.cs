@@ -31,7 +31,8 @@ public sealed class DownloadLatestPostgresIntegrationTests
         context.DownloadFolders.Add(folder);
         context.Entry(folder).StampVersionedKey(folderId, 1);
         var keys = new List<Guid>();
-        for (var index = 0; index < 3; index++)
+        var now = DateTimeOffset.UtcNow;
+        for (var index = 0; index < 4; index++)
         {
             var id = Guid.NewGuid();
             var fileId = Guid.NewGuid();
@@ -45,15 +46,18 @@ public sealed class DownloadLatestPostgresIntegrationTests
             var file = new VfsFile(VfsTypes.Downloads, "file.txt", "text/plain", 1, id);
             context.VfsFiles.Add(file);
             context.Entry(file).StampVersionedKey(fileId, 1);
-            context.AuditLogEntries.Add(new AuditLogEntry(nameof(Download), $"{id}:1", new AuditLogEntry.Created(),
-                DateTimeOffset.UtcNow.AddDays(index - 3)));
+            if (index < 3)
+            {
+                context.AuditLogEntries.Add(new AuditLogEntry(nameof(Download), $"{id}:1", new AuditLogEntry.Created(),
+                    index == 0 ? now.AddDays(-1) : now));
+            }
         }
         await context.SaveChangesAsync();
         recorder.Commands.Clear();
 
         var result = await new DownloadQueries(context, Substitute.For<IVfsQueries>()).Latest(1);
 
-        Assert.Equal(keys[2], Assert.Single(result).Id);
+        Assert.Equal(keys.Skip(1).Take(2).Min(), Assert.Single(result).Id);
         Assert.Contains(recorder.Commands, command => command.Contains("FROM \"Downloads\"", StringComparison.Ordinal)
             && command.Contains("LIMIT", StringComparison.Ordinal));
         Assert.Empty(await new DownloadQueries(context, Substitute.For<IVfsQueries>()).Latest(0));

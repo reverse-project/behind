@@ -5,7 +5,7 @@ namespace Behind.Core.Database.Postgres.Migrations;
 
 [DbContext(typeof(CoreContextPostgres))]
 [Migration("20261118160000_PreserveIssuedBans")]
-public sealed class PreserveIssuedBans : Migration
+public sealed partial class PreserveIssuedBans : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {

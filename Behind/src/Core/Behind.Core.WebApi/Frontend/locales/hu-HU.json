@@ -462,6 +462,7 @@
     "signin.email": "E-mail",
     "signin.password": "Jelszó",
     "signin.submit": "Bejelentkezés",
+    "signin.legacyPasskey": "Hivatkozás kérése e-mailben régebbi biztonsági kulcs használatához",
     "signin.passkey": "Bejelentkezés hozzáférési kulccsal",
     "signin.magicLink": "Bejelentkezési hivatkozás küldése e-mailben",
     "signin.oidc.provider": "Bejelentkezés ezzel: {0}",

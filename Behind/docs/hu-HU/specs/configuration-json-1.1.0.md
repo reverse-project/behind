@@ -68,9 +68,8 @@ A `backend.json` `Backend` szakasza két opcionális numerikus mezővel bővül:
 
 A rendszer minden keresésnél a konfigurációból olvassa az értékeket, futásidőben
 legalább 1-re igazítva őket. A beolvasási keretet túllépő keresés vagy a jelöltkereten
-túli lap kérése HTTP 400 választ ad hiányos sikeres eredmény helyett. A közzétett séma
-megtartja a meglévő numerikus elfogadási szabályokat; nem helyettesíti a futásidejű
-kötést, az egész számmá alakítást vagy az erőforráskeretek betartatását.
+túli lap kérése HTTP 400 választ ad hiányos sikeres eredmény helyett. A séma mindkét kerethez 32 bites előjeles egész számot fogad el.
+Ha az érték futásidőben nem alakítható egész számmá, az alapérték érvényesül.
 
 Ez kiegészítő konfigurációváltozás: a mezőket elhagyó fájlok az alapértékeket kapják,
 a meglévő telepítések fájljait nem kell migrálni. Az induló generálás mindkét alapértéket

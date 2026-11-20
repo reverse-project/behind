@@ -1,5 +1,6 @@
 using Behind.Common.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Testcontainers.PostgreSql;
 
@@ -16,8 +17,11 @@ public sealed class CommonSecurityGraphPostgresIntegrationTests
         await using var postgres = new PostgreSqlBuilder(configuration["Postgres:Image"]
             ?? throw new InvalidOperationException("Postgres:Image is required.")).Build();
         await postgres.StartAsync();
+        var readCounts = new List<int>();
         await using var context = new GraphContext(new DbContextOptionsBuilder<GraphContext>()
-            .UseNpgsql(postgres.GetConnectionString()).Options);
+            .UseNpgsql(postgres.GetConnectionString())
+            .LogTo((id, _) => id == RelationalEventId.DataReaderDisposing,
+                data => readCounts.Add(((DataReaderDisposingEventData)data).ReadCount)).Options);
         await context.Database.EnsureCreatedAsync();
         var root = Guid.NewGuid();
         var portrait = Guid.NewGuid();
@@ -32,7 +36,14 @@ public sealed class CommonSecurityGraphPostgresIntegrationTests
             context.Nodes.Add(new GraphNode(key, 1, parent, null, false));
             parent = key;
         }
+        context.Nodes.Add(new GraphNode(Guid.NewGuid(), 1, Guid.NewGuid(), Guid.NewGuid(), false));
         await context.SaveChangesAsync();
+        readCounts.Clear();
+
+        var isolated = Guid.NewGuid();
+        Assert.Equal(isolated, Assert.Single(await context.InheritContentRestrictions([isolated])));
+        Assert.NotEmpty(readCounts);
+        Assert.All(readCounts, count => Assert.InRange(count, 0, 1));
 
         var blocked = await context.InheritContentRestrictions([root]);
 
@@ -41,6 +52,7 @@ public sealed class CommonSecurityGraphPostgresIntegrationTests
         Assert.Equal(104, blocked.Length);
         var locale = await context.ResolveContentLocales([new ContentLocaleItem(nameof(GraphNode), root, "hu-HU")], "en-US");
         Assert.Contains(nameof(GraphNode) + ":" + parent, locale.HiddenKeys);
+        Assert.Equal("hu-HU", locale.EffectiveLocales[nameof(GraphNode) + ":" + parent]);
         Assert.Contains(nameof(GraphNode) + ":" + child, locale.HiddenKeys);
     }
 

@@ -22,6 +22,7 @@
   "$defs": {
     "Text": { "type": ["string", "null"] },
     "Boolean": { "type": "boolean" },
+    "Int32": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 },
     "Number": { "type": "number" },
     "StringList": { "type": ["array", "null"], "items": { "type": "string" } },
     "CachingProvider": { "type": "string", "enum": ["Memory", "RedisCompatible"] },
@@ -49,8 +50,8 @@
       "type": ["object", "null"],
       "properties": {
         "DataDirectory": { "$ref": "#/$defs/Text" },
-        "AuditSearchMaxEntries": { "$ref": "#/$defs/Number" },
-        "AuditSearchMaxCandidates": { "$ref": "#/$defs/Number" },
+        "AuditSearchMaxEntries": { "$ref": "#/$defs/Int32" },
+        "AuditSearchMaxCandidates": { "$ref": "#/$defs/Int32" },
         "Accounts": { "$ref": "#/$defs/AccountsConfiguration" },
         "Comments": { "$ref": "#/$defs/CommentsConfiguration" },
         "ContentRestrictions": { "$ref": "#/$defs/ContentRestrictionsConfiguration" },

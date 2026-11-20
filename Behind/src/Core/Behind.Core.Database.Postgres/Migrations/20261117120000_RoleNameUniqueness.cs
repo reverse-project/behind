@@ -5,7 +5,7 @@ namespace Behind.Core.Database.Postgres.Migrations;
 
 [DbContext(typeof(CoreContextPostgres))]
 [Migration("20261117120000_RoleNameUniqueness")]
-public sealed class RoleNameUniqueness : Migration
+public sealed partial class RoleNameUniqueness : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {

@@ -18,7 +18,8 @@ public enum TwoFactorStage
     Verify,
     Setup,
     Profile,
-    PrimaryPasskey
+    PrimaryPasskey,
+    LegacyPasskeyLink
 }
 
 public sealed record TwoFactorTicket(

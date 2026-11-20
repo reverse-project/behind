@@ -48,9 +48,15 @@ public sealed class VirtualAuthenticator : IDisposable
         AssertionOptions options,
         string origin,
         byte[]? userHandle = null,
-        byte[]? claimedCredentialId = null)
+        byte[]? claimedCredentialId = null,
+        bool discoverable = true)
     {
         var credentialId = claimedCredentialId ?? CredentialId;
+        if (!discoverable && !options.AllowCredentials.Any(descriptor => descriptor.Id.SequenceEqual(CredentialId)))
+        {
+            throw new InvalidOperationException("The request does not allow the non-discoverable credential.");
+        }
+
         Counter++;
 
         var clientData = ClientData("webauthn.get", options.Challenge, origin);

@@ -462,6 +462,7 @@
     "signin.email": "Email",
     "signin.password": "Password",
     "signin.submit": "Sign in",
+    "signin.legacyPasskey": "Email me a link to use an older security key",
     "signin.passkey": "Sign in with a passkey",
     "signin.magicLink": "Email me a sign in link",
     "signin.oidc.provider": "Sign in with {0}",

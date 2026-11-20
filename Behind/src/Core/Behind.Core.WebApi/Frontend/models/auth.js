@@ -373,8 +373,16 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
     return {
         twoFactor: twoFactor,
 
-        signInWithPasskey: function (email, captcha) {
-            if (!email || !email.trim()) {
+        requestLegacyPasskeyLink: function (email, captcha) {
+            return http.post("/sign/in/passkey/legacy-link", { email: email, captcha: captcha }).then(function (response) {
+                return response.ok ? success("auth.magicLink.requested") : failure(response, {
+                    400: "auth.passkey.invalidEmail", 429: "auth.tooManyAttempts"
+                });
+            });
+        },
+
+        signInWithPasskey: function (email, captcha, legacyTicket) {
+            if (!legacyTicket && (!email || !email.trim())) {
                 return incomplete("auth.passkey.invalidEmail");
             }
 
@@ -389,8 +397,8 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
             };
 
             return passkeyCeremony(
-                "/sign/in/passkey/options",
-                { email: email, captcha: captcha },
+                legacyTicket ? "/sign/in/passkey/legacy-options" : "/sign/in/passkey/options",
+                legacyTicket ? { ticket: legacyTicket } : { email: email, captcha: captcha },
                 webauthn.get,
                 function (ticket, credential) {
                     return http.post("/sign/in/passkey", { ticket: ticket, credential: credential }).then(function (response) {

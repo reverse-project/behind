@@ -10,6 +10,23 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public class AuditLogEntryEndpointsTests
 {
+    [Theory]
+    [InlineData("1.5")]
+    [InlineData("2147483648")]
+    public async Task AdvancedSearchUsesDefaultForInvalidBudgets(string invalid)
+    {
+        var (queries, requests) = Queries(None);
+        using var settings = new Microsoft.Extensions.Configuration.ConfigurationManager
+        {
+            ["Backend:AuditSearchMaxEntries"] = invalid,
+            ["Backend:AuditSearchMaxCandidates"] = invalid
+        };
+        var result = await AuditLogEntryEndpoints.Get(new DefaultHttpContext(), queries,
+            new FixedTimeProvider(Now), search: "entry", configuration: settings);
+        Assert.IsType<JsonHttpResult<PageResponse<AuditLogItem>>>(result);
+        Assert.Single(requests);
+    }
+
     [Fact]
     public async Task AdvancedSearchRejectsExcessiveCandidateRetention()
     {

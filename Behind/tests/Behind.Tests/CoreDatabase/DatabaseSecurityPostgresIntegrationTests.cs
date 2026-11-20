@@ -71,6 +71,12 @@ public sealed class DatabaseSecurityPostgresIntegrationTests
         await commands.SaveTotp(userId, "SECOND");
         Assert.False(await commands.ConfirmTotp(userId, "FIRST", 42));
         Assert.True(await commands.ConfirmTotp(userId, "SECOND", 42));
+        Assert.False(await commands.ConfirmTotp(userId, "SECOND", 43));
+        var totpActions = await context.AuditLogEntries.Where(entry => entry.EntityName == nameof(UserTotp))
+            .Select(entry => entry.Action).ToListAsync();
+        var confirmation = Assert.Single(totpActions.OfType<AuditLogEntry.Updated>());
+        Assert.Equal(new[] { nameof(UserTotp.IsConfirmed), nameof(UserTotp.LastUsedStep) },
+            confirmation.Differences.Select(change => change.PropertyName).Order());
         Assert.False(await commands.AdvanceTotpStep(userId, "FIRST", 43));
         await commands.ReplaceRecoveryCodes(userId, ["first"]);
         await commands.ReplaceRecoveryCodes(userId, ["second"]);
@@ -86,6 +92,18 @@ public sealed class DatabaseSecurityPostgresIntegrationTests
         }
         var results = await Task.WhenAll(Rotate(), Rotate());
         Assert.Single(results.Where(result => result));
+        var sessionActions = await context.AuditLogEntries.Where(entry => entry.EntityName == nameof(ValidSession)
+                && entry.EntityKey == sessionId.ToString())
+            .Select(entry => entry.Action).ToListAsync();
+        var renewal = Assert.Single(sessionActions.OfType<AuditLogEntry.Updated>());
+        Assert.Equal(6, renewal.Differences.Count());
+        var nonces = renewal.Differences.Where(change => change.PropertyName is "AccessToken.Nonce" or "RefreshToken.Nonce").ToList();
+        Assert.Equal(2, nonces.Count);
+        Assert.All(nonces, change =>
+        {
+            Assert.Equal(EntityEntryAuditExtensions.MaskedValue, change.OldValue?.ToString());
+            Assert.Equal(EntityEntryAuditExtensions.MaskedValue, change.NewValue?.ToString());
+        });
     }
     [Theory]
     [InlineData(false)]

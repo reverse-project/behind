@@ -29,6 +29,10 @@ public sealed class ConfigurationSchemaTests : IDisposable
         Assert.True(ConfigurationSchema.IsValid(JsonNode.Parse("""{"Backend":{}}""")));
         var root = new JsonObject { ["Backend"] = new JsonObject { [property] = 10000 } };
         Assert.True(ConfigurationSchema.IsValid(root));
+        root["Backend"]![property] = 1.5;
+        Assert.False(ConfigurationSchema.IsValid(root));
+        root["Backend"]![property] = (long)int.MaxValue + 1;
+        Assert.False(ConfigurationSchema.IsValid(root));
         root["Backend"]![property] = "10000";
         Assert.False(ConfigurationSchema.IsValid(root));
         Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxEntries);

@@ -33,7 +33,13 @@ public sealed class AuthTransactionsPostgresIntegrationTests
         var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var roles = Substitute.For<IRoleCommands>();
         roles.AssignBuiltIn(Arg.Any<Guid>(), Arg.Any<BuiltInRole>(), Arg.Any<CancellationToken>())
-            .Returns(async _ => { saved.SetResult(); await resume.Task; });
+            .Returns(async call =>
+            {
+                saved.SetResult();
+                await resume.Task;
+                await new RoleCommands(context, AccessCatalog.Core).AssignBuiltIn(
+                    call.Arg<Guid>(), call.Arg<BuiltInRole>(), call.Arg<CancellationToken>());
+            });
         var store = new IdentityStore(context, new UserQueries(context), new EmailQueries(context),
             new EmailCommands(context, TimeProvider.System), new PasswordQueries(context), new RoleQueries(context),
             new PasswordCommands(context), new UserCommands(context), new UserApprovalQueries(context),
@@ -46,6 +52,8 @@ public sealed class AuthTransactionsPostgresIntegrationTests
         resume.SetResult();
         Assert.True((await registration).Succeeded);
         Assert.True(await new UserApprovalQueries(observer).IsPending(user.Id));
+        Assert.Contains(await new RoleQueries(observer).GetRolesByUserId(user.Id),
+            role => role.Name == BuiltInAccess.Users.Role.Name);
     }
     [Fact]
     public async Task ConcurrentRemovalsCannotRemoveEveryRequiredFactor()

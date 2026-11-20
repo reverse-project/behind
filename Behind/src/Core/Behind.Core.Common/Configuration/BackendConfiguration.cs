@@ -1,3 +1,6 @@
+using System.Globalization;
+using Microsoft.Extensions.Configuration;
+
 namespace Behind.Core.Common.Configuration;
 
 public sealed record BackendConfiguration
@@ -8,6 +11,21 @@ public sealed record BackendConfiguration
     public int AuditSearchMaxEntries { get; init; } = 10000;
 
     public int AuditSearchMaxCandidates { get; init; } = 10000;
+
+    public static BackendConfiguration Read(IConfiguration? configuration)
+    {
+        var section = configuration?.GetSection(SectionName);
+        var defaults = new BackendConfiguration();
+        int ReadBudget(string property, int fallback) =>
+            int.TryParse(section?[property], CultureInfo.InvariantCulture, out var value) ? Math.Max(1, value) : fallback;
+
+        return defaults with
+        {
+            DataDirectory = section?[nameof(DataDirectory)],
+            AuditSearchMaxEntries = ReadBudget(nameof(AuditSearchMaxEntries), defaults.AuditSearchMaxEntries),
+            AuditSearchMaxCandidates = ReadBudget(nameof(AuditSearchMaxCandidates), defaults.AuditSearchMaxCandidates)
+        };
+    }
 
     public string? DataDirectory { get; init; }
 

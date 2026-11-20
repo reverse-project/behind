@@ -86,6 +86,21 @@ test("primary passkey uses email and captcha, browser assertion, then normal aut
     assert.equal(sessions[0].accessToken, "access");
 });
 
+test("legacy sign-in redeems the mailed ticket and completes the ordinary passkey flow", async () => {
+    const { auth, requests } = authentication([
+        ok(null), ok({ ticket: "assertion", options: {} }),
+        ok({ ticket: "second", methods: ["Recovery"], setupRequired: false })
+    ]);
+    await auth.requestLegacyPasskeyLink("ada@example.org", "captcha");
+    const result = await auth.signInWithPasskey(null, null, "mail");
+    assert.deepEqual(requests, [
+        { url: "/sign/in/passkey/legacy-link", body: { email: "ada@example.org", captcha: "captcha" } },
+        { url: "/sign/in/passkey/legacy-options", body: { ticket: "mail" } },
+        { url: "/sign/in/passkey", body: { ticket: "assertion", credential: { id: "credential" } } }
+    ]);
+    assert.equal(result.twoFactor.ticket, "second");
+});
+
 test("primary passkey returns an Email challenge without starting a session", async () => {
     const { auth, sessions } = authentication([
         ok({ ticket: "primary", options: {} }),

@@ -320,7 +320,7 @@ public static class WebApiExtensions
             builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
             builder.Services.AddExceptionHandler<UnhandledExceptionHandler>();
             builder.Services.AddHttpContextAccessor();
-                        
+
             return builder
                 .AddTypeDescriptors()
                 .AddOpenApi()
@@ -1180,6 +1180,20 @@ public static class WebApiExtensions
                 .Produces(404)
                 .Produces(429)
                 .Produces(500);
+
+            application.MapPost("/sign/in/passkey/legacy-link", PrimaryPasskeyEndpoints.RequestLegacyLink)
+                .RequireAccountMode(AccountMode.PrimaryPasskey)
+                .AddEndpointFilter<DataAnnotationValidationFilter<PrimaryPasskeyEndpoints.OptionsRequest>>()
+                .RequireCaptcha<PrimaryPasskeyEndpoints.OptionsRequest>()
+                .RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy)
+                .Produces(204);
+
+            application.MapPost("/sign/in/passkey/legacy-options", PrimaryPasskeyEndpoints.LegacyOptions)
+                .RequireAccountMode(AccountMode.PrimaryPasskey)
+                .AddEndpointFilter<DataAnnotationValidationFilter<PrimaryPasskeyEndpoints.LegacyLinkRequest>>()
+                .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy)
+                .Produces<PasskeyAssertionChallenge>()
+                .Produces(401);
 
             application.MapPost("/sign/in/passkey", PrimaryPasskeyEndpoints.Verify)
                 .RequireAccountMode(AccountMode.PrimaryPasskey)

@@ -43,10 +43,10 @@ public sealed class DownloadQueries(AbstractCoreContext context, IVfsQueries fil
             folders.Contains(EF.Property<Guid>(download, DownloadConfiguration.FolderIdProperty))
             && context.VfsFiles.Any(file => EF.Property<Guid>(file, VersionedColumns.Key)
                 == EF.Property<Guid>(download, DownloadConfiguration.FileIdProperty)));
-        var selected = context.OrderByCreation(visible, newestFirst: true).Take(limit);
+        var selected = context.NewestCreationFirstThenKey(visible).Take(limit);
         var infos = await context.ToInfosAsync(selected, cancellationToken);
         return infos.OrderByDescending(info => info.UploadedAt.GetOrElse(DateTimeOffset.MinValue))
-            .ThenByDescending(info => info.Id).ToArray();
+            .ThenBy(info => info.Id).ToArray();
     }
 
     public async Task<IDownloadQueries.DeletedDownloads> ListDeleted(CancellationToken cancellationToken = default)

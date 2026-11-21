@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -124,6 +125,48 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
         Assert.False(disabled!.Enabled);
         Assert.Equal(update.KnownForwarders, disabled.KnownForwarders);
         Assert.Equal(update.ForwardLimit, disabled.ForwardLimit);
+    }
+
+    [Theory]
+    [InlineData("""
+        {
+          "Backend": { "Comments": { "News": true } },
+          "backend:forwardedheaders": { "Enabled": true, "KnownForwarders": ["192.0.2.8"], "ForwardLimit": 2 }
+        }
+        """)]
+    [InlineData("""
+        {
+          "Backend": { "Comments": { "News": true }, "forwardedheaders:knownforwarders:0": "192.0.2.8" },
+          "Backend:ForwardedHeaders:Enabled": true,
+          "Backend:ForwardedHeaders:ForwardLimit": 2
+        }
+        """)]
+    public async Task ForwardedHeaders_ReadsFlatKeysAndPersistsOneNestedSection(string json)
+    {
+        const string route = "/settings/forwarded-headers";
+        var path = Path.Combine(_directory, "backend.json");
+        await File.WriteAllTextAsync(path, json);
+
+        var settings = await _client.GetFromJsonAsync<ForwardedHeadersConfiguration>(route);
+        Assert.True(settings!.Enabled);
+        Assert.Equal(["192.0.2.8"], settings.KnownForwarders);
+        Assert.Equal(2, settings.ForwardLimit);
+
+        var update = new ForwardedHeadersSettings(true, ["192.0.2.9"], 3);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.PutAsJsonAsync(route, update)).StatusCode);
+        var root = Read("backend.json").AsObject();
+        Assert.DoesNotContain(root, property => ForwardedHeadersSettings.IsManagedPath(property.Key));
+        var backend = root["Backend"]!.AsObject();
+        Assert.Equal(["Comments", "ForwardedHeaders"], backend.Select(property => property.Key).Order());
+        Assert.True((bool)backend["Comments"]!["News"]!);
+
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(path);
+        var persisted = configuration.GetSection(ForwardedHeadersConfiguration.SectionName)
+            .Get<ForwardedHeadersConfiguration>();
+        Assert.True(persisted!.Enabled);
+        Assert.Equal(update.KnownForwarders, persisted.KnownForwarders);
+        Assert.Equal(update.ForwardLimit, persisted.ForwardLimit);
     }
 
     [Fact]

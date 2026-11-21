@@ -26,8 +26,19 @@ public static class JsonConfigurationFileExtensions
                 values.ToDictionary(pair => pair.Key, pair => pair.Value is null ? null : JsonValue.Create(pair.Value) as JsonNode),
                 cancellationToken);
 
-        public async Task SetJsonNodesAsync(
+        public Task SetJsonNodesAsync(
             IReadOnlyDictionary<string, JsonNode?> values,
+            CancellationToken cancellationToken = default) =>
+            file.UpdateJsonAsync(root =>
+            {
+                foreach (var (path, value) in values)
+                {
+                    root.SetValue(path.Split(PathSeparator), value);
+                }
+            }, cancellationToken);
+
+        public async Task UpdateJsonAsync(
+            Action<JsonObject> update,
             CancellationToken cancellationToken = default)
         {
             await WriteGate.WaitAsync(cancellationToken);
@@ -36,11 +47,7 @@ public static class JsonConfigurationFileExtensions
             {
                 var root = await file.ReadJsonAsync(cancellationToken);
 
-                foreach (var (path, value) in values)
-                {
-                    root.SetValue(path.Split(PathSeparator), value);
-                }
-
+                update(root);
                 root = ConfigurationSchema.PrepareForWrite(root);
                 await file.ReplaceContentAsync(root.ToJsonString(WriteOptions), cancellationToken);
             }

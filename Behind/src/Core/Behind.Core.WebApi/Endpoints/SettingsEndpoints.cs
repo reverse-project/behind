@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Behind.Common;
 using Behind.Common.Configuration;
 using Behind.Common.Logging;
@@ -165,7 +163,7 @@ public sealed class SettingsEndpoints
     public static async Task<IResult> GetForwardedHeaders(ConfigurationFileCatalog catalog, CancellationToken cancellationToken) =>
         await catalog.Find(ConfigurationFileCatalog.BackendFile).Match(
             () => Task.FromResult<IResult>(Results.NotFound()),
-            async target => Results.Json(ForwardedHeadersSettings.Read(await target.ReadJsonAsync(cancellationToken))));
+            async target => Results.Json(await ForwardedHeadersSettings.ReadAsync(target, cancellationToken)));
 
     public static Task<IResult> UpdateForwardedHeaders(
         ForwardedHeadersSettings request,
@@ -186,12 +184,7 @@ public sealed class SettingsEndpoints
                 return Results.BadRequest();
             }
 
-            var root = await target.ReadJsonAsync(cancellationToken);
-            var (path, _) = ForwardedHeadersSettings.Section(root);
-            await target.SetJsonNodesAsync(new Dictionary<string, JsonNode?>
-            {
-                [path] = JsonSerializer.SerializeToNode(configuration)
-            }, cancellationToken);
+            await target.UpdateJsonAsync(root => ForwardedHeadersSettings.Write(root, configuration), cancellationToken);
             logger.LogInformation("Forwarded headers settings saved with {ForwarderCount} trusted entries", configuration.KnownForwarders.Length);
             return Results.NoContent();
         });

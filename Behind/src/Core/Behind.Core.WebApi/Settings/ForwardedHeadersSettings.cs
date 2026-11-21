@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Behind.Core.Common.Configuration;
+using Microsoft.Extensions.Configuration;
 
 namespace Behind.Core.WebApi.Settings;
 
@@ -10,23 +11,44 @@ public sealed record ForwardedHeadersSettings(
     [property: JsonRequired] string[] KnownForwarders,
     [property: JsonRequired] int ForwardLimit)
 {
-    private static readonly JsonSerializerOptions ReadOptions = new() { PropertyNameCaseInsensitive = true };
-
     public static bool IsManagedPath(string path) =>
         string.Equals(path, ForwardedHeadersConfiguration.SectionName, StringComparison.OrdinalIgnoreCase)
         || path.StartsWith($"{ForwardedHeadersConfiguration.SectionName}:", StringComparison.OrdinalIgnoreCase);
 
-    public static ForwardedHeadersConfiguration Read(JsonObject root) =>
-        Section(root).Value?.Deserialize<ForwardedHeadersConfiguration>(ReadOptions) ?? new();
-
-    public static (string Path, JsonNode? Value) Section(JsonObject root)
+    public static async Task<ForwardedHeadersConfiguration> ReadAsync(FileInfo file, CancellationToken cancellationToken)
     {
-        var backend = Property(root, "Backend");
-        var section = Property(backend.Value as JsonObject, "ForwardedHeaders");
-        return ($"{backend.Key}:{section.Key}", section.Value);
+        var content = await File.ReadAllBytesAsync(file.FullName, cancellationToken);
+        using var stream = new MemoryStream(content, writable: false);
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonStream(stream);
+        return configuration.GetSection(ForwardedHeadersConfiguration.SectionName)
+            .Get<ForwardedHeadersConfiguration>() ?? new();
     }
 
-    private static KeyValuePair<string, JsonNode?> Property(JsonObject? parent, string name) =>
-        parent?.FirstOrDefault(pair => string.Equals(pair.Key, name, StringComparison.OrdinalIgnoreCase)) is { Key: not null } pair
-            ? pair : KeyValuePair.Create<string, JsonNode?>(name, null);
+    public static void Write(JsonObject root, ForwardedHeadersConfiguration configuration)
+    {
+        foreach (var key in root.Select(pair => pair.Key).Where(IsManagedPath).ToArray())
+        {
+            root.Remove(key);
+        }
+
+        var backendKey = FindPropertyName(root, "Backend");
+        if (root[backendKey] is not JsonObject backend)
+        {
+            backend = new JsonObject();
+            root[backendKey] = backend;
+        }
+
+        foreach (var key in backend.Select(pair => pair.Key)
+                     .Where(key => key.StartsWith("ForwardedHeaders:", StringComparison.OrdinalIgnoreCase)).ToArray())
+        {
+            backend.Remove(key);
+        }
+
+        backend[FindPropertyName(backend, "ForwardedHeaders")] = JsonSerializer.SerializeToNode(configuration);
+    }
+
+    private static string FindPropertyName(JsonObject parent, string name) =>
+        parent.Select(pair => pair.Key).FirstOrDefault(key => string.Equals(key, name, StringComparison.OrdinalIgnoreCase))
+        ?? name;
 }

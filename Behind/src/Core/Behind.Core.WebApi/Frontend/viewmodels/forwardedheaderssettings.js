@@ -59,8 +59,11 @@ define(["ko", "models/settings"], function (ko, settings) {
                 Number.isSafeInteger(request.forwardLimit) && request.forwardLimit > 0 &&
                 request.forwardLimit <= 2147483647 && request.knownForwarders.every(validEntry);
         });
+        self.canEdit = ko.pureComputed(function () {
+            return canEdit() && original() !== null;
+        });
         self.canSave = ko.pureComputed(function () {
-            return canEdit() && original() !== null && self.valid() && original() !== JSON.stringify(self.request());
+            return self.canEdit() && self.valid() && original() !== JSON.stringify(self.request());
         });
         self.invalidate = function () {
             generation++;

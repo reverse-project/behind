@@ -63,6 +63,21 @@ define(["models/http", "models/i18n"], function (http, i18n) {
             return action(file, "rotate", fieldPath, i18n.t("settings.rotated"));
         },
 
+        loadForwardedHeaders: function () {
+            return http.get("/settings/forwarded-headers").then(function (response) {
+                return response.ok ? success("", response.data) : failure(response);
+            });
+        },
+
+        saveForwardedHeaders: function (request) {
+            return http.put("/settings/forwarded-headers", request).then(function (response) {
+                if (response.status === 400) {
+                    return { ok: false, message: i18n.t("settings.forwarded.invalid") };
+                }
+                return response.ok ? success(i18n.t("settings.saved")) : failure(response);
+            });
+        },
+
         loadEmail: function () {
             return http.get("/settings/email").then(function (response) {
                 return response.ok ? success("", response.data) : failure(response);

@@ -47,13 +47,14 @@ async function main() {
         isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: () => true
     };
     const stub = function () {
+        this.invalidate = () => {};
         this.canSave = () => true;
         this.load = () => Promise.resolve({ ok: true });
     };
     const Settings = load("viewmodels/settings.js", {
         ko, "models/settings": settings, "models/session": session, "models/i18n": i18n,
         "viewmodels/emailsettings": stub, "viewmodels/loggingsettings": stub,
-        "viewmodels/opentelemetrysettings": stub, "viewmodels/oidcsettings": Oidc
+        "viewmodels/opentelemetrysettings": stub, "viewmodels/forwardedheaderssettings": stub, "viewmodels/oidcsettings": Oidc
     });
     const page = new Settings();
     await page.refresh();

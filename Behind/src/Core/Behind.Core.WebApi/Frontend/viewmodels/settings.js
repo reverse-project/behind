@@ -1,4 +1,4 @@
-define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings", "viewmodels/opentelemetrysettings", "viewmodels/oidcsettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor, OpenTelemetrySettingsEditor, OidcSettingsEditor) {
+define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings", "viewmodels/opentelemetrysettings", "viewmodels/oidcsettings", "viewmodels/forwardedheaderssettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor, OpenTelemetrySettingsEditor, OidcSettingsEditor, ForwardedHeadersSettings) {
     var emailEditor = "email";
     var loggingEditor = "logging";
 
@@ -101,6 +101,7 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
         self.email = new EmailSettingsEditor(self.canEdit);
         self.logging = new LoggingSettingsEditor(self.canEdit);
         self.openTelemetry = new OpenTelemetrySettingsEditor(self.canEdit);
+        self.forwarded = new ForwardedHeadersSettings(self.canEdit);
         self.oidc = new OidcSettingsEditor(self.canEdit);
         self.canSaveAppSettings = ko.pureComputed(function () {
             return self.logging.canSave() && self.openTelemetry.canSave();
@@ -174,6 +175,10 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
             return self.selected() !== null && self.selected().editor === loggingEditor;
         });
 
+        self.isBackendSelected = ko.pureComputed(function () {
+            return self.selected() !== null && self.selected().name === "backend.json";
+        });
+
         self.isOidcSelected = ko.pureComputed(function () {
             return self.selected() !== null && self.selected().name === "security.json";
         });
@@ -183,6 +188,16 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
         });
 
         var loadEditor = function (skipOidc) {
+            if (!self.isBackendSelected()) {
+                self.forwarded.invalidate();
+            }
+            if (self.isBackendSelected() && !skipOidc) {
+                return self.forwarded.load().then(function (result) {
+                    if (!result.ok) {
+                        self.message(result.message);
+                    }
+                });
+            }
             var loading = self.isEmailSelected()
                 ? self.email.load()
                 : self.isLoggingSelected()
@@ -268,6 +283,19 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
             });
         };
 
+        self.saveForwardedHeaders = function () {
+            if (!self.isBackendSelected() || !self.forwarded.canSave() ||
+                !window.confirm(i18n.t("settings.forwarded.confirm"))) {
+                return Promise.resolve();
+            }
+            var request = self.forwarded.request();
+            return perform(function () {
+                return settings.saveForwardedHeaders(request);
+            }, function () {
+                return self.isBackendSelected() ? loadEditor() : Promise.resolve();
+            });
+        };
+
         self.saveEmail = function () {
             return perform(self.email.save);
         };
@@ -340,6 +368,8 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
             self.canView.subscribe(function (allowed) {
                 if (allowed) {
                     self.refresh();
+                } else {
+                    self.forwarded.invalidate();
                 }
             });
 

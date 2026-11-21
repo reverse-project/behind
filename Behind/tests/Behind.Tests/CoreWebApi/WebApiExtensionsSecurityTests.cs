@@ -3,7 +3,9 @@ using Behind.Core.WebApi.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Behind.Tests.CoreWebApi;
@@ -35,7 +37,7 @@ public sealed class WebApiExtensionsSecurityTests : IDisposable
         Directory.Delete(_contentRoot, true);
     }
 
-    private WebApplication BuildApplication(string? securityJson)
+    private WebApplication BuildApplication(string? securityJson, bool enableHostForwarding = false)
     {
         if (securityJson is not null)
         {
@@ -44,9 +46,23 @@ public sealed class WebApiExtensionsSecurityTests : IDisposable
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = _contentRoot });
         builder.WebHost.UseSetting(WebHostDefaults.ServerUrlsKey, "http://127.0.0.1:0");
+        if (enableHostForwarding)
+        {
+            builder.Configuration["FORWARDEDHEADERS_ENABLED"] = "true";
+        }
         builder.AddCore();
 
         return builder.Build();
+    }
+
+    [Fact]
+    public async Task AddCore_HostForwardingSwitchCannotOverrideDynamicClientAddressPolicy()
+    {
+        await using var app = BuildApplication(null, enableHostForwarding: true);
+        var options = app.Services.GetRequiredService<IOptions<ForwardedHeadersOptions>>().Value;
+
+        Assert.False(options.ForwardedHeaders.HasFlag(ForwardedHeaders.XForwardedFor));
+        Assert.True(options.ForwardedHeaders.HasFlag(ForwardedHeaders.XForwardedProto));
     }
 
     [Fact]

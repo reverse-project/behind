@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Behind.Common;
 using Behind.Common.Configuration;
 using Behind.Common.Logging;
@@ -159,6 +161,40 @@ public sealed class SettingsEndpoints
 
                         return Results.Json(new SettingsActionResponse(action.Path, null));
                     }));
+
+    public static async Task<IResult> GetForwardedHeaders(ConfigurationFileCatalog catalog, CancellationToken cancellationToken) =>
+        await catalog.Find(ConfigurationFileCatalog.BackendFile).Match(
+            () => Task.FromResult<IResult>(Results.NotFound()),
+            async target => Results.Json(ForwardedHeadersSettings.Read(await target.ReadJsonAsync(cancellationToken))));
+
+    public static Task<IResult> UpdateForwardedHeaders(
+        ForwardedHeadersSettings request,
+        ConfigurationFileCatalog catalog,
+        IOptions<SecurityConfiguration> security,
+        ILogger<SettingsEndpoints> logger,
+        CancellationToken cancellationToken) =>
+        Modify(catalog.Find(ConfigurationFileCatalog.BackendFile), security, logger, async target =>
+        {
+            var configuration = new ForwardedHeadersConfiguration
+            {
+                Enabled = request.Enabled,
+                KnownForwarders = request.KnownForwarders,
+                ForwardLimit = request.ForwardLimit
+            };
+            if (request.KnownForwarders is null || !ForwardedHeadersPolicy.TryCreate(configuration, out _))
+            {
+                return Results.BadRequest();
+            }
+
+            var root = await target.ReadJsonAsync(cancellationToken);
+            var (path, _) = ForwardedHeadersSettings.Section(root);
+            await target.SetJsonNodesAsync(new Dictionary<string, JsonNode?>
+            {
+                [path] = JsonSerializer.SerializeToNode(configuration)
+            }, cancellationToken);
+            logger.LogInformation("Forwarded headers settings saved with {ForwarderCount} trusted entries", configuration.KnownForwarders.Length);
+            return Results.NoContent();
+        });
 
     public static Task<IResult> GetEmail(ConfigurationFileCatalog catalog) =>
         Task.FromResult(

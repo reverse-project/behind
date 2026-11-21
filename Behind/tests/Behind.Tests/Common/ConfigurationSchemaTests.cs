@@ -26,7 +26,7 @@ public sealed class ConfigurationSchemaTests : IDisposable
     [InlineData("AuditSearchMaxCandidates")]
     public void AuditSearchBudgets_HaveNumericSchemaAndPreserveDefaultsWhenOmitted(string property)
     {
-        Assert.Equal("configuration-1.1.0", ConfigurationSchema.Name);
+        Assert.Equal("configuration-1.2.0", ConfigurationSchema.Name);
         Assert.True(ConfigurationSchema.IsValid(JsonNode.Parse("""{"Backend":{}}""")));
         var root = new JsonObject { ["Backend"] = new JsonObject { [property] = 10000 } };
         Assert.True(ConfigurationSchema.IsValid(root));

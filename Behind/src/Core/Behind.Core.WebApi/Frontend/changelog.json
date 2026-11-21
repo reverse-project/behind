@@ -2,7 +2,9 @@
   {
     "version": "1.0.3",
     "date": "2026-11-21",
-    "changes": []
+    "changes": [
+      { "type": "added", "text": "Administrators can enable forwarded client IPs in Settings, choose trusted proxy addresses or narrow networks and limit how many proxy hops Behind follows. Forwarding defaults to off." }
+    ]
   },
   {
     "version": "1.0.2",

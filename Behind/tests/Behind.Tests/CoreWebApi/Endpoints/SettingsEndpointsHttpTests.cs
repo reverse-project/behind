@@ -50,6 +50,8 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
         _application.MapGet("/settings", SettingsEndpoints.Get);
         _application.MapGet("/settings/{file}/logging", SettingsEndpoints.GetLogging);
         _application.MapGet("/settings/{file}/opentelemetry", SettingsEndpoints.GetOpenTelemetry);
+        _application.MapGet("/settings/forwarded-headers", SettingsEndpoints.GetForwardedHeaders);
+        _application.MapPut("/settings/forwarded-headers", SettingsEndpoints.UpdateForwardedHeaders);
         _application.MapGet("/settings/email", SettingsEndpoints.GetEmail);
         _application.MapPut("/settings/email", SettingsEndpoints.UpdateEmail)
             .AddEndpointFilter<DataAnnotationValidationFilter<EmailSettingsRequest>>();
@@ -84,6 +86,57 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
             .Single(field => (string)field!["path"]! == "Security:Jwt:SigningKey")!;
         Assert.True((bool)signing["sensitive"]!);
         Assert.Equal("generate", (string)signing["action"]!);
+    }
+
+    [Fact]
+    public async Task ForwardedHeaders_StartDisabledAndPersistOnlyThroughValidatedEditor()
+    {
+        const string route = "/settings/forwarded-headers";
+        var defaults = await _client.GetFromJsonAsync<ForwardedHeadersConfiguration>(route);
+        Assert.False(defaults!.Enabled);
+        Assert.Empty(defaults.KnownForwarders);
+        Assert.Equal(1, defaults.ForwardLimit);
+
+        var update = new ForwardedHeadersSettings(true, ["192.0.2.8"], 2);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.PutAsJsonAsync(route, update)).StatusCode);
+        var persisted = await _client.GetFromJsonAsync<ForwardedHeadersConfiguration>(route);
+        Assert.True(persisted!.Enabled);
+        Assert.Equal(update.ForwardLimit, persisted.ForwardLimit);
+        Assert.Equal(update.KnownForwarders, persisted.KnownForwarders);
+        Assert.True((bool)Read("backend.json")["Backend"]!["Comments"]!["News"]!);
+
+        var fields = await _client.GetFromJsonAsync<SettingsResponse>("/settings");
+        Assert.DoesNotContain(fields!.Files.Single(file => file.Name == "backend.json").Fields,
+            field => ForwardedHeadersSettings.IsManagedPath(field.Path));
+
+        var before = Read("backend.json").ToJsonString();
+        var generic = new { values = new Dictionary<string, object> { ["Backend:ForwardedHeaders:KnownForwarders:0"] = "::/0" } };
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.PutAsJsonAsync("/settings/backend.json", generic)).StatusCode);
+        foreach (var invalid in new[] { update with { KnownForwarders = ["0.0.0.0/0"] },
+                     update with { KnownForwarders = [] }, update with { ForwardLimit = 0 } })
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, (await _client.PutAsJsonAsync(route, invalid)).StatusCode);
+        }
+        Assert.Equal(before, Read("backend.json").ToJsonString());
+
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.PutAsJsonAsync(route, update with { Enabled = false })).StatusCode);
+        var disabled = await _client.GetFromJsonAsync<ForwardedHeadersConfiguration>(route);
+        Assert.False(disabled!.Enabled);
+        Assert.Equal(update.KnownForwarders, disabled.KnownForwarders);
+        Assert.Equal(update.ForwardLimit, disabled.ForwardLimit);
+    }
+
+    [Fact]
+    public async Task ForwardedHeaders_ReadOnlyConfigurationRejectsWrites()
+    {
+        var before = Read("backend.json").ToJsonString();
+        var result = await SettingsEndpoints.UpdateForwardedHeaders(
+            new ForwardedHeadersSettings(true, ["192.0.2.8"], 1), ConfigurationFileCatalog.For(_directory),
+            Options.Create(new SecurityConfiguration(true, None, None, None)), NullLogger<SettingsEndpoints>.Instance,
+            CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode);
+        Assert.Equal(before, Read("backend.json").ToJsonString());
     }
 
     [Fact]

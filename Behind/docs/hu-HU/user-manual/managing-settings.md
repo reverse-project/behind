@@ -115,3 +115,9 @@ Egy hitelesítő titok generálása **egyszer** megmutatja a hitelesítő címé
 Ha a telepítés csak olvasható konfigurációval fut (`Security:ReadOnlyConfiguration`), az oldal megmutatja a maszkolt értékeket, de minden módosítást, generálást és forgatást elutasít. Az ilyen telepítést a külső konfigurációszolgáltatóján keresztül módosítsa.
 
 A módosítások az alkalmazás melletti fájlokba íródnak. Tárolóban a fájlnak írhatónak kell lennie arra a felhasználóra nézve, amelyként a tároló fut, ezért a `frontend.json` fájlt (és minden más szerkeszteni kívánt fájlt) írható gazdagép-útvonalról csatolja, mint a `security.json` fájlt a példa compose fájlban. Legyen óvatos az olyan beállításokkal, mint az adatbázis-kapcsolat: egy hibás érték megakadályozhatja az alkalmazás indulását.
+
+## Továbbított klienscímek
+
+Közvetlen klienskapcsolatoknál hagyja kikapcsolva a továbbítást. Caddy mögött vegye fel azt a címet, amelyről a Kestrel a Caddy kapcsolatát fogadja, és állítsa az ugrások számát 1-re. Lehetőleg pontos címeket adjon meg. Változó címeknél kizárólag a proxyknak fenntartott, lehető legszűkebb alhálózatot használja (IPv4: /24 vagy szűkebb, IPv6: /64 vagy szűkebb).
+
+CDN → Caddy → Behind esetén a Caddy csak a saját CDN-jétől fogadjon el klienscímet. Ha a Caddy egyetlen ellenőrzött címet küld, maradjon az 1-es korlát. Ha hozzáfűzi a CDN címét, mindkét proxyt vegye fel, és állítsa a korlátot 2-re. IP-alapú korlátozás előtt ellenőrizze a kapott klienscímet. A továbbítás kikapcsolásával a lista megmarad, a rendszer újra a közvetlen kapcsolat címét használja.

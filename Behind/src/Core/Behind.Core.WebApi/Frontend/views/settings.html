@@ -16,6 +16,23 @@
             <input type="text" class="form-control font-monospace mb-2" readonly aria-label="Authenticator URI" data-bind="value: uri, tAttr: { 'aria-label': 'settings.authenticatorUri' }">
             <div class="settings-qrcode" data-bind="html: qrCode"></div>
         </div>
+        <form class="mb-4" data-bind="visible: isBackendSelected, submit: saveForwardedHeaders">
+            <fieldset data-bind="with: forwarded, enable: forwarded.canEdit">
+                <legend class="h6" data-bind="t: 'settings.forwarded.title'"></legend>
+                <div class="form-check form-switch mb-2">
+                    <input id="forwarded-enabled" type="checkbox" role="switch" class="form-check-input" data-bind="checked: enabled">
+                    <label for="forwarded-enabled" class="form-check-label" data-bind="t: 'settings.forwarded.enabled'"></label>
+                </div>
+                <label for="known-forwarders" class="form-label" data-bind="t: 'settings.forwarded.addresses'"></label>
+                <textarea id="known-forwarders" rows="3" class="form-control font-monospace" aria-describedby="forwarders-help" data-bind="textInput: addresses"></textarea>
+                <p id="forwarders-help" class="form-text" data-bind="t: 'settings.forwarded.help'"></p>
+                <label for="forward-limit" class="form-label" data-bind="t: 'settings.forwarded.limit'"></label>
+                <input id="forward-limit" type="number" min="1" step="1" class="form-control" aria-describedby="forward-limit-help" data-bind="textInput: limit">
+                <p id="forward-limit-help" class="form-text" data-bind="t: 'settings.forwarded.hops'"></p>
+                <p class="text-danger" role="alert" data-bind="visible: !valid(), t: 'settings.forwarded.invalid'"></p>
+                <button type="submit" class="btn btn-primary" data-bind="enable: canSave, t: 'settings.forwarded.save'"></button>
+            </fieldset>
+        </form>
         <form data-bind="with: email, submit: saveEmail, visible: isEmailSelected">
             <fieldset class="mb-4">
                 <legend class="h6 text-body-secondary" data-bind="t: 'settings.email.provider'">Provider</legend>

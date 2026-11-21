@@ -20,7 +20,8 @@ public static class SettingsResponseExtensions
             return new SettingsFileResponse(
                 file.Name,
                 [
-                    ..root.Fields().Where(field => !OidcSettingsExtensions.IsOidcPath(file.Name, field.Path))
+                    ..root.Fields().Where(field => !OidcSettingsExtensions.IsOidcPath(file.Name, field.Path)
+                        && !ForwardedHeadersSettings.IsManagedPath(field.Path))
                         .Select(field => field.ToResponse(file.Name, locales)),
                     ..AccountModeSettings.Missing(root, file.Name),
                     ..CachingSettings.Missing(root, file.Name),

@@ -224,7 +224,12 @@ public sealed class StartupSetupTests : IDisposable
         Assert.Equal(new CommentsConfiguration(), Bind<CommentsConfiguration>(BackendPath, CommentsConfiguration.SectionName));
         Assert.Equal(new AccountsConfiguration(), Bind<AccountsConfiguration>(BackendPath, AccountsConfiguration.SectionName));
         Assert.Equal(new SchedulerConfiguration(), Bind<SchedulerConfiguration>(BackendPath, SchedulerConfiguration.SectionName));
+        var forwarded = Bind<ForwardedHeadersConfiguration>(BackendPath, ForwardedHeadersConfiguration.SectionName);
+        Assert.False(forwarded.Enabled);
+        Assert.Empty(forwarded.KnownForwarders);
+        Assert.Equal(new ForwardedHeadersConfiguration().ForwardLimit, forwarded.ForwardLimit);
         var backend = Section(BackendPath, "Backend");
+        Assert.Empty(backend.GetProperty("ForwardedHeaders").GetProperty("KnownForwarders").EnumerateArray());
         foreach (var name in new[] { "ContentRestrictions", "Downloads", "Comments", "Accounts", "Scheduler" })
         {
             Assert.NotEmpty(backend.GetProperty(name).EnumerateObject());

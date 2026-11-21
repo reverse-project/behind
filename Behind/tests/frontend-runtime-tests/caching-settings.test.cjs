@@ -30,12 +30,14 @@ test("caching tab edits provider and key without resubmitting its masked connect
     };
     const session = { isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: () => true };
     function Editor() {
+        this.invalidate = () => {};
+        this.load = async () => ({ ok: true });
         this.canSave = ko.observable(true);
     }
     const dependencies = {
         ko, "models/settings": settings, "models/session": session, "models/i18n": { t: key => key },
         "viewmodels/emailsettings": Editor, "viewmodels/loggingsettings": Editor,
-        "viewmodels/opentelemetrysettings": Editor, "viewmodels/oidcsettings": Editor
+        "viewmodels/opentelemetrysettings": Editor, "viewmodels/forwardedheaderssettings": Editor, "viewmodels/oidcsettings": Editor
     };
     let Settings;
     vm.runInNewContext(fs.readFileSync(path.join(core, "viewmodels/settings.js"), "utf8"), {

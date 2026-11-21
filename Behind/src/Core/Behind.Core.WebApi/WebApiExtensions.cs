@@ -36,6 +36,7 @@ using Behind.Core.WebApi.Layouts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
@@ -85,6 +86,9 @@ public static class WebApiExtensions
             builder.AddReloadableJsonFile("caching.json", true);
             builder.AddCaching();
             builder.Services.AddVfsContentStore(builder.Configuration);
+            builder.Services.AddReloadableOptions(ForwardedHeadersPolicy.Read);
+            builder.Services.PostConfigure<ForwardedHeadersOptions>(options =>
+                options.ForwardedHeaders &= ~ForwardedHeaders.XForwardedFor);
             builder.Services.Configure<AccountsConfiguration>(
                 builder.Configuration.GetSection(AccountsConfiguration.SectionName)
             );
@@ -337,6 +341,7 @@ public static class WebApiExtensions
     {
         public WebApplication UseCore()
         {
+            application.UseMiddleware<DynamicForwardedHeadersMiddleware>();
             application.UseCorrelationId();
             application.UseRequestLogging();
             application.UseExceptionHandler(_ => { });
@@ -357,6 +362,14 @@ public static class WebApiExtensions
                 .Produces(401)
                 .Produces(403)
                 .Produces(500);
+
+            application.MapGet("/settings/forwarded-headers", SettingsEndpoints.GetForwardedHeaders)
+                .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read))
+                .Produces<ForwardedHeadersConfiguration>().Produces(401).Produces(403).Produces(404);
+
+            application.MapPut("/settings/forwarded-headers", SettingsEndpoints.UpdateForwardedHeaders)
+                .RequireAuthorization(configurationManage)
+                .Produces(204).Produces(400).Produces(401).Produces<ConfigurationForbiddenResponse>(403).Produces(404);
 
             application.MapGet("/settings/email", SettingsEndpoints.GetEmail)
                 .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read))

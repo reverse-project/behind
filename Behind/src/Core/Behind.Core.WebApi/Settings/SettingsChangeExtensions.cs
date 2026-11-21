@@ -25,6 +25,7 @@ public static class SettingsChangeExtensions
         private Option<KeyValuePair<string, JsonNode?>> PlanChange(string file, string path, JsonElement incoming)
         {
             var isEditable = file.FindAction(path) == None && !OidcSettingsExtensions.IsOidcPath(file, path)
+                && !ForwardedHeadersSettings.IsManagedPath(path)
                 && CachingSettings.IsValid(file, path, incoming);
             var keepsSecret = path.IsSensitiveConfigurationPath && incoming.IsBlank;
             var existing = root.FindValue(path);

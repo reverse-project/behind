@@ -115,3 +115,9 @@ Generating an authenticator secret shows its authenticator address and a QR code
 If the installation runs with a read-only configuration (`Security:ReadOnlyConfiguration`), the page shows the masked values but refuses every change, generation and rotation. Change such an installation through its external configuration provider.
 
 Changes are written to the files next to the application. In a container the file must be writable by the user the container runs as, so mount `frontend.json` (and any other file you want to edit) from a writable host path, like `security.json` in the example compose file. Take care with settings such as the database connection: a wrong value can stop the application from starting.
+
+## Forwarded client IPs
+
+Leave forwarding off when clients connect directly. Behind Caddy, add the address Kestrel sees for Caddy and set the hop limit to 1. Prefer individual addresses. If addresses rotate, use the narrowest dedicated proxy subnet (IPv4 /24 or narrower, IPv6 /64 or narrower).
+
+For a CDN → Caddy → Behind deployment, configure Caddy to accept client-IP information only from your CDN. If Caddy sends a verified single address, keep the limit at 1. If it appends the CDN address, trust both proxy hops and set the limit to 2. Verify the observed client IP before enabling IP-based restrictions. Turn forwarding off to return to the socket peer address while keeping the list for later.

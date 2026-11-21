@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -50,6 +51,8 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
         _application.MapGet("/settings", SettingsEndpoints.Get);
         _application.MapGet("/settings/{file}/logging", SettingsEndpoints.GetLogging);
         _application.MapGet("/settings/{file}/opentelemetry", SettingsEndpoints.GetOpenTelemetry);
+        _application.MapGet("/settings/forwarded-headers", SettingsEndpoints.GetForwardedHeaders);
+        _application.MapPut("/settings/forwarded-headers", SettingsEndpoints.UpdateForwardedHeaders);
         _application.MapGet("/settings/email", SettingsEndpoints.GetEmail);
         _application.MapPut("/settings/email", SettingsEndpoints.UpdateEmail)
             .AddEndpointFilter<DataAnnotationValidationFilter<EmailSettingsRequest>>();
@@ -84,6 +87,99 @@ public sealed class SettingsEndpointsHttpTests : IAsyncLifetime
             .Single(field => (string)field!["path"]! == "Security:Jwt:SigningKey")!;
         Assert.True((bool)signing["sensitive"]!);
         Assert.Equal("generate", (string)signing["action"]!);
+    }
+
+    [Fact]
+    public async Task ForwardedHeaders_StartDisabledAndPersistOnlyThroughValidatedEditor()
+    {
+        const string route = "/settings/forwarded-headers";
+        var defaults = await _client.GetFromJsonAsync<ForwardedHeadersConfiguration>(route);
+        Assert.False(defaults!.Enabled);
+        Assert.Empty(defaults.KnownForwarders);
+        Assert.Equal(1, defaults.ForwardLimit);
+
+        var update = new ForwardedHeadersSettings(true, ["192.0.2.8"], 2);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.PutAsJsonAsync(route, update)).StatusCode);
+        var persisted = await _client.GetFromJsonAsync<ForwardedHeadersConfiguration>(route);
+        Assert.True(persisted!.Enabled);
+        Assert.Equal(update.ForwardLimit, persisted.ForwardLimit);
+        Assert.Equal(update.KnownForwarders, persisted.KnownForwarders);
+        Assert.True((bool)Read("backend.json")["Backend"]!["Comments"]!["News"]!);
+
+        var fields = await _client.GetFromJsonAsync<SettingsResponse>("/settings");
+        Assert.DoesNotContain(fields!.Files.Single(file => file.Name == "backend.json").Fields,
+            field => ForwardedHeadersSettings.IsManagedPath(field.Path));
+
+        var before = Read("backend.json").ToJsonString();
+        var generic = new { values = new Dictionary<string, object> { ["Backend:ForwardedHeaders:KnownForwarders:0"] = "::/0" } };
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.PutAsJsonAsync("/settings/backend.json", generic)).StatusCode);
+        foreach (var invalid in new[] { update with { KnownForwarders = ["0.0.0.0/0"] },
+                     update with { KnownForwarders = [] }, update with { ForwardLimit = 0 } })
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, (await _client.PutAsJsonAsync(route, invalid)).StatusCode);
+        }
+        Assert.Equal(before, Read("backend.json").ToJsonString());
+
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.PutAsJsonAsync(route, update with { Enabled = false })).StatusCode);
+        var disabled = await _client.GetFromJsonAsync<ForwardedHeadersConfiguration>(route);
+        Assert.False(disabled!.Enabled);
+        Assert.Equal(update.KnownForwarders, disabled.KnownForwarders);
+        Assert.Equal(update.ForwardLimit, disabled.ForwardLimit);
+    }
+
+    [Theory]
+    [InlineData("""
+        {
+          "Backend": { "Comments": { "News": true } },
+          "backend:forwardedheaders": { "Enabled": true, "KnownForwarders": ["192.0.2.8"], "ForwardLimit": 2 }
+        }
+        """)]
+    [InlineData("""
+        {
+          "Backend": { "Comments": { "News": true }, "forwardedheaders:knownforwarders:0": "192.0.2.8" },
+          "Backend:ForwardedHeaders:Enabled": true,
+          "Backend:ForwardedHeaders:ForwardLimit": 2
+        }
+        """)]
+    public async Task ForwardedHeaders_ReadsFlatKeysAndPersistsOneNestedSection(string json)
+    {
+        const string route = "/settings/forwarded-headers";
+        var path = Path.Combine(_directory, "backend.json");
+        await File.WriteAllTextAsync(path, json);
+
+        var settings = await _client.GetFromJsonAsync<ForwardedHeadersConfiguration>(route);
+        Assert.True(settings!.Enabled);
+        Assert.Equal(["192.0.2.8"], settings.KnownForwarders);
+        Assert.Equal(2, settings.ForwardLimit);
+
+        var update = new ForwardedHeadersSettings(true, ["192.0.2.9"], 3);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.PutAsJsonAsync(route, update)).StatusCode);
+        var root = Read("backend.json").AsObject();
+        Assert.DoesNotContain(root, property => ForwardedHeadersSettings.IsManagedPath(property.Key));
+        var backend = root["Backend"]!.AsObject();
+        Assert.Equal(["Comments", "ForwardedHeaders"], backend.Select(property => property.Key).Order());
+        Assert.True((bool)backend["Comments"]!["News"]!);
+
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(path);
+        var persisted = configuration.GetSection(ForwardedHeadersConfiguration.SectionName)
+            .Get<ForwardedHeadersConfiguration>();
+        Assert.True(persisted!.Enabled);
+        Assert.Equal(update.KnownForwarders, persisted.KnownForwarders);
+        Assert.Equal(update.ForwardLimit, persisted.ForwardLimit);
+    }
+
+    [Fact]
+    public async Task ForwardedHeaders_ReadOnlyConfigurationRejectsWrites()
+    {
+        var before = Read("backend.json").ToJsonString();
+        var result = await SettingsEndpoints.UpdateForwardedHeaders(
+            new ForwardedHeadersSettings(true, ["192.0.2.8"], 1), ConfigurationFileCatalog.For(_directory),
+            Options.Create(new SecurityConfiguration(true, None, None, None)), NullLogger<SettingsEndpoints>.Instance,
+            CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode);
+        Assert.Equal(before, Read("backend.json").ToJsonString());
     }
 
     [Fact]

@@ -6,7 +6,8 @@
 
 | Specification | Version | Status |
 | --- | --- | --- |
-| [Configuration JSON validation](./configuration-json-1.1.0.md) | 1.1.0 | Current |
+| [Configuration JSON validation](./configuration-json-1.2.0.md) | 1.2.0 | Current |
+| [Configuration JSON validation](./configuration-json-1.1.0.md) | 1.1.0 | Previous |
 | [Configuration JSON validation](./configuration-json-1.0.2.md) | 1.0.2 | Previous |
 | [Configuration JSON validation](./configuration-json-1.0.1.md) | 1.0.1 | Previous |
 | [Configuration JSON validation](./configuration-json-1.0.0.md) | 1.0.0 | Previous |

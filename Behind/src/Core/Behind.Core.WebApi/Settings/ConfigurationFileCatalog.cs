@@ -5,6 +5,7 @@ namespace Behind.Core.WebApi.Settings;
 
 public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<string> Names)
 {
+    public const string BackendFile = "backend.json";
     public const string EmailEditor = "email";
     public const string EmailFile = "email.json";
     public const string LoggingEditor = "logging";
@@ -15,7 +16,7 @@ public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<
     public static readonly IReadOnlyList<string> DefaultNames =
     [
         AppSettingsFile,
-        "backend.json",
+        BackendFile,
         CachingFile,
         "database.json",
         EmailFile,
@@ -33,7 +34,7 @@ public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<
     public static ConfigurationFileCatalog For(string root) => For(root, []);
 
     public static ConfigurationFileCatalog For(string root, IEnumerable<string> moduleNames) =>
-        new(new DirectoryInfo(root), [..DefaultNames.Concat(moduleNames).Distinct(StringComparer.OrdinalIgnoreCase)]);
+        new(new DirectoryInfo(root), [.. DefaultNames.Concat(moduleNames).Distinct(StringComparer.OrdinalIgnoreCase)]);
 
     public IReadOnlyList<FileInfo> Files =>
     [

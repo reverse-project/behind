@@ -108,6 +108,8 @@ public sealed record StartupBackendSection(
     SchedulerConfiguration Scheduler
 )
 {
+    public ForwardedHeadersConfiguration ForwardedHeaders { get; init; } = new();
+
     public int AuditSearchMaxEntries { get; init; } = new BackendConfiguration().AuditSearchMaxEntries;
 
     public int AuditSearchMaxCandidates { get; init; } = new BackendConfiguration().AuditSearchMaxCandidates;

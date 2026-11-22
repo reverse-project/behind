@@ -1,5 +1,6 @@
 using System.Data;
 using System.Security.Claims;
+using System.Text.Json;
 using Behind.Common.Database.Modules;
 using Behind.Core.Common;
 using Behind.Core.Common.Configuration;
@@ -23,13 +24,14 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public sealed class SubaccountEndpointsTests
 {
-    private static (DefaultHttpContext Http, ISessionQueries Queries, Guid SessionId) AsUser(Guid actor)
+    private static (DefaultHttpContext Http, ISessionQueries Queries, Guid SessionId) AsUser(Guid actor, Guid? familyPrimaryId = null)
     {
         var sessionId = Guid.NewGuid();
         var queries = Substitute.For<ISessionQueries>();
         queries.TryFindByIdWithUserId(sessionId, Arg.Any<CancellationToken>())
             .Returns(Some<(Session, Guid)>((new ValidSession(AccessToken.Create(new GuestUser(None)),
-                RefreshToken.Create(new GuestUser(None)), "127.0.0.1", "test"), actor)));
+                RefreshToken.Create(new GuestUser(None)), "127.0.0.1", "test")
+            { FamilyPrimaryUserId = familyPrimaryId }, actor)));
         var http = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("session_id", sessionId.ToString())], "test"))
@@ -53,7 +55,7 @@ public sealed class SubaccountEndpointsTests
     }
 
     [Fact]
-    public async Task PinChangesRequireProofForTargetAndPrimaryAuthority()
+    public async Task PrimaryPinManagementRequiresProofAndFamilyAuthority()
     {
         using var factory = new TestDbContextFactory();
         await using var db = factory.CreateContext();
@@ -61,7 +63,6 @@ public sealed class SubaccountEndpointsTests
         var childId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "child@example.test");
         var outsiderId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "other@example.test");
         var parent = AsUser(parentId);
-        var child = AsUser(childId);
         var parentUser = (await db.Users.FindAsync(parentId))!;
         var childUser = (await db.Users.FindAsync(childId))!;
         db.Subaccounts.Add(new Subaccount(parentUser, childUser, false));
@@ -82,13 +83,68 @@ public sealed class SubaccountEndpointsTests
         var change = new SubaccountEndpoints.PinRequest("5678", false, new(CurrentPin: "1234"));
         Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(parentId, change, parent.Http, parent.Queries, db));
         Assert.IsType<NotFound>(await SubaccountEndpoints.ChangePin(outsiderId, change, parent.Http, parent.Queries, db));
-        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(childId, change, child.Http, child.Queries, db));
         Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(childId, change, parent.Http, parent.Queries, db));
         Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(childId, change, parent.Http, parent.Queries, db));
         var remove = new SubaccountEndpoints.PinRequest(null, true, new(Password: "wrong"));
         Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(childId, remove, parent.Http, parent.Queries, db));
         Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(childId, remove with { Proof = password }, parent.Http, parent.Queries, db));
         Assert.False(await db.UserSwitchPins.AnyAsync());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SubaccountCanChangeAndUnsetOnlyItsExistingPin(bool switched)
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        var parentId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "parent@example.test");
+        var childId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "child@example.test");
+        var siblingId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "sibling@example.test");
+        var parent = (await db.Users.FindAsync(parentId))!;
+        var child = (await db.Users.FindAsync(childId))!;
+        var sibling = (await db.Users.FindAsync(siblingId))!;
+        db.Subaccounts.AddRange(new Subaccount(parent, child, false), new Subaccount(parent, sibling, false));
+        db.UserSwitchPins.AddRange(
+            new UserSwitchPin(child, new PinHash(PasswordHash.Create("1234"))),
+            new UserSwitchPin(parent, new PinHash(PasswordHash.Create("1234"))),
+            new UserSwitchPin(sibling, new PinHash(PasswordHash.Create("1234"))));
+        await db.SaveChangesAsync();
+        var actor = AsUser(childId, switched ? parentId : null);
+        var password = await SetPassword(db, childId, actor.Http);
+        var currentPin = new SubaccountEndpoints.PinProof(CurrentPin: "1234");
+
+        Task<IResult> Change(Guid target, string? pin, SubaccountEndpoints.PinProof? proof) =>
+            SubaccountEndpoints.ChangePin(target, new(pin, pin is null, proof), actor.Http, actor.Queries, db);
+
+        async Task<bool> CurrentHasPin()
+        {
+            var result = await SubaccountEndpoints.List(actor.Http, actor.Queries, db, Options.Create(new SecurityConfiguration()));
+            var value = Assert.IsAssignableFrom<IValueHttpResult>(result).Value;
+            return JsonSerializer.SerializeToElement(value).GetProperty("CurrentHasPin").GetBoolean();
+        }
+
+        Assert.True(await CurrentHasPin());
+        Assert.IsType<ForbidHttpResult>(await Change(parentId, "5678", currentPin));
+        Assert.IsType<ForbidHttpResult>(await Change(siblingId, null, currentPin));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "5678", null));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, null, null));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "5678", new(CurrentPin: "0000")));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, null, new(CurrentPin: "0000")));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "5678", password));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "5678", new(PrimaryPin: "1234")));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "5678", new(MagicToken: "token")));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "5678", currentPin with { Password = password.Password }));
+
+        Assert.IsType<NoContent>(await Change(childId, "5678", currentPin));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, null, currentPin));
+        Assert.IsType<NoContent>(await Change(childId, null, new(CurrentPin: "5678")));
+        Assert.False(await CurrentHasPin());
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "1234", new(CurrentPin: "5678")));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, null, new(CurrentPin: "5678")));
+        Assert.Equal(2, await db.UserSwitchPins.CountAsync());
+        Assert.All(await db.UserSwitchPins.ToListAsync(),
+            pin => Assert.True(PasswordHash.CreateFromExisting(pin.PinHash.ToString()).Verify("1234")));
     }
 
     [Theory]

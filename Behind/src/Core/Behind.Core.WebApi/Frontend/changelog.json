@@ -3,6 +3,7 @@
     "version": "1.0.3",
     "date": "2026-11-21",
     "changes": [
+      { "type": "added", "text": "Linked subaccounts can change or remove their own switching PIN from their profile by entering their current PIN." },
       { "type": "added", "text": "Primary users can verify a linked subaccount’s switching PIN change or removal with their own current PIN in the profile manager." },
       { "type": "added", "text": "Verify switching PIN changes with the current PIN, your password, or a one-time email link. Authorized administrators can remove a user’s switching PIN from User Administration." },
       { "type": "fixed", "text": "Switch between linked accounts, including back to the primary account, without leaving the current page or reloading it." },

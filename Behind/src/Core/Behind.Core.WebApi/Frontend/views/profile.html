@@ -53,7 +53,7 @@
             <button type="button" class="btn btn-outline-secondary" data-bind="enable: !busy() && !impersonating(), click: reloadEmails, t: 'common.refresh'">Refresh</button>
         </form>
     </div>
-    <subaccount-panel params="manager: true"></subaccount-panel>
+    <subaccount-panel params="manager: true, userId: userId"></subaccount-panel>
     <form class="mt-4" data-bind="visible: isSignedIn, submit: submitPassword">
         <p class="alert alert-info" role="status" data-bind="visible: settingNewPassword, t: 'profile.setNewPassword'">You signed in with a lost password link. Set a new password now.</p>
         <div class="mb-3">

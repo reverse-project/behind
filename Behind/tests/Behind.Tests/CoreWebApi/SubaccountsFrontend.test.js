@@ -14,7 +14,7 @@ function accessToken(sessionId, nonce) {
     return "header." + payload + ".signature";
 }
 
-async function setup(accounts, primary = true, primaryHasPin = false, linkUnlinkEnabled = false, pending = []) {
+async function setup(accounts, primary = true, primaryHasPin = false, linkUnlinkEnabled = false, pending = [], profile = {}) {
     const requests = [];
     const sessions = [];
     const reloads = [];
@@ -46,7 +46,7 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     const http = {
         get: async url => ({
             ok: true,
-            data: url.endsWith("/requests") ? pending : { accounts, isPrimary: primary, primaryUserId: "owner", primaryHasPin, linkUnlinkEnabled }
+            data: url.endsWith("/requests") ? pending : { accounts, isPrimary: primary, primaryUserId: "owner", primaryHasPin, linkUnlinkEnabled, currentHasPin: profile.currentHasPin }
         }),
         delete: async url => {
             requests.push({ url, method: "DELETE" });
@@ -73,7 +73,7 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
         window,
         define: (_, factory) => {
             const component = factory(ko, http, session, invalidation, { t: key => key }, { label: account => account.displayName }, { password: () => true, magicLink: () => true }, "");
-            panel = new component.viewModel({ manager: primary });
+            panel = new component.viewModel({ manager: profile.manager ?? primary, userId: profile.userId });
         }
     });
     await new Promise(resolve => setImmediate(resolve));
@@ -292,7 +292,7 @@ test("late session renewal and unauthorized requests cannot affect the replaceme
 test("the common account menu and profile expose localized subaccount controls", () => {
     const read = name => fs.readFileSync(path.join(frontend, name), "utf8");
     assert.match(read("components/menuitems.html"), /attributes.href === '#\/profile' && \$component.isDropdown/);
-    assert.match(read("views/profile.html"), /<subaccount-panel params="manager: true">/);
+    assert.match(read("views/profile.html"), /<subaccount-panel params="manager: true, userId: userId">/);
     const labels = (source + read("components/subaccounts.html")).match(/subaccount\.[a-zA-Z]+/g);
     for (const locale of ["en-US", "hu-HU"]) {
         const messages = JSON.parse(read("locales/" + locale + ".json")).messages;
@@ -409,5 +409,100 @@ test("primary PIN changes send scoped magic proof only on explicit save", async 
     assert.equal(requests[1].body.proof.magicToken, "one-time proof");
     assert.equal(requests[1].body.pin, "007");
     assert.equal(panel.credential(), "");
+    panel.dispose();
+});
+
+test("a directly signed-in subaccount changes and removes its PIN on its own profile", async () => {
+    const profile = { manager: true, userId: ko.observable(""), currentHasPin: true };
+    const { panel, requests, location, reloads, sessions } = await setup([], false, false, false, [], profile);
+    assert.equal(panel.editAccount(), null);
+    profile.userId("self");
+    assert.equal(panel.editAccount().userId, "self");
+    assert.equal(panel.pinOnly(), true);
+    assert.deepEqual(Array.from(panel.proofMethods()), ["currentPin"]);
+    assert.equal(panel.proofLabel("currentPin"), "subaccount.yourCurrentPin");
+    await panel.save();
+    await panel.requestPinProof();
+    panel.pin("0052");
+    await panel.save();
+    for (const method of ["primaryPin", "password", "magicToken"]) {
+        panel.proofMethod(method);
+        panel.credential("wrong method");
+        await panel.save();
+    }
+    assert.equal(requests.length, 0);
+    panel.proofMethod("currentPin");
+    panel.credential("0051");
+    await panel.save();
+    assert.equal(panel.editAccount().userId, "self");
+    assert.equal(panel.message(), "subaccount.ownPinChanged");
+    assert.equal(panel.pin(), "");
+    assert.equal(panel.credential(), "");
+    panel.credential("0052");
+    panel.clearPin(true);
+    profile.currentHasPin = false;
+    await panel.save();
+    assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
+        { url: "/profile/subaccounts/self/pin", body: { pin: "0052", clearPin: false, proof: { currentPin: "0051" } } },
+        { url: "/profile/subaccounts/self/pin", body: { pin: null, clearPin: true, proof: { currentPin: "0052" } } }
+    ]);
+    assert.equal(panel.editAccount(), null);
+    assert.equal(panel.credential(), "");
+    assert.equal(panel.clearPin(), false);
+    assert.equal(panel.message(), "subaccount.ownPinRemoved");
+    panel.pin("0001");
+    panel.credential("0052");
+    await panel.save();
+    assert.equal(requests.length, 2);
+    assert.equal(location.hash, "#/profile");
+    assert.deepEqual(reloads, []);
+    assert.deepEqual(sessions, []);
+    panel.dispose();
+});
+
+test("a switched subaccount always targets itself and ignores stale PIN responses", async () => {
+    const sibling = { userId: "sibling", hasPin: true };
+    const profile = { manager: true, userId: "self", currentHasPin: true };
+    const { panel, http, session } = await setup([sibling], false, true, false, [], profile);
+    panel.selected(sibling);
+    panel.clearPin(true);
+    panel.credential("0050");
+    http.put = async (url, body) => {
+        assert.equal(url, "/profile/subaccounts/self/pin");
+        assert.deepEqual({ ...body.proof }, { currentPin: "0050" });
+        return { ok: false, status: 403 };
+    };
+    await panel.save();
+    assert.equal(panel.message(), "subaccount.currentPinRejected");
+    assert.equal(panel.editAccount().userId, "self");
+
+    let reply;
+    http.put = () => new Promise(resolve => { reply = resolve; });
+    const pending = panel.save();
+    session.replace({ accessToken: accessToken("replacement", "initial") });
+    reply({ ok: true });
+    await pending;
+    assert.equal(panel.editAccount(), null);
+    assert.equal(panel.credential(), "");
+    assert.equal(panel.pin(), "");
+    assert.equal(panel.busy(), false);
+    panel.dispose();
+});
+
+test("a previous session's PIN success message does not appear after a slow profile refresh", async () => {
+    const profile = { manager: true, userId: "self", currentHasPin: true };
+    const { panel, http, session } = await setup([], false, false, false, [], profile);
+    let reply;
+    http.get = () => new Promise(resolve => { reply = resolve; });
+    panel.clearPin(true);
+    panel.credential("1928");
+    const saving = panel.save();
+    await new Promise(resolve => setImmediate(resolve));
+    session.end();
+    reply({ ok: true, data: { isPrimary: false, primaryUserId: "owner", currentHasPin: false, accounts: [] } });
+    await saving;
+    assert.equal(panel.message(), "");
+    assert.equal(panel.editAccount(), null);
+    assert.equal(panel.busy(), false);
     panel.dispose();
 });

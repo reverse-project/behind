@@ -70,6 +70,9 @@ public sealed class SubaccountEndpoints
         var requireConfirmation = security.Value.EmailConfirmation;
         List<Account> accounts = [];
         var primaryHasPin = family.CanSwitch && await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted);
+        var currentHasPin = family.IsPrimary
+            ? primaryHasPin
+            : await PinsFor(db, family.Current.UserId).AnyAsync(http.RequestAborted);
         if (family.CanSwitch)
         {
             accounts = await (from link in db.Subaccounts
@@ -91,7 +94,15 @@ public sealed class SubaccountEndpoints
                 accounts.Insert(0, primary);
             }
         }
-        return Results.Ok(new { LinkUnlinkEnabled = linkUnlinkEnabled, family.IsPrimary, family.PrimaryUserId, PrimaryHasPin = primaryHasPin, Accounts = accounts });
+        return Results.Ok(new
+        {
+            LinkUnlinkEnabled = linkUnlinkEnabled,
+            family.IsPrimary,
+            family.PrimaryUserId,
+            PrimaryHasPin = primaryHasPin,
+            CurrentHasPin = currentHasPin,
+            Accounts = accounts
+        });
     }
 
     [Authorize, IgnoreETag]
@@ -212,7 +223,7 @@ public sealed class SubaccountEndpoints
     public static async Task<IResult> ChangePin(Guid userId, PinRequest request, HttpContext http, ISessionQueries sessions, AbstractCoreContext db)
     {
         var family = await FindFamily(http, sessions, db);
-        if (family is not { IsPrimary: true })
+        if (family is null || (!family.IsPrimary && family.Current.UserId != userId))
         {
             return Results.Forbid();
         }
@@ -247,6 +258,10 @@ public sealed class SubaccountEndpoints
         {
             var hash = await PinsFor(db, credential.UserId).SingleOrDefaultAsync(http.RequestAborted);
             return hash is not null && PasswordHash.CreateFromExisting(hash.PinHash.ToString()).Verify(credential.Pin);
+        }
+        if (!family.IsPrimary)
+        {
+            return false;
         }
         if (proof is { Password: { Length: > 0 } password, CurrentPin: null, MagicToken: null, PrimaryPin: null })
         {

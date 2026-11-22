@@ -56,6 +56,36 @@ public sealed class SubaccountSchemaTests
         Assert.Equal(expected, ReadDefinition(definition, "2.1.0").Evaluate(JsonNode.Parse(request)).IsValid);
     }
 
+    [Fact]
+    public void Family_RequiresCurrentAccountPinStatus()
+    {
+        var family = JsonNode.Parse("""
+            {"isPrimary":false,"primaryUserId":"5418cd9a-dc39-4af9-9845-1891a543eda9","primaryHasPin":false,"linkUnlinkEnabled":false,"accounts":[]}
+            """)!;
+        var schema = ReadDefinition("family", "2.2.0");
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["currentHasPin"] = "true";
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["currentHasPin"] = true;
+        Assert.True(schema.Evaluate(family).IsValid);
+        family["currentHasPin"] = false;
+        Assert.True(schema.Evaluate(family).IsValid);
+    }
+
+    [Theory]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":"0017"}}""", true)]
+    [InlineData("""{"clearPin":true,"proof":{"currentPin":"0017"}}""", true)]
+    [InlineData("""{"pin":"0042"}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":""}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":"0017","primaryPin":"0035"}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"primaryPin":"0035"}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"password":"secret"}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"magicToken":"token"}}""", false)]
+    public void SelfPinMutation_RequiresOnlyTheCurrentPin(string request, bool expected)
+    {
+        Assert.Equal(expected, ReadDefinition("selfPinMutation", "2.2.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
     private static JsonSchema ReadDefinition(string name, string version = "1.2.1")
     {
         var assembly = typeof(FunctionalExtensions).Assembly;

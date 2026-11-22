@@ -7,6 +7,7 @@
     "subaccount.recovery": "A leválasztás előtt váltson át erre a fiókra, és ellenőrizze a bejelentkezési e-mail-címet a Profilban. Ha nincs cím, adjon hozzá egyet, és szükség esetén erősítse meg.",
     "subaccount.confirmRelease": "Leválasztja ezt a fiókot a családról?",
     "subaccount.linkExisting": "Meglévő fiók összekapcsolása",
+    "subaccount.linkDirectSignInHelp": "Alfiókok összekapcsolásához vagy leválasztásához jelentkezz be közvetlenül az elsődleges fiókba.",
     "subaccount.find": "Megjelenített név",
     "subaccount.browse": "Fiókok keresése",
     "subaccount.noCandidates": "Nincs megfelelő fiók.",

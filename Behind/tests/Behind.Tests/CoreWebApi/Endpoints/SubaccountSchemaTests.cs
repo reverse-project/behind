@@ -57,6 +57,22 @@ public sealed class SubaccountSchemaTests
     }
 
     [Fact]
+    public void Family_RequiresDirectSignInGuidanceFlag()
+    {
+        var family = JsonNode.Parse("""
+            {"isPrimary":true,"primaryUserId":"5418cd9a-dc39-4af9-9845-1891a543eda9","primaryHasPin":true,"linkUnlinkEnabled":false,"currentHasPin":true,"accounts":[]}
+            """)!;
+        var schema = ReadDefinition("family", "2.4.0");
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["linkUnlinkRequiresDirectSignIn"] = "true";
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["linkUnlinkRequiresDirectSignIn"] = true;
+        Assert.True(schema.Evaluate(family).IsValid);
+        family["linkUnlinkRequiresDirectSignIn"] = false;
+        Assert.True(schema.Evaluate(family).IsValid);
+    }
+
+    [Fact]
     public void Family_RequiresCurrentAccountPinStatus()
     {
         var family = JsonNode.Parse("""

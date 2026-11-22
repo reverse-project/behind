@@ -6,7 +6,8 @@
 
 | Specifikáció | Verzió | Állapot |
 | --- | --- | --- |
-| [Alfiókok API](./subaccounts-2.3.0.md) | 2.3.0 | Aktuális |
+| [Alfiókok API](./subaccounts-2.4.0.md) | 2.4.0 | Aktuális |
+| [Alfiókok API](./subaccounts-2.3.0.md) | 2.3.0 | Korábbi |
 | [Alfiókok API](./subaccounts-2.2.0.md) | 2.2.0 | Korábbi |
 | [Alfiókok API](./subaccounts-2.1.0.md) | 2.1.0 | Korábbi |
 | [Alfiókok API](./subaccounts-2.0.0.md) | 2.0.0 | Korábbi |

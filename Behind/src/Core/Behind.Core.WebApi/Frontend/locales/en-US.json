@@ -7,6 +7,7 @@
     "subaccount.recovery": "Before release, switch to this account and check its sign-in email in Profile. Add an address if one is missing and verify it if required.",
     "subaccount.confirmRelease": "Release this account from your family?",
     "subaccount.linkExisting": "Link an existing account",
+    "subaccount.linkDirectSignInHelp": "Sign in directly to the primary account to link or release subaccounts.",
     "subaccount.find": "Display name",
     "subaccount.browse": "Browse accounts",
     "subaccount.noCandidates": "No eligible accounts found.",

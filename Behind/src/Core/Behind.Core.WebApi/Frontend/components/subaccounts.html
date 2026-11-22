@@ -70,6 +70,12 @@
             <button type="button" class="btn btn-outline-danger" data-bind="click: release, enable: !busy() && selected().canRelease, t: 'subaccount.release'"></button>
             <p class="form-text" data-bind="visible: !selected().canRelease, t: 'subaccount.recovery'"></p>
         </div>
+        <!-- ko if: linkRequiresDirectSignIn -->
+        <p class="alert alert-info mt-3">
+            <span data-bind="t: 'subaccount.linkDirectSignInHelp'"></span>
+            <a href="#/sign-in" data-bind="t: 'subaccount.primary'">Sign in to primary account</a>
+        </p>
+        <!-- /ko -->
     </section>
     <section class="mt-4" data-bind="if: primary() && linkEnabled()">
         <h2 class="h5" data-bind="t: 'subaccount.linkExisting'"></h2>

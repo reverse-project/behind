@@ -228,6 +228,46 @@ public sealed class SubaccountEndpointsTests
         Assert.Equal([db.GetKey(second)], await Page(1));
     }
 
+    [Theory]
+    [InlineData(true, true, false, true, false)]
+    [InlineData(true, true, true, false, true)]
+    [InlineData(false, true, false, false, false)]
+    [InlineData(false, true, true, false, false)]
+    [InlineData(true, false, false, false, false)]
+    [InlineData(true, false, true, false, false)]
+    public async Task FamilyListDistinguishesDisabledLinkingFromRequiredDirectSignIn(
+        bool configured, bool isPrimary, bool switched, bool enabled, bool requiresDirectSignIn)
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        var parentId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "parent@example.test");
+        var childId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "child@example.test");
+        var parent = (await db.Users.FindAsync(parentId))!;
+        var child = (await db.Users.FindAsync(childId))!;
+        db.Subaccounts.Add(new Subaccount(parent, child, false));
+        await db.SaveChangesAsync();
+
+        var actor = AsUser(isPrimary ? parentId : childId, switched ? parentId : null);
+        var security = Options.Create(new SecurityConfiguration
+        {
+            Accounts = new() { LinkUnlink = configured },
+            EmailConfirmation = false
+        });
+        var result = await SubaccountEndpoints.List(actor.Http, actor.Queries, db, security);
+        var payload = JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(result).Value);
+        Assert.Equal(enabled, payload.GetProperty("LinkUnlinkEnabled").GetBoolean());
+        Assert.Equal(requiresDirectSignIn, payload.GetProperty("LinkUnlinkRequiresDirectSignIn").GetBoolean());
+        if (isPrimary)
+        {
+            Assert.Equal(enabled, payload.GetProperty("Accounts")[0].GetProperty("CanRelease").GetBoolean());
+        }
+        if (switched)
+        {
+            Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Candidates(null, actor.Http, actor.Queries, db));
+            Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Release(childId, actor.Http, actor.Queries, db, TimeProvider.System, security));
+        }
+    }
+
     [Fact]
     public async Task OnlyIntendedChildCanAcceptCurrentInvitationAndReleasePreservesAccount()
     {

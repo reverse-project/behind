@@ -66,7 +66,9 @@ public sealed class SubaccountEndpoints
             return Results.Forbid();
         }
 
-        var linkUnlinkEnabled = security.Value.Accounts.LinkUnlink && family.Current.FamilyPrimaryUserId is null && family.IsPrimary;
+        var canManageLinks = security.Value.Accounts.LinkUnlink && family.IsPrimary;
+        var isDirectSignIn = family.Current.FamilyPrimaryUserId is null;
+        var linkUnlinkEnabled = canManageLinks && isDirectSignIn;
         var requireConfirmation = security.Value.EmailConfirmation;
         List<Account> accounts = [];
         var primaryHasPin = family.CanSwitch && await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted);
@@ -97,6 +99,7 @@ public sealed class SubaccountEndpoints
         return Results.Ok(new
         {
             LinkUnlinkEnabled = linkUnlinkEnabled,
+            LinkUnlinkRequiresDirectSignIn = canManageLinks && !isDirectSignIn,
             family.IsPrimary,
             family.PrimaryUserId,
             PrimaryHasPin = primaryHasPin,

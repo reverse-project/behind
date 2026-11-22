@@ -25,6 +25,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.birthday = ko.observable("");
         self.clearPin = ko.observable(false);
         self.linkEnabled = ko.observable(false);
+        self.linkRequiresDirectSignIn = ko.observable(false);
         self.query = ko.observable("");
         self.candidates = ko.observableArray([]);
         self.moreCandidates = ko.observable(false);
@@ -130,6 +131,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             self.busy(false);
             clearProof();
             self.linkEnabled(false);
+            self.linkRequiresDirectSignIn(false);
             self.query("");
             self.candidates([]);
             self.requests([]);
@@ -169,6 +171,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                     currentHasPin(typeof response.data.currentHasPin === "boolean" ? response.data.currentHasPin : null);
                     clearProof();
                     self.linkEnabled(!!response.data.linkUnlinkEnabled);
+                    self.linkRequiresDirectSignIn(response.data.linkUnlinkRequiresDirectSignIn === true);
                     if (self.manager && self.linkEnabled() && self.primary()) {
                         return http.get(path + "/requests").then(function (pending) {
                             if (ticket === revision) {

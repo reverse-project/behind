@@ -1,4 +1,4 @@
-define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules", "models/layoutshell", "models/contentlocale", "models/about", "bindings/contentlocalescope"], function ($, migrate, ko, Sammy, accounts, branding, session, usersettings, restriction, i18n, modules, layoutShell, contentLocale, about) {
+define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/auth", "models/branding", "models/session", "models/usersettings", "models/restriction", "models/i18n", "models/modules", "models/layoutshell", "models/contentlocale", "models/about", "bindings/contentlocalescope"], function ($, migrate, ko, Sammy, accounts, auth, branding, session, usersettings, restriction, i18n, modules, layoutShell, contentLocale, about) {
     var routes = {
         "#/": "controllers/home",
         "#/sign-in": "controllers/signin",
@@ -83,6 +83,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     var aliasController = "controllers/routealias";
     var following = false;
     var execution = 0;
+    var refreshingAccount = false;
 
     ko.components.register("pager", { require: "components/pager" });
     ko.components.register("captcha", { require: "components/captcha" });
@@ -152,6 +153,10 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
 
     var execute = function (requested, params) {
         var ticket = ++execution;
+        if (refreshingAccount) {
+            return;
+        }
+
         contentLocale.clearMedia();
         i18n.useContent(contentLocale.current());
         var controllerName = restriction.restricted() && openControllers.indexOf(requested) < 0
@@ -164,6 +169,14 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
             }
             var guardedContext = $.extend({}, context, {
                 params: params,
+                follow: function (hash) {
+                    return ticket === execution && context.follow(hash);
+                },
+                fallback: function (params) {
+                    if (ticket === execution) {
+                        context.fallback(params);
+                    }
+                },
                 renderView: function (view, viewModel) {
                     if (ticket === execution) {
                         context.renderView(view, viewModel);
@@ -236,15 +249,38 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     };
 
     var syncUserSettings = function () {
-        var settings = session.isSignedIn() ? usersettings.load() : usersettings.clear();
+        var owner = session.generation();
+        var settings = session.accessToken() ? usersettings.load() : usersettings.clear();
         return settings.then(function (result) {
-            if (result.ok) {
+            if (result.ok && owner === session.generation()) {
                 contentLocale.current(contentLocale.defaultLocale([
                     usersettings.locale(),
                     i18n.remembered()
                 ], branding.locale()));
             }
             return result;
+        });
+    };
+
+    var refreshAccount = function (owner) {
+        refreshingAccount = true;
+        execution++;
+        var element = container();
+        ko.cleanNode(element[0]);
+        element.empty();
+        layoutShell.resetAccount();
+        usersettings.clear();
+        restriction.clear();
+
+        return Promise.all([
+            auth.loadSession(),
+            syncUserSettings(),
+            syncRestriction()
+        ]).finally(function () {
+            if (owner === session.generation()) {
+                refreshingAccount = false;
+                router.runRoute("get", window.location.hash || "#/");
+            }
         });
     };
 
@@ -323,10 +359,19 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
                         });
                     });
                     usersettings.locale.subscribe(i18n.useAccount);
-                    session.isSignedIn.subscribe(syncUserSettings);
-                    session.isImpersonating.subscribe(syncUserSettings);
-                    session.isSignedIn.subscribe(syncRestriction);
-                    session.isImpersonating.subscribe(syncRestriction);
+                    var wasSignedIn = !!session.accessToken();
+                    session.generation.subscribe(function (owner) {
+                        var signedIn = !!session.accessToken();
+                        var replaceAccount = refreshingAccount || wasSignedIn && signedIn;
+                        wasSignedIn = signedIn;
+
+                        if (replaceAccount) {
+                            refreshAccount(owner);
+                        } else {
+                            syncUserSettings();
+                            syncRestriction();
+                        }
+                    });
                     restriction.restricted.subscribe(function () {
                         router.runRoute("get", window.location.hash || "#/");
                     });

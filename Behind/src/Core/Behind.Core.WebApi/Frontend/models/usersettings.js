@@ -30,7 +30,9 @@ define(["ko", "models/http", "models/results"], function (ko, http, results) {
             return http.get("/profile/settings").then(function (response) {
                 var loaded = response.ok && response.data && typeof response.data === "object" ? response.data : {};
 
-                values(loaded);
+                if (!response.stale) {
+                    values(loaded);
+                }
 
                 return { ok: response.ok };
             });

@@ -13,6 +13,7 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
 
     var sessionUrl = "/session";
     var pendingSession = null;
+    var stale = { ok: false, status: 0, data: null, stale: true };
     var maxCachedResponses = 100;
     var responseCache = { owner: null, entries: new Map() };
 
@@ -43,6 +44,7 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
     };
 
     var send = function (method, url, body, extraHeaders, requestLocale, withCredentials) {
+        var owner = session.generation();
         var token = session.accessToken();
         var hasBody = body !== undefined;
         var isForm = hasBody && body instanceof FormData;
@@ -74,6 +76,11 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
                 xhrFields: withCredentials ? { withCredentials: true } : undefined
             }).then(
                 function (data, status, xhr) {
+                    if (owner !== session.generation()) {
+                        resolve(stale);
+                        return;
+                    }
+
                     if (cached && xhr.status === 304) {
                         resolve({ ok: true, status: 200, data: parse(cached.text) });
                         return;
@@ -90,6 +97,11 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
                     resolve({ ok: true, status: xhr.status, data: parsed });
                 },
                 function (xhr) {
+                    if (owner !== session.generation()) {
+                        resolve(stale);
+                        return;
+                    }
+
                     if (entries) {
                         entries.delete(cacheKey);
                     }
@@ -101,9 +113,14 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
     };
 
     var loadSession = function () {
-        if (!pendingSession) {
-            pendingSession = send("GET", sessionUrl, undefined, session.refreshHeaders())
+        var owner = session.generation();
+        if (!pendingSession || pendingSession.owner !== owner) {
+            var request = send("GET", sessionUrl, undefined, session.refreshHeaders())
                 .then(function (response) {
+                    if (owner !== session.generation()) {
+                        return stale;
+                    }
+
                     if (response.status === 401) {
                         session.end();
                     }
@@ -115,11 +132,14 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
                     return response;
                 })
                 .finally(function () {
-                    pendingSession = null;
+                    if (pendingSession && pendingSession.request === request) {
+                        pendingSession = null;
+                    }
                 });
+            pendingSession = { owner: owner, request: request };
         }
 
-        return pendingSession;
+        return pendingSession.request;
     };
 
     var renew = function () {
@@ -129,16 +149,25 @@ define(["jquery", "models/session", "models/contentlocale"], function ($, sessio
     };
 
     var request = function (method, url, body, extraHeaders, withCredentials) {
+        var owner = session.generation();
         var wasSignedIn = session.isSignedIn();
         var locale = contentLocale.current();
 
         return send(method, url, body, extraHeaders, locale, withCredentials).then(function (response) {
+            if (owner !== session.generation()) {
+                return stale;
+            }
+
             if (response.status !== 401 || !wasSignedIn || url === sessionUrl) {
                 return response;
             }
 
             return renew().then(function (renewed) {
-                return renewed ? send(method, url, body, extraHeaders, locale, withCredentials) : response;
+                if (renewed && owner === session.generation()) {
+                    return send(method, url, body, extraHeaders, locale, withCredentials);
+                }
+
+                return owner === session.generation() ? response : stale;
             });
         });
     };

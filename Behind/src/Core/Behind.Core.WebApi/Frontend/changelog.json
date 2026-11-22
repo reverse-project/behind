@@ -3,6 +3,7 @@
     "version": "1.0.3",
     "date": "2026-11-21",
     "changes": [
+      { "type": "fixed", "text": "Switch between linked accounts, including back to the primary account, without leaving the current page or reloading it." },
       { "type": "added", "text": "Administrators can lower the maximum switching PIN length in security.json. The default remains 128 characters." },
       { "type": "fixed", "text": "User management explains when linked subaccounts block permanent account deletion." },
       { "type": "fixed", "text": "Account switching completes when sign-in tokens renew or the account menu refreshes during the request. Conflicting first PIN updates preserve the saved PIN and profile." },

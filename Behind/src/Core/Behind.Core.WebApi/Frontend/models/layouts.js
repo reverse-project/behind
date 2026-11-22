@@ -93,6 +93,11 @@ define(["models/http", "models/invalidation", "models/results", "models/contentl
                 return outcome.loaded(response, imageFailures);
             });
         },
+        clear: function () {
+            configuration = null;
+            configurationLocale = null;
+            pending = {};
+        },
         load: load,
         select: select,
         selectAssigned: selectAssigned,

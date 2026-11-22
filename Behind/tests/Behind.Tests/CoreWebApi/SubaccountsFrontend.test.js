@@ -5,6 +5,8 @@ const vm = require("node:vm");
 const { test } = require("node:test");
 const frontend = path.resolve(__dirname, "../../../src/Core/Behind.Core.WebApi/Frontend");
 const ko = require(path.join(frontend, "libraries/knockout.min.js"));
+const httpSource = fs.readFileSync(path.join(frontend, "models/http.js"), "utf8");
+const sessionSource = fs.readFileSync(path.join(frontend, "models/session.js"), "utf8");
 const source = fs.readFileSync(path.join(frontend, "components/subaccounts.js"), "utf8");
 
 function accessToken(sessionId, nonce) {
@@ -17,10 +19,29 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     const sessions = [];
     const reloads = [];
     const handlers = new Set();
-    const session = {
-        accessToken: ko.observable(accessToken("owner-session", "original")),
-        isImpersonating: ko.observable(false),
-        start: tokens => sessions.push(tokens)
+    let session;
+    const storage = new Map([["behind.session", JSON.stringify({ accessToken: accessToken("owner-session", "original") })]]);
+    const location = { hash: "#/profile", reload: () => reloads.push(true) };
+    const window = {
+        atob,
+        confirm: () => true,
+        location,
+        addEventListener() {},
+        localStorage: {
+            getItem: key => storage.get(key) ?? null,
+            setItem: (key, value) => storage.set(key, value),
+            removeItem: key => storage.delete(key)
+        }
+    };
+    vm.runInNewContext(sessionSource, {
+        window,
+        define: (_, factory) => { session = factory({ extend: Object.assign }, ko); }
+    });
+    const start = session.start;
+    session.replace = start;
+    session.start = tokens => {
+        sessions.push(tokens);
+        start(tokens);
     };
     const http = {
         get: async url => ({
@@ -49,14 +70,14 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     };
     let panel;
     vm.runInNewContext(source, {
-        window: { atob, confirm: () => true, location: { reload: () => reloads.push(true) } },
+        window,
         define: (_, factory) => {
             const component = factory(ko, http, session, invalidation, { t: key => key }, { label: account => account.displayName }, "");
             panel = new component.viewModel({ manager: primary });
         }
     });
     await new Promise(resolve => setImmediate(resolve));
-    return { panel, session, sessions, requests, reloads, http, invalidation };
+    return { panel, session, sessions, requests, reloads, location, http, invalidation };
 }
 
 test("create a child without a sign-in email and clear its PIN on edit", async () => {
@@ -85,7 +106,7 @@ test("create a child without a sign-in email and clear its PIN on edit", async (
 
 test("switch to a sibling only after server acceptance and discard the PIN when changing targets", async () => {
     const siblings = [{ userId: "protected", hasPin: true }, { userId: "open", hasPin: false }];
-    const { panel, http, sessions, requests, reloads } = await setup(siblings, false);
+    const { panel, http, session, sessions, requests, reloads, location } = await setup(siblings, false);
     assert.equal(panel.primary(), false);
     assert.equal(panel.linked(), true);
     panel.selected(siblings[0]);
@@ -102,7 +123,9 @@ test("switch to a sibling only after server acceptance and discard the PIN when 
     assert.equal(requests[0].url, "/profile/subaccounts/open/switch");
     assert.equal(requests[0].body.pin, null);
     assert.deepEqual(sessions, [{ accessToken: "new-token" }]);
-    assert.equal(reloads.length, 1);
+    assert.equal(session.accessToken(), "new-token");
+    assert.equal(location.hash, "#/profile");
+    assert.equal(reloads.length, 0);
     panel.dispose();
 });
 
@@ -113,14 +136,14 @@ test("accept a successful switch after renewal changes the token for the same se
     panel.pin("8123");
     const post = http.post;
     http.post = async (url, body) => {
-        session.accessToken(accessToken("owner-session", "renewed"));
+        session.renew({ accessToken: accessToken("owner-session", "renewed") });
         assert.equal(panel.busy(), true);
         assert.equal(body.pin, "8123");
         return post(url, body);
     };
     await panel.switchUser();
     assert.deepEqual(sessions, [{ accessToken: "new-token" }]);
-    assert.equal(reloads.length, 1);
+    assert.equal(reloads.length, 0);
     assert.equal(panel.busy(), false);
     panel.dispose();
 });
@@ -128,12 +151,12 @@ test("accept a successful switch after renewal changes the token for the same se
 test("discard switch responses after session changes", async () => {
     const child = { userId: "child" };
     for (const supersede of [
-        ({ session }) => session.accessToken(accessToken("other-session", "original")),
-        ({ session }) => session.accessToken(null),
-        ({ session }) => session.isImpersonating(true),
+        ({ session }) => session.replace({ accessToken: accessToken("other-session", "original") }),
+        ({ session }) => session.end(),
+        ({ session }) => session.impersonate({ accessToken: accessToken("impersonated-session", "original") }),
         ({ panel, session }) => {
             panel.dispose();
-            session.accessToken(accessToken("other-session", "original"));
+            session.replace({ accessToken: accessToken("other-session", "original") });
         }
     ]) {
         const fixture = await setup([child]);
@@ -167,7 +190,7 @@ test("complete a successful switch after the account list refreshes or the panel
         };
         await panel.switchUser();
         assert.deepEqual(sessions, [{ accessToken: "new-token" }]);
-        assert.equal(reloads.length, 1);
+        assert.equal(reloads.length, 0);
         panel.dispose();
     }
 });
@@ -189,7 +212,7 @@ test("skip setup or preserve an existing primary PIN when creating an account", 
 
 test("switch back to the primary account with its PIN", async () => {
     const owner = { userId: "owner", hasPin: true, displayName: "Alex" };
-    const { panel, sessions, requests } = await setup([owner], false, true);
+    const { panel, session, sessions, requests, location, reloads } = await setup([owner], false, true);
     assert.equal(panel.label(owner), "Alex (subaccount.primaryLabel)");
     panel.selected(owner);
     panel.pin("0012");
@@ -197,7 +220,68 @@ test("switch back to the primary account with its PIN", async () => {
     assert.equal(requests[0].url, "/profile/subaccounts/owner/switch");
     assert.equal(requests[0].body.pin, "0012");
     assert.deepEqual(sessions, [{ accessToken: "new-token" }]);
+    assert.equal(session.accessToken(), "new-token");
+    assert.equal(location.hash, "#/profile");
+    assert.equal(reloads.length, 0);
     panel.dispose();
+});
+
+test("late session renewal and unauthorized requests cannot affect the replacement session", async () => {
+    const { panel, session } = await setup([]);
+    panel.dispose();
+    const pending = [];
+    const $ = {
+        extend: Object.assign,
+        isEmptyObject: object => Object.keys(object).length === 0,
+        ajax: options => ({
+            then(resolve, reject) {
+                pending.push({
+                    options,
+                    reply(status, data) {
+                        const responseText = JSON.stringify(data);
+                        const xhr = { status, responseText, getResponseHeader: () => null };
+                        if (status === 200) {
+                            resolve(responseText, "success", xhr);
+                        } else {
+                            reject(xhr);
+                        }
+                    }
+                });
+            }
+        })
+    };
+    let http;
+    vm.runInNewContext(httpSource, {
+        define: (_, factory) => { http = factory($, session, { current: () => null }); }
+    });
+
+    const oldSession = http.loadSession();
+    const oldProfile = http.get("/profile/details");
+    const nextToken = accessToken("new-session", "original");
+    session.replace({ accessToken: nextToken });
+    const nextSession = http.loadSession();
+    assert.equal(http.loadSession(), nextSession);
+    assert.equal(pending[2].options.headers.Authorization, "Bearer " + nextToken);
+
+    pending[0].reply(200, { refreshed: { accessToken: accessToken("owner-session", "late") } });
+    pending[1].reply(401, {});
+    assert.equal((await oldSession).stale, true);
+    assert.equal((await oldProfile).stale, true);
+    assert.equal(http.loadSession(), nextSession);
+    assert.equal(session.accessToken(), nextToken);
+    assert.equal(pending.length, 3);
+
+    pending[2].reply(200, { user: { id: "new-user" } });
+    assert.equal((await nextSession).data.user.id, "new-user");
+
+    const delayedSession = http.loadSession();
+    session.replace({ accessToken: accessToken("third-session", "original") });
+    const thirdSession = http.loadSession();
+    pending[4].reply(200, { user: { id: "third-user" } });
+    await thirdSession;
+    pending[3].reply(401, {});
+    assert.equal((await delayedSession).stale, true);
+    assert.equal(session.isSignedIn(), true);
 });
 
 test("the common account menu and profile expose localized subaccount controls", () => {
@@ -273,7 +357,7 @@ test("signing out during a search clears busy state and discards private results
     let respond;
     http.get = () => new Promise(resolve => { respond = resolve; });
     const operation = panel.search();
-    session.accessToken(null);
+    session.end();
     assert.equal(panel.busy(), false);
     respond({ ok: true, data: [{ userId: "candidate", displayName: "Alex" }] });
     await operation;

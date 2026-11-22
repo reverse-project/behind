@@ -119,6 +119,7 @@ async function main() {
     };
     const session = {
         accessToken: () => "",
+        generation: observable(0),
         isSignedIn: observable(false),
         isImpersonating: observable(false),
         refreshHeaders: () => ({})

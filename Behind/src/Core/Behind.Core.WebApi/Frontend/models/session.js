@@ -14,6 +14,28 @@ define(["jquery", "ko"], function ($, ko) {
     var stashed = ko.observable(restore(impersonatorKey));
     var verified = ko.observable(false);
 
+    var sessionIdentity = function (token) {
+        if (!token) {
+            return null;
+        }
+
+        try {
+            var payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+            var sessionId = JSON.parse(window.atob(payload)).session_id;
+            return typeof sessionId === "string" && sessionId ? sessionId : token;
+        } catch (error) {
+            return token;
+        }
+    };
+
+    var generation = ko.observable(0);
+    ko.pureComputed(function () {
+        var current = tokens();
+        return sessionIdentity(current && current.accessToken);
+    }).subscribe(function () {
+        generation(generation() + 1);
+    });
+
     window.addEventListener("storage", function (event) {
         if (event.storageArea !== window.localStorage) {
             return;
@@ -52,6 +74,7 @@ define(["jquery", "ko"], function ($, ko) {
     };
 
     return {
+        generation: ko.pureComputed(function () { return generation(); }),
         isSignedIn: ko.pureComputed(function () {
             return tokens() !== null;
         }),
@@ -70,7 +93,10 @@ define(["jquery", "ko"], function ($, ko) {
         identify: function (displayName, grants) {
             var current = tokens();
 
-            if (current) {
+            if (current && (current.displayName !== displayName || !current.grants
+                || current.grants.length !== grants.length || current.grants.some(function (grant, index) {
+                    return grant !== grants[index];
+                }))) {
                 persist($.extend({}, current, { displayName: displayName, grants: grants }));
             }
         },

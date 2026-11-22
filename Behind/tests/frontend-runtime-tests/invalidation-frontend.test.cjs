@@ -42,6 +42,7 @@ function fixture() {
     const results = load("models/results.js", { "models/i18n": i18n });
     const session = {
         isSignedIn: ko.observable(false),
+        generation: ko.observable(0),
         grants: ko.observable(null),
         displayName: ko.observable(""),
         isImpersonating: ko.observable(false)
@@ -231,6 +232,7 @@ test("follow ignores stale responses and in-flight responses after disposal", as
     await invalidation.invalidate("menus");
     assert.equal(requests.length, 3);
     assert.equal(session.isSignedIn.getSubscriptionsCount(), 0);
+    assert.equal(session.generation.getSubscriptionsCount(), 0);
     assert.equal(session.grants.getSubscriptionsCount(), 0);
 });
 
@@ -254,6 +256,7 @@ test("header and menu widgets refresh while mounted and release every subscripti
         header.dispose();
         footer.dispose();
         assert.equal(session.isSignedIn.getSubscriptionsCount(), 0);
+        assert.equal(session.generation.getSubscriptionsCount(), 0);
         assert.equal(session.grants.getSubscriptionsCount(), 0);
         assert.equal(session.displayName.getSubscriptionsCount(), 0);
         const previous = calls.length;

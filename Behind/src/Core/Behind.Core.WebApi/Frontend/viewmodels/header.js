@@ -31,14 +31,18 @@ define(["ko", "models/auth", "models/session", "models/menus", "models/accounts"
         self.isImpersonating = session.isImpersonating;
 
         self.stopImpersonating = function () {
-            return auth.stopImpersonating().then(function () {
-                context.navigate("#/");
+            return auth.stopImpersonating().then(function (result) {
+                if (result.ok) {
+                    context.navigate("#/");
+                }
             });
         };
 
         self.signOut = function () {
-            return auth.signOut().then(function () {
-                context.navigate("#/");
+            return auth.signOut().then(function (result) {
+                if (result.ok) {
+                    context.navigate("#/");
+                }
             });
         };
 

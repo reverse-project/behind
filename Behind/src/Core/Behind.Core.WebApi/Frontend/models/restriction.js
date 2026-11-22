@@ -8,6 +8,12 @@ define(["ko", "models/http"], function (ko, http) {
         message: message,
         title: title,
 
+        clear: function () {
+            title("");
+            message("");
+            restricted(false);
+        },
+
         load: function () {
             return http.get("/access/restriction").then(function (response) {
                 if (response.ok) {

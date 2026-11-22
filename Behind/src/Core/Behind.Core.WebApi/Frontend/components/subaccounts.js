@@ -4,20 +4,6 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         return path + "/" + encodeURIComponent(id);
     };
 
-    var sessionIdentity = function (token) {
-        if (!token) {
-            return null;
-        }
-
-        try {
-            var payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-            var sessionId = JSON.parse(window.atob(payload)).session_id;
-            return typeof sessionId === "string" && sessionId ? sessionId : token;
-        } catch (error) {
-            return token;
-        }
-    };
-
     var Panel = function (params) {
         var self = this;
         self.manager = !!params.manager;
@@ -48,7 +34,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.requests = ko.observableArray([]);
         var revision = 0;
         var currentIdentity = function () {
-            return session.isImpersonating() ? null : sessionIdentity(session.accessToken());
+            return session.accessToken() && !session.isImpersonating() ? session.generation() : null;
         };
         var identity = ko.pureComputed(currentIdentity);
 
@@ -94,7 +80,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             self.primaryUserId(null);
             self.linked(false);
             self.message("");
-            if (!identity()) {
+            if (identity() === null) {
                 return Promise.resolve();
             }
 
@@ -259,15 +245,13 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.switchUser = function () {
             var account = self.selected();
             var sourceIdentity = currentIdentity();
-            if (!account || !sourceIdentity) {
+            if (!account || sourceIdentity === null) {
                 return;
             }
             return perform(function () {
                 return http.post(endpoint(account.userId) + "/switch", { pin: self.pin() || null });
             }, function (tokens) {
                 session.start(tokens);
-                window.location.hash = "#/";
-                window.location.reload();
             }, "subaccount.denied", function () {
                 return currentIdentity() === sourceIdentity;
             });

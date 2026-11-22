@@ -377,6 +377,14 @@ define(["ko", "models/layouts", "models/invalidation", "models/restriction", "mo
                 return refresh();
             }
         },
+        resetAccount: function () {
+            activeRefresh = 0;
+            preview = null;
+            layouts.clear();
+            clearError();
+            clear();
+            mountFixedShell();
+        },
         refresh: refresh
     };
 });

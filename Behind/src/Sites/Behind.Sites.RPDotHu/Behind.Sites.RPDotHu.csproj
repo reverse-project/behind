@@ -15,6 +15,9 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Core\Behind.Core.WebApi\Behind.Core.WebApi.csproj" />
+      <ProjectReference Include="..\..\Contact\Behind.Contact.WebApi\Behind.Contact.WebApi.csproj" />
+      <ProjectReference Include="..\Behind.Sites.RPDotHu.Database.Postgres\Behind.Sites.RPDotHu.Database.Postgres.csproj" />
+      <ProjectReference Include="..\Behind.Sites.RPDotHu.Database.Sqlite\Behind.Sites.RPDotHu.Database.Sqlite.csproj" />
     </ItemGroup>
 
     <ItemGroup>

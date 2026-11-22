@@ -273,6 +273,8 @@ The project side lives in `src/Web`: `Behind.Web.Database.Sqlite`/`.Postgres` ho
 
 The FSE site (`src/Sites/Behind.Sites.FSE`) loads the Sport module: `Behind.Sites.FSE.Database.Sqlite`/`.Postgres` hold its one DbContext per provider (`FseContextSqlite`, `FseContextPostgres`: `AbstractCoreContext` plus `ISportContext`), `Behind.Sites.FSE.Database.Migrator` is its migrator (Core migrations, then the Sport migrations, then the seeds) and `AddFse()`/`UseFse()` call `AddSport()`/`UseSport()` after `AddCore()`/`UseCore()`.
 
+The RP.hu site includes the Contact module. Before starting the site, run `Behind.Sites.RPDotHu.Database.Migrator` with the same `database.json` and `backend.json` as the site; it applies the Core and Contact migrations to the existing site database. Configure contact forms and their recipient addresses in Administration > Contact.
+
 ### Module without a database: Markdown Viewer
 
 `src/MarkdownViewer` is a module that needs no database table, so it has no database projects and no `ModuleDescriptor.Database`: it works on a source directory and an output directory of the server instead of the VFS. It is loaded by `src/Web/Behind.Web` with `AddMarkdownViewer()`/`UseMarkdownViewer()`:

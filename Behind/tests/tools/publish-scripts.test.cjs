@@ -12,6 +12,7 @@ const images = {
     "publish-sites-fse-container.sh": "sites/fse",
     "publish-sites-fse-database-migrator-container.sh": "sites/fse-database-migrator",
     "publish-sites-rpdothu-container.sh": "sites/rpdothu",
+    "publish-sites-rpdothu-database-migrator-container.sh": "sites/rpdothu-database-migrator",
     "publish-web-container.sh": "web",
     "publish-web-database-migrator-container.sh": "web-database-migrator"
 };

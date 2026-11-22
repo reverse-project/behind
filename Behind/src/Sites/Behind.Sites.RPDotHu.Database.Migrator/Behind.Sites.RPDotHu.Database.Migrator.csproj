@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:11.0-resolute</ContainerBaseImage>
+      <PublishSingleFile>true</PublishSingleFile>
+      <SelfContained>true</SelfContained>
+      <ContainerRepository>reverse-project/behind/sites/rpdothu-database-migrator</ContainerRepository>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Behind.Core.Database.Migrator\Behind.Core.Database.Migrator.csproj" />
+      <ProjectReference Include="..\..\Contact\Behind.Contact.Database.Postgres\Behind.Contact.Database.Postgres.csproj" />
+      <ProjectReference Include="..\..\Contact\Behind.Contact.Database.Sqlite\Behind.Contact.Database.Sqlite.csproj" />
+      <ProjectReference Include="..\..\Contact\Behind.Contact.WebApi\Behind.Contact.WebApi.csproj" />
+      <ProjectReference Include="..\Behind.Sites.RPDotHu.Database.Postgres\Behind.Sites.RPDotHu.Database.Postgres.csproj" />
+      <ProjectReference Include="..\Behind.Sites.RPDotHu.Database.Sqlite\Behind.Sites.RPDotHu.Database.Sqlite.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Microsoft.Extensions.Hosting" />
+    </ItemGroup>
+
+    <Target Name="ExcludeCoreMigratorConfigFromPublish" AfterTargets="GetCopyToPublishDirectoryItems">
+      <PropertyGroup>
+        <CoreMigratorDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\Core\Behind.Core.Database.Migrator\'))</CoreMigratorDir>
+      </PropertyGroup>
+      <ItemGroup>
+        <_SourceItemsToCopyToPublishDirectory Remove="$(CoreMigratorDir)backend.json;$(CoreMigratorDir)database.json" />
+        <_SourceItemsToCopyToPublishDirectoryAlways Remove="$(CoreMigratorDir)backend.json;$(CoreMigratorDir)database.json" />
+        <_SourceItemsToCopyToPublishDirectoryIfDifferent Remove="$(CoreMigratorDir)backend.json;$(CoreMigratorDir)database.json" />
+      </ItemGroup>
+    </Target>
+
+</Project>

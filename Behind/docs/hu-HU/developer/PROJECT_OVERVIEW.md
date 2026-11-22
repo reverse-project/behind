@@ -274,6 +274,8 @@ A `src/Sport` a sportok (elsőként a foci) modulja sportágakkal, pozíciókkal
 
 Az FSE oldal (`src/Sites/Behind.Sites.FSE`) betölti a Sport modult: a `Behind.Sites.FSE.Database.Sqlite`/`.Postgres` tartalmazza szolgáltatónként az egyetlen DbContextet (`FseContextSqlite`, `FseContextPostgres`: `AbstractCoreContext` plusz `ISportContext`), a `Behind.Sites.FSE.Database.Migrator` a migrátora (a Core migrációk, majd a Sport migrációk, végül a seedek), az `AddFse()`/`UseFse()` pedig az `AddCore()`/`UseCore()` után hívja az `AddSport()`/`UseSport()` metódust.
 
+Az RP.hu webhely tartalmazza a Contact modult. Az oldal indítása előtt futtassa a `Behind.Sites.RPDotHu.Database.Migrator` programot a webhellyel azonos `database.json` és `backend.json` fájlokkal; ez a Core és a Contact migrációkat a meglévő adatbázison alkalmazza. A kapcsolatfelvételi űrlapokat és címzettjeiket az Adminisztráció > Kapcsolat oldalon állíthatja be.
+
 ### Adatbázis nélküli modul: Markdown Viewer
 
 A `src/MarkdownViewer` modulnak nincs szüksége adatbázistáblára, ezért nincsenek adatbázis-projektjei és `ModuleDescriptor.Database` értéke sem: a VFS helyett a kiszolgáló egy forrás- és egy kimeneti könyvtárával dolgozik. A `src/Web/Behind.Web` tölti be az `AddMarkdownViewer()`/`UseMarkdownViewer()` hívással:

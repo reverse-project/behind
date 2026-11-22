@@ -37,4 +37,5 @@ Each script publishes Linux x64 and ARM64 images, then pushes a multi-architectu
 | [`publish-sites-fse-container.sh`](../../../../tools/publish-sites-fse-container.sh) | FSE site |
 | [`publish-sites-fse-database-migrator-container.sh`](../../../../tools/publish-sites-fse-database-migrator-container.sh) | FSE database migrator |
 | [`publish-sites-rpdothu-container.sh`](../../../../tools/publish-sites-rpdothu-container.sh) | RP.hu site |
+| [`publish-sites-rpdothu-database-migrator-container.sh`](../../../../tools/publish-sites-rpdothu-database-migrator-container.sh) | RP.hu database migrator |
 | [`publish-all.sh`](../../../../tools/publish-all.sh) | Runs all publishing scripts |

@@ -37,4 +37,5 @@ Minden szkript Linux x64 és ARM64 képet készít, majd `latest` és a projekt 
 | [`publish-sites-fse-container.sh`](../../../../tools/publish-sites-fse-container.sh) | FSE webhely |
 | [`publish-sites-fse-database-migrator-container.sh`](../../../../tools/publish-sites-fse-database-migrator-container.sh) | FSE adatbázis-migrátor |
 | [`publish-sites-rpdothu-container.sh`](../../../../tools/publish-sites-rpdothu-container.sh) | RP.hu webhely |
+| [`publish-sites-rpdothu-database-migrator-container.sh`](../../../../tools/publish-sites-rpdothu-database-migrator-container.sh) | RP.hu adatbázis-migrátor |
 | [`publish-all.sh`](../../../../tools/publish-all.sh) | Az összes közzétételi szkript futtatása |

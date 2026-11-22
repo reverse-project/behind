@@ -73,6 +73,9 @@
     <Project Path="src/Sites/Behind.Sites.FSE.Database.Postgres/Behind.Sites.FSE.Database.Postgres.csproj" />
     <Project Path="src/Sites/Behind.Sites.FSE.Database.Sqlite/Behind.Sites.FSE.Database.Sqlite.csproj" />
     <Project Path="src/Sites/Behind.Sites.FSE/Behind.Sites.FSE.csproj" />
+    <Project Path="src/Sites/Behind.Sites.RPDotHu.Database.Migrator/Behind.Sites.RPDotHu.Database.Migrator.csproj" />
+    <Project Path="src/Sites/Behind.Sites.RPDotHu.Database.Postgres/Behind.Sites.RPDotHu.Database.Postgres.csproj" />
+    <Project Path="src/Sites/Behind.Sites.RPDotHu.Database.Sqlite/Behind.Sites.RPDotHu.Database.Sqlite.csproj" />
     <Project Path="src/Sites/Behind.Sites.RPDotHu/Behind.Sites.RPDotHu.csproj" />
   </Folder>
   <Folder Name="/src/Web/">

@@ -66,9 +66,8 @@ public sealed class SubaccountEndpoints
             return Results.Forbid();
         }
 
-        var canManageLinks = security.Value.Accounts.LinkUnlink && family.IsPrimary;
+        var canBrowseAndRelease = security.Value.Accounts.LinkUnlink && family.IsPrimary;
         var isDirectSignIn = family.Current.FamilyPrimaryUserId is null;
-        var linkUnlinkEnabled = canManageLinks && isDirectSignIn;
         var requireConfirmation = security.Value.EmailConfirmation;
         List<Account> accounts = [];
         var primaryHasPin = family.CanSwitch && await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted);
@@ -83,7 +82,7 @@ public sealed class SubaccountEndpoints
                               orderby user.DisplayName, EF.Property<Guid>(link, "UserId")
                               select new Account(EF.Property<Guid>(link, "UserId"), user.DisplayName, link.IsChild, family.IsPrimary ? user.Birthday : null,
                                   db.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == EF.Property<Guid>(link, "UserId")), family.IsPrimary ? user.Emails.OrderBy(e => EF.Property<Guid>(e, "Id")).Select(e => e.Value).FirstOrDefault() : null,
-                                  linkUnlinkEnabled && user.Emails.Any(email => email.Value.Trim() != "" && (!requireConfirmation || email.ConfirmedAt != null))))
+                                  canBrowseAndRelease && user.Emails.Any(email => email.Value.Trim() != "" && (!requireConfirmation || email.ConfirmedAt != null))))
                 .ToListAsync(http.RequestAborted);
         }
         if (!family.IsPrimary && primaryHasPin)
@@ -98,8 +97,9 @@ public sealed class SubaccountEndpoints
         }
         return Results.Ok(new
         {
-            LinkUnlinkEnabled = linkUnlinkEnabled,
-            LinkUnlinkRequiresDirectSignIn = canManageLinks && !isDirectSignIn,
+            CanBrowseAndRelease = canBrowseAndRelease,
+            LinkUnlinkEnabled = canBrowseAndRelease && isDirectSignIn,
+            LinkUnlinkRequiresDirectSignIn = canBrowseAndRelease && !isDirectSignIn,
             family.IsPrimary,
             family.PrimaryUserId,
             PrimaryHasPin = primaryHasPin,

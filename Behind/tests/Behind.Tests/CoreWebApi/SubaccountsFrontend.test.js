@@ -18,13 +18,17 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     const requests = [];
     const sessions = [];
     const reloads = [];
+    const confirmations = [];
     const handlers = new Set();
     let session;
     const storage = new Map([["behind.session", JSON.stringify({ accessToken: accessToken("owner-session", "original") })]]);
     const location = { hash: "#/profile", reload: () => reloads.push(true) };
     const window = {
         atob,
-        confirm: () => true,
+        confirm: message => {
+            confirmations.push(message);
+            return profile.confirmRelease ?? true;
+        },
         location,
         addEventListener() {},
         localStorage: {
@@ -46,7 +50,7 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     const http = {
         get: async url => ({
             ok: true,
-            data: url.endsWith("/requests") ? pending : { accounts, isPrimary: primary, primaryUserId: "owner", primaryHasPin, linkUnlinkEnabled, currentHasPin: profile.currentHasPin }
+            data: url.endsWith("/requests") ? pending : { accounts, isPrimary: primary, primaryUserId: "owner", primaryHasPin, linkUnlinkEnabled, canBrowseAndRelease: profile.canBrowseAndRelease, linkUnlinkRequiresDirectSignIn: profile.linkUnlinkRequiresDirectSignIn, currentHasPin: profile.currentHasPin }
         }),
         delete: async url => {
             requests.push({ url, method: "DELETE" });
@@ -77,7 +81,7 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
         }
     });
     await new Promise(resolve => setImmediate(resolve));
-    return { panel, session, sessions, requests, reloads, location, http, invalidation };
+    return { panel, session, sessions, requests, reloads, location, http, invalidation, confirmations };
 }
 
 test("create a child without a sign-in email and clear its PIN on edit", async () => {
@@ -355,6 +359,72 @@ test("release requires an address and enabled linking", async () => {
     await disabled.panel.confirmLink({ requestId: "pending" });
     assert.deepEqual(disabled.requests, []);
     disabled.panel.dispose();
+});
+
+test("a switched-back primary can browse and release without invitation access", async () => {
+    const child = { userId: "child", displayName: "Alex", canRelease: true };
+    const candidate = { userId: "candidate", displayName: "Pat" };
+    const { panel, http, session, requests, confirmations, invalidation, location } =
+        await setup([child], true, true, false, [], { canBrowseAndRelease: true, linkUnlinkRequiresDirectSignIn: true });
+    const get = http.get;
+    http.get = async url => url.includes("/candidates?") ? { ok: true, data: [candidate] } : get(url);
+    await panel.search();
+    assert.equal(panel.candidates()[0], candidate);
+    await panel.requestLink(candidate);
+    await panel.confirmLink({ requestId: "invitation" });
+    await panel.declineLink({ requestId: "invitation" });
+    assert.deepEqual(requests, []);
+
+    panel.selected(child);
+    const release = http.delete;
+    http.delete = async url => {
+        await invalidation.invalidate();
+        return release(url);
+    };
+    await panel.release();
+    assert.deepEqual(requests, [{ method: "DELETE", url: "/profile/subaccounts/child" }]);
+    assert.match(confirmations[0], /subaccount\.releaseEndsSession/);
+    assert.equal(session.isSignedIn(), false);
+    assert.equal(location.hash, "#/sign-in");
+    assert.equal(panel.canBrowseAndRelease(), false);
+    panel.dispose();
+});
+
+test("a canceled or failed release keeps the switched-back primary signed in", async () => {
+    const child = { userId: "child", canRelease: true };
+    for (const confirmRelease of [false, true]) {
+        const { panel, http, session, location } = await setup([child], true, true, false, [], {
+            canBrowseAndRelease: true, linkUnlinkRequiresDirectSignIn: true, confirmRelease
+        });
+        panel.selected(child);
+        let calls = 0;
+        http.delete = async () => {
+            calls++;
+            return { ok: false, status: 409 };
+        };
+        await panel.release();
+        assert.equal(calls, Number(confirmRelease));
+        assert.equal(session.isSignedIn(), true);
+        assert.equal(location.hash, "#/profile");
+        assert.equal(panel.busy(), false);
+        panel.dispose();
+    }
+});
+
+test("a delayed release response leaves a replacement session signed in", async () => {
+    const child = { userId: "child", canRelease: true };
+    const { panel, http, session, location } =
+        await setup([child], true, true, false, [], { canBrowseAndRelease: true, linkUnlinkRequiresDirectSignIn: true });
+    panel.selected(child);
+    const replacement = accessToken("other-session", "original");
+    http.delete = async () => {
+        session.replace({ accessToken: replacement });
+        return { ok: true };
+    };
+    await panel.release();
+    assert.equal(session.accessToken(), replacement);
+    assert.equal(location.hash, "#/profile");
+    panel.dispose();
 });
 
 test("signing out during a search clears busy state and discards private results", async () => {

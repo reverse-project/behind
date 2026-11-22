@@ -66,7 +66,7 @@
             </fieldset>
             <button type="submit" class="btn btn-primary" data-bind="enable: !busy() && (!pinOnly() || changingPin()), t: editAccount() ? 'common.save' : 'subaccount.create'"></button>
         </form>
-        <div class="mt-3" data-bind="if: primary() && linkEnabled() && selected() && !selected().isPrimary">
+        <div class="mt-3" data-bind="if: primary() && canBrowseAndRelease() && selected() && !selected().isPrimary">
             <button type="button" class="btn btn-outline-danger" data-bind="click: release, enable: !busy() && selected().canRelease, t: 'subaccount.release'"></button>
             <p class="form-text" data-bind="visible: !selected().canRelease, t: 'subaccount.recovery'"></p>
         </div>
@@ -77,8 +77,8 @@
         </p>
         <!-- /ko -->
     </section>
-    <section class="mt-4" data-bind="if: primary() && linkEnabled()">
-        <h2 class="h5" data-bind="t: 'subaccount.linkExisting'"></h2>
+    <section class="mt-4" data-bind="if: primary() && canBrowseAndRelease()">
+        <h2 class="h5" data-bind="t: linkEnabled() ? 'subaccount.linkExisting' : 'subaccount.browse'"></h2>
         <form data-bind="submit: search">
             <label class="form-label d-block">
                 <span data-bind="t: 'subaccount.find'"></span>
@@ -89,7 +89,7 @@
         <ul class="list-unstyled mt-2" data-bind="foreach: candidates">
             <li class="mb-2">
                 <span data-bind="text: displayName"></span>
-                <button type="button" class="btn btn-sm btn-outline-primary" data-bind="click: $parent.requestLink, enable: !$parent.busy(), t: 'subaccount.requestLink'"></button>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bind="visible: $parent.linkEnabled, click: $parent.requestLink, enable: !$parent.busy(), t: 'subaccount.requestLink'"></button>
             </li>
         </ul>
         <button type="button" class="btn btn-outline-secondary mb-2" data-bind="visible: moreCandidates, enable: !busy(), click: loadMore, t: 'subaccount.more'"></button>

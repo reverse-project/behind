@@ -73,6 +73,22 @@ public sealed class SubaccountSchemaTests
     }
 
     [Fact]
+    public void Family_RequiresBrowseAndReleaseCapability()
+    {
+        var family = JsonNode.Parse("""
+            {"isPrimary":true,"primaryUserId":"5418cd9a-dc39-4af9-9845-1891a543eda9","primaryHasPin":true,"linkUnlinkEnabled":false,"linkUnlinkRequiresDirectSignIn":true,"currentHasPin":true,"accounts":[]}
+            """)!;
+        var schema = ReadDefinition("family", "2.5.0");
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["canBrowseAndRelease"] = "true";
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["canBrowseAndRelease"] = true;
+        Assert.True(schema.Evaluate(family).IsValid);
+        family["canBrowseAndRelease"] = false;
+        Assert.True(schema.Evaluate(family).IsValid);
+    }
+
+    [Fact]
     public void Family_RequiresCurrentAccountPinStatus()
     {
         var family = JsonNode.Parse("""

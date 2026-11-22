@@ -25,11 +25,13 @@ public static class SubaccountLinkEndpoints
         Roots(db).Where(user => user.Emails.Any(email => email.Value.Trim() != "")
                                 && !db.Subaccounts.Any(link => EF.Property<Guid>(link, "PrimaryUserId") == EF.Property<Guid>(user, "Id")));
 
-    private static async Task<HumanUser?> Actor(HttpContext http, ISessionQueries sessions, AbstractCoreContext db)
+    private static async Task<HumanUser?> Actor(HttpContext http, ISessionQueries sessions, AbstractCoreContext db,
+        bool allowSwitchedPrimary = false)
     {
         http.Response.Headers.CacheControl = "no-store";
         var actor = (await http.FindCurrentSession(sessions)).Match<CurrentSession?>(() => null, value => value);
-        if (actor is null || actor.IsImpersonated || actor.FamilyPrimaryUserId.HasValue)
+        if (actor is null || actor.IsImpersonated
+            || actor.FamilyPrimaryUserId is { } familyId && (!allowSwitchedPrimary || familyId != actor.UserId))
         {
             return null;
         }
@@ -40,7 +42,7 @@ public static class SubaccountLinkEndpoints
     public static async Task<IResult> Candidates(string? query, HttpContext http, ISessionQueries sessions, AbstractCoreContext db,
         int? page = null, int? pageSize = null)
     {
-        var parent = await Actor(http, sessions, db);
+        var parent = await Actor(http, sessions, db, allowSwitchedPrimary: true);
         if (parent is null)
         {
             return Results.Forbid();
@@ -144,7 +146,7 @@ public static class SubaccountLinkEndpoints
     public static async Task<IResult> Release(Guid userId, HttpContext http, ISessionQueries sessions, AbstractCoreContext db, TimeProvider clock,
         IOptions<SecurityConfiguration> security)
     {
-        var parent = await Actor(http, sessions, db);
+        var parent = await Actor(http, sessions, db, allowSwitchedPrimary: true);
         if (parent is null)
         {
             return Results.Forbid();

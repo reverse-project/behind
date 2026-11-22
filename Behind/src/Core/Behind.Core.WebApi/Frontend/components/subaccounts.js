@@ -24,6 +24,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.child = ko.observable(false);
         self.birthday = ko.observable("");
         self.clearPin = ko.observable(false);
+        self.canBrowseAndRelease = ko.observable(false);
         self.linkEnabled = ko.observable(false);
         self.linkRequiresDirectSignIn = ko.observable(false);
         self.query = ko.observable("");
@@ -130,6 +131,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             var ticket = ++revision;
             self.busy(false);
             clearProof();
+            self.canBrowseAndRelease(false);
             self.linkEnabled(false);
             self.linkRequiresDirectSignIn(false);
             self.query("");
@@ -171,6 +173,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                     currentHasPin(typeof response.data.currentHasPin === "boolean" ? response.data.currentHasPin : null);
                     clearProof();
                     self.linkEnabled(!!response.data.linkUnlinkEnabled);
+                    self.canBrowseAndRelease(response.data.canBrowseAndRelease ?? self.linkEnabled());
                     self.linkRequiresDirectSignIn(response.data.linkUnlinkRequiresDirectSignIn === true);
                     if (self.manager && self.linkEnabled() && self.primary()) {
                         return http.get(path + "/requests").then(function (pending) {
@@ -257,7 +260,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         };
 
         self.search = function () {
-            if (!self.linkEnabled() || self.busy()) {
+            if (!self.canBrowseAndRelease() || self.busy()) {
                 return;
             }
             self.candidates([]);
@@ -266,7 +269,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         };
 
         self.loadMore = function () {
-            if (self.linkEnabled() && self.moreCandidates()) {
+            if (self.canBrowseAndRelease() && self.moreCandidates()) {
                 return findCandidates(candidatePage + 1, searchedName);
             }
         };
@@ -305,12 +308,28 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
 
         self.release = function () {
             var account = self.selected();
-            if (!self.linkEnabled() || !account || !account.canRelease || !window.confirm(i18n.t("subaccount.confirmRelease") + " " + self.label(account))) {
+            if (!self.canBrowseAndRelease() || !account || !account.canRelease || self.busy()) {
                 return;
             }
-            return changeLink(function () {
+            var switched = self.linkRequiresDirectSignIn();
+            var confirmation = i18n.t("subaccount.confirmRelease") + " " + self.label(account);
+            if (switched) {
+                confirmation += "\n\n" + i18n.t("subaccount.releaseEndsSession");
+            }
+            if (!window.confirm(confirmation)) {
+                return;
+            }
+            var owner = currentIdentity();
+            return perform(function () {
                 return http.delete(endpoint(account.userId));
-            }, "subaccount.released");
+            }, function () {
+                if (switched) {
+                    session.end();
+                    window.location.hash = "#/sign-in";
+                    return;
+                }
+                return refresh("subaccount.released");
+            }, "subaccount.linkFailed", switched ? function () { return currentIdentity() === owner; } : null);
         };
 
         self.requestPinProof = function () {

@@ -23,7 +23,9 @@ Az elsődleges fiókban nyissa meg a **Profil → Alfiókok** részt. Hozzon lé
 
 A fiókmenüben a **Profil** alatt válassza a felhasználóváltást, majd a kívánt felhasználót. Ha a rendszer kéri, adja meg a célfiók PIN-kódját. Alfiók hozzáadásakor külön PIN-kódot állíthat be az elsődleges fiókhoz. Ezzel a felhasználóváltóban családi munkamenetből visszaválthat. Ha kihagyja a beállítást, újra be kell jelentkeznie az elsődleges fiókba. E-mail-cím nélkül az alfiók a fiókváltón keresztül érhető el. Önálló bejelentkezéshez állítson be e-mail-címet, és kövesse a webhely szokásos bejelentkezési és címmegerősítési lépéseit.
 
-Ha az összekapcsolás engedélyezett, nyissa meg a **Profil → Meglévő fiók összekapcsolása** részt. Keressen megjelenített név szerint, majd válassza az **Összekapcsolás kérése** gombot. A címzett önállóan jelentkezik be, és a **Profilban** a javasolt elsődleges fiók megtekintése után elfogadhatja vagy elutasíthatja a kérést. Leválasztáshoz válassza ki az alfiókot, majd a **Fiók leválasztása** gombot. A fiók adatai megmaradnak. Ha még nincs bejelentkezési címe, először váltson át az alfiókra, és adjon meg egy címet a **Profil → E-mail-címek** részen. Szükség esetén erősítse meg a címet.
+Ha az összekapcsolás engedélyezett, a **Profilban** megjelenített név szerint kereshet közvetlen bejelentkezés után vagy az elsődleges fiókra visszaváltva. Az **Összekapcsolás kérése** gomb közvetlen bejelentkezés után érhető el. A címzett önállóan jelentkezik be, és a **Profilban** a javasolt elsődleges fiók megtekintése után elfogadhatja vagy elutasíthatja a kérést.
+
+Leválasztáshoz válassza ki az alfiókot, majd a **Fiók leválasztása** gombot. Ezt az elsődleges fiókra visszaváltva is megteheti. A leválasztás megőrzi a fiók adatait, és megszünteti a családban a fiókváltással indított munkameneteket, köztük a leválasztáshoz használt munkamenetet is, ha visszaváltott az elsődleges fiókra. Ha az alfióknak nincs bejelentkezésre alkalmas e-mail-címe, először váltson át arra a fiókra, és adjon meg egy címet a **Profil → E-mail-címek** részen. Szükség esetén erősítse meg a címet.
 
 ### Születési dátum és e-mail-adatvédelem
 

@@ -102,15 +102,28 @@ public sealed class SubaccountSessionTests
             var returned = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(siblingSession, primary, primaryPin));
             var returnedToken = new JwtSecurityTokenHandler().ReadJwtToken(returned.Value!.AccessToken);
             var returnedSession = Guid.Parse(returnedToken.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
-            Assert.True((await List(returnedSession)).GetProperty("IsPrimary").GetBoolean());
-            Assert.False((await List(returnedSession)).GetProperty("LinkUnlinkEnabled").GetBoolean());
+            var returnedFamily = await List(returnedSession);
+            Assert.True(returnedFamily.GetProperty("IsPrimary").GetBoolean());
+            Assert.True(returnedFamily.GetProperty("CanBrowseAndRelease").GetBoolean());
+            Assert.False(returnedFamily.GetProperty("LinkUnlinkEnabled").GetBoolean());
+            var returnedHttp = SessionTestHelper.SignedIn(returnedSession);
+            var browse = Assert.IsType<Ok<IEnumerable<SubaccountLinkEndpoints.Candidate>>>(
+                await SubaccountLinkEndpoints.Candidates(null, returnedHttp, queries, db));
+            Assert.Equal(outsider, Assert.Single(browse.Value!).UserId);
             var directParent = await Start(primary);
-            var release = await SubaccountLinkEndpoints.Release(firstId, SessionTestHelper.SignedIn(directParent), queries, db,
+            var parallelParent = await Start(primary);
+            var parallelSwitch = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(parallelParent, secondId));
+            var parallelToken = new JwtSecurityTokenHandler().ReadJwtToken(parallelSwitch.Value!.AccessToken);
+            var parallelSession = Guid.Parse(parallelToken.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
+            var release = await SubaccountLinkEndpoints.Release(firstId, returnedHttp, queries, db,
                 TimeProvider.System, Options.Create(security.Value with { EmailConfirmation = false }));
             Assert.IsType<NoContent>(release);
+            Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.List(returnedHttp, queries, db, security));
             Assert.IsType<ForbidHttpResult>(await Switch(returnedSession, secondId));
+            Assert.True((await queries.TryFindById(returnedSession)).Match(() => false, value => value is InvalidSession));
+            Assert.True((await queries.TryFindById(parallelSession)).Match(() => false, value => value is InvalidSession));
             Assert.True((await List(directParent)).GetProperty("IsPrimary").GetBoolean());
-            Assert.True((await queries.TryFindById(siblingSession)).Match(() => false, value => value is InvalidSession));
+            Assert.True((await queries.TryFindById(direct)).Match(() => false, value => value is ValidSession));
         }
     }
 }

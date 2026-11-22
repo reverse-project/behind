@@ -24,14 +24,18 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public sealed class SubaccountEndpointsTests
 {
-    private static (DefaultHttpContext Http, ISessionQueries Queries, Guid SessionId) AsUser(Guid actor, Guid? familyPrimaryId = null)
+    private static (DefaultHttpContext Http, ISessionQueries Queries, Guid SessionId) AsUser(Guid actor, Guid? familyPrimaryId = null,
+        bool impersonated = false)
     {
         var sessionId = Guid.NewGuid();
         var queries = Substitute.For<ISessionQueries>();
         queries.TryFindByIdWithUserId(sessionId, Arg.Any<CancellationToken>())
             .Returns(Some<(Session, Guid)>((new ValidSession(AccessToken.Create(new GuestUser(None)),
                 RefreshToken.Create(new GuestUser(None)), "127.0.0.1", "test")
-            { FamilyPrimaryUserId = familyPrimaryId }, actor)));
+            {
+                FamilyPrimaryUserId = familyPrimaryId,
+                Impersonator = impersonated ? Some<User>(new GuestUser(None)) : None
+            }, actor)));
         var http = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("session_id", sessionId.ToString())], "test"))
@@ -235,13 +239,14 @@ public sealed class SubaccountEndpointsTests
     [InlineData(false, true, true, false, false)]
     [InlineData(true, false, false, false, false)]
     [InlineData(true, false, true, false, false)]
-    public async Task FamilyListDistinguishesDisabledLinkingFromRequiredDirectSignIn(
-        bool configured, bool isPrimary, bool switched, bool enabled, bool requiresDirectSignIn)
+    public async Task FamilyListSeparatesBrowseAndReleaseFromInvitationPermissions(
+        bool configured, bool isPrimary, bool switched, bool invitationsEnabled, bool invitationsRequireDirectSignIn)
     {
         using var factory = new TestDbContextFactory();
         await using var db = factory.CreateContext();
         var parentId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "parent@example.test");
         var childId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "child@example.test");
+        var candidateId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "candidate@example.test");
         var parent = (await db.Users.FindAsync(parentId))!;
         var child = (await db.Users.FindAsync(childId))!;
         db.Subaccounts.Add(new Subaccount(parent, child, false));
@@ -255,17 +260,58 @@ public sealed class SubaccountEndpointsTests
         });
         var result = await SubaccountEndpoints.List(actor.Http, actor.Queries, db, security);
         var payload = JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(result).Value);
-        Assert.Equal(enabled, payload.GetProperty("LinkUnlinkEnabled").GetBoolean());
-        Assert.Equal(requiresDirectSignIn, payload.GetProperty("LinkUnlinkRequiresDirectSignIn").GetBoolean());
+        var canBrowseAndRelease = configured && isPrimary;
+        Assert.Equal(canBrowseAndRelease, payload.GetProperty("CanBrowseAndRelease").GetBoolean());
+        Assert.Equal(invitationsEnabled, payload.GetProperty("LinkUnlinkEnabled").GetBoolean());
+        Assert.Equal(invitationsRequireDirectSignIn, payload.GetProperty("LinkUnlinkRequiresDirectSignIn").GetBoolean());
         if (isPrimary)
         {
-            Assert.Equal(enabled, payload.GetProperty("Accounts")[0].GetProperty("CanRelease").GetBoolean());
+            Assert.Equal(canBrowseAndRelease, payload.GetProperty("Accounts")[0].GetProperty("CanRelease").GetBoolean());
         }
-        if (switched)
+        if (!configured)
         {
-            Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Candidates(null, actor.Http, actor.Queries, db));
+            return;
+        }
+
+        if (!invitationsEnabled)
+        {
+            Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.RequestLink(candidateId, actor.Http, actor.Queries, db));
+            Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Requests(actor.Http, actor.Queries, db));
+            Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Confirm(Guid.NewGuid(), actor.Http, actor.Queries, db));
+            Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Decline(Guid.NewGuid(), actor.Http, actor.Queries, db));
+        }
+        var browse = await SubaccountLinkEndpoints.Candidates(null, actor.Http, actor.Queries, db);
+        if (isPrimary)
+        {
+            var candidates = Assert.IsType<Ok<IEnumerable<SubaccountLinkEndpoints.Candidate>>>(browse);
+            Assert.Equal(candidateId, Assert.Single(candidates.Value!).UserId);
+            Assert.IsType<NotFound>(await SubaccountLinkEndpoints.Release(candidateId, actor.Http, actor.Queries, db, TimeProvider.System, security));
+            Assert.IsType<Conflict>(await SubaccountLinkEndpoints.Release(childId, actor.Http, actor.Queries, db, TimeProvider.System,
+                Options.Create(security.Value with { EmailConfirmation = true })));
+            Assert.IsType<NoContent>(await SubaccountLinkEndpoints.Release(childId, actor.Http, actor.Queries, db, TimeProvider.System, security));
+        }
+        else
+        {
+            Assert.IsType<ForbidHttpResult>(browse);
             Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Release(childId, actor.Http, actor.Queries, db, TimeProvider.System, security));
         }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task BrowseAndReleaseRejectImpersonationAndMismatchedFamily(bool impersonated)
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        var parentId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "parent@example.test");
+        var actor = AsUser(parentId, impersonated ? parentId : Guid.NewGuid(), impersonated);
+        var security = Options.Create(new SecurityConfiguration { Accounts = new() { LinkUnlink = true } });
+
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.List(actor.Http, actor.Queries, db, security));
+        Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Candidates(null, actor.Http, actor.Queries, db));
+        Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Release(Guid.NewGuid(),
+            actor.Http, actor.Queries, db, TimeProvider.System, security));
     }
 
     [Fact]

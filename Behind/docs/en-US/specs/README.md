@@ -6,7 +6,8 @@
 
 | Specification | Version | Status |
 | --- | --- | --- |
-| [Subaccount API](./subaccounts-2.4.0.md) | 2.4.0 | Current |
+| [Subaccount API](./subaccounts-2.5.0.md) | 2.5.0 | Current |
+| [Subaccount API](./subaccounts-2.4.0.md) | 2.4.0 | Previous |
 | [Subaccount API](./subaccounts-2.3.0.md) | 2.3.0 | Previous |
 | [Subaccount API](./subaccounts-2.2.0.md) | 2.2.0 | Previous |
 | [Subaccount API](./subaccounts-2.1.0.md) | 2.1.0 | Previous |

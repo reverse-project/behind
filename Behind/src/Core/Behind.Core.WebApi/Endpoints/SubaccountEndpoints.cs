@@ -6,6 +6,7 @@ using Behind.Core.Common;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
+using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.MagicLinks;
 using Microsoft.Extensions.DependencyInjection;
@@ -357,6 +358,10 @@ public sealed class SubaccountEndpoints
                 if (response is IValueHttpResult { Value: SignInEndpoints.SignInResponse })
                 {
                     await commands.InvalidateSession(family.Current.SessionId, family.Current.UserId, now, http.RequestAborted);
+                    if (!isPrimaryTarget)
+                    {
+                        await SubaccountSignInNotification.AfterSessionCommit(http, user, family.PrimaryUserId, logger);
+                    }
                 }
                 return response;
             });
@@ -378,12 +383,15 @@ public sealed class SubaccountEndpoints
         {
             return null;
         }
-        var parentId = await db.Subaccounts.Where(link => EF.Property<Guid>(link, "UserId") == session.UserId)
-            .Select(link => (Guid?)EF.Property<Guid>(link, "PrimaryUserId")).SingleOrDefaultAsync(http.RequestAborted);
+        var parentId = await FindPrimaryUserId(db, session.UserId, http.RequestAborted);
         if (parentId is null)
         {
             return session.FamilyPrimaryUserId is { } source && source != session.UserId ? null : new(session, session.UserId, true);
         }
         return new(session, parentId.Value, session.FamilyPrimaryUserId == parentId);
     }
+
+    internal static Task<Guid?> FindPrimaryUserId(AbstractCoreContext db, Guid userId, CancellationToken cancellationToken) =>
+        db.Subaccounts.Where(link => EF.Property<Guid>(link, "UserId") == userId)
+            .Select(link => (Guid?)EF.Property<Guid>(link, "PrimaryUserId")).SingleOrDefaultAsync(cancellationToken);
 }

@@ -9,7 +9,7 @@ public sealed record AuthenticationTransactionMetadata(int ConcurrencyFailureSta
 public sealed class AuthenticationTransaction(DbContext? database) : IAsyncDisposable
 {
     private IDbContextTransaction? transaction;
-    private readonly List<Action> committed = [];
+    private readonly List<Func<Task>> committed = [];
     private readonly List<Action> rolledBack = [];
     private bool completed;
     private bool transactionEnded;
@@ -22,7 +22,13 @@ public sealed class AuthenticationTransaction(DbContext? database) : IAsyncDispo
         }
     }
 
-    public void OnCommitted(Action action) => committed.Add(action);
+    public void OnCommitted(Action action) => OnCommittedAsync(() =>
+    {
+        action();
+        return Task.CompletedTask;
+    });
+
+    internal void OnCommittedAsync(Func<Task> action) => committed.Add(action);
 
     public void OnRolledBack(Action action) => rolledBack.Add(action);
 
@@ -43,7 +49,7 @@ public sealed class AuthenticationTransaction(DbContext? database) : IAsyncDispo
         completed = true;
         foreach (var action in committed)
         {
-            action();
+            await action();
         }
     }
 

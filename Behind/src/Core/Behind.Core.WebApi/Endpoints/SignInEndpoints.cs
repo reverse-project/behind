@@ -382,17 +382,24 @@ public sealed class SignInEndpoints
                 accessToken,
                 refreshToken,
                 httpContext.ClientAddress(RemoteAddress.MaxLength),
-                httpContext.ClientUserAgent(UserAgent.MaxLength)) { FamilyPrimaryUserId = familyPrimaryUserId },
+                httpContext.ClientUserAgent(UserAgent.MaxLength))
+            { FamilyPrimaryUserId = familyPrimaryUserId },
             httpContext.RequestAborted);
 
         logger.LogInformation(
             "Session {SessionId} started for user {UserId}, access token expires at {AccessTokenExpiresAt}",
             () => [sessionId, user.Id, accessToken.ExpiresAt]);
 
-        return Results.Json(user.ToSignInResponse(accessToken, refreshToken, sessionId, jwtSettings) with
+        var result = Results.Json(user.ToSignInResponse(accessToken, refreshToken, sessionId, jwtSettings) with
         {
             Function = function,
             RecoveryCodes = recoveryCodes
         });
+        if (familyPrimaryUserId is null)
+        {
+            await SubaccountSignInNotification.AfterSessionCommit(httpContext, user, null, logger);
+        }
+
+        return result;
     }
 }

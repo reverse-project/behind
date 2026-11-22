@@ -10,6 +10,8 @@ using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
@@ -196,7 +198,9 @@ public sealed class OidcSignInTests
     {
         var catalog = new OidcProviderCatalog(new() { Providers = [Provider] });
         var tickets = new OidcTicketStore(catalog, new FixedTimeProvider(Now));
-        var context = new DefaultHttpContext();
+        var mail = Substitute.For<IEmailSender>();
+        await using var services = new ServiceCollection().AddSingleton(mail).BuildServiceProvider();
+        var context = new DefaultHttpContext { RequestServices = services };
         context.Request.Headers.Cookie = $"{OidcExtensions.CookieName("flow")}=proof";
         var signIn = Substitute.For<IOidcSignInService>();
         var user = User;
@@ -224,6 +228,7 @@ public sealed class OidcSignInTests
         secondFactor.ChallengeOidc(user.Id, "company", default).Returns(None);
         Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Redeem());
         await sessions.Received(1).CreateForUserId(user.Id, Arg.Any<ValidSession>(), default);
+        await mail.DidNotReceiveWithAnyArgs().SendEmailAsync(default!, default!, default!);
     }
 
     [Fact]

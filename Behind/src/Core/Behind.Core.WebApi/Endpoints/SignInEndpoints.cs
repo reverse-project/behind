@@ -77,7 +77,8 @@ public sealed class SignInEndpoints
                     return Results.Unauthorized();
                 }
 
-                if (securityConfiguration.Value.EmailConfirmation && !ConfirmedAddress(user, request.Email))
+                var address = ConfirmedAddress(user, request.Email);
+                if (securityConfiguration.Value.EmailConfirmation && address is null)
                 {
                     logger.LogWarning("Sign-in refused for user {UserId}: the requested email is not confirmed", () => [user.Id]);
                     return Results.Json(new EmailNotConfirmedResponse(), statusCode: StatusCodes.Status403Forbidden);
@@ -85,7 +86,8 @@ public sealed class SignInEndpoints
 
                 return await StartSession(
                     user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
-                    wallOfShameQueries, timeProvider.GetUtcNow(), httpContext, logger, Some(twoFactorGate));
+                    wallOfShameQueries, timeProvider.GetUtcNow(), httpContext, logger, Some(twoFactorGate),
+                    emailSignIn: address is null ? null : EmailSignInContext.FromRequest(address, httpContext));
             });
     }
 
@@ -128,7 +130,7 @@ public sealed class SignInEndpoints
                     {
                         logger.LogDebug("Magic link requested for an unknown email, no link issued");
                     }
-                    else if (securityConfiguration.Value.EmailConfirmation && !ConfirmedAddress(user, request.Email))
+                    else if (securityConfiguration.Value.EmailConfirmation && ConfirmedAddress(user, request.Email) is null)
                     {
                         logger.LogWarning("Magic link for user {UserId} not issued: the requested email is not confirmed", () => [user.Id]);
                     }
@@ -146,7 +148,9 @@ public sealed class SignInEndpoints
                         var magicLink = MagicLink.Create(now, settings.EffectiveLinkLifetime, request.Function);
                         await magicLinkCommands.Issue(user.Id, magicLink, httpContext.RequestAborted);
 
-                        var link = MagicLinkCredential.Create(magicLink.Nonce, settings.ActualSecret, jwtSettings.SigningKey)
+                        var address = request.Function == MagicLinkFunction.SignIn ? ConfirmedAddress(user, request.Email) : null;
+                        var link = MagicLinkCredential.Create(magicLink.Nonce, settings.ActualSecret, jwtSettings.SigningKey,
+                                signInAddress: address)
                             .ToLink(frontend);
 
                         void Enqueue()
@@ -195,8 +199,9 @@ public sealed class SignInEndpoints
                 async settings =>
                 {
                     var now = timeProvider.GetUtcNow();
+                    var secrets = settings.ValidSecrets(now);
                     var credential = MagicLinkCredential.TryParse(request.Token)
-                        .Where(c => c.IsSignedBy(settings.ValidSecrets(now), jwtSettings.SigningKey));
+                        .Where(c => c.IsSignedBy(secrets, jwtSettings.SigningKey));
 
                     var redemption = await credential.Match(
                         none: () =>
@@ -235,19 +240,27 @@ public sealed class SignInEndpoints
                             return found;
                         });
 
-                    return user is null
-                        ? Results.Unauthorized()
-                        : await StartSession(
-                            user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
-                            wallOfShameQueries, now, httpContext, logger, Some(twoFactorGate),
-                            redemption.Match(() => (MagicLinkFunction?)null, r => r.Function),
-                            passwordResetGrants: passwordResetGrants);
+                    if (user is null)
+                    {
+                        return Results.Unauthorized();
+                    }
+
+                    var function = redemption.Match(() => (MagicLinkFunction?)null, r => r.Function);
+                    var address = function == MagicLinkFunction.SignIn
+                        ? credential.Match(() => null, c => c.FindSignInAddress(user.Emails, secrets, jwtSettings.SigningKey))
+                        : null;
+
+                    return await StartSession(
+                        user, jwtSettings, securityConfiguration.Value.EmailConfirmation, sessionCommands,
+                        wallOfShameQueries, now, httpContext, logger, Some(twoFactorGate), function,
+                        passwordResetGrants: passwordResetGrants,
+                        emailSignIn: address is null ? null : EmailSignInContext.FromRequest(address, httpContext));
                 }));
     }
 
-    private static bool ConfirmedAddress(ApplicationUser user, string value) =>
-        user.Emails.Any(email => string.Equals(email.Value, value.Trim(), StringComparison.OrdinalIgnoreCase)
-            && email.ConfirmedAt is not null);
+    private static string? ConfirmedAddress(ApplicationUser user, string value) =>
+        user.Emails.FirstOrDefault(email => string.Equals(email.Value, value.Trim(), StringComparison.OrdinalIgnoreCase)
+            && email.ConfirmedAt is not null)?.Value;
 
     internal static Task<IResult> NotConfigured(ILogger logger, string operation)
     {
@@ -262,7 +275,7 @@ public sealed class SignInEndpoints
         MagicLinkFunction? function = null, IReadOnlyList<string>? recoveryCodes = null,
         IPasswordResetGrants? passwordResetGrants = null,
         string? primaryCredentialId = null,
-        string? primaryOidcProviderId = null, Guid? familyPrimaryUserId = null)
+        string? primaryOidcProviderId = null, Guid? familyPrimaryUserId = null, EmailSignInContext? emailSignIn = null)
     {
         var subaccountSwitch = familyPrimaryUserId.HasValue;
         if (!subaccountSwitch && !user.Emails.Any())
@@ -293,15 +306,18 @@ public sealed class SignInEndpoints
                     none: () => Task.FromResult<Option<TwoFactorChallengeResponse>>(None),
                     gate => primaryOidcProviderId is not null
                         ? gate.ChallengeOidc(user.Id, primaryOidcProviderId, httpContext.RequestAborted)
-                        : primaryCredentialId is null
-                        ? gate.Challenge(user.Id, function, httpContext.RequestAborted)
-                        : gate.ChallengePasskey(user.Id, primaryCredentialId, httpContext.RequestAborted));
+                        : primaryCredentialId is not null
+                            ? gate.ChallengePasskey(user.Id, primaryCredentialId, httpContext.RequestAborted)
+                            : emailSignIn is not null
+                                ? gate.ChallengeEmail(user.Id, function, emailSignIn, httpContext.RequestAborted)
+                                : gate.Challenge(user.Id, function, httpContext.RequestAborted));
 
                 return await challenge.Match(
                     none: () => function switch
                     {
                         null or MagicLinkFunction.SignIn => StartPermittedSession(
-                            user, jwtSettings, sessionCommands, httpContext, logger, function, recoveryCodes, familyPrimaryUserId),
+                            user, jwtSettings, sessionCommands, httpContext, logger, function, recoveryCodes, familyPrimaryUserId,
+                            emailSignIn),
                         MagicLinkFunction.LostPassword => StartPasswordReset(
                             user, passwordResetGrants, httpContext, logger, recoveryCodes),
                         _ => Task.FromResult<IResult>(Results.Unauthorized())
@@ -370,7 +386,7 @@ public sealed class SignInEndpoints
 
     private static async Task<IResult> StartPermittedSession(ApplicationUser user, JwtSettings jwtSettings,
         ISessionCommands sessionCommands, HttpContext httpContext, ILogger logger, MagicLinkFunction? function,
-        IReadOnlyList<string>? recoveryCodes, Guid? familyPrimaryUserId)
+        IReadOnlyList<string>? recoveryCodes, Guid? familyPrimaryUserId, EmailSignInContext? emailSignIn)
     {
         var humanUser = user.ToHumanUser();
         var accessToken = AccessToken.Create(humanUser);
@@ -395,9 +411,9 @@ public sealed class SignInEndpoints
             Function = function,
             RecoveryCodes = recoveryCodes
         });
-        if (familyPrimaryUserId is null)
+        if (emailSignIn is not null && ConfirmedAddress(user, emailSignIn.Email) is { } recipient)
         {
-            await SubaccountSignInNotification.AfterSessionCommit(httpContext, user, null, logger);
+            await EmailSignInNotification.AfterSessionCommit(httpContext, user.Id, emailSignIn with { Email = recipient }, logger);
         }
 
         return result;

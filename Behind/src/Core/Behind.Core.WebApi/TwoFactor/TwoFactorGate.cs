@@ -2,6 +2,7 @@ using Behind.Common;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
+using Behind.Core.WebApi.EmailSender;
 using Microsoft.Extensions.Options;
 using static Behind.Common.FunctionalExtensions;
 
@@ -12,6 +13,12 @@ public interface ITwoFactorGate
     Task<Option<TwoFactorChallengeResponse>> Challenge(
         Guid userId,
         MagicLinkFunction? function,
+        CancellationToken cancellationToken = default);
+
+    Task<Option<TwoFactorChallengeResponse>> ChallengeEmail(
+        Guid userId,
+        MagicLinkFunction? function,
+        EmailSignInContext signIn,
         CancellationToken cancellationToken = default);
 
     Task<Option<TwoFactorChallengeResponse>> ChallengePasskey(
@@ -44,25 +51,33 @@ public sealed class TwoFactorGate(
         Guid userId,
         MagicLinkFunction? function,
         CancellationToken cancellationToken = default) =>
-        await ChallengeCore(userId, function, null, null, cancellationToken);
+        await ChallengeCore(userId, function, null, null, null, cancellationToken);
+
+    public Task<Option<TwoFactorChallengeResponse>> ChallengeEmail(
+        Guid userId,
+        MagicLinkFunction? function,
+        EmailSignInContext signIn,
+        CancellationToken cancellationToken = default) =>
+        ChallengeCore(userId, function, null, null, signIn, cancellationToken);
 
     public async Task<Option<TwoFactorChallengeResponse>> ChallengePasskey(
         Guid userId,
         string credentialId,
         CancellationToken cancellationToken = default) =>
-        await ChallengeCore(userId, null, credentialId, null, cancellationToken);
+        await ChallengeCore(userId, null, credentialId, null, null, cancellationToken);
 
     public async Task<Option<TwoFactorChallengeResponse>> ChallengeOidc(
         Guid userId,
         string providerId,
         CancellationToken cancellationToken = default) =>
-        await ChallengeCore(userId, null, null, providerId, cancellationToken);
+        await ChallengeCore(userId, null, null, providerId, null, cancellationToken);
 
     private async Task<Option<TwoFactorChallengeResponse>> ChallengeCore(
         Guid userId,
         MagicLinkFunction? function,
         string? primaryCredentialId,
         string? primaryOidcProviderId,
+        EmailSignInContext? emailSignIn,
         CancellationToken cancellationToken)
     {
         var status = await queries.GetStatus(userId, cancellationToken);
@@ -90,7 +105,7 @@ public sealed class TwoFactorGate(
                 return Some(new TwoFactorChallengeResponse(string.Empty, [], false, function) { Unavailable = true });
             }
 
-            return Some(await Challenge(userId, TwoFactorStage.Verify, methods, false, function, primaryCredentialId, primaryOidcProviderId, cancellationToken));
+            return Some(await Challenge(userId, TwoFactorStage.Verify, methods, false, function, primaryCredentialId, primaryOidcProviderId, emailSignIn, cancellationToken));
         }
 
         if (!security.Value.TwoFactorRequired)
@@ -106,7 +121,7 @@ public sealed class TwoFactorGate(
             setupMethods.Add(TwoFactorMethod.Email);
         }
 
-        return Some(await Challenge(userId, TwoFactorStage.Setup, setupMethods, true, function, primaryCredentialId, primaryOidcProviderId, cancellationToken));
+        return Some(await Challenge(userId, TwoFactorStage.Setup, setupMethods, true, function, primaryCredentialId, primaryOidcProviderId, emailSignIn, cancellationToken));
     }
 
     private async Task<TwoFactorChallengeResponse> Challenge(
@@ -117,6 +132,7 @@ public sealed class TwoFactorGate(
         MagicLinkFunction? function,
         string? primaryCredentialId,
         string? primaryOidcProviderId,
+        EmailSignInContext? emailSignIn,
         CancellationToken cancellationToken)
     {
         var link = MagicLink.Create(timeProvider.GetUtcNow(), TwoFactorTickets.Lifetime, MagicLinkFunction.TwoFactorChallenge);
@@ -125,6 +141,7 @@ public sealed class TwoFactorGate(
         {
             PrimaryCredentialId = primaryCredentialId,
             PrimaryOidcProviderId = primaryOidcProviderId,
+            EmailSignIn = emailSignIn,
             Nonce = link.Nonce.Nonce
         };
         return new TwoFactorChallengeResponse(tickets.Seal(ticket), methods, setupRequired, function);

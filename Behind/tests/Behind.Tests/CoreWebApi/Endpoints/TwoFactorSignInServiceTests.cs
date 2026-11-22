@@ -2,13 +2,17 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
+using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.MagicLinks;
+using Behind.Core.WebApi.Middleware;
 using Behind.Core.WebApi.TwoFactor;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
@@ -75,6 +79,75 @@ public class TwoFactorSignInServiceTests
         Assert.Null(json.Value.RecoveryCodes);
         await _sessions.Received(1).CreateForUserId(_user.Id, Arg.Any<ValidSession>(), Arg.Any<CancellationToken>());
         await _grants.DidNotReceiveWithAnyArgs().Issue(default, default);
+    }
+
+    [Theory]
+    [InlineData(null, true, true)]
+    [InlineData(MagicLinkFunction.SignIn, true, true)]
+    [InlineData(null, true, false)]
+    [InlineData(null, false, true)]
+    public async Task Complete_AlertsTheOriginalVerifiedSignInAddressOnlyAfterCommit(
+        MagicLinkFunction? function, bool stillVerified, bool commit)
+    {
+        _user.Emails = [new Email("user@test.com", Now), new Email("sign-in@test.com", stillVerified ? Now : null)];
+        var service = Service();
+        var sender = Substitute.For<IEmailSender>();
+        await using var services = new ServiceCollection().AddSingleton(sender).BuildServiceProvider();
+        await using var transaction = new AuthenticationTransaction(null);
+        var httpContext = NewHttpContext();
+        httpContext.RequestServices = services;
+        httpContext.Features.Set(transaction);
+        var ticket = Ticket(_user.Id, function) with
+        {
+            EmailSignIn = new EmailSignInContext("sign-in@test.com", "192.0.2.8", "original-browser")
+        };
+
+        var result = await service.Complete(_user.Id, function, null, httpContext, ticket);
+
+        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
+        Assert.Empty(sender.ReceivedCalls());
+        if (commit)
+        {
+            await transaction.CommitAsync();
+        }
+        else
+        {
+            await transaction.RollbackAsync();
+        }
+
+        if (stillVerified && commit)
+        {
+            await sender.Received(1).SendEmailAsync("sign-in@test.com", "New sign-in to your account",
+                Arg.Is<string>(body => body.Contains("Remote IP: 192.0.2.8") && body.Contains("User agent: original-browser")));
+            Assert.Single(sender.ReceivedCalls());
+        }
+        else
+        {
+            Assert.Empty(sender.ReceivedCalls());
+        }
+    }
+
+    [Theory]
+    [InlineData("passkey-credential", null)]
+    [InlineData(null, "oidc-provider")]
+    public async Task Complete_EmailAsSecondFactorDoesNotAlertAfterNonEmailSignIn(
+        string? primaryCredentialId, string? primaryOidcProviderId)
+    {
+        var sender = Substitute.For<IEmailSender>();
+        await using var services = new ServiceCollection().AddSingleton(sender).BuildServiceProvider();
+        var httpContext = NewHttpContext();
+        httpContext.RequestServices = services;
+        var ticket = Ticket(_user.Id) with
+        {
+            PrimaryCredentialId = primaryCredentialId,
+            PrimaryOidcProviderId = primaryOidcProviderId,
+            Email = "user@test.com"
+        };
+
+        var result = await Service().Complete(_user.Id, null, null, httpContext, ticket);
+
+        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
+        Assert.Empty(sender.ReceivedCalls());
     }
 
     [Fact]

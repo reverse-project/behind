@@ -45,32 +45,38 @@ public sealed class SubaccountEndpointsTests
         var birthday = new DateOnly(2018, 2, 2);
         var request = new SubaccountEndpoints.CreateRequest("Child", email, birthday, true, pin);
         await SubaccountEndpoints.Create(request, parent.Http, parent.Queries, db, roles, TimeProvider.System);
-        var link = await db.Subaccounts.SingleAsync();
-        Assert.Equal(primary, link.PrimaryUserId);
-        Assert.NotEqual(primary, link.UserId);
+        db.ChangeTracker.Clear();
+        var link = await db.Subaccounts
+            .Include(account => account.PrimaryUser)
+            .Include(account => account.User)
+            .SingleAsync();
+        var childId = db.GetKey(link.User);
+        Assert.Equal(primary, db.GetKey(link.PrimaryUser));
+        Assert.NotEqual(primary, childId);
         Assert.Equal(pin is not null, link.PinHash is not null);
         if (pin is not null)
         {
-            Assert.NotEqual(pin, link.PinHash);
-            Assert.True(PasswordHash.CreateFromExisting(link.PinHash!).Verify(pin));
+            var storedHash = Assert.IsType<PinHash>(link.PinHash);
+            Assert.NotEqual(pin, storedHash.ToString());
+            Assert.True(PasswordHash.CreateFromExisting(storedHash.ToString()).Verify(pin));
         }
         var profiles = new UserProfiles(db, Substitute.For<IModuleFiles>());
-        await profiles.SetDetails(link.UserId, new(new DateOnly(1980, 1, 1), false), default);
-        Assert.Equal(new UserProfiles.Details(birthday, false, true), await profiles.GetDetails(link.UserId, default));
+        await profiles.SetDetails(childId, new(new DateOnly(1980, 1, 1), false), default);
+        Assert.Equal(new UserProfiles.Details(birthday, false, true), await profiles.GetDetails(childId, default));
         await SubaccountEndpoints.List(parent.Http, parent.Queries, db);
 
-        var child = AsUser(link.UserId);
+        var child = AsUser(childId);
         Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.Create(request, child.Http, child.Queries, db, roles, TimeProvider.System));
         var other = AsUser(await DatabaseSeedHelper.SeedHumanUserAsync(db, "elsewhere@example.test"));
         var update = new SubaccountEndpoints.UpdateRequest("Different", birthday, false, null, true);
-        Assert.IsType<NotFound>(await SubaccountEndpoints.Update(link.UserId, update, other.Http, other.Queries, db, TimeProvider.System));
+        Assert.IsType<NotFound>(await SubaccountEndpoints.Update(childId, update, other.Http, other.Queries, db, TimeProvider.System));
 
         var manager = Substitute.For<UserManager<ApplicationUser>>(
             Substitute.For<IUserStore<ApplicationUser>>(), null, null, null, null, null, null, null, null);
-        manager.FindByIdAsync(link.UserId.ToString()).Returns(new ApplicationUser { Id = link.UserId });
+        manager.FindByIdAsync(childId.ToString()).Returns(new ApplicationUser { Id = childId });
         var security = Options.Create(new SecurityConfiguration(false, None, Some(new JwtSettings("issuer", "audience", new string('k', 64))), None));
         var commands = Substitute.For<ISessionCommands>();
-        Task<IResult> Switch(string? suppliedPin) => SubaccountEndpoints.Switch(link.UserId, new(suppliedPin),
+        Task<IResult> Switch(string? suppliedPin) => SubaccountEndpoints.Switch(childId, new(suppliedPin),
             parent.Http, parent.Queries, db, manager, security, commands, Substitute.For<IWallOfShameQueries>(),
             TimeProvider.System, NullLogger<SubaccountEndpoints>.Instance);
 
@@ -80,9 +86,10 @@ public sealed class SubaccountEndpointsTests
             await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
         }
         Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(pin));
-        await commands.Received(1).CreateForUserId(link.UserId, Arg.Is<ValidSession>(s => s.FamilyPrimaryUserId == primary), Arg.Any<CancellationToken>());
+        await commands.Received(1).CreateForUserId(childId, Arg.Is<ValidSession>(s => s.FamilyPrimaryUserId == primary), Arg.Any<CancellationToken>());
         await commands.Received(1).InvalidateSession(parent.SessionId, primary, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
-        Assert.IsType<NoContent>(await SubaccountEndpoints.Update(link.UserId, update, parent.Http, parent.Queries, db, TimeProvider.System));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.Update(childId, update, parent.Http, parent.Queries, db, TimeProvider.System));
         Assert.Null((await db.Subaccounts.AsNoTracking().SingleAsync()).PinHash);
+        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(null));
     }
 }

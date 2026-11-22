@@ -62,10 +62,10 @@ public sealed class SessionQueries(AbstractCoreContext context) : ISessionQuerie
         {
             var activeUsers = context.Users.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active);
             var linked = await (from link in context.Subaccounts
-                join parent in activeUsers on link.PrimaryUserId equals EF.Property<Guid>(parent, "Id")
-                join child in activeUsers on link.UserId equals EF.Property<Guid>(child, "Id")
-                where link.PrimaryUserId == primaryId && link.UserId == row.UserId
-                select link.UserId).AnyAsync(cancellationToken);
+                join parent in activeUsers on EF.Property<Guid>(link, "PrimaryUserId") equals EF.Property<Guid>(parent, "Id")
+                join child in activeUsers on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(child, "Id")
+                where EF.Property<Guid>(link, "PrimaryUserId") == primaryId && EF.Property<Guid>(link, "UserId") == row.UserId
+                select EF.Property<Guid>(link, "UserId")).AnyAsync(cancellationToken);
             if (!linked || await new WallOfShameQueries(context).FindActiveBan(primaryId, DateTimeOffset.UtcNow, cancellationToken) != None)
             {
                 return None;

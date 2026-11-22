@@ -72,7 +72,7 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
 
     public async Task<Details?> GetDetails(Guid userId, CancellationToken cancellationToken) =>
         await context.Users.Where(user => EF.Property<Guid>(user, "Id") == userId)
-            .Select(user => new Details(user.Birthday, user.HideEmail, context.Subaccounts.Any(link => link.UserId == userId && link.IsChild)))
+            .Select(user => new Details(user.Birthday, user.HideEmail, context.Subaccounts.Any(link => EF.Property<Guid>(link, "UserId") == userId && link.IsChild)))
             .AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
     public async Task<ManagementProfile?> GetManagementProfile(Guid userId, CancellationToken cancellationToken)
@@ -150,7 +150,7 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
             async user =>
             {
                 var tracked = await context.Users.SingleAsync(value => EF.Property<Guid>(value, "Id") == userId, cancellationToken);
-                if (!await context.Subaccounts.AnyAsync(link => link.UserId == userId && link.IsChild, cancellationToken))
+                if (!await context.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "UserId") == userId && link.IsChild, cancellationToken))
                 {
                     context.Entry(tracked).Property(value => value.Birthday).CurrentValue = details.Birthday;
                 }

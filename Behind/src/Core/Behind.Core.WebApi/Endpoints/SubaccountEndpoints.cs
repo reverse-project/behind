@@ -54,10 +54,10 @@ public sealed class SubaccountEndpoints
         if (family.CanSwitch)
         {
             accounts = await (from link in db.Subaccounts
-                              join user in ActiveUsers(db) on link.UserId equals EF.Property<Guid>(user, "Id")
-                              where link.PrimaryUserId == family.PrimaryUserId && link.UserId != family.Current.UserId
-                              orderby user.DisplayName, link.UserId
-                              select new Account(link.UserId, user.DisplayName, link.IsChild, family.IsPrimary ? user.Birthday : null,
+                              join user in ActiveUsers(db) on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(user, "Id")
+                              where EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId && EF.Property<Guid>(link, "UserId") != family.Current.UserId
+                              orderby user.DisplayName, EF.Property<Guid>(link, "UserId")
+                              select new Account(EF.Property<Guid>(link, "UserId"), user.DisplayName, link.IsChild, family.IsPrimary ? user.Birthday : null,
                                   link.PinHash != null, family.IsPrimary ? user.Emails.OrderBy(e => EF.Property<Guid>(e, "Id")).Select(e => e.Value).FirstOrDefault() : null))
                 .ToListAsync(http.RequestAborted);
         }
@@ -83,6 +83,13 @@ public sealed class SubaccountEndpoints
             return Results.Conflict();
         }
 
+        var primary = await ActiveUsers(db).SingleOrDefaultAsync(
+            user => EF.Property<Guid>(user, "Id") == family.PrimaryUserId, http.RequestAborted);
+        if (primary is null)
+        {
+            return Results.Forbid();
+        }
+
         var user = new HumanUser
         {
             DisplayName = request.DisplayName.Trim(),
@@ -91,7 +98,7 @@ public sealed class SubaccountEndpoints
         };
         db.Users.Add(user);
         var userId = db.GetKey(user);
-        var link = new Subaccount(family.PrimaryUserId, userId, request.IsChild, HashPin(request.Pin));
+        var link = new Subaccount(primary, user, request.IsChild, HashPin(request.Pin));
         db.Subaccounts.Add(link);
         await db.SaveChangesAsync(http.RequestAborted);
         await roles.AssignBuiltIn(userId, BuiltInAccess.Users, http.RequestAborted);
@@ -112,8 +119,8 @@ public sealed class SubaccountEndpoints
             return Results.BadRequest();
         }
         var target = await (from link in db.Subaccounts
-                            join user in ActiveUsers(db) on link.UserId equals EF.Property<Guid>(user, "Id")
-                            where link.PrimaryUserId == family.PrimaryUserId && link.UserId == userId
+                            join user in ActiveUsers(db) on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(user, "Id")
+                            where EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId && EF.Property<Guid>(link, "UserId") == userId
                             select new { Link = link, User = user }).SingleOrDefaultAsync(http.RequestAborted);
         if (target is null)
         {
@@ -141,14 +148,14 @@ public sealed class SubaccountEndpoints
         {
             return Results.Forbid();
         }
-        var link = await db.Subaccounts.AsNoTracking().SingleOrDefaultAsync(l => l.PrimaryUserId == family.PrimaryUserId
-            && l.UserId == userId, http.RequestAborted);
+        var link = await db.Subaccounts.AsNoTracking().SingleOrDefaultAsync(l => EF.Property<Guid>(l, "PrimaryUserId") == family.PrimaryUserId
+            && EF.Property<Guid>(l, "UserId") == userId, http.RequestAborted);
         if (link is null || !await ActiveUsers(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == userId, http.RequestAborted))
         {
             return Results.NotFound();
         }
         if (link.PinHash is not null && (string.IsNullOrEmpty(request.Pin)
-            || !PasswordHash.CreateFromExisting(link.PinHash).Verify(request.Pin)))
+            || !PasswordHash.CreateFromExisting(link.PinHash.ToString()).Verify(request.Pin)))
         {
             return Results.Forbid();
         }
@@ -176,7 +183,7 @@ public sealed class SubaccountEndpoints
     private static IQueryable<HumanUser> ActiveUsers(AbstractCoreContext db) =>
         db.Users.InDeletionState(db, AbstractCoreContext.DeletionRecorded, DeletionState.Active);
 
-    private static string? HashPin(string? pin) => string.IsNullOrEmpty(pin) ? null : PasswordHash.Create(pin).ToString();
+    private static PinHash? HashPin(string? pin) => string.IsNullOrEmpty(pin) ? null : new PinHash(PasswordHash.Create(pin).ToString());
 
     private static async Task<FamilySession?> FindFamily(HttpContext http, ISessionQueries sessions, AbstractCoreContext db)
     {
@@ -186,8 +193,8 @@ public sealed class SubaccountEndpoints
         {
             return null;
         }
-        var parentId = await db.Subaccounts.Where(link => link.UserId == session.UserId)
-            .Select(link => (Guid?)link.PrimaryUserId).SingleOrDefaultAsync(http.RequestAborted);
+        var parentId = await db.Subaccounts.Where(link => EF.Property<Guid>(link, "UserId") == session.UserId)
+            .Select(link => (Guid?)EF.Property<Guid>(link, "PrimaryUserId")).SingleOrDefaultAsync(http.RequestAborted);
         if (parentId is null)
         {
             return new(session, session.UserId, true);

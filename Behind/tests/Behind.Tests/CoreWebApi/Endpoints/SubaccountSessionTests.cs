@@ -20,12 +20,13 @@ public sealed class SubaccountSessionTests
         using var factory = new TestDbContextFactory();
         await using var db = factory.CreateContext();
         var primary = await DatabaseSeedHelper.SeedHumanUserAsync(db, "parent@example.test");
+        var primaryUser = await db.Users.FindAsync(primary) ?? throw new InvalidOperationException();
         var first = new HumanUser { DisplayName = "First" };
         var second = new HumanUser { DisplayName = "Second" };
         db.Users.AddRange(first, second);
         var firstId = db.GetKey(first);
         var secondId = db.GetKey(second);
-        db.Subaccounts.AddRange(new Subaccount(primary, firstId, true, null), new Subaccount(primary, secondId, true, null));
+        db.Subaccounts.AddRange(new Subaccount(primaryUser, first, true, null), new Subaccount(primaryUser, second, true, null));
         await db.SaveChangesAsync();
         var commands = new SessionCommands(db);
         var queries = new SessionQueries(db);

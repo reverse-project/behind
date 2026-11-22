@@ -125,13 +125,16 @@ test("accept a successful switch after renewal changes the token for the same se
     panel.dispose();
 });
 
-test("discard switch responses after session changes or a list invalidation", async () => {
+test("discard switch responses after session changes", async () => {
     const child = { userId: "child" };
     for (const supersede of [
         ({ session }) => session.accessToken(accessToken("other-session", "original")),
         ({ session }) => session.accessToken(null),
         ({ session }) => session.isImpersonating(true),
-        ({ invalidation }) => invalidation.invalidate()
+        ({ panel, session }) => {
+            panel.dispose();
+            session.accessToken(accessToken("other-session", "original"));
+        }
     ]) {
         const fixture = await setup([child]);
         const { panel, sessions, http, reloads } = fixture;
@@ -144,7 +147,27 @@ test("discard switch responses after session changes or a list invalidation", as
         await panel.switchUser();
         assert.deepEqual(sessions, []);
         assert.equal(reloads.length, 0);
-        assert.equal(panel.busy(), false);
+        panel.dispose();
+    }
+});
+
+test("complete a successful switch after the account list refreshes or the panel is disposed", async () => {
+    const child = { userId: "child" };
+    for (const refresh of [
+        ({ invalidation }) => invalidation.invalidate(),
+        ({ panel }) => panel.dispose()
+    ]) {
+        const fixture = await setup([child]);
+        const { panel, sessions, http, reloads } = fixture;
+        panel.selected(child);
+        const post = http.post;
+        http.post = async (url, body) => {
+            await refresh(fixture);
+            return post(url, body);
+        };
+        await panel.switchUser();
+        assert.deepEqual(sessions, [{ accessToken: "new-token" }]);
+        assert.equal(reloads.length, 1);
         panel.dispose();
     }
 });

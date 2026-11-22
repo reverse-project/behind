@@ -5,7 +5,7 @@
     "changes": [
       { "type": "added", "text": "Administrators can lower the maximum switching PIN length in security.json. The default remains 128 characters." },
       { "type": "fixed", "text": "User management explains when linked subaccounts block permanent account deletion." },
-      { "type": "fixed", "text": "Account switching completes when sign-in tokens renew during the request. Conflicting first PIN updates preserve the saved PIN and profile." },
+      { "type": "fixed", "text": "Account switching completes when sign-in tokens renew or the account menu refreshes during the request. Conflicting first PIN updates preserve the saved PIN and profile." },
       { "type": "added", "text": "Primary users can invite existing accounts to their family and release linked accounts from their profile. The invited user reviews the parent and confirms the link. Administrators can configure subaccounts and linking separately in security.json." },
       { "type": "added", "text": "Manage subaccounts from your profile and switch between linked users with optional PINs. Set a separate primary account PIN to switch back from a family session, or skip setup and use full sign-in. Each subaccount has its own identity, optional email, child setting and birthday." },
       { "type": "fixed", "text": "Startup and data protection tools write configuration and certificate files directly, including forced overwrites of file bind mounts. Compose setup detects directories at configuration file paths." },

@@ -47,9 +47,10 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         var searchedName = "";
         self.requests = ko.observableArray([]);
         var revision = 0;
-        var identity = ko.pureComputed(function () {
+        var currentIdentity = function () {
             return session.isImpersonating() ? null : sessionIdentity(session.accessToken());
-        });
+        };
+        var identity = ko.pureComputed(currentIdentity);
 
         var select = self.selected.subscribe(function (account) {
             self.pin("");
@@ -138,7 +139,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             identity.dispose();
         };
 
-        var perform = function (operation, done, invalid) {
+        var perform = function (operation, done, invalid, acceptSuccess) {
             if (self.busy()) {
                 return;
             }
@@ -146,13 +147,13 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             self.message("");
             var ticket = revision;
             return operation().then(function (response) {
-                if (ticket !== revision) {
-                    return;
-                }
                 if (response.ok) {
-                    return done(response.data);
+                    if (acceptSuccess ? acceptSuccess() : ticket === revision) {
+                        return done(response.data);
+                    }
+                } else if (ticket === revision) {
+                    self.message(i18n.t(response.status === 429 ? "auth.tooManyAttempts" : invalid));
                 }
-                self.message(i18n.t(response.status === 429 ? "auth.tooManyAttempts" : invalid));
             }).catch(function () {
                 if (ticket === revision) {
                     self.message(i18n.t("common.error.generic"));
@@ -257,7 +258,8 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
 
         self.switchUser = function () {
             var account = self.selected();
-            if (!account) {
+            var sourceIdentity = currentIdentity();
+            if (!account || !sourceIdentity) {
                 return;
             }
             return perform(function () {
@@ -266,7 +268,9 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 session.start(tokens);
                 window.location.hash = "#/";
                 window.location.reload();
-            }, "subaccount.denied");
+            }, "subaccount.denied", function () {
+                return currentIdentity() === sourceIdentity;
+            });
         };
 
         load();

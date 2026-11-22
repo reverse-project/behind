@@ -29,7 +29,7 @@ public sealed class SubaccountEndpoints
         string? PrimaryPin => null;
     }
 
-    public sealed record PinProof(string? CurrentPin = null, string? Password = null, string? MagicToken = null);
+    public sealed record PinProof(string? CurrentPin = null, string? Password = null, string? MagicToken = null, string? PrimaryPin = null);
 
     public sealed record PinRequest(
         [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin,
@@ -236,12 +236,19 @@ public sealed class SubaccountEndpoints
     private static async Task<bool> VerifyProof(PinProof? proof, FamilySession family, Guid targetId, string operation,
         AbstractCoreContext db, HttpContext http)
     {
-        if (proof is { CurrentPin: { Length: > 0 } pin, Password: null, MagicToken: null })
+        (Guid UserId, string Pin)? pinProof = proof switch
         {
-            var credential = await PinsFor(db, targetId).SingleOrDefaultAsync(http.RequestAborted);
-            return credential is not null && PasswordHash.CreateFromExisting(credential.PinHash.ToString()).Verify(pin);
+            { CurrentPin: { Length: > 0 } pin, PrimaryPin: null, Password: null, MagicToken: null } => (targetId, pin),
+            { PrimaryPin: { Length: > 0 } pin, CurrentPin: null, Password: null, MagicToken: null }
+                when family.IsPrimary && targetId != family.PrimaryUserId && operation is "change" or "remove" => (family.PrimaryUserId, pin),
+            _ => null
+        };
+        if (pinProof is { } credential)
+        {
+            var hash = await PinsFor(db, credential.UserId).SingleOrDefaultAsync(http.RequestAborted);
+            return hash is not null && PasswordHash.CreateFromExisting(hash.PinHash.ToString()).Verify(credential.Pin);
         }
-        if (proof is { Password: { Length: > 0 } password, CurrentPin: null, MagicToken: null })
+        if (proof is { Password: { Length: > 0 } password, CurrentPin: null, MagicToken: null, PrimaryPin: null })
         {
             if (!http.RequestServices.GetRequiredService<IOptionsSnapshot<AccountsConfiguration>>().Value.Password)
             {
@@ -251,7 +258,7 @@ public sealed class SubaccountEndpoints
                 .Select(record => record.Value).FirstOrDefaultAsync(http.RequestAborted);
             return hash is not null && PasswordHash.CreateFromExisting(hash).Verify(password);
         }
-        return proof is { MagicToken: { Length: > 0 } token, CurrentPin: null, Password: null }
+        return proof is { MagicToken: { Length: > 0 } token, CurrentPin: null, Password: null, PrimaryPin: null }
             && await PinMagicProof.Consume(token, family.Current.UserId, targetId, operation, http);
     }
 

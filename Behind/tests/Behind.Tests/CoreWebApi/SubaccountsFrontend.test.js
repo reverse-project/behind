@@ -371,6 +371,30 @@ test("signing out during a search clears busy state and discards private results
     panel.dispose();
 });
 
+test("linked subaccount PIN changes distinguish the primary PIN from the target PIN", async () => {
+    const child = { userId: "child", displayName: "Alex", hasPin: true };
+    const withoutPin = { userId: "other-child", displayName: "Sam", hasPin: false };
+    const { panel, requests } = await setup([child, withoutPin], true, true);
+    assert.equal(panel.proofMethods().includes("primaryPin"), false);
+    panel.selected(panel.managementAccounts()[0]);
+    assert.equal(panel.proofMethods().includes("primaryPin"), false);
+    assert.equal(panel.proofLabel("currentPin"), "subaccount.yourCurrentPin");
+    panel.selected(child);
+    assert.deepEqual(Array.from(panel.proofMethods()), ["currentPin", "primaryPin", "password", "magicToken"]);
+    assert.equal(panel.proofLabel("currentPin"), "subaccount.subaccountCurrentPin");
+    assert.equal(panel.proofLabel("primaryPin"), "subaccount.yourCurrentPin");
+    panel.clearPin(true);
+    panel.proofMethod("primaryPin");
+    panel.credential("1234");
+    await panel.save();
+    assert.equal(requests[0].url, "/profile/subaccounts/child");
+    assert.equal(requests[0].body.clearPin, true);
+    assert.deepEqual({ ...requests[0].body.proof }, { primaryPin: "1234" });
+    panel.selected(withoutPin);
+    assert.deepEqual(Array.from(panel.proofMethods()), ["primaryPin", "password", "magicToken"]);
+    panel.dispose();
+});
+
 test("primary PIN changes send scoped magic proof only on explicit save", async () => {
     const { panel, requests } = await setup([], true, true);
     panel.selected(panel.managementAccounts()[0]);

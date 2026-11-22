@@ -1,0 +1,412 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "subaccounts-2.1.0.schema.json",
+  "$defs": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "\\S"
+    },
+    "email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "email",
+      "maxLength": 255
+    },
+    "birthday": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "pin": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]*$",
+      "maxLength": 128
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "create": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "$ref": "#/$defs/name"
+        },
+        "birthday": {
+          "$ref": "#/$defs/birthday"
+        },
+        "isChild": {
+          "type": "boolean"
+        },
+        "email": {
+          "$ref": "#/$defs/email"
+        },
+        "pin": {
+          "$ref": "#/$defs/pin"
+        },
+        "primaryPin": {
+          "$ref": "#/$defs/pin"
+        },
+        "proof": {
+          "$ref": "#/$defs/proof",
+          "not": {
+            "required": [
+              "primaryPin"
+            ]
+          }
+        }
+      },
+      "required": [
+        "displayName"
+      ],
+      "if": {
+        "anyOf": [
+          {
+            "required": [
+              "pin"
+            ],
+            "properties": {
+              "pin": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "required": [
+              "primaryPin"
+            ],
+            "properties": {
+              "primaryPin": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "required": [
+          "proof"
+        ]
+      }
+    },
+    "update": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "$ref": "#/$defs/name"
+        },
+        "birthday": {
+          "$ref": "#/$defs/birthday"
+        },
+        "isChild": {
+          "type": "boolean"
+        },
+        "pin": {
+          "$ref": "#/$defs/pin"
+        },
+        "clearPin": {
+          "type": "boolean"
+        },
+        "proof": {
+          "$ref": "#/$defs/proof"
+        }
+      },
+      "required": [
+        "displayName"
+      ],
+      "not": {
+        "required": [
+          "clearPin",
+          "pin"
+        ],
+        "properties": {
+          "clearPin": {
+            "const": true
+          },
+          "pin": {
+            "type": "string"
+          }
+        }
+      },
+      "if": {
+        "anyOf": [
+          {
+            "required": [
+              "pin"
+            ],
+            "properties": {
+              "pin": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "required": [
+              "clearPin"
+            ],
+            "properties": {
+              "clearPin": {
+                "const": true
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "required": [
+          "proof"
+        ]
+      }
+    },
+    "switch": {
+      "type": "object",
+      "properties": {
+        "pin": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 128
+        }
+      },
+      "required": []
+    },
+    "account": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "birthday": {
+          "$ref": "#/$defs/birthday"
+        },
+        "isChild": {
+          "type": "boolean"
+        },
+        "email": {
+          "$ref": "#/$defs/email"
+        },
+        "userId": {
+          "$ref": "#/$defs/id"
+        },
+        "hasPin": {
+          "type": "boolean"
+        },
+        "canRelease": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "displayName",
+        "isChild",
+        "userId",
+        "hasPin",
+        "canRelease"
+      ]
+    },
+    "created": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    },
+    "family": {
+      "type": "object",
+      "properties": {
+        "isPrimary": {
+          "type": "boolean"
+        },
+        "primaryUserId": {
+          "$ref": "#/$defs/id"
+        },
+        "accounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/account"
+          }
+        },
+        "primaryHasPin": {
+          "type": "boolean"
+        },
+        "linkUnlinkEnabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "accounts",
+        "isPrimary",
+        "primaryUserId",
+        "primaryHasPin",
+        "linkUnlinkEnabled"
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "$ref": "#/$defs/id"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "userId",
+        "displayName"
+      ]
+    },
+    "candidateList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "invitation": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "$ref": "#/$defs/id"
+        },
+        "userId": {
+          "$ref": "#/$defs/id"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "userId",
+        "displayName"
+      ]
+    },
+    "invitationList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/invitation"
+      }
+    },
+    "proof": {
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "currentPin"
+          ]
+        },
+        {
+          "required": [
+            "primaryPin"
+          ]
+        },
+        {
+          "required": [
+            "password"
+          ]
+        },
+        {
+          "required": [
+            "magicToken"
+          ]
+        }
+      ],
+      "properties": {
+        "currentPin": {
+          "type": "string",
+          "minLength": 1
+        },
+        "primaryPin": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The signed-in primary user's current switching PIN. Valid only when setting, changing or removing a linked subaccount's switching PIN."
+        },
+        "password": {
+          "type": "string",
+          "minLength": 1
+        },
+        "magicToken": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "pinMutation": {
+      "type": "object",
+      "properties": {
+        "pin": {
+          "$ref": "#/$defs/pin"
+        },
+        "clearPin": {
+          "type": "boolean"
+        },
+        "proof": {
+          "$ref": "#/$defs/proof"
+        }
+      },
+      "required": [
+        "proof"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "pin"
+          ],
+          "properties": {
+            "pin": {
+              "type": "string",
+              "minLength": 1
+            },
+            "clearPin": {
+              "const": false
+            }
+          }
+        },
+        {
+          "required": [
+            "clearPin"
+          ],
+          "properties": {
+            "clearPin": {
+              "const": true
+            },
+            "pin": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "pinProofRequest": {
+      "type": "object",
+      "required": [
+        "operation"
+      ],
+      "properties": {
+        "operation": {
+          "enum": [
+            "change",
+            "remove",
+            "create"
+          ]
+        }
+      }
+    }
+  }
+}

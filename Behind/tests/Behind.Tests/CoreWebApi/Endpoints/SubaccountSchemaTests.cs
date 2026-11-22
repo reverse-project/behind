@@ -45,11 +45,22 @@ public sealed class SubaccountSchemaTests
         Assert.False(ReadDefinition("update").Evaluate(request).IsValid);
     }
 
-    private static JsonSchema ReadDefinition(string name)
+    [Theory]
+    [InlineData("update", """{"displayName":"Family","clearPin":true,"proof":{"primaryPin":"1234"}}""", true)]
+    [InlineData("pinMutation", """{"pin":"5678","proof":{"primaryPin":"1234"}}""", true)]
+    [InlineData("pinMutation", """{"clearPin":true,"proof":{"primaryPin":"1234","currentPin":"5678"}}""", false)]
+    [InlineData("create", """{"displayName":"Family","pin":"5678","proof":{"primaryPin":"1234"}}""", false)]
+    [InlineData("create", """{"displayName":"Family","primaryPin":"5678","proof":{"currentPin":"1234"}}""", true)]
+    public void PrimaryPinProof_IsLimitedToPinMutations(string definition, string request, bool expected)
+    {
+        Assert.Equal(expected, ReadDefinition(definition, "2.1.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
+    private static JsonSchema ReadDefinition(string name, string version = "1.2.1")
     {
         var assembly = typeof(FunctionalExtensions).Assembly;
         var resource = Assert.Single(assembly.GetManifestResourceNames(),
-            item => item.EndsWith(".subaccounts-1.2.1.schema.json", StringComparison.Ordinal));
+            item => item.EndsWith($".subaccounts-{version}.schema.json", StringComparison.Ordinal));
         using var stream = assembly.GetManifestResourceStream(resource)!;
         var schema = JsonNode.Parse(stream)!;
         schema["$ref"] = $"#/$defs/{name}";

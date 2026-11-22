@@ -91,6 +91,47 @@ public sealed class SubaccountEndpointsTests
         Assert.False(await db.UserSwitchPins.AnyAsync());
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PrimaryPinProofChangesAndRemovesOnlyLinkedSubaccountPins(bool useProfileUpdate)
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        var parentId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "parent@example.test");
+        var childId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "child@example.test");
+        var outsiderId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "other@example.test");
+        var parent = AsUser(parentId);
+        var child = AsUser(childId);
+        var parentUser = (await db.Users.FindAsync(parentId))!;
+        var childUser = (await db.Users.FindAsync(childId))!;
+        db.Subaccounts.Add(new Subaccount(parentUser, childUser, false));
+        db.UserSwitchPins.Add(new UserSwitchPin(parentUser, new PinHash(PasswordHash.Create("1234"))));
+        await db.SaveChangesAsync();
+
+        Task<IResult> Mutate(Guid target, (DefaultHttpContext Http, ISessionQueries Queries, Guid SessionId) actor,
+            string? pin, SubaccountEndpoints.PinProof proof) => useProfileUpdate
+            ? SubaccountEndpoints.Update(target, new("Updated", null, false, pin, pin is null, proof),
+                actor.Http, actor.Queries, db, TimeProvider.System)
+            : SubaccountEndpoints.ChangePin(target, new(pin, pin is null, proof), actor.Http, actor.Queries, db);
+
+        var primaryProof = new SubaccountEndpoints.PinProof(PrimaryPin: "1234");
+        Assert.IsType<NotFound>(await Mutate(outsiderId, parent, "5678", primaryProof));
+        Assert.IsType<ForbidHttpResult>(await Mutate(childId, child, "5678", primaryProof));
+        Assert.IsType<ForbidHttpResult>(await Mutate(childId, parent, "5678", new(CurrentPin: "1234")));
+        Assert.IsType<ForbidHttpResult>(await Mutate(childId, parent, "5678", primaryProof with { Password = "other proof" }));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(parentId, new("5678", false, primaryProof),
+            parent.Http, parent.Queries, db));
+        Assert.IsType<NoContent>(await Mutate(childId, parent, "5678", primaryProof));
+        var updated = await db.UserSwitchPins.SingleAsync(pin => EF.Property<Guid>(pin, "UserId") == childId);
+        Assert.True(PasswordHash.CreateFromExisting(updated.PinHash.ToString()).Verify("5678"));
+        Assert.IsType<ForbidHttpResult>(await Mutate(childId, parent, null, new(PrimaryPin: "5678")));
+        Assert.IsType<NoContent>(await Mutate(childId, parent, null, primaryProof));
+        var remaining = await db.UserSwitchPins.SingleAsync();
+        Assert.Equal(parentId, db.Entry(remaining).Property<Guid>("UserId").CurrentValue);
+        Assert.True(PasswordHash.CreateFromExisting(remaining.PinHash.ToString()).Verify("1234"));
+    }
+
     [Fact]
     public async Task BrowsingPagesOnlyEligibleIndependentUsersWithPublicLabels()
     {

@@ -42,9 +42,13 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             return self.primary() ? [{ userId: self.primaryUserId(), isPrimary: true, hasPin: self.primaryHasPin() }].concat(self.accounts()) : [];
         });
         self.proofMethods = ko.pureComputed(function () {
+            var account = self.selected();
             var methods = [];
-            if (self.selected() ? self.selected().hasPin : self.primaryHasPin()) {
+            if (account ? account.hasPin : self.primaryHasPin()) {
                 methods.push("currentPin");
+            }
+            if (account && !account.isPrimary && self.primary() && self.primaryHasPin()) {
+                methods.push("primaryPin");
             }
             if (modes.password()) {
                 methods.push("password");
@@ -55,7 +59,13 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             return methods;
         });
         self.proofLabel = function (method) {
-            var labels = { currentPin: "subaccount.currentPin", password: "subaccount.yourPassword", magicToken: "subaccount.magicProof" };
+            var account = self.selected();
+            var labels = {
+                currentPin: account && !account.isPrimary ? "subaccount.subaccountCurrentPin" : "subaccount.yourCurrentPin",
+                primaryPin: "subaccount.yourCurrentPin",
+                password: "subaccount.yourPassword",
+                magicToken: "subaccount.magicProof"
+            };
             return i18n.t(labels[method]);
         };
         self.proofMethod = ko.observable("password");

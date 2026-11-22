@@ -52,7 +52,7 @@
                 <select class="form-select" data-bind="visible: proofMethods().length, options: proofMethods, optionsText: proofLabel, value: proofMethod, attr: { 'aria-label': translate('subaccount.proofRequired') }"></select>
                 <button type="button" class="btn btn-outline-secondary" data-bind="visible: proofMethod() === 'magicToken', click: requestPinProof, enable: !busy(), t: 'subaccount.sendProof'"></button>
                 <label class="form-label d-block" data-bind="if: proofMethods().length">
-                    <span data-bind="t: proofMethod() === 'magicToken' ? 'subaccount.pasteProof' : proofMethod() === 'password' ? 'subaccount.yourPassword' : 'subaccount.currentPin'"></span>
+                    <span data-bind="text: proofMethod() === 'magicToken' ? translate('subaccount.pasteProof') : proofLabel(proofMethod())"></span>
                     <input class="form-control" type="password" autocomplete="off" required data-bind="textInput: credential">
                 </label>
             </fieldset>

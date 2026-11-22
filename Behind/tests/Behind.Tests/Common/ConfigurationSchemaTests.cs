@@ -26,7 +26,7 @@ public sealed class ConfigurationSchemaTests : IDisposable
     [InlineData("AuditSearchMaxCandidates")]
     public void AuditSearchBudgets_HaveNumericSchemaAndPreserveDefaultsWhenOmitted(string property)
     {
-        Assert.Equal("configuration-1.2.0", ConfigurationSchema.Name);
+        Assert.Equal("configuration-1.3.0", ConfigurationSchema.Name);
         Assert.True(ConfigurationSchema.IsValid(JsonNode.Parse("""{"Backend":{}}""")));
         var root = new JsonObject { ["Backend"] = new JsonObject { [property] = 10000 } };
         Assert.True(ConfigurationSchema.IsValid(root));
@@ -187,6 +187,9 @@ public sealed class ConfigurationSchemaTests : IDisposable
     }
 
     [Theory]
+    [InlineData("""{"security":{"accounts":{"subaccounts":false,"linkunlink":true}}}""", true)]
+    [InlineData("""{"Security":{"Accounts":{"Subaccounts":"false"}}}""", false)]
+    [InlineData("""{"Security":{"Accounts":{"LinkUnlink":1}}}""", false)]
     [InlineData("""{"backend":{"accounts":{"password":false}}}""", true)]
     [InlineData("""{"backend":{"accounts":{"password":"false"}}}""", false)]
     [InlineData("""{"SECURITY":{"Oidc":{"Providers":[{"RoleMappings":{"staff":["Staff"],"Staff":["Admin"]}}]}}}""", true)]

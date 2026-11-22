@@ -268,6 +268,10 @@ public sealed class StartupSetupTests : IDisposable
 
         Assert.False(security.ReadOnlyConfiguration);
         Assert.False(security.TwoFactorRequired);
+        Assert.True(security.Accounts.Subaccounts);
+        Assert.False(security.Accounts.LinkUnlink);
+        Assert.Equal("True", Load(SecurityPath)["Security:Accounts:Subaccounts"], ignoreCase: true);
+        Assert.Equal("False", Load(SecurityPath)["Security:Accounts:LinkUnlink"], ignoreCase: true);
         Assert.Equal(Some(MagicLinkSettings.DefaultRotationInterval), magicLink.RotationInterval);
         Assert.Equal(Some(MagicLinkSettings.DefaultRotationOverlap), magicLink.RotationOverlap);
         Assert.Equal(Some(MagicLinkSettings.DefaultLinkLifetime), magicLink.LinkLifetime);

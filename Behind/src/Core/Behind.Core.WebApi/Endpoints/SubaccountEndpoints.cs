@@ -35,7 +35,7 @@ public sealed class SubaccountEndpoints
 
     public sealed record SwitchRequest([property: MaxLength(128)] string? Pin);
 
-    public sealed record Account(Guid UserId, string DisplayName, bool IsChild, DateOnly? Birthday, bool HasPin, string? Email);
+    public sealed record Account(Guid UserId, string DisplayName, bool IsChild, DateOnly? Birthday, bool HasPin, string? Email, bool CanRelease);
 
     private sealed record FamilySession(CurrentSession Current, Guid PrimaryUserId, bool CanSwitch)
     {
@@ -43,7 +43,8 @@ public sealed class SubaccountEndpoints
     }
 
     [Authorize, IgnoreETag]
-    public static async Task<IResult> List(HttpContext http, ISessionQueries sessions, AbstractCoreContext db)
+    public static async Task<IResult> List(HttpContext http, ISessionQueries sessions, AbstractCoreContext db,
+        IOptions<SecurityConfiguration> security)
     {
         var family = await FindFamily(http, sessions, db);
         if (family is null)
@@ -51,6 +52,8 @@ public sealed class SubaccountEndpoints
             return Results.Forbid();
         }
 
+        var linkUnlinkEnabled = security.Value.Accounts.LinkUnlink && family.Current.FamilyPrimaryUserId is null && family.IsPrimary;
+        var requireConfirmation = security.Value.EmailConfirmation;
         List<Account> accounts = [];
         var primaryHasPin = family.CanSwitch && await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted);
         if (family.CanSwitch)
@@ -60,20 +63,21 @@ public sealed class SubaccountEndpoints
                               where EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId && EF.Property<Guid>(link, "UserId") != family.Current.UserId
                               orderby user.DisplayName, EF.Property<Guid>(link, "UserId")
                               select new Account(EF.Property<Guid>(link, "UserId"), user.DisplayName, link.IsChild, family.IsPrimary ? user.Birthday : null,
-                                  db.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == EF.Property<Guid>(link, "UserId")), family.IsPrimary ? user.Emails.OrderBy(e => EF.Property<Guid>(e, "Id")).Select(e => e.Value).FirstOrDefault() : null))
+                                  db.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == EF.Property<Guid>(link, "UserId")), family.IsPrimary ? user.Emails.OrderBy(e => EF.Property<Guid>(e, "Id")).Select(e => e.Value).FirstOrDefault() : null,
+                                  linkUnlinkEnabled && user.Emails.Any(email => email.Value.Trim() != "" && (!requireConfirmation || email.ConfirmedAt != null))))
                 .ToListAsync(http.RequestAborted);
         }
         if (!family.IsPrimary && primaryHasPin)
         {
             var primary = await ActiveUsers(db).Where(user => EF.Property<Guid>(user, "Id") == family.PrimaryUserId)
-                .Select(user => new Account(family.PrimaryUserId, user.DisplayName, false, null, true, null))
+                .Select(user => new Account(family.PrimaryUserId, user.DisplayName, false, null, true, null, false))
                 .SingleOrDefaultAsync(http.RequestAborted);
             if (primary is not null)
             {
                 accounts.Insert(0, primary);
             }
         }
-        return Results.Ok(new { family.IsPrimary, family.PrimaryUserId, PrimaryHasPin = primaryHasPin, Accounts = accounts });
+        return Results.Ok(new { LinkUnlinkEnabled = linkUnlinkEnabled, family.IsPrimary, family.PrimaryUserId, PrimaryHasPin = primaryHasPin, Accounts = accounts });
     }
 
     [Authorize, IgnoreETag]
@@ -117,6 +121,7 @@ public sealed class SubaccountEndpoints
             Birthday = request.Birthday,
             Emails = email is null ? [] : [new Email(email)]
         };
+        SubaccountLinkEndpoints.ClearInvitation(db, primary);
         db.Users.Add(user);
         var userId = db.GetKey(user);
         db.Subaccounts.Add(new Subaccount(primary, user, request.IsChild));
@@ -255,10 +260,8 @@ public sealed class SubaccountEndpoints
             .Select(link => (Guid?)EF.Property<Guid>(link, "PrimaryUserId")).SingleOrDefaultAsync(http.RequestAborted);
         if (parentId is null)
         {
-            return new(session, session.UserId, true);
+            return session.FamilyPrimaryUserId is { } source && source != session.UserId ? null : new(session, session.UserId, true);
         }
-        var switched = await db.Sessions.AnyAsync(row => EF.Property<Guid>(row, "Id") == session.SessionId
-            && row.FamilyPrimaryUserId == parentId, http.RequestAborted);
-        return new(session, parentId.Value, switched);
+        return new(session, parentId.Value, session.FamilyPrimaryUserId == parentId);
     }
 }

@@ -2014,6 +2014,12 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .HasColumnType("boolean")
                     .HasDefaultValue(true);
 
+                b.Property<Guid?>("PendingLinkRequestId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid?>("PendingParentId")
+                    .HasColumnType("uuid");
+
                 b.Property<Guid?>("ProfilePictureId")
                     .HasColumnType("uuid");
 

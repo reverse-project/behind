@@ -1090,14 +1090,31 @@ public static class WebApiExtensions
             application.MapGet("/profile/images/{id:guid}", ProfilePictureEndpoints.Image)
                 .WithSummary("Serve a currently referenced profile image.").Produces(200).Produces(404);
 
-            application.MapGet("/profile/subaccounts", SubaccountEndpoints.List);
-            application.MapPost("/profile/subaccounts", SubaccountEndpoints.Create)
+            var subaccounts = application.MapGroup("/profile/subaccounts")
+                .WithMetadata(new SubaccountTransactionMetadata())
+                .RequireAuthorization()
+                .AddEndpointFilter(new SubaccountFeatureFilter(false));
+            var links = subaccounts.MapGroup("")
+                .AddEndpointFilter(new SubaccountFeatureFilter(true));
+            links.MapGet("/candidates", SubaccountLinkEndpoints.Candidates);
+            links.MapGet("/requests", SubaccountLinkEndpoints.Requests);
+            links.MapPost("/{userId:guid}/request", SubaccountLinkEndpoints.RequestLink)
+                .RequireAuthenticationTransaction();
+            links.MapPost("/requests/{requestId:guid}/confirm", SubaccountLinkEndpoints.Confirm)
+                .RequireAuthenticationTransaction();
+            links.MapPost("/requests/{requestId:guid}/decline", SubaccountLinkEndpoints.Decline)
+                .RequireAuthenticationTransaction();
+            links.MapDelete("/{userId:guid}", SubaccountLinkEndpoints.Release)
+                .RequireAuthenticationTransaction();
+
+            subaccounts.MapGet("", SubaccountEndpoints.List);
+            subaccounts.MapPost("", SubaccountEndpoints.Create)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.CreateRequest>>()
                 .RequireAuthenticationTransaction();
-            application.MapPut("/profile/subaccounts/{userId:guid}", SubaccountEndpoints.Update)
+            subaccounts.MapPut("/{userId:guid}", SubaccountEndpoints.Update)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.UpdateRequest>>()
                 .RequireAuthenticationTransaction();
-            application.MapPost("/profile/subaccounts/{userId:guid}/switch", SubaccountEndpoints.Switch)
+            subaccounts.MapPost("/{userId:guid}/switch", SubaccountEndpoints.Switch)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.SwitchRequest>>()
                 .RequireAuthenticationTransaction()
                 .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy);

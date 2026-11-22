@@ -2,12 +2,14 @@ using System.Linq.Expressions;
 using Behind.Common;
 using Behind.Common.Database;
 using Behind.Core.Domain;
+using Behind.Core.Common.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.Database.Queries;
 
-public sealed class SessionQueries(AbstractCoreContext context) : ISessionQueries
+public sealed class SessionQueries(AbstractCoreContext context, IOptions<SecurityConfiguration>? security = null) : ISessionQueries
 {
     public async Task<Option<Session>> TryFindById(Guid id, CancellationToken cancellationToken = default)
     {
@@ -26,7 +28,7 @@ public sealed class SessionQueries(AbstractCoreContext context) : ISessionQuerie
     }
 
     public async Task<Option<(Session Session, Guid UserId)>> TryFindByIdWithUserId(
-        Guid id, 
+        Guid id,
         CancellationToken cancellationToken = default)
     {
         var userId = await context.Sessions
@@ -60,12 +62,16 @@ public sealed class SessionQueries(AbstractCoreContext context) : ISessionQuerie
 
         if (row?.FamilyPrimaryUserId is { } primaryId)
         {
+            if (security?.Value.Accounts.Subaccounts == false)
+            {
+                return None;
+            }
             var activeUsers = context.Users.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active);
             var linked = await (from link in context.Subaccounts
-                join parent in activeUsers on EF.Property<Guid>(link, "PrimaryUserId") equals EF.Property<Guid>(parent, "Id")
-                join child in activeUsers on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(child, "Id")
-                where EF.Property<Guid>(link, "PrimaryUserId") == primaryId && EF.Property<Guid>(link, "UserId") == row.UserId
-                select EF.Property<Guid>(link, "UserId")).AnyAsync(cancellationToken);
+                                join parent in activeUsers on EF.Property<Guid>(link, "PrimaryUserId") equals EF.Property<Guid>(parent, "Id")
+                                join child in activeUsers on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(child, "Id")
+                                where EF.Property<Guid>(link, "PrimaryUserId") == primaryId && (row.UserId == primaryId || EF.Property<Guid>(link, "UserId") == row.UserId)
+                                select EF.Property<Guid>(link, "UserId")).AnyAsync(cancellationToken);
             if (!linked || await new WallOfShameQueries(context).FindActiveBan(primaryId, DateTimeOffset.UtcNow, cancellationToken) != None)
             {
                 return None;

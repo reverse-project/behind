@@ -1,4 +1,4 @@
-<div data-bind="if: manager && primary">
+<div data-bind="if: manager && primary()">
     <section class="mt-4">
         <h2 class="h5" data-bind="t: 'subaccount.title'">Subaccounts</h2>
         <form data-bind="submit: save">
@@ -46,6 +46,38 @@
             </fieldset>
             <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: selected() ? 'common.save' : 'subaccount.create'"></button>
         </form>
+        <div class="mt-3" data-bind="if: linkEnabled() && selected()">
+            <button type="button" class="btn btn-outline-danger" data-bind="click: release, enable: !busy() && selected().canRelease, t: 'subaccount.release'"></button>
+            <p class="form-text" data-bind="visible: !selected().canRelease, t: 'subaccount.recovery'"></p>
+        </div>
+    </section>
+    <section class="mt-4" data-bind="if: linkEnabled">
+        <h2 class="h5" data-bind="t: 'subaccount.linkExisting'"></h2>
+        <form data-bind="submit: search">
+            <label class="form-label d-block">
+                <span data-bind="t: 'subaccount.find'"></span>
+                <input type="search" class="form-control" data-bind="value: query, enable: !busy()">
+            </label>
+            <button class="btn btn-outline-primary" type="submit" data-bind="enable: !busy(), t: 'subaccount.browse'"></button>
+        </form>
+        <ul class="list-unstyled mt-2" data-bind="foreach: candidates">
+            <li class="mb-2">
+                <span data-bind="text: displayName"></span>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bind="click: $parent.requestLink, enable: !$parent.busy(), t: 'subaccount.requestLink'"></button>
+            </li>
+        </ul>
+        <button type="button" class="btn btn-outline-secondary mb-2" data-bind="visible: moreCandidates, enable: !busy(), click: loadMore, t: 'subaccount.more'"></button>
+        <div data-bind="if: requests().length">
+            <h3 class="h6" data-bind="t: 'subaccount.proposedParents'"></h3>
+            <p data-bind="t: 'subaccount.consentHelp'"></p>
+            <ul class="list-unstyled" data-bind="foreach: requests">
+                <li class="mb-2">
+                    <span data-bind="text: displayName"></span>
+                    <button type="button" class="btn btn-sm btn-primary" data-bind="click: $parent.confirmLink, enable: !$parent.busy(), t: 'subaccount.accept'"></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: $parent.declineLink, enable: !$parent.busy(), t: 'subaccount.decline'"></button>
+                </li>
+            </ul>
+        </div>
     </section>
 </div>
 <div data-bind="if: !manager && (accounts().length || linked())">

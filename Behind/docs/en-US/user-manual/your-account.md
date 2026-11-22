@@ -23,6 +23,8 @@ Open **Profile → Subaccounts** on the primary account. Create a user with a di
 
 Under **Profile** in the account menu, open **Switch User** and choose a linked user. Enter the destination user’s PIN if prompted. When adding a subaccount, you can set a separate PIN for the primary account. Use it in Switch User to return from a family session. If you skip setup, sign in again with the primary account’s usual credentials. An email-less subaccount can be used through the switcher. For independent sign-in, configure an address and complete the site’s usual sign-in and email verification steps.
 
+When linking is enabled, open **Profile → Link an existing account**. Browse by display name and choose **Request link**. The recipient signs in independently, reviews the proposed primary account in **Profile**, and accepts or declines. To detach a user, select the linked account under **Subaccounts** and choose **Release account**. This preserves its data. For a user without an address, first switch to that account and add a sign-in address in **Profile → Email addresses**. Complete verification if required.
+
 ### Birthday and email privacy
 
 Your birthday is optional and private. It is used to filter content by minimum age when the site's global age restriction setting is enabled; without a birthday, age-restricted content is then unavailable. Global age restrictions are disabled by default. Save your birthday in **Profile**.

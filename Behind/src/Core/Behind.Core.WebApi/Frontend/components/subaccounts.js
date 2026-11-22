@@ -24,6 +24,14 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.child = ko.observable(false);
         self.birthday = ko.observable("");
         self.clearPin = ko.observable(false);
+        self.linkEnabled = ko.observable(false);
+        self.query = ko.observable("");
+        self.candidates = ko.observableArray([]);
+        self.moreCandidates = ko.observable(false);
+        var candidatePageSize = 10;
+        var candidatePage = 0;
+        var searchedName = "";
+        self.requests = ko.observableArray([]);
         var revision = 0;
         var identity = ko.pureComputed(function () {
             return !session.isImpersonating() && session.accessToken();
@@ -48,6 +56,14 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
 
         var load = function () {
             var ticket = ++revision;
+            self.busy(false);
+            self.linkEnabled(false);
+            self.query("");
+            self.candidates([]);
+            self.requests([]);
+            self.moreCandidates(false);
+            candidatePage = 0;
+            searchedName = "";
             self.accounts([]);
             self.selected(null);
             self.name("");
@@ -77,7 +93,19 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                     self.accounts(response.data.accounts);
                     self.primary(response.data.isPrimary);
                     self.linked(!response.data.isPrimary && !!response.data.primaryUserId);
-                } else if (self.manager) {
+                    self.linkEnabled(!!response.data.linkUnlinkEnabled);
+                    if (self.manager && self.linkEnabled() && self.primary()) {
+                        return http.get(path + "/requests").then(function (pending) {
+                            if (ticket === revision) {
+                                if (pending.ok) {
+                                    self.requests(pending.data);
+                                } else {
+                                    self.message(i18n.t("common.error.generic"));
+                                }
+                            }
+                        });
+                    }
+                } else if (self.manager && response.status !== 404) {
                     self.message(i18n.t("common.error.generic"));
                 }
             }).catch(function () {
@@ -112,10 +140,81 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 }
                 self.message(i18n.t(response.status === 429 ? "auth.tooManyAttempts" : invalid));
             }).catch(function () {
-                self.message(i18n.t("common.error.generic"));
+                if (ticket === revision) {
+                    self.message(i18n.t("common.error.generic"));
+                }
             }).finally(function () {
-                self.busy(false);
+                if (ticket === revision) {
+                    self.busy(false);
+                }
             });
+        };
+
+        var findCandidates = function (page, name) {
+            return perform(function () {
+                return http.get(path + "/candidates?query=" + encodeURIComponent(name) + "&page=" + page + "&pageSize=" + candidatePageSize);
+            }, function (accounts) {
+                candidatePage = page;
+                searchedName = name;
+                self.candidates(page === 1 ? accounts : self.candidates().concat(accounts));
+                self.moreCandidates(accounts.length === candidatePageSize);
+                if (!self.candidates().length) {
+                    self.message(i18n.t("subaccount.noCandidates"));
+                }
+            }, "subaccount.denied");
+        };
+
+        self.search = function () {
+            if (!self.linkEnabled() || self.busy()) {
+                return;
+            }
+            self.candidates([]);
+            self.moreCandidates(false);
+            return findCandidates(1, self.query().trim());
+        };
+
+        self.loadMore = function () {
+            if (self.linkEnabled() && self.moreCandidates()) {
+                return findCandidates(candidatePage + 1, searchedName);
+            }
+        };
+
+        var changeLink = function (operation, success) {
+            if (!self.linkEnabled()) {
+                return;
+            }
+            return perform(operation, function () {
+                var accountToken = identity();
+                return Promise.resolve(invalidation.invalidate("subaccounts")).then(function () {
+                    if (identity() === accountToken) {
+                        self.message(i18n.t(success));
+                    }
+                });
+            }, "subaccount.linkFailed");
+        };
+
+        self.requestLink = function (account) {
+            return changeLink(function () {
+                return http.post(endpoint(account.userId) + "/request");
+            }, "subaccount.requestSent");
+        };
+
+        var answer = function (request, accept) {
+            return changeLink(function () {
+                return http.post(path + "/requests/" + encodeURIComponent(request.requestId) + (accept ? "/confirm" : "/decline"));
+            }, accept ? "subaccount.accepted" : "subaccount.declined");
+        };
+        self.confirmLink = function (request) { return answer(request, true); };
+        self.declineLink = function (request) { return answer(request, false); };
+
+        self.release = function () {
+            var account = self.selected();
+            if (!self.linkEnabled() || !account || !account.canRelease || !window.confirm(i18n.t("subaccount.confirmRelease") + " " + self.label(account))) {
+                return;
+            }
+            return changeLink(function () {
+                return http.delete(endpoint(account.userId));
+            }, "subaccount.released");
         };
 
         self.save = function () {

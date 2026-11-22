@@ -76,7 +76,14 @@ public sealed class SubaccountMigrationTests
                 $"INSERT INTO \"Users\" (\"Id\", \"DisplayName\") VALUES ({primary}, {"Primary"})");
         }
 
-        var child = new HumanUser { DisplayName = "Child", Birthday = new DateOnly(2012, 4, 12) };
+        var requestId = Guid.NewGuid();
+        var child = new HumanUser
+        {
+            DisplayName = "Child",
+            Birthday = new DateOnly(2012, 4, 12),
+            PendingParentId = primary,
+            PendingLinkRequestId = requestId
+        };
         var other = new HumanUser { DisplayName = "Other" };
         db.Users.AddRange(child, other);
         await db.SaveChangesAsync();
@@ -98,6 +105,10 @@ public sealed class SubaccountMigrationTests
             .Include(account => account.User)
             .SingleAsync();
         Assert.Equal(primary, db.GetKey(link.PrimaryUser));
+        Assert.Null(link.PrimaryUser.PendingParentId);
+        Assert.Null(link.PrimaryUser.PendingLinkRequestId);
+        Assert.Equal(primary, link.User.PendingParentId);
+        Assert.Equal(requestId, link.User.PendingLinkRequestId);
         Assert.Equal(childId, db.GetKey(link.User));
         var pin = await db.UserSwitchPins.SingleAsync();
         Assert.Equal((PinHash?)"legacy-hash", pin.PinHash);

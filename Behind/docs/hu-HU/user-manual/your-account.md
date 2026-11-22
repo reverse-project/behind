@@ -23,6 +23,8 @@ Az elsődleges fiókban nyissa meg a **Profil → Alfiókok** részt. Hozzon lé
 
 A fiókmenüben a **Profil** alatt válassza a felhasználóváltást, majd a kívánt felhasználót. Ha a rendszer kéri, adja meg a célfiók PIN-kódját. Alfiók hozzáadásakor külön PIN-kódot állíthat be az elsődleges fiókhoz. Ezzel a felhasználóváltóban családi munkamenetből visszaválthat. Ha kihagyja a beállítást, újra be kell jelentkeznie az elsődleges fiókba. E-mail-cím nélkül az alfiók a fiókváltón keresztül érhető el. Önálló bejelentkezéshez állítson be e-mail-címet, és kövesse a webhely szokásos bejelentkezési és címmegerősítési lépéseit.
 
+Ha az összekapcsolás engedélyezett, nyissa meg a **Profil → Meglévő fiók összekapcsolása** részt. Keressen megjelenített név szerint, majd válassza az **Összekapcsolás kérése** gombot. A címzett önállóan jelentkezik be, és a **Profilban** a javasolt elsődleges fiók megtekintése után elfogadhatja vagy elutasíthatja a kérést. Leválasztáshoz válassza ki az alfiókot, majd a **Fiók leválasztása** gombot. A fiók adatai megmaradnak. Ha még nincs bejelentkezési címe, először váltson át az alfiókra, és adjon meg egy címet a **Profil → E-mail-címek** részen. Szükség esetén erősítse meg a címet.
+
 ### Születési dátum és e-mail-adatvédelem
 
 A születési dátum nem kötelező és nem nyilvános. A tartalmak korhatár szerinti szűrésére szolgál, ha a webhely globális korhatár-beállítása engedélyezett; ilyenkor születési dátum nélkül a korhatáros tartalmak nem érhetők el. A globális korhatárszűrés alapértelmezés szerint ki van kapcsolva. A születési dátum a **Profil** oldalon menthető.

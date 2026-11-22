@@ -7,7 +7,7 @@ const frontend = path.resolve(__dirname, "../../../src/Core/Behind.Core.WebApi/F
 const ko = require(path.join(frontend, "libraries/knockout.min.js"));
 const source = fs.readFileSync(path.join(frontend, "components/subaccounts.js"), "utf8");
 
-async function setup(accounts, primary = true, primaryHasPin = false) {
+async function setup(accounts, primary = true, primaryHasPin = false, linkUnlinkEnabled = false, pending = []) {
     const requests = [];
     const sessions = [];
     const reloads = [];
@@ -18,7 +18,14 @@ async function setup(accounts, primary = true, primaryHasPin = false) {
         start: tokens => sessions.push(tokens)
     };
     const http = {
-        get: async () => ({ ok: true, data: { accounts, isPrimary: primary, primaryUserId: "owner", primaryHasPin } }),
+        get: async url => ({
+            ok: true,
+            data: url.endsWith("/requests") ? pending : { accounts, isPrimary: primary, primaryUserId: "owner", primaryHasPin, linkUnlinkEnabled }
+        }),
+        delete: async url => {
+            requests.push({ url, method: "DELETE" });
+            return { ok: true };
+        },
         put: async (url, body) => {
             requests.push({ url, body });
             return { ok: true };
@@ -37,7 +44,7 @@ async function setup(accounts, primary = true, primaryHasPin = false) {
     };
     let panel;
     vm.runInNewContext(source, {
-        window: { location: { reload: () => reloads.push(true) } },
+        window: { confirm: () => true, location: { reload: () => reloads.push(true) } },
         define: (_, factory) => {
             const component = factory(ko, http, session, invalidation, { t: key => key }, { label: account => account.displayName }, "");
             panel = new component.viewModel({ manager: primary });
@@ -133,4 +140,73 @@ test("the common account menu and profile expose localized subaccount controls",
             assert.ok(messages[label], locale + " " + label);
         }
     }
+});
+
+test("browse, request, and respond to an identified primary account", async () => {
+    const parent = { userId: "proposer", displayName: "Morgan", requestId: "invitation" };
+    const candidate = { userId: "candidate", displayName: "Jo" };
+    const { panel, http, requests } = await setup([], true, false, true, [parent]);
+    assert.equal(panel.requests()[0], parent);
+    const get = http.get;
+    http.get = url => {
+        if (url.includes("/candidates?")) {
+            if (url.endsWith("&page=2&pageSize=10")) {
+                return Promise.resolve({ ok: true, data: [{ userId: "page2", displayName: "More" }] });
+            }
+            assert.equal(url, "/profile/subaccounts/candidates?query=Jo%20%26&page=1&pageSize=10");
+            return Promise.resolve({ ok: true, data: Array(10).fill(candidate) });
+        }
+        return get(url);
+    };
+    panel.query("Jo &");
+    await panel.search();
+    assert.equal(panel.candidates()[0], candidate);
+    assert.equal(panel.moreCandidates(), true);
+    await panel.loadMore();
+    assert.equal(panel.candidates()[10].userId, "page2");
+    assert.equal(panel.moreCandidates(), false);
+    await panel.requestLink(candidate);
+    await panel.declineLink(parent);
+    await panel.confirmLink(parent);
+    assert.deepEqual(requests.map(request => request.url), [
+        "/profile/subaccounts/candidate/request",
+        "/profile/subaccounts/requests/invitation/decline",
+        "/profile/subaccounts/requests/invitation/confirm"
+    ]);
+    panel.dispose();
+});
+
+test("release requires an address and enabled linking", async () => {
+    const recovered = { userId: "recover", email: "recover@example.org", canRelease: true };
+    const child = { userId: "child", email: null };
+    const { panel, requests } = await setup([child, recovered], true, true, true);
+    panel.selected(child);
+    await panel.release();
+    panel.selected({ userId: "child", email: "pending@example.org", canRelease: false });
+    await panel.release();
+    panel.selected(recovered);
+    await panel.release();
+    assert.deepEqual(requests, [{ method: "DELETE", url: "/profile/subaccounts/recover" }]);
+    panel.dispose();
+
+    const disabled = await setup([recovered]);
+    disabled.panel.selected(recovered);
+    await disabled.panel.release();
+    await disabled.panel.confirmLink({ requestId: "pending" });
+    assert.deepEqual(disabled.requests, []);
+    disabled.panel.dispose();
+});
+
+test("signing out during a search clears busy state and discards private results", async () => {
+    const { panel, session, http } = await setup([], true, false, true);
+    let respond;
+    http.get = () => new Promise(resolve => { respond = resolve; });
+    const operation = panel.search();
+    session.accessToken(null);
+    assert.equal(panel.busy(), false);
+    respond({ ok: true, data: [{ userId: "candidate", displayName: "Alex" }] });
+    await operation;
+    assert.equal(panel.candidates().length, 0);
+    assert.equal(panel.linkEnabled(), false);
+    panel.dispose();
 });

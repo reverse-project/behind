@@ -2010,6 +2010,12 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                     .HasColumnType("INTEGER")
                     .HasDefaultValue(true);
 
+                b.Property<Guid?>("PendingLinkRequestId")
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid?>("PendingParentId")
+                    .HasColumnType("TEXT");
+
                 b.Property<Guid?>("ProfilePictureId")
                     .HasColumnType("TEXT");
 

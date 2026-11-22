@@ -68,6 +68,7 @@ public sealed record StartupSecuritySection(
     bool ReadOnlyConfiguration,
     bool EmailConfirmation,
     bool TwoFactorRequired,
+    SecurityAccountSettings Accounts,
     DataProtectionSettings DataProtection,
     SecretKey SecretKey,
     JwtSettings Jwt,

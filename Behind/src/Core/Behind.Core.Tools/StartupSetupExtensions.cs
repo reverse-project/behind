@@ -102,6 +102,7 @@ public static class StartupSetupExtensions
                     false,
                     request.EmailConfirmation,
                     false,
+                    new SecurityAccountSettings(),
                     dataProtection,
                     secretKey,
                     new JwtSettings(request.Issuer, request.Audience, JwtSettings.GenerateSigningKey()),

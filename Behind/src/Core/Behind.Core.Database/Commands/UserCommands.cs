@@ -46,18 +46,23 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<bool> HardDelete(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IUserCommands.HardDeleteOutcome> HardDelete(Guid userId, CancellationToken cancellationToken = default)
     {
+        if (await context.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == userId, cancellationToken))
+        {
+            return IUserCommands.HardDeleteOutcome.LinkedSubaccounts;
+        }
+
         await context.GetHardDeleteRepository<HumanUser, Guid>().HardDeleteAsync(userId, cancellationToken);
 
         try
         {
             await context.SaveChangesAsync(cancellationToken);
-            return true;
+            return IUserCommands.HardDeleteOutcome.Deleted;
         }
         catch (DbUpdateException)
         {
-            return false;
+            return IUserCommands.HardDeleteOutcome.Rejected;
         }
     }
 }

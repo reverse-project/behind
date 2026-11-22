@@ -102,7 +102,7 @@ public sealed class UserSettingTests : IDisposable
 
         await using (var context = _factory.CreateContext())
         {
-            Assert.True(await new UserCommands(context).HardDelete(userId));
+            Assert.Equal(IUserCommands.HardDeleteOutcome.Deleted, await new UserCommands(context).HardDelete(userId));
         }
 
         await using var reader = _factory.CreateContext();

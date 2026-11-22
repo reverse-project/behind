@@ -61,7 +61,11 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
         401: sessionExpired,
         403: "auth.userAction.forbidden",
         404: "auth.user.notFound",
-        409: "auth.userAction.referenced"
+        409: function (response) {
+            return i18n.t(response.data && response.data.reason === "linkedSubaccounts"
+                ? "auth.userAction.linkedSubaccounts"
+                : "auth.userAction.referenced");
+        }
     };
 
     var userAction = function (path, body, done) {

@@ -1,3 +1,4 @@
+using Behind.Core.Database;
 using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Commands;
 using Behind.Tests.Helpers;
@@ -124,7 +125,7 @@ public sealed class UserCommandsTests : IDisposable
     }
 
     [Fact]
-    public async Task HardDelete_AfterDelete_RemovesTheRowAndReturnsTrue()
+    public async Task HardDelete_AfterDelete_RemovesTheRowAndReportsDeleted()
     {
         var userId = await SeedUserAsync("purge@test.com");
 
@@ -135,14 +136,14 @@ public sealed class UserCommandsTests : IDisposable
 
         await using (var ctx = _factory.CreateAuditedContext(AuditActor.Anonymous))
         {
-            Assert.True(await new UserCommands(ctx).HardDelete(userId));
+            Assert.Equal(IUserCommands.HardDeleteOutcome.Deleted, await new UserCommands(ctx).HardDelete(userId));
         }
 
         Assert.False(await RowExistsAsync(userId));
     }
 
     [Fact]
-    public async Task HardDelete_UserReferencedByAuditEntries_ReturnsFalseAndKeepsTheRow()
+    public async Task HardDelete_UserReferencedByAuditEntries_ReportsRejectionAndKeepsTheRow()
     {
         var userId = await SeedUserAsync("attributed@test.com");
 
@@ -158,7 +159,7 @@ public sealed class UserCommandsTests : IDisposable
 
         await using (var ctx = _factory.CreateAuditedContext(AuditActor.Anonymous))
         {
-            Assert.False(await new UserCommands(ctx).HardDelete(userId));
+            Assert.Equal(IUserCommands.HardDeleteOutcome.Rejected, await new UserCommands(ctx).HardDelete(userId));
         }
 
         Assert.True(await RowExistsAsync(userId));

@@ -7,13 +7,18 @@ const frontend = path.resolve(__dirname, "../../../src/Core/Behind.Core.WebApi/F
 const ko = require(path.join(frontend, "libraries/knockout.min.js"));
 const source = fs.readFileSync(path.join(frontend, "components/subaccounts.js"), "utf8");
 
+function accessToken(sessionId, nonce) {
+    const payload = Buffer.from(JSON.stringify({ session_id: sessionId, nonce })).toString("base64url");
+    return "header." + payload + ".signature";
+}
+
 async function setup(accounts, primary = true, primaryHasPin = false, linkUnlinkEnabled = false, pending = []) {
     const requests = [];
     const sessions = [];
     const reloads = [];
     const handlers = new Set();
     const session = {
-        accessToken: ko.observable("owner-token"),
+        accessToken: ko.observable(accessToken("owner-session", "original")),
         isImpersonating: ko.observable(false),
         start: tokens => sessions.push(tokens)
     };
@@ -44,14 +49,14 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     };
     let panel;
     vm.runInNewContext(source, {
-        window: { confirm: () => true, location: { reload: () => reloads.push(true) } },
+        window: { atob, confirm: () => true, location: { reload: () => reloads.push(true) } },
         define: (_, factory) => {
             const component = factory(ko, http, session, invalidation, { t: key => key }, { label: account => account.displayName }, "");
             panel = new component.viewModel({ manager: primary });
         }
     });
     await new Promise(resolve => setImmediate(resolve));
-    return { panel, session, sessions, requests, reloads, http };
+    return { panel, session, sessions, requests, reloads, http, invalidation };
 }
 
 test("create a child without a sign-in email and clear its PIN on edit", async () => {
@@ -99,6 +104,49 @@ test("switch to a sibling only after server acceptance and discard the PIN when 
     assert.deepEqual(sessions, [{ accessToken: "new-token" }]);
     assert.equal(reloads.length, 1);
     panel.dispose();
+});
+
+test("accept a successful switch after renewal changes the token for the same session", async () => {
+    const child = { userId: "child", hasPin: true };
+    const { panel, session, sessions, http, reloads } = await setup([child]);
+    panel.selected(child);
+    panel.pin("8123");
+    const post = http.post;
+    http.post = async (url, body) => {
+        session.accessToken(accessToken("owner-session", "renewed"));
+        assert.equal(panel.busy(), true);
+        assert.equal(body.pin, "8123");
+        return post(url, body);
+    };
+    await panel.switchUser();
+    assert.deepEqual(sessions, [{ accessToken: "new-token" }]);
+    assert.equal(reloads.length, 1);
+    assert.equal(panel.busy(), false);
+    panel.dispose();
+});
+
+test("discard switch responses after session changes or a list invalidation", async () => {
+    const child = { userId: "child" };
+    for (const supersede of [
+        ({ session }) => session.accessToken(accessToken("other-session", "original")),
+        ({ session }) => session.accessToken(null),
+        ({ session }) => session.isImpersonating(true),
+        ({ invalidation }) => invalidation.invalidate()
+    ]) {
+        const fixture = await setup([child]);
+        const { panel, sessions, http, reloads } = fixture;
+        panel.selected(child);
+        const post = http.post;
+        http.post = async (url, body) => {
+            await supersede(fixture);
+            return post(url, body);
+        };
+        await panel.switchUser();
+        assert.deepEqual(sessions, []);
+        assert.equal(reloads.length, 0);
+        assert.equal(panel.busy(), false);
+        panel.dispose();
+    }
 });
 
 test("skip setup or preserve an existing primary PIN when creating an account", async () => {

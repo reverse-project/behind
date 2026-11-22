@@ -4,6 +4,13 @@ namespace Behind.Core.Database;
 
 public interface IUserCommands
 {
+    public enum HardDeleteOutcome
+    {
+        Rejected,
+        Deleted,
+        LinkedSubaccounts
+    }
+
     Task CreateWithId(Guid id, HumanUser user, CancellationToken cancellationToken = default);
 
     Task<bool> ChangeDisplayName(Guid userId, string displayName, CancellationToken cancellationToken = default);
@@ -12,5 +19,5 @@ public interface IUserCommands
 
     Task Restore(Guid userId, CancellationToken cancellationToken = default);
 
-    Task<bool> HardDelete(Guid userId, CancellationToken cancellationToken = default);
+    Task<HardDeleteOutcome> HardDelete(Guid userId, CancellationToken cancellationToken = default);
 }

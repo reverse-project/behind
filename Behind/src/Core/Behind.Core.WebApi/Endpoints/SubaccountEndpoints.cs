@@ -21,19 +21,25 @@ public sealed class SubaccountEndpoints
 {
     private const string PinPattern = "^[0-9]+$";
 
+    public interface IPinRequest
+    {
+        string? Pin { get; }
+        string? PrimaryPin => null;
+    }
+
     public sealed record CreateRequest(
         [property: Required, MaxLength(DisplayNameExtensions.MaxLength)] string DisplayName,
         [property: EmailAddress, MaxLength(255)] string? Email,
         DateOnly? Birthday, bool IsChild,
-        [property: RegularExpression(PinPattern), MaxLength(128)] string? Pin,
-        [property: RegularExpression(PinPattern), MaxLength(128)] string? PrimaryPin = null);
+        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin,
+        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? PrimaryPin = null) : IPinRequest;
 
     public sealed record UpdateRequest(
         [property: Required, MaxLength(DisplayNameExtensions.MaxLength)] string DisplayName,
         DateOnly? Birthday, bool IsChild,
-        [property: RegularExpression(PinPattern), MaxLength(128)] string? Pin, bool ClearPin);
+        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin, bool ClearPin) : IPinRequest;
 
-    public sealed record SwitchRequest([property: MaxLength(128)] string? Pin);
+    public sealed record SwitchRequest([property: MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin) : IPinRequest;
 
     public sealed record Account(Guid UserId, string DisplayName, bool IsChild, DateOnly? Birthday, bool HasPin, string? Email, bool CanRelease);
 
@@ -184,7 +190,14 @@ public sealed class SubaccountEndpoints
                 db.UserSwitchPins.Remove(credential);
             }
         }
-        await db.SaveChangesAsync(http.RequestAborted);
+        try
+        {
+            await db.SaveChangesAsync(http.RequestAborted);
+        }
+        catch (DbUpdateException exception) when (UniqueConstraintViolation.Matches(exception, "PK_UserSwitchPins", "UserSwitchPins.UserId"))
+        {
+            return Results.Conflict();
+        }
         return Results.NoContent();
     }
 

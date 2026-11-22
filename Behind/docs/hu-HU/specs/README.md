@@ -6,10 +6,12 @@
 
 | Specifikáció | Verzió | Állapot |
 | --- | --- | --- |
-| [Alfiókok API](./subaccounts-1.2.0.md) | 1.2.0 | Aktuális |
+| [Alfiókok API](./subaccounts-1.2.1.md) | 1.2.1 | Aktuális |
+| [Alfiókok API](./subaccounts-1.2.0.md) | 1.2.0 | Korábbi |
 | [Alfiókok API](./subaccounts-1.1.0.md) | 1.1.0 | Korábbi |
 | [Alfiókok API](./subaccounts-1.0.0.md) | 1.0.0 | Korábbi |
-| [Konfigurációs JSON ellenőrzése](./configuration-json-1.3.0.md) | 1.3.0 | Aktuális |
+| [Konfigurációs JSON ellenőrzése](./configuration-json-1.4.0.md) | 1.4.0 | Aktuális |
+| [Konfigurációs JSON ellenőrzése](./configuration-json-1.3.0.md) | 1.3.0 | Korábbi |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.2.0.md) | 1.2.0 | Korábbi |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.1.0.md) | 1.1.0 | Korábbi |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.0.2.md) | 1.0.2 | Korábbi |

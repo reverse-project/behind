@@ -270,6 +270,8 @@ public sealed class StartupSetupTests : IDisposable
         Assert.False(security.TwoFactorRequired);
         Assert.True(security.Accounts.Subaccounts);
         Assert.False(security.Accounts.LinkUnlink);
+        Assert.Equal(SecurityAccountSettings.DefaultSwitchPinMaxLength, security.Accounts.SwitchPinMaxLength);
+        Assert.Equal(SecurityAccountSettings.DefaultSwitchPinMaxLength, Load(SecurityPath).GetValue<int>("Security:Accounts:SwitchPinMaxLength"));
         Assert.Equal("True", Load(SecurityPath)["Security:Accounts:Subaccounts"], ignoreCase: true);
         Assert.Equal("False", Load(SecurityPath)["Security:Accounts:LinkUnlink"], ignoreCase: true);
         Assert.Equal(Some(MagicLinkSettings.DefaultRotationInterval), magicLink.RotationInterval);

@@ -599,6 +599,7 @@
     "auth.userAction.invalidMessage": "Enter a message of up to 500 characters.",
     "auth.userAction.forbidden": "You are not allowed to do that to this user.",
     "auth.userAction.referenced": "This user is referenced by the audit log and cannot be permanently deleted.",
+    "auth.userAction.linkedSubaccounts": "This user still has linked subaccounts and cannot be permanently deleted.",
     "auth.userAccess.invalid": "The access selection is not valid. Every user keeps the Users role.",
     "auth.userAccess.forbidden": "You are not allowed to change this user's access.",
     "auth.userAccess.saved": "The access was saved.",

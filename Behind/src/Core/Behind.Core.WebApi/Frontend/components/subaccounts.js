@@ -4,6 +4,20 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         return path + "/" + encodeURIComponent(id);
     };
 
+    var sessionIdentity = function (token) {
+        if (!token) {
+            return null;
+        }
+
+        try {
+            var payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+            var sessionId = JSON.parse(window.atob(payload)).session_id;
+            return typeof sessionId === "string" && sessionId ? sessionId : token;
+        } catch (error) {
+            return token;
+        }
+    };
+
     var Panel = function (params) {
         var self = this;
         self.manager = !!params.manager;
@@ -34,7 +48,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.requests = ko.observableArray([]);
         var revision = 0;
         var identity = ko.pureComputed(function () {
-            return !session.isImpersonating() && session.accessToken();
+            return session.isImpersonating() ? null : sessionIdentity(session.accessToken());
         });
 
         var select = self.selected.subscribe(function (account) {
@@ -114,12 +128,12 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 }
             });
         };
-        var tokenChanges = identity.subscribe(load);
+        var identityChanges = identity.subscribe(load);
         var changes = invalidation.subscribe("subaccounts", load);
         self.dispose = function () {
             revision++;
             changes.dispose();
-            tokenChanges.dispose();
+            identityChanges.dispose();
             select.dispose();
             identity.dispose();
         };
@@ -184,9 +198,9 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 return;
             }
             return perform(operation, function () {
-                var accountToken = identity();
+                var accountSession = identity();
                 return Promise.resolve(invalidation.invalidate("subaccounts")).then(function () {
-                    if (identity() === accountToken) {
+                    if (identity() === accountSession) {
                         self.message(i18n.t(success));
                     }
                 });

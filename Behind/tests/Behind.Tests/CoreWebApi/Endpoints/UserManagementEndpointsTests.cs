@@ -699,7 +699,7 @@ public class UserManagementEndpointsTests
     {
         SignedInAs(ActorId, developer: true);
         DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
-        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(true);
+        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(IUserCommands.HardDeleteOutcome.Deleted);
 
         var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
 
@@ -711,11 +711,24 @@ public class UserManagementEndpointsTests
     {
         SignedInAs(ActorId, developer: true);
         DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
-        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(false);
+        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(IUserCommands.HardDeleteOutcome.Rejected);
 
         var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
 
         Assert.IsType<Conflict>(result);
+    }
+
+    [Fact]
+    public async Task HardDelete_PrimaryWithLinkedSubaccounts_ReportsConflictReason()
+    {
+        SignedInAs(ActorId, developer: true);
+        DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
+        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(IUserCommands.HardDeleteOutcome.LinkedSubaccounts);
+
+        var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
+
+        var conflict = Assert.IsType<Conflict<UserManagementEndpoints.HardDeleteConflict>>(result);
+        Assert.Equal("linkedSubaccounts", conflict.Value!.Reason);
     }
 
     [Fact]

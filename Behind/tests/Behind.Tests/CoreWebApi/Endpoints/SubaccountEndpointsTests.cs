@@ -275,6 +275,51 @@ public sealed class SubaccountEndpointsTests
         Assert.False(await verified.Users.AnyAsync(user => user.DisplayName == "Child"));
     }
 
+    [Fact]
+    public async Task SqliteConcurrentFirstChildPinUpdatePreservesWinningPinAndProfile()
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        await VerifyConcurrentFirstChildPinUpdate(db, factory.CreateContext);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task PostgresConcurrentFirstChildPinUpdatePreservesWinningPinAndProfile()
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
+        var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres:Image is required.");
+        await using var container = new PostgreSqlBuilder(image).Build();
+        await container.StartAsync();
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString()).Options;
+        await using var db = new CoreContextPostgres(options);
+        await db.Database.MigrateAsync();
+        await VerifyConcurrentFirstChildPinUpdate(db, () => new CoreContextPostgres(options));
+    }
+
+    private static async Task VerifyConcurrentFirstChildPinUpdate(AbstractCoreContext db, Func<AbstractCoreContext> createContext)
+    {
+        var primary = new HumanUser("Parent", [new Email("parent@example.test")], None);
+        var child = new HumanUser("Child", [new Email("child@example.test")], None);
+        db.Subaccounts.Add(new Subaccount(primary, child, true));
+        await db.SaveChangesAsync();
+        var parent = AsUser(db.GetKey(primary));
+        var childId = db.GetKey(child);
+        var winningHash = PasswordHash.Create("000789").ToString();
+        db.SavingChanges += (_, _) => db.Database.ExecuteSql(
+            $"""INSERT INTO "UserSwitchPins" ("UserId", "PinHash") VALUES ({childId}, {winningHash})""");
+
+        var response = await SubaccountEndpoints.Update(childId, new("Losing name", null, false, "001234", false),
+            parent.Http, parent.Queries, db, TimeProvider.System);
+
+        Assert.Equal(StatusCodes.Status409Conflict, Assert.IsAssignableFrom<IStatusCodeHttpResult>(response).StatusCode);
+        await using var verified = createContext();
+        Assert.Equal(winningHash, (await verified.UserSwitchPins.SingleAsync()).PinHash.ToString());
+        Assert.Equal("Child", (await verified.Users.FindAsync(childId))!.DisplayName);
+        Assert.True((await verified.Subaccounts.SingleAsync()).IsChild);
+    }
+
     [Theory]
     [InlineData(null, null)]
     [InlineData("000123", "child@example.test")]

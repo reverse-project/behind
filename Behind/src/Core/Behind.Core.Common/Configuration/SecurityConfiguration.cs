@@ -32,7 +32,10 @@ public record SecurityConfiguration(
 public sealed record SecurityAccountSettings
 {
     public bool Subaccounts { get; init; } = true;
+    public const int DefaultSwitchPinMaxLength = 128;
+
     public bool LinkUnlink { get; init; }
+    public int SwitchPinMaxLength { get; init; } = DefaultSwitchPinMaxLength;
 }
 
 [TypeConverter(typeof(SecretKeyTypeConverter))]

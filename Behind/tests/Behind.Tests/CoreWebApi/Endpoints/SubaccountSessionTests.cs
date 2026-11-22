@@ -91,10 +91,12 @@ public sealed class SubaccountSessionTests
         Assert.IsType<ForbidHttpResult>(await Switch(switchedSession, primary));
         Assert.IsType<ForbidHttpResult>(await Switch(switchedSession, primary, "000111"));
         var sibling = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(switchedSession, secondId));
+        var siblingToken = new JwtSecurityTokenHandler().ReadJwtToken(sibling.Value!.AccessToken);
+        var siblingSession = Guid.Parse(siblingToken.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
+        Assert.True((await queries.TryFindByIdWithUserId(siblingSession)).Match(() => false,
+            value => value.UserId == secondId && value.Session is ValidSession { FamilyPrimaryUserId: var familyId } && familyId == primary));
         if (primaryPin is not null)
         {
-            var siblingToken = new JwtSecurityTokenHandler().ReadJwtToken(sibling.Value!.AccessToken);
-            var siblingSession = Guid.Parse(siblingToken.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
             var returned = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(siblingSession, primary, primaryPin));
             var returnedToken = new JwtSecurityTokenHandler().ReadJwtToken(returned.Value!.AccessToken);
             var returnedSession = Guid.Parse(returnedToken.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);

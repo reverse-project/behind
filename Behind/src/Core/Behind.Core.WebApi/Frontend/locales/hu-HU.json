@@ -599,6 +599,7 @@
     "auth.userAction.invalidMessage": "Adjon meg legfeljebb 500 karakteres üzenetet.",
     "auth.userAction.forbidden": "Ezt a műveletet nem végezheti el ezen a felhasználón.",
     "auth.userAction.referenced": "Erre a felhasználóra hivatkozik az auditnapló, ezért nem törölhető véglegesen.",
+    "auth.userAction.linkedSubaccounts": "A felhasználó nem törölhető véglegesen, mert még vannak hozzá csatolt alfiókok.",
     "auth.userAccess.invalid": "A hozzáférés-kijelölés érvénytelen. Minden felhasználó megtartja a Felhasználók szerepkört.",
     "auth.userAccess.forbidden": "Nem módosíthatja ennek a felhasználónak a hozzáférését.",
     "auth.userAccess.saved": "A hozzáférés mentve.",

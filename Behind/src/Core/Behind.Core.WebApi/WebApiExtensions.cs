@@ -543,6 +543,13 @@ public static class WebApiExtensions
                 .Produces(404)
                 .Produces(500);
 
+            application.MapPost("/users/{id:guid}/pin/unset", UserManagementEndpoints.UnsetPin)
+                .RequireAuthorization(userManagement)
+                .Produces(204)
+                .Produces(401)
+                .Produces(403)
+                .Produces(404);
+
             application.MapPost("/users/{id:guid}/sign/out", UserManagementEndpoints.SignOut)
                 .RequireAuthorization(userManagement)
                 .Produces(204)
@@ -1107,13 +1114,22 @@ public static class WebApiExtensions
             links.MapDelete("/{userId:guid}", SubaccountLinkEndpoints.Release)
                 .RequireAuthenticationTransaction();
 
+            subaccounts.MapPost("/{userId:guid}/pin-proof", PinMagicProof.Request)
+                .RequireAccountMode(AccountMode.MagicLink)
+                .RequireRateLimiting(MagicLinkExtensions.RequestRateLimitPolicy);
             subaccounts.MapGet("", SubaccountEndpoints.List);
             subaccounts.MapPost("", SubaccountEndpoints.Create)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.CreateRequest>>()
-                .RequireAuthenticationTransaction();
+                .RequireAuthenticationTransaction()
+                .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy);
             subaccounts.MapPut("/{userId:guid}", SubaccountEndpoints.Update)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.UpdateRequest>>()
-                .RequireAuthenticationTransaction();
+                .RequireAuthenticationTransaction()
+                .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy);
+            subaccounts.MapPut("/{userId:guid}/pin", SubaccountEndpoints.ChangePin)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.PinRequest>>()
+                .RequireAuthenticationTransaction()
+                .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy);
             subaccounts.MapPost("/{userId:guid}/switch", SubaccountEndpoints.Switch)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.SwitchRequest>>()
                 .RequireAuthenticationTransaction()

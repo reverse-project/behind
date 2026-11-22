@@ -11,5 +11,6 @@ public enum MagicLinkFunction
     EmailTwoFactor,
     PasskeyChallenge,
     TwoFactorChallenge,
-    LegacyPasskeyLink
+    LegacyPasskeyLink,
+    SwitchPin
 }

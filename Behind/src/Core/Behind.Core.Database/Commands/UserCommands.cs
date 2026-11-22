@@ -40,6 +40,10 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
         await context.SaveChangesAsync(cancellationToken);
     }
 
+    public Task UnsetSwitchPin(Guid userId, CancellationToken cancellationToken = default) =>
+        context.UserSwitchPins.Where(pin => EF.Property<Guid>(pin, "UserId") == userId)
+            .ExecuteDeleteAsync(cancellationToken);
+
     public async Task Restore(Guid userId, CancellationToken cancellationToken = default)
     {
         await context.GetRestoreRepository<HumanUser, Guid>().RestoreAsync(userId, cancellationToken);

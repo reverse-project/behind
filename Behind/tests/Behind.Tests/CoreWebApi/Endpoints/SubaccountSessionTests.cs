@@ -50,15 +50,17 @@ public sealed class SubaccountSessionTests
         }
 
         var parentSession = await Start(primary);
-        var created = await SubaccountEndpoints.Create(new("Second", null, null, true, null, primaryPin),
-            SessionTestHelper.SignedIn(parentSession), queries, db, Substitute.For<IRoleCommands>(), TimeProvider.System);
+        var parentHttp = SessionTestHelper.SignedIn(parentSession);
+        var proof = await SubaccountEndpointsTests.SetPassword(db, primary, parentHttp);
+        var created = await SubaccountEndpoints.Create(new("Second", null, null, true, null, primaryPin, proof),
+            parentHttp, queries, db, Substitute.For<IRoleCommands>(), TimeProvider.System);
         Assert.Equal(StatusCodes.Status201Created, Assert.IsAssignableFrom<IStatusCodeHttpResult>(created).StatusCode);
         var newAccount = JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(created).Value);
         var secondId = newAccount.GetProperty("UserId").GetGuid();
         if (primaryPin is not null)
         {
-            var replacement = await SubaccountEndpoints.Create(new("Third", null, null, true, null, "000111"),
-                SessionTestHelper.SignedIn(parentSession), queries, db, Substitute.For<IRoleCommands>(), TimeProvider.System);
+            var replacement = await SubaccountEndpoints.Create(new("Third", null, null, true, null, "000111", proof),
+                parentHttp, queries, db, Substitute.For<IRoleCommands>(), TimeProvider.System);
             Assert.Equal(StatusCodes.Status409Conflict, Assert.IsAssignableFrom<IStatusCodeHttpResult>(replacement).StatusCode);
         }
         manager.FindByIdAsync(secondId.ToString()).Returns(new ApplicationUser { Id = secondId, DisplayName = "Second" });

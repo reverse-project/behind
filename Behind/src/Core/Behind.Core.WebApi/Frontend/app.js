@@ -7,6 +7,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/au
         "#/session": "controllers/session",
         "#/sessions": "controllers/sessions",
         "#/profile": "controllers/profile",
+        "#/profile/pin-proof": "controllers/pinproof",
         "#/profile/password": "controllers/profilepassword",
         "#/profile/two-factor": "controllers/twofactor",
         "#/user/:id": "controllers/publicprofile",
@@ -71,6 +72,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/au
         "controllers/signin",
         "controllers/signup",
         "controllers/magiclink",
+        "controllers/pinproof",
         "controllers/confirmemail",
         "controllers/profilepassword"
     ];

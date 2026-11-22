@@ -1,4 +1,4 @@
-define(["ko", "models/http", "models/session", "models/invalidation", "models/i18n", "models/user", "text!components/subaccounts.html"], function (ko, http, session, invalidation, i18n, user, template) {
+define(["ko", "models/http", "models/session", "models/invalidation", "models/i18n", "models/user", "models/accounts", "text!components/subaccounts.html"], function (ko, http, session, invalidation, i18n, user, modes, template) {
     var path = "/profile/subaccounts";
     var endpoint = function (id) {
         return path + "/" + encodeURIComponent(id);
@@ -38,11 +38,43 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         };
         var identity = ko.pureComputed(currentIdentity);
 
+        self.managementAccounts = ko.pureComputed(function () {
+            return self.primary() ? [{ userId: self.primaryUserId(), isPrimary: true, hasPin: self.primaryHasPin() }].concat(self.accounts()) : [];
+        });
+        self.proofMethods = ko.pureComputed(function () {
+            var methods = [];
+            if (self.selected() ? self.selected().hasPin : self.primaryHasPin()) {
+                methods.push("currentPin");
+            }
+            if (modes.password()) {
+                methods.push("password");
+            }
+            if (modes.magicLink()) {
+                methods.push("magicToken");
+            }
+            return methods;
+        });
+        self.proofLabel = function (method) {
+            var labels = { currentPin: "subaccount.currentPin", password: "subaccount.yourPassword", magicToken: "subaccount.magicProof" };
+            return i18n.t(labels[method]);
+        };
+        self.proofMethod = ko.observable("password");
+        self.credential = ko.observable("");
+        var methodChange = self.proofMethod.subscribe(function () { self.credential(""); });
+        var clearProof = function () {
+            self.proofMethod(self.proofMethods()[0]);
+            self.credential("");
+        };
+        var operationChange = self.clearPin.subscribe(clearProof);
+        self.needsProof = ko.pureComputed(function () {
+            return !!(self.pin() || self.clearPin() || (!self.selected() && !self.primaryHasPin() && !self.skipPrimaryPin() && self.primaryPin()));
+        });
         var select = self.selected.subscribe(function (account) {
             self.pin("");
             self.primaryPin("");
             self.skipPrimaryPin(false);
-            self.name(account ? account.displayName : "");
+            self.name(account && account.displayName || "");
+            clearProof();
             self.child(!!account && account.isChild);
             self.birthday(account && account.birthday || "");
             self.email("");
@@ -51,6 +83,9 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         });
 
         self.label = function (account) {
+            if (account.isPrimary) {
+                return i18n.t("subaccount.primaryLabel");
+            }
             var label = user.label({ id: account.userId, displayName: account.displayName });
             return account.userId === self.primaryUserId() ? label + " (" + i18n.t("subaccount.primaryLabel") + ")" : label;
         };
@@ -58,6 +93,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         var load = function () {
             var ticket = ++revision;
             self.busy(false);
+            clearProof();
             self.linkEnabled(false);
             self.query("");
             self.candidates([]);
@@ -122,6 +158,12 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             changes.dispose();
             identityChanges.dispose();
             select.dispose();
+            methodChange.dispose();
+            operationChange.dispose();
+            self.needsProof.dispose();
+            self.proofMethods.dispose();
+            self.managementAccounts.dispose();
+            self.credential("");
             identity.dispose();
         };
 
@@ -138,7 +180,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                         return done(response.data);
                     }
                 } else if (ticket === revision) {
-                    self.message(i18n.t(response.status === 429 ? "auth.tooManyAttempts" : invalid));
+                    self.message(i18n.t(response.status === 429 ? "auth.tooManyAttempts" : typeof invalid === "function" ? invalid(response.status) : invalid));
                 }
             }).catch(function () {
                 if (ticket === revision) {
@@ -218,6 +260,16 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             }, "subaccount.released");
         };
 
+        self.requestPinProof = function () {
+            var account = self.selected();
+            var operation = account ? (self.clearPin() ? "remove" : "change") : "create";
+            return perform(function () {
+                return http.post(endpoint(account ? account.userId : self.primaryUserId()) + "/pin-proof", { operation: operation });
+            }, function () {
+                self.message(i18n.t("subaccount.mailInstructions"));
+            }, "subaccount.denied");
+        };
+
         self.save = function () {
             var account = self.selected();
             var body = {
@@ -226,7 +278,18 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 birthday: self.birthday() || null,
                 pin: self.clearPin() ? null : self.pin() || null
             };
+            if (self.needsProof()) {
+                if (self.proofMethods().indexOf(self.proofMethod()) < 0 || !self.credential()) {
+                    self.message(i18n.t("subaccount.proofRequired"));
+                    return;
+                }
+                body.proof = {};
+                body.proof[self.proofMethod()] = self.credential();
+            }
             return perform(function () {
+                if (account && account.isPrimary) {
+                    return http.put(endpoint(account.userId) + "/pin", { pin: body.pin, clearPin: self.clearPin(), proof: body.proof });
+                }
                 if (account) {
                     body.clearPin = self.clearPin();
                     return http.put(endpoint(account.userId), body);
@@ -239,7 +302,9 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 return http.post(path, body);
             }, function () {
                 return invalidation.invalidate("subaccounts");
-            }, "subaccount.invalid");
+            }, function (status) {
+                return status === 403 && body.proof ? "subaccount.proofRejected" : "subaccount.invalid";
+            });
         };
 
         self.switchUser = function () {

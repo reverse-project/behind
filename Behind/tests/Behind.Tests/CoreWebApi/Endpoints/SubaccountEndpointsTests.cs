@@ -39,6 +39,58 @@ public sealed class SubaccountEndpointsTests
         return (http, queries, sessionId);
     }
 
+    internal static async Task<SubaccountEndpoints.PinProof> SetPassword(AbstractCoreContext db, Guid actor, HttpContext http)
+    {
+        const string password = "test-family-passphrase";
+        var settings = Substitute.For<IOptionsSnapshot<AccountsConfiguration>>();
+        settings.Value.Returns(new AccountsConfiguration());
+        var services = Substitute.For<IServiceProvider>();
+        services.GetService(typeof(IOptionsSnapshot<AccountsConfiguration>)).Returns(settings);
+        http.RequestServices = services;
+        await new PasswordCommands(db).CreateFromUserId(actor, new Password(PasswordHash.Create(password), true));
+        await db.SaveChangesAsync();
+        return new(Password: password);
+    }
+
+    [Fact]
+    public async Task PinChangesRequireProofForTargetAndPrimaryAuthority()
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        var parentId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "parent@example.test");
+        var childId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "child@example.test");
+        var outsiderId = await DatabaseSeedHelper.SeedHumanUserAsync(db, "other@example.test");
+        var parent = AsUser(parentId);
+        var child = AsUser(childId);
+        var parentUser = (await db.Users.FindAsync(parentId))!;
+        var childUser = (await db.Users.FindAsync(childId))!;
+        db.Subaccounts.Add(new Subaccount(parentUser, childUser, false));
+        db.UserSwitchPins.Add(new UserSwitchPin(childUser, new PinHash(PasswordHash.Create("1234"))));
+        await db.SaveChangesAsync();
+        var password = await SetPassword(db, parentId, parent.Http);
+        var roles = Substitute.For<IRoleCommands>();
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.Create(new("Rejected", null, null, false, "123", null),
+            parent.Http, parent.Queries, db, roles, TimeProvider.System));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.Create(new("Rejected", null, null, false, null, "321"),
+            parent.Http, parent.Queries, db, roles, TimeProvider.System));
+        var edit = new SubaccountEndpoints.UpdateRequest("Rejected", null, true, "5555", false);
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.Update(childId, edit, parent.Http, parent.Queries, db, TimeProvider.System));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.Update(childId, edit with { Pin = null, ClearPin = true },
+            parent.Http, parent.Queries, db, TimeProvider.System));
+        Assert.NotEqual("Rejected", childUser.DisplayName);
+
+        var change = new SubaccountEndpoints.PinRequest("5678", false, new(CurrentPin: "1234"));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(parentId, change, parent.Http, parent.Queries, db));
+        Assert.IsType<NotFound>(await SubaccountEndpoints.ChangePin(outsiderId, change, parent.Http, parent.Queries, db));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(childId, change, child.Http, child.Queries, db));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(childId, change, parent.Http, parent.Queries, db));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(childId, change, parent.Http, parent.Queries, db));
+        var remove = new SubaccountEndpoints.PinRequest(null, true, new(Password: "wrong"));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(childId, remove, parent.Http, parent.Queries, db));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(childId, remove with { Proof = password }, parent.Http, parent.Queries, db));
+        Assert.False(await db.UserSwitchPins.AnyAsync());
+    }
+
     [Fact]
     public async Task BrowsingPagesOnlyEligibleIndependentUsersWithPublicLabels()
     {
@@ -261,11 +313,12 @@ public sealed class SubaccountEndpointsTests
         var primary = await DatabaseSeedHelper.SeedHumanUserAsync(db);
         var parent = AsUser(primary);
         var roles = Substitute.For<IRoleCommands>();
+        var proof = await SetPassword(db, primary, parent.Http);
         var winningHash = PasswordHash.Create("000789").ToString();
         db.SavingChanges += (_, _) => db.Database.ExecuteSql(
             $"INSERT INTO UserSwitchPins (UserId, PinHash) VALUES ({primary}, {winningHash})");
 
-        var response = await SubaccountEndpoints.Create(new("Child", null, null, true, "001234", "002345"),
+        var response = await SubaccountEndpoints.Create(new("Child", null, null, true, "001234", "002345", proof),
             parent.Http, parent.Queries, db, roles, TimeProvider.System);
 
         Assert.Equal(StatusCodes.Status409Conflict, Assert.IsAssignableFrom<IStatusCodeHttpResult>(response).StatusCode);
@@ -306,11 +359,12 @@ public sealed class SubaccountEndpointsTests
         await db.SaveChangesAsync();
         var parent = AsUser(db.GetKey(primary));
         var childId = db.GetKey(child);
+        var proof = await SetPassword(db, db.GetKey(primary), parent.Http);
         var winningHash = PasswordHash.Create("000789").ToString();
         db.SavingChanges += (_, _) => db.Database.ExecuteSql(
             $"""INSERT INTO "UserSwitchPins" ("UserId", "PinHash") VALUES ({childId}, {winningHash})""");
 
-        var response = await SubaccountEndpoints.Update(childId, new("Losing name", null, false, "001234", false),
+        var response = await SubaccountEndpoints.Update(childId, new("Losing name", null, false, "001234", false, proof),
             parent.Http, parent.Queries, db, TimeProvider.System);
 
         Assert.Equal(StatusCodes.Status409Conflict, Assert.IsAssignableFrom<IStatusCodeHttpResult>(response).StatusCode);
@@ -331,7 +385,8 @@ public sealed class SubaccountEndpointsTests
         var parent = AsUser(primary);
         var roles = Substitute.For<IRoleCommands>();
         var birthday = new DateOnly(2018, 2, 2);
-        var request = new SubaccountEndpoints.CreateRequest("Child", email, birthday, true, pin);
+        var proof = await SetPassword(db, primary, parent.Http);
+        var request = new SubaccountEndpoints.CreateRequest("Child", email, birthday, true, pin, Proof: proof);
         await SubaccountEndpoints.Create(request, parent.Http, parent.Queries, db, roles, TimeProvider.System);
         db.ChangeTracker.Clear();
         var link = await db.Subaccounts
@@ -357,7 +412,7 @@ public sealed class SubaccountEndpointsTests
         var child = AsUser(childId);
         Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.Create(request, child.Http, child.Queries, db, roles, TimeProvider.System));
         var other = AsUser(await DatabaseSeedHelper.SeedHumanUserAsync(db, "elsewhere@example.test"));
-        var update = new SubaccountEndpoints.UpdateRequest("Different", birthday, false, null, true);
+        var update = new SubaccountEndpoints.UpdateRequest("Different", birthday, false, null, true, proof);
         Assert.IsType<NotFound>(await SubaccountEndpoints.Update(childId, update, other.Http, other.Queries, db, TimeProvider.System));
 
         var manager = Substitute.For<UserManager<ApplicationUser>>(

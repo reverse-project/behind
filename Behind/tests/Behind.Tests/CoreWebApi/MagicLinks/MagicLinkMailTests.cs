@@ -20,6 +20,9 @@ public class MagicLinkMailTests
         await sender.Send(new MagicLinkMail(user, "user@test.com", "link", MagicLinkFunction.LostPassword));
         await sender.Send(new MagicLinkMail(user, "user@test.com", "link", MagicLinkFunction.SignIn));
 
+        await sender.Send(new MagicLinkMail(user, "user@test.com", "link", MagicLinkFunction.SwitchPin));
+
+        await sender.Received(1).SendPinProofAsync(user, "user@test.com", "link");
         await sender.Received(1).SendLostPasswordLinkAsync(user, "user@test.com", "link");
         await sender.Received(1).SendMagicLinkAsync(user, "user@test.com", "link");
     }

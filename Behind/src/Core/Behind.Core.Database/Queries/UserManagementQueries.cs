@@ -24,7 +24,7 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
                 matching
                     .OrderBy(user => user.Label.ToLower())
                     .ThenBy(user => user.Id)
-                    .Select(user => new UserRow(user.Id, user.DisplayName)))
+                    .Select(user => new UserRow(user.Id, user.DisplayName, user.HasSwitchPin)))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -57,7 +57,7 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
         using var scope = Scope(state);
         var rows = await Labeled(state)
             .Where(user => user.Id == id)
-            .Select(user => new UserRow(user.Id, user.DisplayName))
+            .Select(user => new UserRow(user.Id, user.DisplayName, user.HasSwitchPin))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -77,6 +77,7 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
             {
                 Id = EF.Property<Guid>(user, "Id"),
                 DisplayName = user.DisplayName,
+                HasSwitchPin = context.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == EF.Property<Guid>(user, "Id")),
                 Label = user.DisplayName.Trim() != ""
                     ? user.DisplayName.Trim()
                     : context.Emails
@@ -160,17 +161,20 @@ public sealed class UserManagementQueries(AbstractCoreContext context) : IUserMa
                 roles[row.Id].ToList(),
                 bans.TryGetValue(row.Id, out var ban) ? Some(ban) : None,
                 state,
-                emails[row.Id].Select(email => email.Confirmed).DefaultIfEmpty(true).First()))
+                emails[row.Id].Select(email => email.Confirmed).DefaultIfEmpty(true).First(),
+                row.HasSwitchPin))
             .ToList();
     }
 
-    private sealed record UserRow(Guid Id, string DisplayName);
+    private sealed record UserRow(Guid Id, string DisplayName, bool HasSwitchPin);
 
     private sealed record LabeledUser
     {
         public Guid Id { get; init; }
 
         public string DisplayName { get; init; } = string.Empty;
+
+        public bool HasSwitchPin { get; init; }
 
         public string Label { get; init; } = string.Empty;
     }

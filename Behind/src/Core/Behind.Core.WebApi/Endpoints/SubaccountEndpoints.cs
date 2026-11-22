@@ -7,6 +7,8 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
+using Behind.Core.WebApi.MagicLinks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -27,17 +29,23 @@ public sealed class SubaccountEndpoints
         string? PrimaryPin => null;
     }
 
+    public sealed record PinProof(string? CurrentPin = null, string? Password = null, string? MagicToken = null);
+
+    public sealed record PinRequest(
+        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin,
+        bool ClearPin, PinProof? Proof = null) : IPinRequest;
+
     public sealed record CreateRequest(
         [property: Required, MaxLength(DisplayNameExtensions.MaxLength)] string DisplayName,
         [property: EmailAddress, MaxLength(255)] string? Email,
         DateOnly? Birthday, bool IsChild,
         [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin,
-        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? PrimaryPin = null) : IPinRequest;
+        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? PrimaryPin = null, PinProof? Proof = null) : IPinRequest;
 
     public sealed record UpdateRequest(
         [property: Required, MaxLength(DisplayNameExtensions.MaxLength)] string DisplayName,
         DateOnly? Birthday, bool IsChild,
-        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin, bool ClearPin) : IPinRequest;
+        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin, bool ClearPin, PinProof? Proof = null) : IPinRequest;
 
     public sealed record SwitchRequest([property: MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin) : IPinRequest;
 
@@ -112,6 +120,12 @@ public sealed class SubaccountEndpoints
             return Results.Forbid();
         }
 
+        if ((!string.IsNullOrEmpty(request.Pin) || !string.IsNullOrEmpty(request.PrimaryPin))
+            && !await VerifyProof(request.Proof, family, family.PrimaryUserId, "create", db, http))
+        {
+            return Results.Forbid();
+        }
+
         if (HashPin(request.PrimaryPin) is { } primaryPin)
         {
             if (await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted))
@@ -168,28 +182,101 @@ public sealed class SubaccountEndpoints
         {
             return Results.NotFound();
         }
+        if (request.ClearPin || !string.IsNullOrEmpty(request.Pin))
+        {
+            if (!await VerifyProof(request.Proof, family, userId, request.ClearPin ? "remove" : "change", db, http))
+            {
+                return Results.Forbid();
+            }
+            await ApplyPin(userId, request.Pin, target.User, db, http.RequestAborted);
+        }
         db.Entry(target.User).Property(u => u.DisplayName).CurrentValue = request.DisplayName.Trim();
         db.Entry(target.User).Property(u => u.Birthday).CurrentValue = request.Birthday;
         db.Entry(target.Link).Property(l => l.IsChild).CurrentValue = request.IsChild;
-        if (request.ClearPin || !string.IsNullOrEmpty(request.Pin))
+        return await SavePinChanges(db, http);
+    }
+
+    internal static async Task<Guid?> GetPinManager(Guid targetId, HttpContext http, ISessionQueries sessions, AbstractCoreContext db)
+    {
+        var family = await FindFamily(http, sessions, db);
+        return family is { IsPrimary: true } && await ManagedUsers(db, family.PrimaryUserId, targetId).AnyAsync(http.RequestAborted)
+            ? family.Current.UserId
+            : null;
+    }
+
+    private static IQueryable<HumanUser> ManagedUsers(AbstractCoreContext db, Guid primaryId, Guid targetId) =>
+        ActiveUsers(db).Where(user => EF.Property<Guid>(user, "Id") == targetId && (primaryId == targetId ||
+            db.Subaccounts.Any(link => EF.Property<Guid>(link, "PrimaryUserId") == primaryId && EF.Property<Guid>(link, "UserId") == targetId)));
+
+    [Authorize, IgnoreETag]
+    public static async Task<IResult> ChangePin(Guid userId, PinRequest request, HttpContext http, ISessionQueries sessions, AbstractCoreContext db)
+    {
+        var family = await FindFamily(http, sessions, db);
+        if (family is not { IsPrimary: true })
         {
-            var credential = await PinsFor(db, userId).SingleOrDefaultAsync(http.RequestAborted);
-            if (HashPin(request.Pin) is { } hash)
+            return Results.Forbid();
+        }
+        if (request.ClearPin ? request.Pin is not null : string.IsNullOrEmpty(request.Pin))
+        {
+            return Results.BadRequest();
+        }
+        var target = await ManagedUsers(db, family.PrimaryUserId, userId).SingleOrDefaultAsync(http.RequestAborted);
+        if (target is null)
+        {
+            return Results.NotFound();
+        }
+        if (!await VerifyProof(request.Proof, family, userId, request.ClearPin ? "remove" : "change", db, http))
+        {
+            return Results.Forbid();
+        }
+        await ApplyPin(userId, request.Pin, target, db, http.RequestAborted);
+        return await SavePinChanges(db, http);
+    }
+
+    private static async Task<bool> VerifyProof(PinProof? proof, FamilySession family, Guid targetId, string operation,
+        AbstractCoreContext db, HttpContext http)
+    {
+        if (proof is { CurrentPin: { Length: > 0 } pin, Password: null, MagicToken: null })
+        {
+            var credential = await PinsFor(db, targetId).SingleOrDefaultAsync(http.RequestAborted);
+            return credential is not null && PasswordHash.CreateFromExisting(credential.PinHash.ToString()).Verify(pin);
+        }
+        if (proof is { Password: { Length: > 0 } password, CurrentPin: null, MagicToken: null })
+        {
+            if (!http.RequestServices.GetRequiredService<IOptionsSnapshot<AccountsConfiguration>>().Value.Password)
             {
-                if (credential is null)
-                {
-                    db.UserSwitchPins.Add(new UserSwitchPin(target.User, hash));
-                }
-                else
-                {
-                    db.Entry(credential).Property(pin => pin.PinHash).CurrentValue = hash;
-                }
+                return false;
             }
-            else if (credential is not null)
+            var hash = await db.Passwords.Where(record => record.IsActive && EF.Property<Guid>(record, "UserId") == family.Current.UserId)
+                .Select(record => record.Value).FirstOrDefaultAsync(http.RequestAborted);
+            return hash is not null && PasswordHash.CreateFromExisting(hash).Verify(password);
+        }
+        return proof is { MagicToken: { Length: > 0 } token, CurrentPin: null, Password: null }
+            && await PinMagicProof.Consume(token, family.Current.UserId, targetId, operation, http);
+    }
+
+    private static async Task ApplyPin(Guid userId, string? pin, HumanUser user, AbstractCoreContext db, CancellationToken cancellationToken)
+    {
+        var credential = await PinsFor(db, userId).SingleOrDefaultAsync(cancellationToken);
+        if (HashPin(pin) is { } hash)
+        {
+            if (credential is null)
             {
-                db.UserSwitchPins.Remove(credential);
+                db.UserSwitchPins.Add(new UserSwitchPin(user, hash));
+            }
+            else
+            {
+                db.Entry(credential).Property(record => record.PinHash).CurrentValue = hash;
             }
         }
+        else if (credential is not null)
+        {
+            db.UserSwitchPins.Remove(credential);
+        }
+    }
+
+    private static async Task<IResult> SavePinChanges(AbstractCoreContext db, HttpContext http)
+    {
         try
         {
             await db.SaveChangesAsync(http.RequestAborted);

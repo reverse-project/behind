@@ -12,7 +12,8 @@ public interface IUserManagementQueries
         IReadOnlyList<string> Roles,
         Option<IWallOfShameQueries.ActiveBan> Ban,
         DeletionState State = DeletionState.Active,
-        bool EmailConfirmed = true);
+        bool EmailConfirmed = true,
+        bool HasSwitchPin = false);
 
     Task<PagedResult<ManagedUser>> ListUsers(
         Flipper flipper,

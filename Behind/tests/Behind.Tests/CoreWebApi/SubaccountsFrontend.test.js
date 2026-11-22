@@ -72,7 +72,7 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     vm.runInNewContext(source, {
         window,
         define: (_, factory) => {
-            const component = factory(ko, http, session, invalidation, { t: key => key }, { label: account => account.displayName }, "");
+            const component = factory(ko, http, session, invalidation, { t: key => key }, { label: account => account.displayName }, { password: () => true, magicLink: () => true }, "");
             panel = new component.viewModel({ manager: primary });
         }
     });
@@ -88,16 +88,21 @@ test("create a child without a sign-in email and clear its PIN on edit", async (
     panel.birthday(child.birthday);
     panel.pin("9123");
     panel.primaryPin("0101");
+    panel.credential("password proof");
     await panel.save();
     assert.deepEqual(JSON.parse(JSON.stringify(requests[0])), {
         url: "/profile/subaccounts",
-        body: { displayName: "Alex", isChild: true, birthday: "2017-10-12", pin: "9123", primaryPin: "0101", email: null }
+        body: { displayName: "Alex", isChild: true, birthday: "2017-10-12", pin: "9123", primaryPin: "0101", email: null, proof: { password: "password proof" } }
     });
     assert.equal(panel.pin(), "");
     assert.equal(panel.primaryPin(), "");
     panel.selected(child);
     panel.clearPin(true);
     await panel.save();
+    assert.equal(requests.length, 1);
+    panel.credential("9123");
+    await panel.save();
+    assert.equal(requests[1].body.proof.currentPin, "9123");
     assert.equal(requests[1].url, "/profile/subaccounts/child");
     assert.equal(requests[1].body.pin, null);
     assert.equal(requests[1].body.clearPin, true);
@@ -363,5 +368,22 @@ test("signing out during a search clears busy state and discards private results
     await operation;
     assert.equal(panel.candidates().length, 0);
     assert.equal(panel.linkEnabled(), false);
+    panel.dispose();
+});
+
+test("primary PIN changes send scoped magic proof only on explicit save", async () => {
+    const { panel, requests } = await setup([], true, true);
+    panel.selected(panel.managementAccounts()[0]);
+    panel.pin("007");
+    panel.proofMethod("magicToken");
+    await panel.requestPinProof();
+    assert.equal(requests[0].url, "/profile/subaccounts/owner/pin-proof");
+    assert.equal(requests[0].body.operation, "change");
+    panel.credential("one-time proof");
+    await panel.save();
+    assert.equal(requests[1].url, "/profile/subaccounts/owner/pin");
+    assert.equal(requests[1].body.proof.magicToken, "one-time proof");
+    assert.equal(requests[1].body.pin, "007");
+    assert.equal(panel.credential(), "");
     panel.dispose();
 });

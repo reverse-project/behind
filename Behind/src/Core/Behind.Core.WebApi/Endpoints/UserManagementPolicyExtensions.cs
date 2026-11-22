@@ -32,6 +32,9 @@ public static class UserManagementPolicyExtensions
         public bool CanModerate(IUserManagementQueries.ManagedUser target) =>
             target.IsActive && actor.UserId != target.Id && (actor.IsDeveloper || !target.IsDeveloper);
 
+        public bool CanUnsetPin(IUserManagementQueries.ManagedUser target) =>
+            !actor.IsImpersonating && actor.Access.Holds(GrantName.Of(GrantArea.User, GrantAction.Manage)) && actor.CanModerate(target);
+
         public bool CanChange(ManagedRole role, IUserManagementQueries.ManagedUser target) =>
             actor.CanModerate(target) && (actor.IsDeveloper || role != ManagedRole.Developer);
 

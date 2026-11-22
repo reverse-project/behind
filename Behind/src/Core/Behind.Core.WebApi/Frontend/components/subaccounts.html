@@ -4,8 +4,9 @@
         <form data-bind="submit: save">
             <label class="form-label d-block">
                 <span data-bind="t: 'subaccount.choose'">Choose an account</span>
-                <select class="form-select" data-bind="options: accounts, optionsText: label, optionsCaption: translate('subaccount.new'), value: selected, enable: !busy()"></select>
+                <select class="form-select" data-bind="options: managementAccounts, optionsText: label, optionsCaption: translate('subaccount.new'), value: selected, enable: !busy()"></select>
             </label>
+            <!-- ko ifnot: selected() && selected().isPrimary -->
             <label class="form-label d-block">
                 <span data-bind="t: 'profile.displayName'">Display name</span>
                 <input type="text" maxlength="500" required class="form-control" data-bind="value: name">
@@ -24,9 +25,10 @@
                 <span data-bind="t: 'profile.birthday'">Birthday (optional)</span>
                 <input type="date" class="form-control" data-bind="value: birthday">
             </label>
+            <!-- /ko -->
             <label class="form-label d-block">
                 <span data-bind="t: selected() && selected().hasPin ? 'subaccount.replacePin' : 'subaccount.pin'"></span>
-                <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="new-password" data-bind="value: pin, enable: !clearPin()">
+                <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="new-password" data-bind="textInput: pin, enable: !clearPin()">
             </label>
             <label class="form-check mb-2" data-bind="visible: selected() && selected().hasPin">
                 <input class="form-check-input" type="checkbox" data-bind="checked: clearPin">
@@ -36,7 +38,7 @@
                 <legend class="h6" data-bind="t: 'subaccount.primaryLabel'">Primary account</legend>
                 <label class="form-label d-block" data-bind="ifnot: skipPrimaryPin">
                     <span data-bind="t: 'subaccount.primaryPin'">Set a PIN to switch back to your primary account</span>
-                    <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" required autocomplete="new-password" data-bind="value: primaryPin">
+                    <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" required autocomplete="new-password" data-bind="textInput: primaryPin">
                 </label>
                 <label class="form-check">
                     <input class="form-check-input" type="checkbox" data-bind="checked: skipPrimaryPin">
@@ -44,9 +46,19 @@
                 </label>
                 <p class="alert alert-warning mt-2" role="status" data-bind="visible: skipPrimaryPin, t: 'subaccount.primaryWarning'">Without a primary PIN, you must sign in again to return to your primary account.</p>
             </fieldset>
-            <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: selected() ? 'common.save' : 'subaccount.create'"></button>
+            <fieldset class="mb-3" data-bind="if: needsProof">
+                <legend class="h6" data-bind="t: 'subaccount.proofRequired'"></legend>
+                <p class="alert alert-warning" data-bind="visible: !proofMethods().length, t: 'subaccount.noProofMethod'"></p>
+                <select class="form-select" data-bind="visible: proofMethods().length, options: proofMethods, optionsText: proofLabel, value: proofMethod, attr: { 'aria-label': translate('subaccount.proofRequired') }"></select>
+                <button type="button" class="btn btn-outline-secondary" data-bind="visible: proofMethod() === 'magicToken', click: requestPinProof, enable: !busy(), t: 'subaccount.sendProof'"></button>
+                <label class="form-label d-block" data-bind="if: proofMethods().length">
+                    <span data-bind="t: proofMethod() === 'magicToken' ? 'subaccount.pasteProof' : proofMethod() === 'password' ? 'subaccount.yourPassword' : 'subaccount.currentPin'"></span>
+                    <input class="form-control" type="password" autocomplete="off" required data-bind="textInput: credential">
+                </label>
+            </fieldset>
+            <button type="submit" class="btn btn-primary" data-bind="enable: !busy() && (!(selected() && selected().isPrimary) || needsProof()), t: selected() ? 'common.save' : 'subaccount.create'"></button>
         </form>
-        <div class="mt-3" data-bind="if: linkEnabled() && selected()">
+        <div class="mt-3" data-bind="if: linkEnabled() && selected() && !selected().isPrimary">
             <button type="button" class="btn btn-outline-danger" data-bind="click: release, enable: !busy() && selected().canRelease, t: 'subaccount.release'"></button>
             <p class="form-text" data-bind="visible: !selected().canRelease, t: 'subaccount.recovery'"></p>
         </div>

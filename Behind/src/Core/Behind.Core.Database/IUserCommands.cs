@@ -17,6 +17,8 @@ public interface IUserCommands
 
     Task Delete(Guid userId, CancellationToken cancellationToken = default);
 
+    Task UnsetSwitchPin(Guid userId, CancellationToken cancellationToken = default);
+
     Task Restore(Guid userId, CancellationToken cancellationToken = default);
 
     Task<HardDeleteOutcome> HardDelete(Guid userId, CancellationToken cancellationToken = default);

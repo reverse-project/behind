@@ -84,6 +84,44 @@ public class UserManagementEndpointsTests
         _users.TryFindUser(TargetId, DeletionState.Active, Now, Arg.Any<CancellationToken>())
             .Returns(target is null ? None : Some(target));
 
+    [Fact]
+    public async Task UnsetPinRejectsSelfAndMissingTarget()
+    {
+        _access.GetUserAccess(ActorId, Arg.Any<CancellationToken>())
+            .Returns(new UserAccess([], [(Grant)"User.Manage"], []));
+        _users.TryFindUser(ActorId, DeletionState.Active, Now, Arg.Any<CancellationToken>())
+            .Returns(Some(Managed(ActorId)));
+        TargetIs(null);
+
+        var self = await UserManagementEndpoints.UnsetPin(ActorId, SignedIn(), _gate, _userCommands);
+        var missing = await UserManagementEndpoints.UnsetPin(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(403, ((IStatusCodeHttpResult)self).StatusCode);
+        Assert.Equal(404, ((IStatusCodeHttpResult)missing).StatusCode);
+        await _userCommands.DidNotReceiveWithAnyArgs().UnsetSwitchPin(default, default);
+    }
+
+    [Theory]
+    [InlineData(true, false, true)]
+    [InlineData(false, false, false)]
+    [InlineData(true, true, false)]
+    public async Task UnsetPinRequiresGrantAndProtectsEffectiveDevelopers(bool hasGrant, bool protectedTarget, bool allowed)
+    {
+        TargetIs(Managed(TargetId));
+        _access.GetUserAccess(ActorId, Arg.Any<CancellationToken>()).Returns(
+            hasGrant ? new UserAccess([], [(Grant)"User.Manage"], []) : UserAccess.Empty);
+        if (protectedTarget)
+        {
+            _access.GetUserAccess(TargetId, Arg.Any<CancellationToken>())
+                .Returns(new UserAccess([], [BuiltInAccess.RawDatabaseManage.Grant], []));
+        }
+
+        var result = await UserManagementEndpoints.UnsetPin(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(allowed ? 204 : 403, ((IStatusCodeHttpResult)result).StatusCode);
+        await _userCommands.Received(allowed ? 1 : 0).UnsetSwitchPin(TargetId, Arg.Any<CancellationToken>());
+    }
+
     [Theory]
     [InlineData(true, false)]
     [InlineData(false, false)]

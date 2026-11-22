@@ -129,6 +129,20 @@ public sealed class UserManagementEndpoints
 
     [Authorize]
     [IgnoreETag]
+    public static Task<IResult> UnsetPin(
+        Guid id,
+        HttpContext httpContext,
+        UserManagementGate gate,
+        IUserCommands userCommands) =>
+        gate.Run(
+            httpContext,
+            id,
+            (actor, target) => actor.CanUnsetPin(target),
+            (_, target, _) => userCommands.UnsetSwitchPin(target.Id, httpContext.RequestAborted),
+            protectEffectiveDevelopers: true);
+
+    [Authorize]
+    [IgnoreETag]
     public static Task<IResult> SignOut(
         Guid id,
         HttpContext httpContext,

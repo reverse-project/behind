@@ -54,6 +54,10 @@ public abstract class EmailSender : IEmailSender, IEmailSender<ApplicationUser>,
         return SendEmailAsync(email, "Your sign in link", template);
     }
 
+    public Task SendPinProofAsync(ApplicationUser user, string email, string link) =>
+        SendEmailAsync(email, "Verify your account-switch PIN request",
+            $"<p>To authorize the PIN request you started, <a href=\"{WebUtility.HtmlEncode(link)}\">open your verification link</a> and copy the one-time proof into the original PIN form. If you did not request this, ignore this email.</p>");
+
     public virtual Task SendLostPasswordLinkAsync(ApplicationUser user, string email, string magicLink) =>
         SendPasswordResetLinkAsync(user, email, magicLink);
 
@@ -165,7 +169,7 @@ public sealed class SmtpEmailSender : EmailSender
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var client = new SmtpClient(_emailOptions.Value.SmtpServer, _emailOptions.Value.Port);
-        
+
         var authentication = _emailOptions.Value.Authentication.Match(
             none: () => new NoAuthentication(),
             auth => auth

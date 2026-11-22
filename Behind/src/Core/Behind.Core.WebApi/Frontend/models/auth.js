@@ -750,6 +750,10 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
             });
         },
 
+        unsetUserPin: function (userId) {
+            return userAction(userId + "/pin/unset", undefined, "users.pinUnset");
+        },
+
         signOutUser: function (userId) {
             return userAction(userId + "/sign/out", undefined, "auth.user.signedOut");
         },

@@ -34,6 +34,7 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="enable: !$root.busy(), click: access.toggleRoles, t: access.isRolesOpen() ? 'users.hideRoles' : 'users.editRoles'">Roles</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="enable: !$root.busy(), click: access.toggle, t: access.isOpen() ? 'users.hideAccess' : 'users.access'">Access</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="visible: canModerate, enable: !$root.busy(), click: signOut, t: 'users.signOutEverywhere'">Sign out everywhere</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="visible: canUnsetPin, enable: !$root.busy(), click: unsetPin, t: 'users.unsetPin'">Unset PIN</button>
                     <button type="button" class="btn btn-sm btn-outline-warning" data-bind="visible: canImpersonate, enable: !$root.busy(), click: impersonate, t: 'users.impersonate'">Impersonate</button>
                     <button type="button" class="btn btn-sm btn-outline-success" data-bind="visible: canConfirmEmail, enable: !$root.busy(), click: confirmEmail, t: 'users.confirmEmail'">Confirm email</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-bind="visible: canModerate && !isBanned && !banning(), enable: !$root.busy(), click: startBan, t: 'users.ban'">Ban</button>

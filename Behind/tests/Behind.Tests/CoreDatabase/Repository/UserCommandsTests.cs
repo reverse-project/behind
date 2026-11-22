@@ -1,8 +1,12 @@
-using Behind.Core.Database;
 using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Commands;
+using Behind.Core.Database.Postgres;
+using Behind.Core.Database.Queries;
+using Behind.Core.Database;
 using Behind.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Testcontainers.PostgreSql;
 
 namespace Behind.Tests.CoreDatabase.Repository;
 
@@ -25,6 +29,48 @@ public sealed class UserCommandsTests : IDisposable
             .Where(user => EF.Property<Guid>(user, "Id") == userId)
             .Select(user => user.DisplayName)
             .SingleAsync();
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task PostgresUnsetSwitchPinOnlyRemovesTheSelectedCredentialAndUpdatesUserListing()
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
+        var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres:Image is required.");
+        await using var container = new PostgreSqlBuilder(image).Build();
+        await container.StartAsync();
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString()).Options;
+        await using var db = new CoreContextPostgres(options);
+        await db.Database.MigrateAsync();
+        await VerifyUnsetSwitchPin(db);
+    }
+
+    [Fact]
+    public async Task UnsetSwitchPinOnlyRemovesTheSelectedCredentialAndUpdatesUserListing()
+    {
+        await using var db = _factory.CreateContext();
+        await VerifyUnsetSwitchPin(db);
+    }
+
+    private static async Task VerifyUnsetSwitchPin(AbstractCoreContext db)
+    {
+        var target = new HumanUser("Managed target", [new Email("target@example.test")], None);
+        var other = new HumanUser("Managed peer", [new Email("peer@example.test")], None);
+        db.UserSwitchPins.AddRange(new UserSwitchPin(target, new PinHash("target-hash")), new UserSwitchPin(other, new PinHash("peer-hash")));
+        await db.SaveChangesAsync();
+
+        var targetId = db.GetKey(target);
+        var queries = new UserManagementQueries(db);
+        async Task<bool> HasPin(Guid id) =>
+            (await queries.TryFindUser(id, DeletionState.Active, DateTimeOffset.UtcNow)).Match(() => false, user => user.HasSwitchPin);
+
+        Assert.True(await HasPin(targetId));
+        var commands = new UserCommands(db);
+        await commands.UnsetSwitchPin(targetId);
+        await commands.UnsetSwitchPin(targetId);
+        Assert.False(await HasPin(targetId));
+        Assert.True(await HasPin(db.GetKey(other)));
     }
 
     [Fact]

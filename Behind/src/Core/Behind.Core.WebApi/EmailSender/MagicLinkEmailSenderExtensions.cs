@@ -11,6 +11,7 @@ public static class MagicLinkEmailSenderExtensions
             mail.Function switch
             {
                 MagicLinkFunction.LostPassword => sender.SendLostPasswordLinkAsync(mail.User, mail.Email, mail.Link),
+                MagicLinkFunction.SwitchPin => sender.SendPinProofAsync(mail.User, mail.Email, mail.Link),
                 _ => sender.SendMagicLinkAsync(mail.User, mail.Email, mail.Link)
             };
     }

@@ -39,6 +39,7 @@ public static class UserManagementResponseExtensions
                     actor.CanDelete(user),
                     actor.CanManageDeleted(user),
                     actor.CanImpersonate(user),
-                    actor.CanConfirmEmail(user)));
+                    actor.CanConfirmEmail(user),
+                    user.HasSwitchPin && actor.CanUnsetPin(user)));
     }
 }

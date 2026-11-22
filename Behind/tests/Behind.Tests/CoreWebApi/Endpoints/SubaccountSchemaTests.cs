@@ -134,6 +134,31 @@ public sealed class SubaccountSchemaTests
         Assert.Equal(expected, ReadDefinition("selfPinMutation", "2.3.0").Evaluate(JsonNode.Parse(request)).IsValid);
     }
 
+    [Theory]
+    [InlineData("{}", false)]
+    [InlineData("""{"pin":null}""", false)]
+    [InlineData("""{"pin":"0001"}""", true)]
+    public void SwitchRequiresDestinationPin(string request, bool expected)
+    {
+        Assert.Equal(expected, ReadDefinition("switch", "3.0.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
+    [Fact]
+    public void FamilyRequiresIndependentSwitchTargetsAndInvitationResponseCapability()
+    {
+        var family = JsonNode.Parse("""
+            {"isPrimary":false,"primaryUserId":"5418cd9a-dc39-4af9-9845-1891a543eda9","primaryHasPin":false,
+            "linkUnlinkEnabled":false,"linkUnlinkRequiresDirectSignIn":false,"canBrowseAndRelease":false,
+            "currentHasPin":true,"accounts":[],"isLinked":true,"canRespondToInvitations":true}
+            """)!;
+        var schema = ReadDefinition("family", "3.0.0");
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["switchAccounts"] = new JsonArray();
+        Assert.True(schema.Evaluate(family).IsValid);
+        family["canRespondToInvitations"] = null;
+        Assert.False(schema.Evaluate(family).IsValid);
+    }
+
     private static JsonSchema ReadDefinition(string name, string version = "1.2.1")
     {
         var assembly = typeof(FunctionalExtensions).Assembly;

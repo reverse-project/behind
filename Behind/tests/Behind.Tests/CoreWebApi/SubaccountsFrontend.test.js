@@ -50,7 +50,14 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     const http = {
         get: async url => ({
             ok: true,
-            data: url.endsWith("/requests") ? pending : { accounts, isPrimary: primary, primaryUserId: "owner", primaryHasPin, linkUnlinkEnabled, canBrowseAndRelease: profile.canBrowseAndRelease, linkUnlinkRequiresDirectSignIn: profile.linkUnlinkRequiresDirectSignIn, currentHasPin: profile.currentHasPin }
+            data: url.endsWith("/requests") ? pending : {
+                accounts,
+                isPrimary: primary,
+                primaryUserId: "owner",
+                primaryHasPin,
+                linkUnlinkEnabled,
+                ...profile
+            }
         }),
         delete: async url => {
             requests.push({ url, method: "DELETE" });
@@ -135,6 +142,50 @@ test("switch to a sibling only after server acceptance and discard the PIN when 
     assert.equal(session.accessToken(), "new-token");
     assert.equal(location.hash, "#/profile");
     assert.equal(reloads.length, 0);
+    panel.dispose();
+});
+
+test("filter the server-authorized profiles by Adult and Child and clear a PIN when changing type", async () => {
+    const managed = { userId: "managed-without-pin", hasPin: false };
+    const child = { userId: "child", isChild: true, hasPin: true };
+    const adult = { userId: "adult", isChild: false, hasPin: true };
+    const { panel, requests } = await setup([managed], false, false, false, [], {
+        switchAccounts: [child, adult],
+        isLinked: true
+    });
+
+    assert.equal(panel.linked(), true);
+    assert.deepEqual(Array.from(panel.profileTypes()), ["adult", "child"]);
+    assert.equal(panel.profileType(), "adult");
+    assert.deepEqual(Array.from(panel.switchProfiles()), [adult]);
+    panel.selected(adult);
+    panel.pin("9876");
+    panel.profileType("child");
+    assert.equal(panel.selected(), undefined);
+    assert.equal(panel.pin(), "");
+    assert.deepEqual(Array.from(panel.switchProfiles()), [child]);
+    panel.selected(child);
+    panel.pin("1234");
+    await panel.switchUser();
+    assert.equal(requests[0].url, "/profile/subaccounts/child/switch");
+    assert.equal(requests[0].body.pin, "1234");
+    panel.dispose();
+});
+
+test("a linked profile can accept an invitation without management access", async () => {
+    const invitation = { userId: "adult", displayName: "Alex", requestId: "second-adult" };
+    const { panel, requests } = await setup([], false, false, false, [invitation], {
+        manager: true,
+        isLinked: true,
+        canRespondToInvitations: true
+    });
+    assert.equal(panel.primary(), false);
+    assert.equal(panel.linkEnabled(), false);
+    assert.equal(panel.requests()[0], invitation);
+    await panel.requestLink(invitation);
+    assert.equal(requests.length, 0);
+    await panel.confirmLink(invitation);
+    assert.equal(requests[0].url, "/profile/subaccounts/requests/second-adult/confirm");
     panel.dispose();
 });
 

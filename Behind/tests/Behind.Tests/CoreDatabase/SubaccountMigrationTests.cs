@@ -15,21 +15,23 @@ namespace Behind.Tests.CoreDatabase;
 
 public sealed class SubaccountMigrationTests
 {
-    [Fact]
-    public async Task SqliteUpgradePreservesUsersAndEnforcesFamilyDepth()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SqliteSupportsSharedChildrenAndEnforcesFamilyDepth(bool upgrade)
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
         await using var db = new CoreContextSqlite(
             new DbContextOptionsBuilder<CoreContextSqlite>().UseSqlite(connection).Options);
-        await VerifyFamilySchema(db, true);
+        await VerifyFamilySchema(db, upgrade);
     }
 
     [Theory]
     [Trait("Category", "Integration")]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task PostgresEnforcesFamilyDepth(bool upgrade)
+    public async Task PostgresSupportsSharedChildrenAndEnforcesFamilyDepth(bool upgrade)
     {
         using var configuration = new ConfigurationManager();
         configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
@@ -57,6 +59,7 @@ public sealed class SubaccountMigrationTests
                 $"""INSERT INTO "Users" ("Id", "DisplayName") VALUES ({legacyChild}, {"Legacy"}), ({legacyNoPin}, {"No PIN"})""");
             await db.Database.ExecuteSqlAsync(
                 $"""INSERT INTO "Subaccounts" ("UserId", "PrimaryUserId", "IsChild", "PinHash") VALUES ({legacyChild}, {primary}, {true}, {"legacy-hash"}), ({legacyNoPin}, {primary}, {true}, NULL)""");
+            await db.GetService<IMigrator>().MigrateAsync("20261122140000_AddPendingFamilyLinks");
         }
 
         await db.Database.MigrateAsync();
@@ -66,7 +69,18 @@ public sealed class SubaccountMigrationTests
             var credential = await db.UserSwitchPins.Include(pin => pin.User).SingleAsync();
             Assert.Equal(legacyChild, db.GetKey(credential.User));
             Assert.Equal(new PinHash("legacy-hash"), credential.PinHash);
-            Assert.Equal(2, await db.Subaccounts.CountAsync());
+            var preserved = await db.Subaccounts
+                .Include(link => link.PrimaryUser)
+                .Include(link => link.User)
+                .ToListAsync();
+            Assert.Equal(2, preserved.Count);
+            Assert.All(preserved, link =>
+            {
+                Assert.True(link.IsChild);
+                Assert.Equal(primary, db.GetKey(link.PrimaryUser));
+            });
+            Assert.Contains(preserved, link => db.GetKey(link.User) == legacyChild);
+            Assert.Contains(preserved, link => db.GetKey(link.User) == legacyNoPin);
             await db.Database.ExecuteSqlAsync($"""DELETE FROM "Users" WHERE "Id" IN ({legacyChild}, {legacyNoPin})""");
             Assert.False(await db.UserSwitchPins.AnyAsync());
         }
@@ -132,12 +146,19 @@ public sealed class SubaccountMigrationTests
         Assert.Equal(childId, await db.GetUserKeyAsync(loaded));
         var labels = await db.ResolveAuditLabelsAsync([childId], []);
         Assert.Contains("Child", labels.Label(childId.ToString()));
+        db.ChangeTracker.Clear();
+        var secondParent = await db.Users.FindAsync(otherId) ?? throw new InvalidOperationException();
+        var sharedChild = await db.Users.FindAsync(childId) ?? throw new InvalidOperationException();
+        db.Subaccounts.Add(new Subaccount(secondParent, sharedChild, true));
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
         foreach (var (parentId, linkedId) in new[]
                  {
                      (childId, otherId),
                      (otherId, primary),
                      (otherId, otherId),
-                     (otherId, childId)
+                     (primary, childId)
                  })
         {
             var parent = await db.Users.FindAsync(parentId) ?? throw new InvalidOperationException();
@@ -148,10 +169,17 @@ public sealed class SubaccountMigrationTests
         }
 
         await db.Database.MigrateAsync();
-        var persisted = await db.Subaccounts.Include(account => account.PrimaryUser).SingleAsync();
-        Assert.Equal(primary, db.GetKey(persisted.PrimaryUser));
+        var owners = await db.Subaccounts
+            .Where(link => EF.Property<Guid>(link, "UserId") == childId && link.IsChild)
+            .Select(link => EF.Property<Guid>(link, "PrimaryUserId"))
+            .ToListAsync();
+        Assert.Equal(2, owners.Count);
+        Assert.Contains(primary, owners);
+        Assert.Contains(otherId, owners);
         await Assert.ThrowsAnyAsync<DbException>(() => db.Database.ExecuteSqlAsync(
             $"""DELETE FROM "Users" WHERE "Id" = {primary}"""));
+        await Assert.ThrowsAnyAsync<DbException>(() => db.Database.ExecuteSqlAsync(
+            $"""DELETE FROM "Users" WHERE "Id" = {otherId}"""));
         await db.Database.ExecuteSqlAsync($"""DELETE FROM "Users" WHERE "Id" = {childId}""");
         Assert.False(await db.Subaccounts.AnyAsync());
     }

@@ -60,18 +60,23 @@ public sealed class SessionQueries(AbstractCoreContext context, IOptions<Securit
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
 
+        var isRestrictedAdult = false;
         if (row?.FamilyPrimaryUserId is { } primaryId)
         {
             if (security?.Value.Accounts.Subaccounts == false)
             {
                 return None;
             }
-            var activeUsers = context.Users.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active);
-            var linked = await (from link in context.Subaccounts
-                                join parent in activeUsers on EF.Property<Guid>(link, "PrimaryUserId") equals EF.Property<Guid>(parent, "Id")
-                                join child in activeUsers on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(child, "Id")
-                                where EF.Property<Guid>(link, "PrimaryUserId") == primaryId && (row.UserId == primaryId || EF.Property<Guid>(link, "UserId") == row.UserId)
-                                select EF.Property<Guid>(link, "UserId")).AnyAsync(cancellationToken);
+            var fromLinkedProfile = await SubaccountSwitchScope.IsLinked(context, primaryId, cancellationToken);
+            isRestrictedAdult = fromLinkedProfile && row.UserId != primaryId;
+            var scope = new SubaccountSwitchScope(primaryId, fromLinkedProfile);
+            var linked = await scope.Profiles(context).AnyAsync(user => EF.Property<Guid>(user, "Id") == row.UserId, cancellationToken)
+                && (row.UserId != primaryId || fromLinkedProfile
+                    || await context.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == primaryId
+                        && context.Users.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active)
+                            .Any(user => EF.Property<Guid>(user, "Id") == EF.Property<Guid>(link, "UserId")), cancellationToken))
+                && (row.UserId == primaryId
+                    || await scope.Profiles(context).AnyAsync(user => EF.Property<Guid>(user, "Id") == primaryId, cancellationToken));
             if (!linked || await new WallOfShameQueries(context).FindActiveBan(primaryId, DateTimeOffset.UtcNow, cancellationToken) != None)
             {
                 return None;
@@ -82,7 +87,8 @@ public sealed class SessionQueries(AbstractCoreContext context, IOptions<Securit
             ? None
             : Some(new ISessionQueries.SessionActor(
                 row.UserId,
-                row.ImpersonatorId.HasValue ? Some(row.ImpersonatorId.Value) : None));
+                row.ImpersonatorId.HasValue ? Some(row.ImpersonatorId.Value) : None,
+                isRestrictedAdult));
     }
 
     public async Task<ISessionQueries.UserSessions> GetUserSessions(

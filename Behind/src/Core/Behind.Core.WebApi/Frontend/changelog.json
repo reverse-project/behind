@@ -3,6 +3,7 @@
     "version": "1.0.3",
     "date": "2026-11-21",
     "changes": [
+      { "type": "added", "text": "Children can have more than one authorized adult. The profile switcher offers Adult and Child choices and uses the selected profile’s PIN, including after signing directly into a child profile." },
       { "type": "fixed", "text": "After switching back to the primary account, browse eligible accounts and release linked subaccounts from Profile. Sending and responding to invitations still requires a direct sign-in." },
       { "type": "added", "text": "Successful email sign-ins send a security alert to the verified address used to sign in. The alert includes the remote IP and user agent." },
       { "type": "added", "text": "Linked subaccounts can set, change or remove their own switching PIN from their profile. Changing or removing a saved PIN requires the current PIN." },

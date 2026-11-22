@@ -47,6 +47,7 @@ public static class AccessRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/access", AccessEndpoints.Save)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(write)
                 .AddEndpointFilter<DataAnnotationValidationFilter<AccessEndpoints.SaveAccessSettingsRequest>>()
                 .Produces<NewsSavedResponse>()
@@ -57,6 +58,7 @@ public static class AccessRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/access/delete", AccessEndpoints.Delete)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(delete)
                 .Produces(204)
                 .Produces(401)
@@ -65,6 +67,7 @@ public static class AccessRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/access/restore", AccessEndpoints.Restore)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(ManagedListExtensions.DeletedRecordsGrant)
                 .Produces(204)
                 .Produces(401)
@@ -74,6 +77,7 @@ public static class AccessRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/access/hard/delete", AccessEndpoints.HardDelete)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(ManagedListExtensions.DeletedRecordsGrant)
                 .Produces(204)
                 .Produces(401)
@@ -90,6 +94,7 @@ public static class AccessRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/access/pending-users/{id:guid}/approve", AccessEndpoints.Approve)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(write)
                 .Produces(204)
                 .Produces(401)
@@ -98,6 +103,7 @@ public static class AccessRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/access/pending-users/{id:guid}/reject", AccessEndpoints.Reject)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(write)
                 .Produces(204)
                 .Produces(401)

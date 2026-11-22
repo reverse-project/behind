@@ -52,6 +52,7 @@ public sealed class EmailSignInNotificationTests
     private static async Task VerifyNotifications(Func<AbstractCoreContext> contextFactory)
     {
         var now = TimeProvider.System.GetUtcNow();
+        const string childPin = "0042";
         var password = PasswordHash.Create("test-password");
         var primary = new HumanUser
         {
@@ -71,6 +72,7 @@ public sealed class EmailSignInNotificationTests
         await using var db = contextFactory();
         db.Users.AddRange(primary, child, outsider);
         db.Subaccounts.Add(new Subaccount(primary, child, true));
+        db.UserSwitchPins.Add(new UserSwitchPin(child, new PinHash(PasswordHash.Create(childPin))));
         await db.SaveChangesAsync();
         var primaryId = db.GetKey(primary);
         var childId = db.GetKey(child);
@@ -205,7 +207,7 @@ public sealed class EmailSignInNotificationTests
             return response.Value!;
         }
 
-        Task<IResult> Switch() => SubaccountEndpoints.Switch(childId, new(null), switchContext,
+        Task<IResult> Switch() => SubaccountEndpoints.Switch(childId, new(childPin), switchContext,
             queries, db, users, security, commands, bans, TimeProvider.System, NullLogger<SubaccountEndpoints>.Instance);
     }
 }

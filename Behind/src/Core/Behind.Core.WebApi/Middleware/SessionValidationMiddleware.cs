@@ -11,6 +11,8 @@ using System.Globalization;
 
 namespace Behind.Core.WebApi.Middleware;
 
+public sealed record AccountManagementMetadata;
+
 public sealed class SessionValidationMiddleware(
     RequestDelegate next,
     TimeProvider timeProvider,
@@ -58,6 +60,13 @@ public sealed class SessionValidationMiddleware(
         LocaleCatalog locales,
         IConfiguration configuration)
     {
+        if (actor is { IsRestrictedAdult: true }
+            && context.GetEndpoint()?.Metadata.GetMetadata<AccountManagementMetadata>() is not null)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+
         var available = await locales.ListAsync(context.RequestAborted);
         var (_, locale) = ContentLocaleMiddleware.SelectLocale(context, available);
 

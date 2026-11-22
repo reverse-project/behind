@@ -16,6 +16,21 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.skipPrimaryPin = ko.observable(false);
         self.linked = ko.observable(false);
         self.selected = ko.observable();
+        self.profileType = ko.observable();
+        self.profileTypes = ko.pureComputed(function () {
+            return ["adult", "child"].filter(function (type) {
+                return self.accounts().some(function (account) { return !!account.isChild === (type === "child"); });
+            });
+        });
+        self.switchProfiles = ko.pureComputed(function () {
+            return self.accounts().filter(function (account) {
+                return !!account.isChild === (self.profileType() === "child");
+            });
+        });
+        self.profileTypeLabel = function (type) {
+            return i18n.t("subaccount.profileType." + type);
+        };
+        var profileTypeChange = self.profileType.subscribe(function () { self.selected(undefined); });
         self.busy = ko.observable(false);
         self.message = ko.observable("");
         self.pin = ko.observable("");
@@ -26,6 +41,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.clearPin = ko.observable(false);
         self.canBrowseAndRelease = ko.observable(false);
         self.linkEnabled = ko.observable(false);
+        var canRespondToInvitations = ko.observable(false);
         self.linkRequiresDirectSignIn = ko.observable(false);
         self.query = ko.observable("");
         self.candidates = ko.observableArray([]);
@@ -133,6 +149,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             clearProof();
             self.canBrowseAndRelease(false);
             self.linkEnabled(false);
+            canRespondToInvitations(false);
             self.linkRequiresDirectSignIn(false);
             self.query("");
             self.candidates([]);
@@ -167,15 +184,17 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 if (response.ok) {
                     self.primaryUserId(response.data.primaryUserId);
                     self.primaryHasPin(!!response.data.primaryHasPin);
-                    self.accounts(response.data.accounts);
+                    self.accounts(self.manager ? response.data.accounts : response.data.switchAccounts ?? response.data.accounts);
+                    self.profileType(self.profileTypes()[0]);
                     self.primary(response.data.isPrimary);
-                    self.linked(!response.data.isPrimary && !!response.data.primaryUserId);
+                    self.linked(response.data.isLinked ?? (!response.data.isPrimary && !!response.data.primaryUserId));
                     currentHasPin(typeof response.data.currentHasPin === "boolean" ? response.data.currentHasPin : null);
                     clearProof();
                     self.linkEnabled(!!response.data.linkUnlinkEnabled);
+                    canRespondToInvitations(response.data.canRespondToInvitations ?? (self.linkEnabled() && self.primary()));
                     self.canBrowseAndRelease(response.data.canBrowseAndRelease ?? self.linkEnabled());
                     self.linkRequiresDirectSignIn(response.data.linkUnlinkRequiresDirectSignIn === true);
-                    if (self.manager && self.linkEnabled() && self.primary()) {
+                    if (self.manager && canRespondToInvitations()) {
                         return http.get(path + "/requests").then(function (pending) {
                             if (ticket === revision) {
                                 if (pending.ok) {
@@ -202,6 +221,9 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             changes.dispose();
             identityChanges.dispose();
             select.dispose();
+            profileTypeChange.dispose();
+            self.profileTypes.dispose();
+            self.switchProfiles.dispose();
             methodChange.dispose();
             operationChange.dispose();
             self.needsProof.dispose();
@@ -284,21 +306,24 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         };
 
         var changeLink = function (operation, success) {
-            if (!self.linkEnabled()) {
-                return;
-            }
             return perform(operation, function () {
                 return refresh(success);
             }, "subaccount.linkFailed");
         };
 
         self.requestLink = function (account) {
+            if (!self.linkEnabled()) {
+                return;
+            }
             return changeLink(function () {
                 return http.post(endpoint(account.userId) + "/request");
             }, "subaccount.requestSent");
         };
 
         var answer = function (request, accept) {
+            if (!canRespondToInvitations()) {
+                return;
+            }
             return changeLink(function () {
                 return http.post(path + "/requests/" + encodeURIComponent(request.requestId) + (accept ? "/confirm" : "/decline"));
             }, accept ? "subaccount.accepted" : "subaccount.declined");

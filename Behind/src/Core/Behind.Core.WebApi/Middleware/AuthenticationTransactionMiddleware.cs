@@ -61,7 +61,7 @@ public sealed class AuthenticationTransactionMiddleware(RequestDelegate next)
     }
 
     private static bool IsFamilyConflict(Exception exception) =>
-        UniqueConstraintViolation.Matches(exception, "PK_Subaccounts", "Subaccounts.UserId")
+        UniqueConstraintViolation.Matches(exception, "PK_Subaccounts", "Subaccounts.PrimaryUserId, Subaccounts.UserId")
         || exception is SqliteException { SqliteErrorCode: 5 or 6 }
         || exception is SqliteException { SqliteExtendedErrorCode: 1811 } sqlite
             && sqlite.Message.Contains("Subaccounts allow only one level", StringComparison.Ordinal)

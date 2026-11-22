@@ -528,6 +528,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/elevate/{role}", UserManagementEndpoints.Elevate)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .Produces(204)
                 .Produces(401)
@@ -536,6 +537,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/deelevate/{role}", UserManagementEndpoints.Deelevate)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .Produces(204)
                 .Produces(401)
@@ -544,6 +546,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/pin/unset", UserManagementEndpoints.UnsetPin)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .Produces(204)
                 .Produces(401)
@@ -551,6 +554,7 @@ public static class WebApiExtensions
                 .Produces(404);
 
             application.MapPost("/users/{id:guid}/sign/out", UserManagementEndpoints.SignOut)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .Produces(204)
                 .Produces(401)
@@ -559,6 +563,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/ban", UserManagementEndpoints.Ban)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .AddEndpointFilter<DataAnnotationValidationFilter<UserManagementEndpoints.BanRequest>>()
                 .Produces(204)
@@ -569,6 +574,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/unban", UserManagementEndpoints.Unban)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .Produces(204)
                 .Produces(401)
@@ -577,6 +583,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/confirm/email", UserManagementEndpoints.ConfirmEmail)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .Produces(204)
                 .Produces(401)
@@ -585,6 +592,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/delete", UserManagementEndpoints.Delete)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(GrantName.Of(GrantArea.User, GrantAction.Delete))
                 .Produces(204)
                 .Produces(401)
@@ -593,6 +601,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/restore", UserManagementEndpoints.Restore)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .Produces(204)
                 .Produces(401)
@@ -601,6 +610,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/hard/delete", UserManagementEndpoints.HardDelete)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .Produces(204)
                 .Produces(401)
@@ -610,6 +620,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/users/{id:guid}/impersonate", ImpersonationEndpoints.Start)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(GrantName.Of(GrantArea.Impersonation, GrantAction.Manage))
                 .Produces<SignInEndpoints.SignInResponse>()
                 .Produces(401)
@@ -632,6 +643,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPut("/users/{id:guid}/access", UserAccessEndpoints.Set)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(userManagement)
                 .AddEndpointFilter<DataAnnotationValidationFilter<UserAccessEndpoints.UserAccessRequest>>()
                 .Produces(204)
@@ -652,6 +664,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/roles", RoleManagementEndpoints.Create)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(roleManagement)
                 .AddEndpointFilter<DataAnnotationValidationFilter<RoleManagementEndpoints.CreateRoleRequest>>()
                 .Produces(204)
@@ -662,6 +675,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPut("/roles/{id:guid}/access", RoleManagementEndpoints.SetAccess)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(roleManagement)
                 .AddEndpointFilter<DataAnnotationValidationFilter<RoleManagementEndpoints.AccessRequest>>()
                 .Produces(204)
@@ -672,6 +686,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/roles/{id:guid}/reset-grants", RoleManagementEndpoints.ResetGrants)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(roleManagement)
                 .Produces(204)
                 .Produces(400)
@@ -681,6 +696,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPut("/roles/{id:guid}/developer", RoleManagementEndpoints.SetDeveloper)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(roleManagement)
                 .Produces(204)
                 .Produces(401)
@@ -690,6 +706,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/roles/{id:guid}/restore", RoleManagementEndpoints.Restore)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(RoleManagementEndpoints.DeletedRecordsGrant)
                 .Produces(204)
                 .Produces(401)
@@ -698,6 +715,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/roles/{id:guid}/hard/delete", RoleManagementEndpoints.HardDelete)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(RoleManagementEndpoints.DeletedRecordsGrant)
                 .Produces(204)
                 .Produces(401)
@@ -706,6 +724,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/roles/{id:guid}/delete", RoleManagementEndpoints.Delete)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(GrantName.Of(GrantArea.Role, GrantAction.Delete))
                 .Produces(204)
                 .Produces(401)
@@ -1065,16 +1084,19 @@ public static class WebApiExtensions
                 .WithSummary("List your email addresses and their confirmation status.")
                 .Produces<ProfileEmailEndpoints.AddressesResponse>().Produces(401).Produces(403);
             application.MapPost("/profile/emails", ProfileEmailEndpoints.Save)
+                .WithMetadata(new AccountManagementMetadata())
                 .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEmailEndpoints.AddressRequest>>()
                 .RequireRateLimiting(ConfirmationEmailExtensions.ResendRateLimitPolicy)
                 .WithSummary("Add an email address and request confirmation when required.")
                 .Produces<ProfileEmailEndpoints.SavedAddress>(201).Produces(400).Produces(401).Produces(403).Produces(409).Produces(429);
             application.MapPut("/profile/emails/{id:guid}", ProfileEmailEndpoints.Save)
+                .WithMetadata(new AccountManagementMetadata())
                 .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEmailEndpoints.AddressRequest>>()
                 .RequireRateLimiting(ConfirmationEmailExtensions.ResendRateLimitPolicy)
                 .WithSummary("Change an email address, resetting its confirmation when required.")
                 .Produces<ProfileEmailEndpoints.SavedAddress>().Produces(400).Produces(401).Produces(403).Produces(404).Produces(409).Produces(429);
             application.MapDelete("/profile/emails/{id:guid}", ProfileEmailEndpoints.Remove)
+                .WithMetadata(new AccountManagementMetadata())
                 .WithSummary("Remove an email address, retaining at least one address.")
                 .Produces(204).Produces(401).Produces(403).Produces(404).Produces(409);
             application.MapPost("/profile/emails/{id:guid}/confirmation", ProfileEmailEndpoints.Resend)
@@ -1143,6 +1165,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPut("/profile/password", ProfileEndpoints.ChangePassword)
+                .WithMetadata(new AccountManagementMetadata())
                 .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEndpoints.NewPasswordRequest>>()
                 .RequireAuthenticationTransaction()
                 .Produces(204)
@@ -1314,6 +1337,7 @@ public static class WebApiExtensions
                 .Produces(500);
 
             application.MapPost("/sign/out/all", SignOutEndpoints.SignOutAll)
+                .WithMetadata(new AccountManagementMetadata())
                 .Produces(204)
                 .Produces(401)
                 .Produces(500);

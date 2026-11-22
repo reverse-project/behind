@@ -735,9 +735,9 @@ Minden kezelőoldal (felhasználók, szerepkörök, oldalak) ugyanazt a felépí
 
 ### Alfiókok
 
-A `Subaccounts` tábla két meglévő felhasználót kapcsol össze. Elsődleges kulcsa az alfiók `UserId` azonosítója. A `PrimaryUserId` a tulajdonost jelöli. Mindkét adatbázis kizárja az önhivatkozást és a többszintű fiókhierarchiát. Az alfiók végleges törlésével a kapcsolat is törlődik. Kapcsolt alfiókok mellett az elsődleges fiók végleges törlése tiltott.
+A `Subaccounts` tábla minden sora két meglévő felhasználót kapcsol össze. A `(PrimaryUserId, UserId)` összetett elsődleges kulcs lehetővé teszi, hogy több felnőtt kapcsolódjon ugyanahhoz a profilhoz, mindegyik saját kapcsolattal. Mindkét adatbázis kizárja az ismétlődő párokat, az önhivatkozást és a többszintű fiókhierarchiát. Az alfiók végleges törlésével az összes kapcsolata is törlődik. Kapcsolt alfiókok mellett az elsődleges fiók végleges törlése tiltott. A többes kapcsolatokat bevezető migráció megőrzi a meglévő kapcsolatokat és PIN-kódokat. Az egyetlen tulajdonost kezelő sémára visszaállítás előtt rendezni kell a több kapcsolattal rendelkező profilokat.
 
-A kapcsolat tárolja a gyermekfiók-jelzőt. A `UserSwitchPins` tábla a felhasználó azonosítójához rendeli az opcionális PIN-kivonatot, elsődleges fiók és alfiók esetén is. A migráció változtatás nélkül másolja át a kivonatokat. Visszaállításkor az alfiókok kivonatai visszakerülnek a kapcsolatra, az elsődleges fiókok PIN-kódjai törlődnek. A születési dátum a felhasználó profiljához tartozik. A nullázható `Sessions.FamilyPrimaryUserId` a váltást engedélyező elsődleges fiókot azonosítja. A meglévő fiókokhoz és munkamenetekhez nincs szükség adatpótlásra.
+A kapcsolat tárolja a gyermekfiók-jelzőt. A `UserSwitchPins` tábla a felhasználó azonosítójához rendeli az opcionális PIN-kivonatot, elsődleges fiók és alfiók esetén is. A migráció változtatás nélkül másolja át a kivonatokat. Visszaállításkor az alfiókok kivonatai visszakerülnek a kapcsolatra, az elsődleges fiókok PIN-kódjai törlődnek. A születési dátum a felhasználó profiljához tartozik. A nullázható `Sessions.FamilyPrimaryUserId` a váltott munkamenet alapjául szolgáló profilt azonosítja. A meglévő váltott munkamenetek alapja továbbra is az elsődleges profil. A meglévő fiókokhoz és munkamenetekhez nincs szükség adatpótlásra.
 
 ### Felhasználókezelés
 

@@ -10,8 +10,9 @@ public sealed class SubaccountConfiguration : IEntityTypeConfiguration<Subaccoun
     {
         builder.ToTable("Subaccounts", table => table.HasCheckConstraint(
             "CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\""));
+        builder.Property<Guid>("PrimaryUserId").ValueGeneratedNever();
         builder.Property<Guid>("UserId").ValueGeneratedNever();
-        builder.HasKey("UserId");
+        builder.HasKey("PrimaryUserId", "UserId");
         builder.HasOne(link => link.PrimaryUser).WithMany().HasForeignKey("PrimaryUserId").IsRequired().OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(link => link.User).WithMany().HasForeignKey("UserId").IsRequired().OnDelete(DeleteBehavior.Cascade);
     }

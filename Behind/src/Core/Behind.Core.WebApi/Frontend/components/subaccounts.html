@@ -93,30 +93,34 @@
             </li>
         </ul>
         <button type="button" class="btn btn-outline-secondary mb-2" data-bind="visible: moreCandidates, enable: !busy(), click: loadMore, t: 'subaccount.more'"></button>
-        <div data-bind="if: requests().length">
-            <h3 class="h6" data-bind="t: 'subaccount.proposedParents'"></h3>
-            <p data-bind="t: 'subaccount.consentHelp'"></p>
-            <ul class="list-unstyled" data-bind="foreach: requests">
-                <li class="mb-2">
-                    <span data-bind="text: displayName"></span>
-                    <button type="button" class="btn btn-sm btn-primary" data-bind="click: $parent.confirmLink, enable: !$parent.busy(), t: 'subaccount.accept'"></button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: $parent.declineLink, enable: !$parent.busy(), t: 'subaccount.decline'"></button>
-                </li>
-            </ul>
-        </div>
     </section>
 </div>
+<section class="mt-4" data-bind="if: manager && requests().length">
+    <h2 class="h5" data-bind="t: 'subaccount.proposedParents'"></h2>
+    <p data-bind="t: 'subaccount.consentHelp'"></p>
+    <ul class="list-unstyled" data-bind="foreach: requests">
+        <li class="mb-2">
+            <span data-bind="text: displayName"></span>
+            <button type="button" class="btn btn-sm btn-primary" data-bind="click: $parent.confirmLink, enable: !$parent.busy(), t: 'subaccount.accept'"></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: $parent.declineLink, enable: !$parent.busy(), t: 'subaccount.decline'"></button>
+        </li>
+    </ul>
+</section>
 <div data-bind="if: !manager && (accounts().length || linked())">
     <details class="px-3 py-1" data-bind="click: function () { return true; }, clickBubble: false">
         <summary data-bind="t: 'subaccount.switch'">Switch User</summary>
         <form class="mt-2" data-bind="submit: switchUser, visible: accounts().length">
+            <label class="d-block mb-2" data-bind="visible: profileTypes().length > 1">
+                <span data-bind="t: 'subaccount.profileType'">Profile type</span>
+                <select class="form-select" data-bind="options: profileTypes, optionsText: profileTypeLabel, value: profileType, enable: !busy()"></select>
+            </label>
             <label class="d-block">
                 <span data-bind="t: 'subaccount.choose'">Choose an account</span>
-                <select class="form-select" required data-bind="options: accounts, optionsText: label, optionsCaption: translate('subaccount.choose'), value: selected"></select>
+                <select class="form-select" required data-bind="options: switchProfiles, optionsText: label, optionsCaption: translate('subaccount.choose'), value: selected, enable: !busy()"></select>
             </label>
             <div data-bind="if: selected() && selected().hasPin">
                 <label class="d-block">
-                    <span data-bind="t: 'subaccount.enterPin'">Enter PIN</span>
+                    <span data-bind="t: 'subaccount.enterPin'">Enter the selected profile’s PIN</span>
                     <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="off" required data-bind="value: pin">
                 </label>
             </div>

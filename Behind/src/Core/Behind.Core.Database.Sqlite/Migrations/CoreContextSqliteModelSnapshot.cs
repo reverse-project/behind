@@ -16,7 +16,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261122120000_AddSubaccounts";
+    public override string LastMigrationId => "20261122150000_AllowSharedSubaccounts";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1601,18 +1601,18 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
             {
+                b.Property<Guid>("PrimaryUserId")
+                    .HasColumnType("TEXT");
+
                 b.Property<Guid>("UserId")
                     .HasColumnType("TEXT");
 
                 b.Property<bool>("IsChild")
                     .HasColumnType("INTEGER");
 
-                b.Property<Guid>("PrimaryUserId")
-                    .HasColumnType("TEXT");
+                b.HasKey("PrimaryUserId", "UserId");
 
-                b.HasKey("UserId");
-
-                b.HasIndex("PrimaryUserId");
+                b.HasIndex("UserId");
 
                 b.ToTable("Subaccounts", t =>
                     {

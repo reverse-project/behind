@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261122120000_AddSubaccounts";
+    public override string LastMigrationId => "20261122150000_AllowSharedSubaccounts";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1605,18 +1605,18 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
             {
+                b.Property<Guid>("PrimaryUserId")
+                    .HasColumnType("uuid");
+
                 b.Property<Guid>("UserId")
                     .HasColumnType("uuid");
 
                 b.Property<bool>("IsChild")
                     .HasColumnType("boolean");
 
-                b.Property<Guid>("PrimaryUserId")
-                    .HasColumnType("uuid");
+                b.HasKey("PrimaryUserId", "UserId");
 
-                b.HasKey("UserId");
-
-                b.HasIndex("PrimaryUserId");
+                b.HasIndex("UserId");
 
                 b.ToTable("Subaccounts", t =>
                     {

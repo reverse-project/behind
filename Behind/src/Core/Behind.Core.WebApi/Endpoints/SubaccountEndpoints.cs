@@ -51,9 +51,9 @@ public sealed class SubaccountEndpoints
 
     public sealed record Account(Guid UserId, string DisplayName, bool IsChild, DateOnly? Birthday, bool HasPin, string? Email, bool CanRelease);
 
-    private sealed record FamilySession(CurrentSession Current, Guid PrimaryUserId, bool CanSwitch)
+    private sealed record FamilySession(CurrentSession Current, SubaccountSwitchScope Scope, Guid PrimaryUserId, bool IsLinked)
     {
-        public bool IsPrimary => Current.UserId == PrimaryUserId;
+        public bool IsPrimary => Current.UserId == PrimaryUserId && !Scope.FromLinkedProfile;
     }
 
     [Authorize, IgnoreETag]
@@ -70,11 +70,11 @@ public sealed class SubaccountEndpoints
         var isDirectSignIn = family.Current.FamilyPrimaryUserId is null;
         var requireConfirmation = security.Value.EmailConfirmation;
         List<Account> accounts = [];
-        var primaryHasPin = family.CanSwitch && await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted);
+        var primaryHasPin = !family.Scope.FromLinkedProfile && await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted);
         var currentHasPin = family.IsPrimary
             ? primaryHasPin
             : await PinsFor(db, family.Current.UserId).AnyAsync(http.RequestAborted);
-        if (family.CanSwitch)
+        if (!family.Scope.FromLinkedProfile)
         {
             accounts = await (from link in db.Subaccounts
                               join user in ActiveUsers(db) on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(user, "Id")
@@ -95,8 +95,17 @@ public sealed class SubaccountEndpoints
                 accounts.Insert(0, primary);
             }
         }
+        var switchAccounts = await (from user in family.Scope.Profiles(db)
+                                    let userId = EF.Property<Guid>(user, "Id")
+                                    where userId != family.Current.UserId && db.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == userId)
+                                    orderby user.DisplayName, userId
+                                    select new Account(userId, user.DisplayName, db.Subaccounts.Any(link => EF.Property<Guid>(link, "UserId") == userId && link.IsChild),
+                                        null, true, null, false)).ToListAsync(http.RequestAborted);
         return Results.Ok(new
         {
+            CanRespondToInvitations = security.Value.Accounts.LinkUnlink && isDirectSignIn,
+            family.IsLinked,
+            SwitchAccounts = switchAccounts,
             CanBrowseAndRelease = canBrowseAndRelease,
             LinkUnlinkEnabled = canBrowseAndRelease && isDirectSignIn,
             LinkUnlinkRequiresDirectSignIn = canBrowseAndRelease && !isDirectSignIn,
@@ -226,7 +235,7 @@ public sealed class SubaccountEndpoints
     public static async Task<IResult> ChangePin(Guid userId, PinRequest request, HttpContext http, ISessionQueries sessions, AbstractCoreContext db)
     {
         var family = await FindFamily(http, sessions, db);
-        if (family is null || (!family.IsPrimary && family.Current.UserId != userId))
+        if (family is null || (!family.IsPrimary && (!family.IsLinked || family.Current.UserId != userId)))
         {
             return Results.Forbid();
         }
@@ -234,7 +243,9 @@ public sealed class SubaccountEndpoints
         {
             return Results.BadRequest();
         }
-        var target = await ManagedUsers(db, family.PrimaryUserId, userId).SingleOrDefaultAsync(http.RequestAborted);
+        var target = await (family.IsPrimary
+            ? ManagedUsers(db, family.PrimaryUserId, userId)
+            : ActiveUsers(db).Where(user => EF.Property<Guid>(user, "Id") == userId)).SingleOrDefaultAsync(http.RequestAborted);
         if (target is null)
         {
             return Results.NotFound();
@@ -329,27 +340,17 @@ public sealed class SubaccountEndpoints
         TimeProvider clock, ILogger<SubaccountEndpoints> logger)
     {
         var family = await FindFamily(http, sessions, db);
-        if (family is not { CanSwitch: true } || family.Current.UserId == userId)
+        if (family is null || family.Current.UserId == userId)
         {
             return Results.Forbid();
         }
-        var isPrimaryTarget = userId == family.PrimaryUserId;
-        if (!isPrimaryTarget && !await db.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId
-            && EF.Property<Guid>(link, "UserId") == userId, http.RequestAborted))
-        {
-            return Results.NotFound();
-        }
-        if (!await ActiveUsers(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == userId, http.RequestAborted))
+        if (!await family.Scope.Profiles(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == userId, http.RequestAborted))
         {
             return Results.NotFound();
         }
         var credential = await PinsFor(db, userId).AsNoTracking().SingleOrDefaultAsync(http.RequestAborted);
-        if (credential is null && isPrimaryTarget)
-        {
-            return Results.Forbid();
-        }
-        if (credential is not null && (string.IsNullOrEmpty(request.Pin)
-            || !PasswordHash.CreateFromExisting(credential.PinHash.ToString()).Verify(request.Pin)))
+        if (credential is null || string.IsNullOrEmpty(request.Pin)
+            || !PasswordHash.CreateFromExisting(credential.PinHash.ToString()).Verify(request.Pin))
         {
             return Results.Forbid();
         }
@@ -365,7 +366,7 @@ public sealed class SubaccountEndpoints
             async settings =>
             {
                 var response = await SignInEndpoints.StartSession(user, settings, false, commands, bans, now, http,
-                    logger, None, familyPrimaryUserId: family.PrimaryUserId);
+                    logger, None, familyPrimaryUserId: family.Scope.AnchorId);
                 if (response is IValueHttpResult { Value: SignInEndpoints.SignInResponse })
                 {
                     await commands.InvalidateSession(family.Current.SessionId, family.Current.UserId, now, http.RequestAborted);
@@ -390,15 +391,22 @@ public sealed class SubaccountEndpoints
         {
             return null;
         }
-        var parentId = await FindPrimaryUserId(db, session.UserId, http.RequestAborted);
-        if (parentId is null)
+        var linked = await SubaccountSwitchScope.IsLinked(db, session.UserId, http.RequestAborted);
+        var anchorId = session.FamilyPrimaryUserId ?? session.UserId;
+        var fromLinkedProfile = anchorId == session.UserId
+            ? linked
+            : await SubaccountSwitchScope.IsLinked(db, anchorId, http.RequestAborted);
+        var scope = new SubaccountSwitchScope(anchorId, fromLinkedProfile);
+        if (anchorId != session.UserId
+            && !await scope.Profiles(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == session.UserId, http.RequestAborted))
         {
-            return session.FamilyPrimaryUserId is { } source && source != session.UserId ? null : new(session, session.UserId, true);
+            return null;
         }
-        return new(session, parentId.Value, session.FamilyPrimaryUserId == parentId);
+        var primaryId = fromLinkedProfile && linked
+            ? await db.Subaccounts.Where(link => EF.Property<Guid>(link, "UserId") == session.UserId)
+                .OrderBy(link => EF.Property<Guid>(link, "PrimaryUserId"))
+                .Select(link => (Guid?)EF.Property<Guid>(link, "PrimaryUserId")).FirstOrDefaultAsync(http.RequestAborted) ?? anchorId
+            : anchorId;
+        return new(session, scope, primaryId, linked);
     }
-
-    private static Task<Guid?> FindPrimaryUserId(AbstractCoreContext db, Guid userId, CancellationToken cancellationToken) =>
-        db.Subaccounts.Where(link => EF.Property<Guid>(link, "UserId") == userId)
-            .Select(link => (Guid?)EF.Property<Guid>(link, "PrimaryUserId")).SingleOrDefaultAsync(cancellationToken);
 }

@@ -731,9 +731,9 @@ Every management page (users, roles, sites) follows the same shape: a paged list
 
 ### Subaccounts
 
-Each `Subaccounts` row links two existing `Users` rows. Its primary key is the subaccount's `UserId`, so audit entries resolve to that user's profile label. `PrimaryUserId` identifies the family owner. Both database providers reject self-links and links that would create a second level. Hard-deleting the subaccount removes its link. A primary with existing links cannot be hard-deleted.
+Each `Subaccounts` row links two existing `Users` rows. The composite primary key `(PrimaryUserId, UserId)` lets more than one adult link to the same profile, with each adult owning their own relationship. Both database providers reject duplicate pairs, self-links and links that would create a second level. Hard-deleting the subaccount removes all of its links. A primary with existing links cannot be hard-deleted. The shared-links migration preserves existing relationships and PINs. Downgrading to the single-owner schema requires resolving profiles with multiple links first.
 
-The link stores the child flag. A primary or child user can own one optional credential in `UserSwitchPins`, keyed by the user's ID. The migration copies existing hashes verbatim. Downgrading restores child hashes to their links and removes primary PINs, which the older schema cannot store. The birthday belongs to the user's own profile. The nullable `Sessions.FamilyPrimaryUserId` records the primary that authorized a switch. Existing accounts and sessions need no backfill.
+The link stores the child flag. Each user can own one optional credential in `UserSwitchPins`, keyed by the user's ID. The migration copies existing hashes verbatim. Downgrading restores child hashes to their links and removes primary PINs, which the older schema cannot store. The birthday belongs to the user's own profile. The nullable `Sessions.FamilyPrimaryUserId` records the profile that anchors a switched session. Existing switched sessions keep their primary profile as the anchor. Existing accounts and sessions need no backfill.
 
 ### Users management
 

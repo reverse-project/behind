@@ -227,9 +227,12 @@ public sealed class SubaccountEndpointsTests
 
         Assert.Equal([db.GetKey(first)], await Page(1));
         Assert.Equal([db.GetKey(second)], await Page(2));
-        Assert.Empty(await Page(3));
+        Assert.Equal([db.GetKey(child)], await Page(3));
+        Assert.Empty(await Page(4));
         Assert.IsType<NoContent>(await SubaccountLinkEndpoints.RequestLink(db.GetKey(first), requester.Http, requester.Queries, db));
         Assert.Equal([db.GetKey(second)], await Page(1));
+        var existingParent = AsUser(db.GetKey(parent));
+        Assert.IsType<Conflict>(await SubaccountLinkEndpoints.RequestLink(db.GetKey(child), existingParent.Http, existingParent.Queries, db));
     }
 
     [Theory]
@@ -263,6 +266,7 @@ public sealed class SubaccountEndpointsTests
         var canBrowseAndRelease = configured && isPrimary;
         Assert.Equal(canBrowseAndRelease, payload.GetProperty("CanBrowseAndRelease").GetBoolean());
         Assert.Equal(invitationsEnabled, payload.GetProperty("LinkUnlinkEnabled").GetBoolean());
+        Assert.Equal(configured && !switched, payload.GetProperty("CanRespondToInvitations").GetBoolean());
         Assert.Equal(invitationsRequireDirectSignIn, payload.GetProperty("LinkUnlinkRequiresDirectSignIn").GetBoolean());
         if (isPrimary)
         {
@@ -276,6 +280,9 @@ public sealed class SubaccountEndpointsTests
         if (!invitationsEnabled)
         {
             Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.RequestLink(candidateId, actor.Http, actor.Queries, db));
+        }
+        if (switched)
+        {
             Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Requests(actor.Http, actor.Queries, db));
             Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Confirm(Guid.NewGuid(), actor.Http, actor.Queries, db));
             Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Decline(Guid.NewGuid(), actor.Http, actor.Queries, db));
@@ -616,17 +623,17 @@ public sealed class SubaccountEndpointsTests
             parent.Http, parent.Queries, db, manager, security, commands, Substitute.For<IWallOfShameQueries>(),
             TimeProvider.System, NullLogger<SubaccountEndpoints>.Instance);
 
+        Assert.IsType<ForbidHttpResult>(await Switch(null));
+        Assert.IsType<ForbidHttpResult>(await Switch("000000"));
+        await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
         if (pin is not null)
         {
-            Assert.IsType<ForbidHttpResult>(await Switch(null));
-            Assert.IsType<ForbidHttpResult>(await Switch("000000"));
-            await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+            Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(pin));
+            await commands.Received(1).CreateForUserId(childId, Arg.Is<ValidSession>(s => s.FamilyPrimaryUserId == primary), Arg.Any<CancellationToken>());
+            await commands.Received(1).InvalidateSession(parent.SessionId, primary, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
         }
-        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(pin));
-        await commands.Received(1).CreateForUserId(childId, Arg.Is<ValidSession>(s => s.FamilyPrimaryUserId == primary), Arg.Any<CancellationToken>());
-        await commands.Received(1).InvalidateSession(parent.SessionId, primary, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
         Assert.IsType<NoContent>(await SubaccountEndpoints.Update(childId, update, parent.Http, parent.Queries, db, TimeProvider.System));
         Assert.False(await db.UserSwitchPins.AnyAsync());
-        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(null));
+        Assert.IsType<ForbidHttpResult>(await Switch(null));
     }
 }

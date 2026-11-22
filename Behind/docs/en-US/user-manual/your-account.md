@@ -17,6 +17,12 @@ Use **Profile** to change your display name and your password. Password changes 
 
 The line "Shown as ..." tells you how others will see you. Author names link to the public profile at `#/user/<user-id>`.
 
+### Subaccounts
+
+Open **Profile → Subaccounts** on the primary account. Create a user with a display name and, optionally, an email address, birthday and numeric PIN. Mark the account as a child to let the primary account manage its birthday.
+
+Under **Profile** in the account menu, open **Switch User** and choose a linked user. Enter the destination user’s PIN if prompted. To return to the primary account, sign in with its usual credentials. An email-less subaccount can be used through the switcher. For independent sign-in, configure an address and complete the site’s usual sign-in and email verification steps.
+
 ### Birthday and email privacy
 
 Your birthday is optional and private. It is used to filter content by minimum age when the site's global age restriction setting is enabled; without a birthday, age-restricted content is then unavailable. Global age restrictions are disabled by default. Save your birthday in **Profile**.

@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Behind.Common;
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using static Behind.Common.FunctionalExtensions;
@@ -51,10 +52,25 @@ public sealed class SessionQueries(AbstractCoreContext context) : ISessionQuerie
             .Select(s => new
             {
                 UserId = EF.Property<Guid>(s, "UserId"),
-                ImpersonatorId = EF.Property<Guid?>(s, "ImpersonatorId")
+                ImpersonatorId = EF.Property<Guid?>(s, "ImpersonatorId"),
+                s.FamilyPrimaryUserId
             })
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (row?.FamilyPrimaryUserId is { } primaryId)
+        {
+            var activeUsers = context.Users.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active);
+            var linked = await (from link in context.Subaccounts
+                join parent in activeUsers on link.PrimaryUserId equals EF.Property<Guid>(parent, "Id")
+                join child in activeUsers on link.UserId equals EF.Property<Guid>(child, "Id")
+                where link.PrimaryUserId == primaryId && link.UserId == row.UserId
+                select link.UserId).AnyAsync(cancellationToken);
+            if (!linked || await new WallOfShameQueries(context).FindActiveBan(primaryId, DateTimeOffset.UtcNow, cancellationToken) != None)
+            {
+                return None;
+            }
+        }
 
         return row is null
             ? None

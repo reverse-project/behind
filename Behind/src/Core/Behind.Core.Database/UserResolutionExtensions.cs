@@ -15,9 +15,9 @@ public static class UserResolutionExtensions
                 ? new SystemUser(None)
                 : userId == DomainConstants.GuestUserId
                     ? new GuestUser(None)
-                    : displayName is null || emailList.Count == 0
+                    : displayName is null
                         ? new UnknownUser(userId)
-                        : new HumanUser(displayName, emailList.Select(value => new Email(value)), None);
+                        : new HumanUser { DisplayName = displayName, Emails = emailList.Select(value => new Email(value)).ToList(), PersistedId = userId };
         }
     }
 }

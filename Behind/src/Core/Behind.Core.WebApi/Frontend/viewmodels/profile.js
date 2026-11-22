@@ -7,6 +7,7 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
         self.message = ko.observable("");
         self.displayName = ko.observable("");
         self.userId = ko.observable("");
+        self.isChild = ko.observable(false);
         self.birthday = ko.observable("");
         self.hideEmail = ko.observable(true);
         self.detailsLoaded = ko.observable(false);
@@ -287,6 +288,7 @@ define(["ko", "models/auth", "models/session", "models/user", "models/about", "m
                                 return;
                             }
 
+                            self.isChild(details.data.isChild === true);
                             self.birthday(details.data.birthday || "");
                             self.hideEmail(details.data.hideEmail);
                             self.detailsLoaded(true);

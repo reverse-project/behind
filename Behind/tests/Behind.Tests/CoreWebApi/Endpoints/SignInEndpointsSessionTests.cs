@@ -85,6 +85,21 @@ public class SignInEndpointsSessionTests
     }
 
     [Fact]
+    public async Task IndependentSignInRequiresConfiguredEmailEvenWhenConfirmationIsDisabled()
+    {
+        var user = NewUser("secret");
+        user.Emails = [];
+        var commands = Substitute.For<ISessionCommands>();
+        var result = await SignInEndpoints.SignInPassword(
+            UserManagerFor(user), Security(Some(Jwt), emailConfirmation: false), commands, NoBans(),
+            NoTwoFactor(), new FixedTimeProvider(Now), NewHttpContext(), NullLogger<SignInEndpoints>.Instance,
+            new SignInEndpoints.PasswordRequest("old@example.com", "secret"));
+
+        Assert.IsType<UnauthorizedHttpResult>(result);
+        await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+    }
+
+    [Fact]
     public async Task SignInPassword_ValidCredentials_PersistsSessionAndBindsTokens()
     {
         var user = NewUser("secret");

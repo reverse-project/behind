@@ -1,0 +1,58 @@
+<div data-bind="if: manager && primary">
+    <section class="mt-4">
+        <h2 class="h5" data-bind="t: 'subaccount.title'">Subaccounts</h2>
+        <form data-bind="submit: save">
+            <label class="form-label d-block">
+                <span data-bind="t: 'subaccount.choose'">Choose an account</span>
+                <select class="form-select" data-bind="options: accounts, optionsText: label, optionsCaption: translate('subaccount.new'), value: selected, enable: !busy()"></select>
+            </label>
+            <label class="form-label d-block">
+                <span data-bind="t: 'profile.displayName'">Display name</span>
+                <input type="text" maxlength="500" required class="form-control" data-bind="value: name">
+            </label>
+            <div data-bind="ifnot: selected">
+                <label class="form-label d-block">
+                    <span data-bind="t: 'subaccount.email'">Sign-in email (optional)</span>
+                    <input type="email" maxlength="255" class="form-control" data-bind="value: email">
+                </label>
+            </div>
+            <label class="form-check mb-2">
+                <input type="checkbox" class="form-check-input" data-bind="checked: child">
+                <span data-bind="t: 'subaccount.child'">Child account</span>
+            </label>
+            <label class="form-label d-block">
+                <span data-bind="t: 'profile.birthday'">Birthday (optional)</span>
+                <input type="date" class="form-control" data-bind="value: birthday">
+            </label>
+            <label class="form-label d-block">
+                <span data-bind="t: selected() && selected().hasPin ? 'subaccount.replacePin' : 'subaccount.pin'"></span>
+                <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="new-password" data-bind="value: pin, enable: !clearPin()">
+            </label>
+            <label class="form-check mb-2" data-bind="visible: selected() && selected().hasPin">
+                <input class="form-check-input" type="checkbox" data-bind="checked: clearPin">
+                <span data-bind="t: 'subaccount.clearPin'">Remove current PIN</span>
+            </label>
+            <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: selected() ? 'common.save' : 'subaccount.create'"></button>
+        </form>
+    </section>
+</div>
+<div data-bind="if: !manager && (accounts().length || linked())">
+    <details class="px-3 py-1" data-bind="click: function () { return true; }, clickBubble: false">
+        <summary data-bind="t: 'subaccount.switch'">Switch User</summary>
+        <form class="mt-2" data-bind="submit: switchUser, visible: accounts().length">
+            <label class="d-block">
+                <span data-bind="t: 'subaccount.choose'">Choose an account</span>
+                <select class="form-select" required data-bind="options: accounts, optionsText: label, optionsCaption: translate('subaccount.choose'), value: selected"></select>
+            </label>
+            <div data-bind="if: selected() && selected().hasPin">
+                <label class="d-block">
+                    <span data-bind="t: 'subaccount.enterPin'">Enter PIN</span>
+                    <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="off" required data-bind="value: pin">
+                </label>
+            </div>
+            <button class="btn btn-primary mt-2" type="submit" data-bind="enable: selected() && !busy(), t: 'subaccount.switch'">Switch User</button>
+        </form>
+        <a href="#/sign-in" data-bind="visible: linked, t: 'subaccount.primary'">Sign in to primary account</a>
+    </details>
+</div>
+<p class="small mt-2" role="status" data-bind="visible: message, text: message"></p>

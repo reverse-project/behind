@@ -86,7 +86,8 @@ public sealed class SessionCommands(AbstractCoreContext context) : ISessionComma
         CancellationToken cancellationToken = default) =>
         InvalidateWhere(
             context.Sessions.Where(s => EF.Property<Guid>(s, "UserId") == userId
-                                        || EF.Property<Guid?>(s, "ImpersonatorId") == userId),
+                                        || EF.Property<Guid?>(s, "ImpersonatorId") == userId
+                                        || s.FamilyPrimaryUserId == userId),
             invalidatedBy,
             invalidatedAt,
             cancellationToken);

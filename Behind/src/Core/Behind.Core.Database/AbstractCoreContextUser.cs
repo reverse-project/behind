@@ -10,7 +10,7 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
 {
     public DbSet<HumanUser> Users => Set<HumanUser>();
     
-    public Guid GetKey(HumanUser entity) => Entry(entity).Property<Guid>("Id").CurrentValue;
+    public Guid GetKey(HumanUser entity) => entity.PersistedId ?? Entry(entity).Property<Guid>("Id").CurrentValue;
 
     public async Task<Guid> GetUserKeyAsync(User user, CancellationToken cancellationToken = default)
     {
@@ -109,12 +109,12 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
             roles = Some((IEnumerable<Role>)populatedRoles);
         }
 
-        return Some(new HumanUser(
-            userResult.DisplayName,
-            userResult.Emails.Select(e => new Email(e.Value, e.ConfirmedAt)),
-            roles
-        )
+        return Some(new HumanUser
         {
+            PersistedId = key,
+            DisplayName = userResult.DisplayName,
+            Emails = userResult.Emails.Select(e => new Email(e.Value, e.ConfirmedAt)).ToList(),
+            Roles = roles,
             ProfilePictureId = userResult.ProfilePictureId,
             Birthday = userResult.Birthday,
             HideEmail = userResult.HideEmail

@@ -17,7 +17,7 @@
         </div>
         <div class="mb-3">
             <label class="form-label" for="profile-birthday" data-bind="t: 'profile.birthday'">Birthday (optional)</label>
-            <input id="profile-birthday" class="form-control" type="date" autocomplete="bday" data-bind="value: birthday">
+            <input id="profile-birthday" class="form-control" type="date" autocomplete="bday" data-bind="value: birthday, enable: detailsLoaded() && !isChild()">
             <p class="form-text" data-bind="t: 'profile.birthdayHelp'">Private. Used when the site's age restrictions are enabled. Without a birthday, age-restricted content is then unavailable.</p>
         </div>
         <div class="form-check mb-3">
@@ -53,6 +53,7 @@
             <button type="button" class="btn btn-outline-secondary" data-bind="enable: !busy() && !impersonating(), click: reloadEmails, t: 'common.refresh'">Refresh</button>
         </form>
     </div>
+    <subaccount-panel params="manager: true"></subaccount-panel>
     <form class="mt-4" data-bind="visible: isSignedIn, submit: submitPassword">
         <p class="alert alert-info" role="status" data-bind="visible: settingNewPassword, t: 'profile.setNewPassword'">You signed in with a lost password link. Set a new password now.</p>
         <div class="mb-3">

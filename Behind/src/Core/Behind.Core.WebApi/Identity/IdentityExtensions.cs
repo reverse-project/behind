@@ -76,13 +76,18 @@ public static class IdentityExtensions
         JwtSettings settings)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
+        var identity = new ClaimsIdentity([
+            new Claim(SessionClaimTypes.SessionId, sessionId.ToString()),
+            new Claim(SessionClaimTypes.TokenNonce, nonce)
+        ]);
+        if (user.Emails.FirstOrDefault() is { } email)
+        {
+            identity.AddClaim(new Claim(ClaimTypes.Email, email.Value));
+        }
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity([
-                new Claim(ClaimTypes.Email, user.Emails.First().Value),
-                new Claim(SessionClaimTypes.SessionId, sessionId.ToString()),
-                new Claim(SessionClaimTypes.TokenNonce, nonce)
-            ]),
+            Subject = identity,
             Expires = expiresAt.DateTime,
             Issuer = settings.Issuer,
             Audience = settings.Audience,

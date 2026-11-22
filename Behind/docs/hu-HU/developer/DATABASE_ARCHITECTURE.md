@@ -733,6 +733,12 @@ Minden kezelőoldal (felhasználók, szerepkörök, oldalak) ugyanazt a felépí
 - A hard delete parancsok `HardDeleteResult` választ adnak (`NotFound`, ha a rekord nem soft delete-tel törölt, `Rejected`, ha az adatbázis elutasítja; `404` / `409` kódra leképezve).
 - Egy oldal törlése csak a `Sites` sorait törli soft delete-tel. Az `ActiveVersions` sor megmarad, így a visszaállítás visszahozza az élő verziót, a hard delete pedig azt is eltávolítja.
 
+### Alfiókok
+
+A `Subaccounts` tábla két meglévő felhasználót kapcsol össze. Elsődleges kulcsa az alfiók `UserId` azonosítója. A `PrimaryUserId` a tulajdonost jelöli. Mindkét adatbázis kizárja az önhivatkozást és a többszintű fiókhierarchiát. Az alfiók végleges törlésével a kapcsolat is törlődik. Kapcsolt alfiókok mellett az elsődleges fiók végleges törlése tiltott.
+
+A kapcsolat tárolja a gyermekfiók-jelzőt és az opcionális PIN-kód maszkolt kivonatát. A születési dátum a felhasználó profiljához tartozik. A nullázható `Sessions.FamilyPrimaryUserId` a váltást engedélyező elsődleges fiókot azonosítja. A meglévő fiókokhoz és munkamenetekhez nincs szükség adatpótlásra.
+
 ### Felhasználókezelés
 
 - A `POST /users/{id}/delete` soft delete-tel töröl egy felhasználót (`User.Delete` jogosultság, ugyanazok a moderációs szabályok, mint a tiltásnál: nem törölheti önmagát, fejlesztőt csak fejlesztő törölhet). A felhasználó munkamenetei vele együtt törlődnek.

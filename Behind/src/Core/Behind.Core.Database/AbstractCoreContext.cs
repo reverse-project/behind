@@ -24,6 +24,8 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
 
     public DbSet<ContentRestriction> ContentRestrictions => Set<ContentRestriction>();
 
+    public DbSet<Subaccount> Subaccounts => Set<Subaccount>();
+
     public DbSet<ContentAgeOption> ContentAgeOptions => Set<ContentAgeOption>();
 
     public DbSet<ContentLocale> ContentLocales => Set<ContentLocale>();

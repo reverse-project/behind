@@ -16,7 +16,7 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261118160000_PreserveIssuedBans";
+    public override string LastMigrationId => "20261122120000_AddSubaccounts";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1599,6 +1599,30 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
+            {
+                b.Property<Guid>("UserId")
+                    .HasColumnType("TEXT");
+
+                b.Property<bool>("IsChild")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("PinHash")
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid>("PrimaryUserId")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("UserId");
+
+                b.HasIndex("PrimaryUserId");
+
+                b.ToTable("Subaccounts", t =>
+                    {
+                        t.HasCheckConstraint("CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\"");
+                    });
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>
             {
                 b.Property<Guid>("Id")
@@ -1631,6 +1655,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
             {
                 b.Property<Guid>("Id")
                     .ValueGeneratedOnAdd()
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid?>("FamilyPrimaryUserId")
                     .HasColumnType("TEXT");
 
                 b.Property<Guid?>("ImpersonatorId")
@@ -2076,6 +2103,21 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.UserRecoveryCode", b =>
             {
+                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
+            {
+                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                    .WithMany()
+                    .HasForeignKey("PrimaryUserId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
                 b.HasOne("Behind.Core.Domain.HumanUser", null)
                     .WithMany()
                     .HasForeignKey("UserId")

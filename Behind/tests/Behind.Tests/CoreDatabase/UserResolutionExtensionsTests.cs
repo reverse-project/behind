@@ -26,10 +26,10 @@ public sealed class UserResolutionExtensionsTests
     }
 
     [Fact]
-    public void ToUser_WithoutEmails_ReturnsUnknownUserWithTheId()
+    public void ToUser_WithoutEmails_ReturnsHumanUser()
     {
         var id = Guid.NewGuid();
 
-        Assert.Equal(new UnknownUser(id), id.ToUser("Jane", []));
+        Assert.Empty(Assert.IsType<HumanUser>(id.ToUser("Jane", [])).Emails);
     }
 }

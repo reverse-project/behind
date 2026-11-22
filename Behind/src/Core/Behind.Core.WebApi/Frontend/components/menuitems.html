@@ -1,6 +1,9 @@
 <ul data-bind="foreach: items, css: listClass">
     <li data-bind="visible: !hasChildren || $component.isDropdown || $component.isVertical, css: $component.itemClass">
         <a data-bind="attr: attributes, text: title, click: open, css: $component.linkClass"></a>
+        <div data-bind="if: attributes.href === '#/profile' && $component.isDropdown">
+            <subaccount-panel></subaccount-panel>
+        </div>
         <div data-bind="if: hasChildren && $component.isVertical">
             <menu-items params="items: children, variant: 'vertical'"></menu-items>
         </div>

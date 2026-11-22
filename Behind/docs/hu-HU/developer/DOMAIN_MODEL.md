@@ -59,6 +59,7 @@ A `ChatMessage(VersionedKey<Guid> Id, AuthorId, Text, ReplyToId?)` egyszerű sz�
 - `ForumUserModeration(UserId, Moderation)`: verziózott felhasználói szabály; kulcsa a felhasználó azonosítója, így személyenként egy szabály lehet.
 - `PublicationState`: `Published`, `Pending`, `Rejected`. A nyilvános lekérdezések a közzététel ellenőrzése előtt a legfrissebb verziót választják ki, és aktív táblát, valamint közzétett szülőtémát követelnek.
 - `ForumSettings`: alapértéke `Post`; az engedélyezett felhasználói felülbírálás elsőbbséget élvez az engedélyezett táblaszabállyal, majd a globális móddal szemben. Csak az új üzeneteket érinti; a meglévő függő üzenetekhez továbbra is jóváhagyás kell.
+- Minden alfiók saját felhasználói azonosítóval, szerepkörökkel, profillal és születési dátummal rendelkezik. Az elsődleges fiók egy szinten kezelhet alfiókokat. A kapcsolt felhasználó e-mail-cím nélkül is létezhet.
 - `HumanUser.ProfilePictureId`: opcionális Core VFS-képhivatkozás; az `IModuleUsers` a nyilvános feliratokat és képazonosítókat adja át. A felirat a környező szóközök nélküli név és egy állandó, UUID-alapú rövid azonosító, üres névnél `user#azonosító`; e-mail-cím sohasem helyettesíti a nevet.
 - A `HumanUser.Birthday` nem kötelező és nem nyilvános; hiányában a korhatáros tartalom nem érhető el, ha a globális szűrés engedélyezett (alapértelmezés szerint kikapcsolt). A `HideEmail` alapértéke true; az elsődleges e-mail csak kifejezett engedéllyel jelenik meg a nyilvános profilon.
 

@@ -1075,6 +1075,7 @@ public static class WebApiExtensions
                 .WithSummary("Resend confirmation for one of your unconfirmed email addresses.")
                 .Produces(204).Produces(401).Produces(403).Produces(404).Produces(429).Produces(503);
             application.MapPut("/profile/details", PublicProfileEndpoints.SetDetails)
+                .RequireAuthenticationTransaction()
                 .WithSummary("Replace your optional private birthday and public email visibility preference.")
                 .Produces(204).Produces(400).Produces(401);
 
@@ -1088,6 +1089,18 @@ public static class WebApiExtensions
                 .WithSummary("Remove your profile picture.").Produces(204).Produces(401);
             application.MapGet("/profile/images/{id:guid}", ProfilePictureEndpoints.Image)
                 .WithSummary("Serve a currently referenced profile image.").Produces(200).Produces(404);
+
+            application.MapGet("/profile/subaccounts", SubaccountEndpoints.List);
+            application.MapPost("/profile/subaccounts", SubaccountEndpoints.Create)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.CreateRequest>>()
+                .RequireAuthenticationTransaction();
+            application.MapPut("/profile/subaccounts/{userId:guid}", SubaccountEndpoints.Update)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.UpdateRequest>>()
+                .RequireAuthenticationTransaction();
+            application.MapPost("/profile/subaccounts/{userId:guid}/switch", SubaccountEndpoints.Switch)
+                .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.SwitchRequest>>()
+                .RequireAuthenticationTransaction()
+                .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy);
 
             application.MapPut("/profile/displayName", ProfileEndpoints.ChangeDisplayName)
                 .AddEndpointFilter<DataAnnotationValidationFilter<ProfileEndpoints.DisplayNameRequest>>()

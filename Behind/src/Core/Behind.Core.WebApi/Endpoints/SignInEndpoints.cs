@@ -262,9 +262,15 @@ public sealed class SignInEndpoints
         MagicLinkFunction? function = null, IReadOnlyList<string>? recoveryCodes = null,
         IPasswordResetGrants? passwordResetGrants = null,
         string? primaryCredentialId = null,
-        string? primaryOidcProviderId = null)
+        string? primaryOidcProviderId = null, Guid? familyPrimaryUserId = null)
     {
-        if (emailConfirmationRequired && !user.HasConfirmedEmail)
+        var subaccountSwitch = familyPrimaryUserId.HasValue;
+        if (!subaccountSwitch && !user.Emails.Any())
+        {
+            return Results.Unauthorized();
+        }
+
+        if (!subaccountSwitch && emailConfirmationRequired && !user.HasConfirmedEmail)
         {
             logger.LogWarning("Sign-in refused for user {UserId}: the email is not confirmed", () => [user.Id]);
 
@@ -295,7 +301,7 @@ public sealed class SignInEndpoints
                     none: () => function switch
                     {
                         null or MagicLinkFunction.SignIn => StartPermittedSession(
-                            user, jwtSettings, sessionCommands, httpContext, logger, function, recoveryCodes),
+                            user, jwtSettings, sessionCommands, httpContext, logger, function, recoveryCodes, familyPrimaryUserId),
                         MagicLinkFunction.LostPassword => StartPasswordReset(
                             user, passwordResetGrants, httpContext, logger, recoveryCodes),
                         _ => Task.FromResult<IResult>(Results.Unauthorized())
@@ -364,7 +370,7 @@ public sealed class SignInEndpoints
 
     private static async Task<IResult> StartPermittedSession(ApplicationUser user, JwtSettings jwtSettings,
         ISessionCommands sessionCommands, HttpContext httpContext, ILogger logger, MagicLinkFunction? function,
-        IReadOnlyList<string>? recoveryCodes)
+        IReadOnlyList<string>? recoveryCodes, Guid? familyPrimaryUserId)
     {
         var humanUser = user.ToHumanUser();
         var accessToken = AccessToken.Create(humanUser);
@@ -376,7 +382,7 @@ public sealed class SignInEndpoints
                 accessToken,
                 refreshToken,
                 httpContext.ClientAddress(RemoteAddress.MaxLength),
-                httpContext.ClientUserAgent(UserAgent.MaxLength)),
+                httpContext.ClientUserAgent(UserAgent.MaxLength)) { FamilyPrimaryUserId = familyPrimaryUserId },
             httpContext.RequestAborted);
 
         logger.LogInformation(

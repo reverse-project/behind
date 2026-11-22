@@ -17,6 +17,12 @@ A **Profil** segítségével módosíthatja a megjelenítendő nevét és a jels
 
 A „Megjelenik mint: ..." sor megmondja, hogyan látnak Önt mások. A szerzőnevek a `#/user/<felhasználóazonosító>` nyilvános profilra mutatnak.
 
+### Alfiókok
+
+Az elsődleges fiókban nyissa meg a **Profil → Alfiókok** részt. Hozzon létre egy felhasználót megjelenítési névvel. Az e-mail-cím, a születési dátum és a számjegyekből álló PIN-kód megadása választható. Gyermekfiók esetén a születési dátumot az elsődleges fiók kezelheti.
+
+A fiókmenüben a **Profil** alatt válassza a felhasználóváltást, majd a kívánt felhasználót. Ha a rendszer kéri, adja meg a célfiók PIN-kódját. Az elsődleges fiókba a szokásos módon jelentkezhet vissza. E-mail-cím nélkül az alfiók a fiókváltón keresztül érhető el. Önálló bejelentkezéshez állítson be e-mail-címet, és kövesse a webhely szokásos bejelentkezési és címmegerősítési lépéseit.
+
 ### Születési dátum és e-mail-adatvédelem
 
 A születési dátum nem kötelező és nem nyilvános. A tartalmak korhatár szerinti szűrésére szolgál, ha a webhely globális korhatár-beállítása engedélyezett; ilyenkor születési dátum nélkül a korhatáros tartalmak nem érhetők el. A globális korhatárszűrés alapértelmezés szerint ki van kapcsolva. A születési dátum a **Profil** oldalon menthető.

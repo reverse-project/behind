@@ -7,6 +7,10 @@ public abstract record User(Option<IEnumerable<Role>> Roles);
 
 public sealed record HumanUser : User
 {
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid? PersistedId { get; init; }
+
     public IEnumerable<Email> Emails { get; init; }
     
     public string DisplayName { get; init; }

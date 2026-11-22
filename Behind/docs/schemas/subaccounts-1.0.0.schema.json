@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "subaccounts-1.0.0.schema.json",
+  "$defs": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "\\S"
+    },
+    "email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "email",
+      "maxLength": 255
+    },
+    "birthday": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "pin": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]*$",
+      "maxLength": 128
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "create": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "$ref": "#/$defs/name"
+        },
+        "birthday": {
+          "$ref": "#/$defs/birthday"
+        },
+        "isChild": {
+          "type": "boolean"
+        },
+        "email": {
+          "$ref": "#/$defs/email"
+        },
+        "pin": {
+          "$ref": "#/$defs/pin"
+        }
+      },
+      "required": [
+        "displayName"
+      ]
+    },
+    "update": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "$ref": "#/$defs/name"
+        },
+        "birthday": {
+          "$ref": "#/$defs/birthday"
+        },
+        "isChild": {
+          "type": "boolean"
+        },
+        "pin": {
+          "$ref": "#/$defs/pin"
+        },
+        "clearPin": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "displayName"
+      ]
+    },
+    "switch": {
+      "type": "object",
+      "properties": {
+        "pin": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 128
+        }
+      },
+      "required": []
+    },
+    "account": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "$ref": "#/$defs/name"
+        },
+        "birthday": {
+          "$ref": "#/$defs/birthday"
+        },
+        "isChild": {
+          "type": "boolean"
+        },
+        "email": {
+          "$ref": "#/$defs/email"
+        },
+        "userId": {
+          "$ref": "#/$defs/id"
+        },
+        "hasPin": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "displayName",
+        "isChild",
+        "userId",
+        "hasPin"
+      ]
+    },
+    "created": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    },
+    "family": {
+      "type": "object",
+      "properties": {
+        "isPrimary": {
+          "type": "boolean"
+        },
+        "primaryUserId": {
+          "$ref": "#/$defs/id"
+        },
+        "accounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/account"
+          }
+        }
+      },
+      "required": [
+        "accounts",
+        "isPrimary",
+        "primaryUserId"
+      ]
+    }
+  }
+}

@@ -95,6 +95,7 @@ define(["jquery", "jquery-migrate", "ko", "sammy", "models/accounts", "models/br
     ko.components.register("download-tree", { require: "components/downloadtree" });
     ko.components.register("folder-browser", { require: "components/folderbrowser" });
     ko.components.register("menu-items", { require: "components/menuitems" });
+    ko.components.register("subaccount-panel", { require: "components/subaccounts" });
     ko.components.register("menu-nav", { require: "components/menunav" });
     ko.components.register("carousel-editor", { require: "components/carouseleditor" });
     ko.components.register("site-sections-editor", { require: "components/sectionseditor" });

@@ -1,7 +1,6 @@
 using Behind.Core.Common.Configuration;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Identity;
-using static Behind.Common.FunctionalExtensions;
 
 namespace Behind.Core.WebApi.Endpoints;
 
@@ -11,7 +10,7 @@ public static class SignInResponseExtensions
     {
         public bool HasConfirmedEmail => user.Emails.Any(email => email.ConfirmedAt is not null);
 
-        public HumanUser ToHumanUser() => new(user.DisplayName, user.Emails, None);
+        public HumanUser ToHumanUser() => new() { DisplayName = user.DisplayName, Emails = user.Emails.ToList(), PersistedId = user.Id };
 
         public SignInEndpoints.SignInResponse ToSignInResponse(
             AccessToken accessToken,

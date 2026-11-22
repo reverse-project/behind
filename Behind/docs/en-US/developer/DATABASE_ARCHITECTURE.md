@@ -729,6 +729,12 @@ Every management page (users, roles, sites) follows the same shape: a paged list
 - Hard delete commands answer `HardDeleteResult` (`NotFound` when the record is not soft deleted, `Rejected` when the database refuses it, mapped to `404` / `409`).
 - Deleting a site soft deletes its `Sites` rows only. The `ActiveVersions` row stays, so a restore brings the live version back, and a hard delete removes it too.
 
+### Subaccounts
+
+Each `Subaccounts` row links two existing `Users` rows. Its primary key is the subaccount's `UserId`, so audit entries resolve to that user's profile label. `PrimaryUserId` identifies the family owner. Both database providers reject self-links and links that would create a second level. Hard-deleting the subaccount removes its link. A primary with existing links cannot be hard-deleted.
+
+The link stores the child flag and an optional masked PIN hash. The birthday belongs to the user's own profile. The nullable `Sessions.FamilyPrimaryUserId` records the primary that authorized a switch. Existing accounts and sessions need no backfill.
+
 ### Users management
 
 - `POST /users/{id}/delete` soft deletes a user (`User.Delete` grant, same moderation rules as ban: not yourself, only developers may delete developers). The user's sessions are removed with it.

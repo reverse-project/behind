@@ -20,7 +20,7 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
             user.Id, user.Id.ToUserLabel(user.DisplayName), user.ProfilePictureId)).ToList();
     }
 
-    public sealed record Details(DateOnly? Birthday, bool HideEmail);
+    public sealed record Details(DateOnly? Birthday, bool HideEmail, bool IsChild = false);
 
     public sealed record ManagementProfile(string DisplayName, DateOnly? Birthday, bool HideEmail, DateTimeOffset? UpdatedAt);
 
@@ -72,7 +72,7 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
 
     public async Task<Details?> GetDetails(Guid userId, CancellationToken cancellationToken) =>
         await context.Users.Where(user => EF.Property<Guid>(user, "Id") == userId)
-            .Select(user => new Details(user.Birthday, user.HideEmail))
+            .Select(user => new Details(user.Birthday, user.HideEmail, context.Subaccounts.Any(link => link.UserId == userId && link.IsChild)))
             .AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
     public async Task<ManagementProfile?> GetManagementProfile(Guid userId, CancellationToken cancellationToken)
@@ -150,7 +150,10 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
             async user =>
             {
                 var tracked = await context.Users.SingleAsync(value => EF.Property<Guid>(value, "Id") == userId, cancellationToken);
-                context.Entry(tracked).Property(value => value.Birthday).CurrentValue = details.Birthday;
+                if (!await context.Subaccounts.AnyAsync(link => link.UserId == userId && link.IsChild, cancellationToken))
+                {
+                    context.Entry(tracked).Property(value => value.Birthday).CurrentValue = details.Birthday;
+                }
                 context.Entry(tracked).Property(value => value.HideEmail).CurrentValue = details.HideEmail;
                 await context.SaveChangesAsync(cancellationToken);
                 return true;

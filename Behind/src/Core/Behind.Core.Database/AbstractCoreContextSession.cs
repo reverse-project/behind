@@ -156,6 +156,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         var original = FindTrackedSession(key);
         var userAgentKey = GetOrAddUserAgentKey(replacement.UserAgent);
         var userId = original.Property<Guid>("UserId").CurrentValue;
+        var primaryId = original.Entity.FamilyPrimaryUserId;
         var impersonatorId = original.Property<Guid?>("ImpersonatorId").CurrentValue;
         var invalidatedById = original.Property<Guid?>("InvalidatedById").CurrentValue;
         var invalidatedAt = original.Property<DateTimeOffset?>("InvalidatedAt").CurrentValue;
@@ -163,6 +164,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         Sessions.ToImmutableEntityRepository(this).UpdateImmutable([key], replacement);
 
         var updated = Entry(replacement);
+        updated.Property(s => s.FamilyPrimaryUserId).CurrentValue = primaryId;
         updated.Property("UserId").CurrentValue = userId;
         updated.Property("UserAgentId").CurrentValue = userAgentKey;
         updated.Property("ImpersonatorId").CurrentValue = impersonatorId;
@@ -197,7 +199,7 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
             SystemUser => DomainConstants.SystemUserId,
             GuestUser => DomainConstants.GuestUserId,
             UnknownUser unknown => unknown.Id,
-            HumanUser human => FindHumanUserKey(human),
+            HumanUser human => human.PersistedId ?? FindHumanUserKey(human),
             _ => throw new ArgumentException("The user cannot invalidate a session.", nameof(user))
         };
 

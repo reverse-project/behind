@@ -94,7 +94,7 @@ public sealed class SubaccountEndpointsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task SubaccountCanChangeAndUnsetOnlyItsExistingPin(bool switched)
+    public async Task SubaccountCanSetChangeAndUnsetOnlyItsOwnPin(bool switched)
     {
         using var factory = new TestDbContextFactory();
         await using var db = factory.CreateContext();
@@ -106,7 +106,6 @@ public sealed class SubaccountEndpointsTests
         var sibling = (await db.Users.FindAsync(siblingId))!;
         db.Subaccounts.AddRange(new Subaccount(parent, child, false), new Subaccount(parent, sibling, false));
         db.UserSwitchPins.AddRange(
-            new UserSwitchPin(child, new PinHash(PasswordHash.Create("1234"))),
             new UserSwitchPin(parent, new PinHash(PasswordHash.Create("1234"))),
             new UserSwitchPin(sibling, new PinHash(PasswordHash.Create("1234"))));
         await db.SaveChangesAsync();
@@ -124,6 +123,12 @@ public sealed class SubaccountEndpointsTests
             return JsonSerializer.SerializeToElement(value).GetProperty("CurrentHasPin").GetBoolean();
         }
 
+        Assert.False(await CurrentHasPin());
+        Assert.IsType<ForbidHttpResult>(await Change(parentId, "5678", null));
+        Assert.IsType<ForbidHttpResult>(await Change(siblingId, "5678", null));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, null, null));
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "1234", currentPin));
+        Assert.IsType<NoContent>(await Change(childId, "1234", null));
         Assert.True(await CurrentHasPin());
         Assert.IsType<ForbidHttpResult>(await Change(parentId, "5678", currentPin));
         Assert.IsType<ForbidHttpResult>(await Change(siblingId, null, currentPin));
@@ -145,6 +150,10 @@ public sealed class SubaccountEndpointsTests
         Assert.Equal(2, await db.UserSwitchPins.CountAsync());
         Assert.All(await db.UserSwitchPins.ToListAsync(),
             pin => Assert.True(PasswordHash.CreateFromExisting(pin.PinHash.ToString()).Verify("1234")));
+        Assert.IsType<NoContent>(await Change(childId, "9012", null));
+        Assert.True(await CurrentHasPin());
+        Assert.IsType<ForbidHttpResult>(await Change(childId, "3456", null));
+        Assert.IsType<NoContent>(await Change(childId, null, new(CurrentPin: "9012")));
     }
 
     [Theory]

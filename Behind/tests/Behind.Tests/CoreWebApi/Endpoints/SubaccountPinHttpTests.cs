@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
+using Behind.Common.WebApi.Filters;
 using Behind.Core.Common;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
@@ -12,9 +13,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Testcontainers.PostgreSql;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
@@ -32,22 +36,52 @@ public sealed class SubaccountPinHttpTests
     [Trait("Category", "Integration")]
     public async Task ConcurrentRequestsUsingOneOldPinCanOnlyCommitOneReplacement()
     {
+        await VerifyPostgresChanges(false);
+    }
+
+    [Fact]
+    public async Task SqliteHttpRequestsValidateFirstSetupAndProtectStoredPin()
+    {
+        using var factory = new TestDbContextFactory();
+        await VerifyChanges(factory.CreateContext, false, linked: true);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ConcurrentFirstSetupsCanOnlyCommitOnePin()
+    {
+        await VerifyPostgresChanges(true);
+    }
+
+    private static async Task VerifyPostgresChanges(bool linked)
+    {
         using var configuration = new ConfigurationManager();
         configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
         await using var postgres = new PostgreSqlBuilder(configuration["Postgres:Image"]
             ?? throw new InvalidOperationException("Postgres:Image is required.")).Build();
         await postgres.StartAsync();
-        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(postgres.GetConnectionString()).Options;
-        await using var seed = new CoreContextPostgres(options);
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(postgres.GetConnectionString());
+        if (linked)
+        {
+            options.AddInterceptors(new ConcurrentPinInsertGate());
+        }
+        await using var seed = new CoreContextPostgres(options.Options);
         await seed.Database.MigrateAsync();
-        await VerifyChanges(() => new CoreContextPostgres(options), true);
+        await VerifyChanges(() => new CoreContextPostgres(options.Options), true, linked);
     }
 
-    private static async Task VerifyChanges(Func<AbstractCoreContext> contextFactory, bool concurrent)
+    private static async Task VerifyChanges(Func<AbstractCoreContext> contextFactory, bool concurrent, bool linked = false)
     {
         await using var seed = contextFactory();
-        var actor = new HumanUser("Primary", [new Email("primary@example.test")], None);
-        seed.Users.Add(actor);
+        var primary = new HumanUser("Primary", [new Email("primary@example.test")], None);
+        var actor = primary;
+        seed.Users.Add(primary);
+        if (linked)
+        {
+            actor = new HumanUser("Linked", [new Email("linked@example.test")], None);
+            seed.Users.Add(actor);
+            seed.Subaccounts.Add(new Subaccount(primary, actor, false));
+        }
         var actorId = seed.GetKey(actor);
         await new PasswordCommands(seed).CreateFromUserId(actorId, new Password(PasswordHash.Create("actor-password"), true));
         await seed.SaveChangesAsync();
@@ -59,6 +93,10 @@ public sealed class SubaccountPinHttpTests
         builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AbstractCoreContext>());
         builder.Services.AddSingleton(SessionTestHelper.SessionQueries(sessionId, actorId));
         builder.Services.AddOptions<AccountsConfiguration>();
+        builder.Services.AddSingleton(Options.Create(new SecurityConfiguration
+        {
+            Accounts = new SecurityAccountSettings { SwitchPinMaxLength = 4 }
+        }));
         builder.Services.AddAuthentication("Test").AddCookie("Test", settings =>
         {
             settings.Events.OnRedirectToAccessDenied = context =>
@@ -78,26 +116,66 @@ public sealed class SubaccountPinHttpTests
         });
         app.UseAuthorization();
         app.UseMiddleware<AuthenticationTransactionMiddleware>();
-        app.MapPut("/profile/subaccounts/{userId:guid}/pin", SubaccountEndpoints.ChangePin).RequireAuthenticationTransaction();
+        app.MapPut("/profile/subaccounts/{userId:guid}/pin", SubaccountEndpoints.ChangePin)
+            .WithMetadata(new SubaccountTransactionMetadata())
+            .AddEndpointFilter(new SubaccountFeatureFilter(false))
+            .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.PinRequest>>()
+            .RequireAuthenticationTransaction();
         await app.StartAsync();
         var url = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
         using var client = new HttpClient { BaseAddress = new Uri(url) };
-        async Task<HttpStatusCode> Change(string pin, SubaccountEndpoints.PinProof proof)
+        async Task<HttpStatusCode> Change(string pin, SubaccountEndpoints.PinProof? proof)
         {
             using var result = await client.PutAsJsonAsync($"/profile/subaccounts/{actorId}/pin",
                 new SubaccountEndpoints.PinRequest(pin, false, proof));
             return result.StatusCode;
         }
 
-        Assert.Equal(HttpStatusCode.Forbidden, await Change("1234", new(Password: "wrong-password")));
-        Assert.Equal(HttpStatusCode.NoContent, await Change("1234", new(Password: "actor-password")));
+        SubaccountEndpoints.PinProof? proof = null;
+        if (linked)
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, await Change("12345", null));
+            Assert.Equal(HttpStatusCode.BadRequest, await Change("abcd", null));
+            Assert.Null(await seed.UserSwitchPins.AsNoTracking().SingleOrDefaultAsync());
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, await Change("1234", null));
+            Assert.Equal(HttpStatusCode.Forbidden, await Change("1234", new(Password: "wrong-password")));
+            Assert.Equal(HttpStatusCode.NoContent, await Change("1234", new(Password: "actor-password")));
+            proof = new(CurrentPin: "1234");
+        }
         var results = concurrent
-            ? await Task.WhenAll(Change("5678", new(CurrentPin: "1234")), Change("9876", new(CurrentPin: "1234")))
-            : new[] { await Change("5678", new(CurrentPin: "1234")), await Change("9876", new(CurrentPin: "1234")) };
+            ? await Task.WhenAll(Change("5678", proof), Change("9876", proof))
+            : new[] { await Change("5678", proof), await Change("9876", proof) };
         Assert.Single(results, status => status == HttpStatusCode.NoContent);
         Assert.Single(results, status => status is HttpStatusCode.Forbidden or HttpStatusCode.Conflict);
+        if (linked && concurrent)
+        {
+            Assert.Contains(HttpStatusCode.Conflict, results);
+        }
         var stored = await seed.UserSwitchPins.AsNoTracking().SingleAsync();
         Assert.True(PasswordHash.CreateFromExisting(stored.PinHash.ToString()).Verify(
             results[0] == HttpStatusCode.NoContent ? "5678" : "9876"));
+    }
+
+    private sealed class ConcurrentPinInsertGate : SaveChangesInterceptor
+    {
+        private readonly TaskCompletionSource bothReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int pendingInserts;
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (eventData.Context?.ChangeTracker.Entries<UserSwitchPin>().Any(entry => entry.State == EntityState.Added) == true)
+            {
+                if (Interlocked.Increment(ref pendingInserts) == 2)
+                {
+                    bothReady.SetResult();
+                }
+                await bothReady.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            }
+            return result;
+        }
     }
 }

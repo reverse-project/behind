@@ -412,13 +412,27 @@ test("primary PIN changes send scoped magic proof only on explicit save", async 
     panel.dispose();
 });
 
-test("a directly signed-in subaccount changes and removes its PIN on its own profile", async () => {
-    const profile = { manager: true, userId: ko.observable(""), currentHasPin: true };
+test("a directly signed-in subaccount sets, changes, removes, and sets its PIN again", async () => {
+    const profile = { manager: true, userId: ko.observable(""), currentHasPin: false };
     const { panel, requests, location, reloads, sessions } = await setup([], false, false, false, [], profile);
     assert.equal(panel.editAccount(), null);
     profile.userId("self");
     assert.equal(panel.editAccount().userId, "self");
     assert.equal(panel.pinOnly(), true);
+    assert.equal(panel.editAccount().hasPin, false);
+    assert.equal(panel.proofMethods().length, 0);
+    await panel.save();
+    await panel.requestPinProof();
+    panel.clearPin(true);
+    await panel.save();
+    assert.equal(requests.length, 0);
+    panel.clearPin(false);
+    panel.pin("0051");
+    profile.currentHasPin = true;
+    await panel.save();
+    assert.equal(panel.editAccount().hasPin, true);
+    assert.equal(panel.message(), "subaccount.ownPinSet");
+    assert.equal(panel.pin(), "");
     assert.deepEqual(Array.from(panel.proofMethods()), ["currentPin"]);
     assert.equal(panel.proofLabel("currentPin"), "subaccount.yourCurrentPin");
     await panel.save();
@@ -430,7 +444,7 @@ test("a directly signed-in subaccount changes and removes its PIN on its own pro
         panel.credential("wrong method");
         await panel.save();
     }
-    assert.equal(requests.length, 0);
+    assert.equal(requests.length, 1);
     panel.proofMethod("currentPin");
     panel.credential("0051");
     await panel.save();
@@ -442,22 +456,46 @@ test("a directly signed-in subaccount changes and removes its PIN on its own pro
     panel.clearPin(true);
     profile.currentHasPin = false;
     await panel.save();
-    assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
-        { url: "/profile/subaccounts/self/pin", body: { pin: "0052", clearPin: false, proof: { currentPin: "0051" } } },
-        { url: "/profile/subaccounts/self/pin", body: { pin: null, clearPin: true, proof: { currentPin: "0052" } } }
-    ]);
-    assert.equal(panel.editAccount(), null);
+    assert.equal(panel.editAccount().hasPin, false);
+    assert.equal(panel.proofMethods().length, 0);
     assert.equal(panel.credential(), "");
     assert.equal(panel.clearPin(), false);
     assert.equal(panel.message(), "subaccount.ownPinRemoved");
     panel.pin("0001");
-    panel.credential("0052");
+    profile.currentHasPin = true;
     await panel.save();
-    assert.equal(requests.length, 2);
+    assert.equal(panel.editAccount().hasPin, true);
+    assert.equal(panel.message(), "subaccount.ownPinSet");
+    assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
+        { url: "/profile/subaccounts/self/pin", body: { pin: "0051", clearPin: false } },
+        { url: "/profile/subaccounts/self/pin", body: { pin: "0052", clearPin: false, proof: { currentPin: "0051" } } },
+        { url: "/profile/subaccounts/self/pin", body: { pin: null, clearPin: true, proof: { currentPin: "0052" } } },
+        { url: "/profile/subaccounts/self/pin", body: { pin: "0001", clearPin: false } }
+    ]);
     assert.equal(location.hash, "#/profile");
     assert.deepEqual(reloads, []);
     assert.deepEqual(sessions, []);
     panel.dispose();
+});
+
+test("an outdated PIN setup form refreshes to require the current PIN", async () => {
+    for (const status of [403, 409]) {
+        const profile = { manager: true, userId: "self", currentHasPin: false };
+        const { panel, http } = await setup([], false, false, false, [], profile);
+        http.put = async (url, body) => {
+            assert.equal(url, "/profile/subaccounts/self/pin");
+            assert.equal(body.proof, undefined);
+            profile.currentHasPin = true;
+            return { ok: false, status };
+        };
+        panel.pin("0051");
+        await panel.save();
+        assert.equal(panel.editAccount().hasPin, true);
+        assert.deepEqual(Array.from(panel.proofMethods()), ["currentPin"]);
+        assert.equal(panel.pin(), "");
+        assert.equal(panel.message(), "subaccount.ownPinSetupRejected");
+        panel.dispose();
+    }
 });
 
 test("a switched subaccount always targets itself and ignores stale PIN responses", async () => {

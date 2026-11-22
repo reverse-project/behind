@@ -86,6 +86,22 @@ public sealed class SubaccountSchemaTests
         Assert.Equal(expected, ReadDefinition("selfPinMutation", "2.2.0").Evaluate(JsonNode.Parse(request)).IsValid);
     }
 
+    [Theory]
+    [InlineData("""{"pin":"0042"}""", true)]
+    [InlineData("""{"pin":"0042","clearPin":false,"proof":null}""", true)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":"0017"}}""", true)]
+    [InlineData("""{"clearPin":true,"proof":{"currentPin":"0017"}}""", true)]
+    [InlineData("""{"clearPin":true}""", false)]
+    [InlineData("""{"clearPin":true,"pin":"0042"}""", false)]
+    [InlineData("""{"pin":""}""", false)]
+    [InlineData("""{"pin":"invalid"}""", false)]
+    [InlineData("""{"pin":"0042","proof":{}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"password":"secret"}}""", false)]
+    public void SelfPinMutation_AllowsSetupWithoutProof(string request, bool expected)
+    {
+        Assert.Equal(expected, ReadDefinition("selfPinMutation", "2.3.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
     private static JsonSchema ReadDefinition(string name, string version = "1.2.1")
     {
         var assembly = typeof(FunctionalExtensions).Assembly;

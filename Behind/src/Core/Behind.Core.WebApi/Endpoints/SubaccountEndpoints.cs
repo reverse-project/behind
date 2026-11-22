@@ -237,6 +237,15 @@ public sealed class SubaccountEndpoints
         {
             return Results.NotFound();
         }
+        if (!family.IsPrimary && request.Proof is null && !request.ClearPin)
+        {
+            if (await PinsFor(db, userId).AnyAsync(http.RequestAborted))
+            {
+                return Results.Forbid();
+            }
+            db.UserSwitchPins.Add(new UserSwitchPin(target, HashPin(request.Pin)!));
+            return await SavePinChanges(db, http);
+        }
         if (!await VerifyProof(request.Proof, family, userId, request.ClearPin ? "remove" : "change", db, http))
         {
             return Results.Forbid();

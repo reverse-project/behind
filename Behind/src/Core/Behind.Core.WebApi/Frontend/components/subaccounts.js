@@ -39,14 +39,14 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         var identity = ko.pureComputed(currentIdentity);
 
         var profileIdentity = identity();
-        var currentHasPin = ko.observable(false);
+        var currentHasPin = ko.observable(null);
         self.editAccount = ko.pureComputed(function () {
             if (!self.manager || self.primary()) {
                 return self.selected();
             }
             var id = ko.unwrap(params.userId);
-            return id && self.linked() && currentHasPin() && identity() === profileIdentity
-                ? { userId: id, hasPin: true } : null;
+            return id && self.linked() && currentHasPin() !== null && identity() === profileIdentity
+                ? { userId: id, hasPin: currentHasPin() } : null;
         });
         self.pinOnly = ko.pureComputed(function () {
             var account = self.editAccount();
@@ -58,7 +58,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.proofMethods = ko.pureComputed(function () {
             var account = self.editAccount();
             if (!self.primary()) {
-                return self.manager && account ? ["currentPin"] : [];
+                return self.manager && account && account.hasPin ? ["currentPin"] : [];
             }
             var methods = [];
             if (account ? account.hasPin : self.primaryHasPin()) {
@@ -97,8 +97,12 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 clearProof();
             }
         });
-        self.needsProof = ko.pureComputed(function () {
+        self.changingPin = ko.pureComputed(function () {
             return !!(self.pin() || self.clearPin() || (self.primary() && !self.selected() && !self.primaryHasPin() && !self.skipPrimaryPin() && self.primaryPin()));
+        });
+        self.needsProof = ko.pureComputed(function () {
+            var account = self.editAccount();
+            return self.changingPin() && (self.primary() || !!(account && account.hasPin));
         });
         var select = self.editAccount.subscribe(function (account) {
             self.pin("");
@@ -142,7 +146,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             self.pin("");
             self.primaryPin("");
             self.skipPrimaryPin(false);
-            currentHasPin(false);
+            currentHasPin(null);
             self.primary(false);
             self.primaryHasPin(false);
             self.primaryUserId(null);
@@ -162,7 +166,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                     self.accounts(response.data.accounts);
                     self.primary(response.data.isPrimary);
                     self.linked(!response.data.isPrimary && !!response.data.primaryUserId);
-                    currentHasPin(response.data.currentHasPin === true);
+                    currentHasPin(typeof response.data.currentHasPin === "boolean" ? response.data.currentHasPin : null);
                     clearProof();
                     self.linkEnabled(!!response.data.linkUnlinkEnabled);
                     if (self.manager && self.linkEnabled() && self.primary()) {
@@ -195,6 +199,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             methodChange.dispose();
             operationChange.dispose();
             self.needsProof.dispose();
+            self.changingPin.dispose();
             self.proofMethods.dispose();
             self.managementAccounts.dispose();
             self.pinOnly.dispose();
@@ -218,7 +223,10 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                         return done(response.data);
                     }
                 } else if (ticket === revision) {
-                    self.message(i18n.t(response.status === 429 ? "auth.tooManyAttempts" : typeof invalid === "function" ? invalid(response.status) : invalid));
+                    if (response.status !== 429 && typeof invalid === "function") {
+                        return invalid(response.status);
+                    }
+                    self.message(i18n.t(response.status === 429 ? "auth.tooManyAttempts" : invalid));
                 }
             }).catch(function () {
                 if (ticket === revision) {
@@ -317,7 +325,8 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
 
         self.save = function () {
             var account = self.editAccount();
-            if (!self.manager || (!self.primary() && !account) || (self.pinOnly() && !self.needsProof())) {
+            var settingOwnPin = !self.primary() && account && !account.hasPin;
+            if (!self.manager || (!self.primary() && !account) || (self.pinOnly() && !self.changingPin()) || (settingOwnPin && self.clearPin())) {
                 return;
             }
             var body = {
@@ -349,13 +358,17 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 body.email = self.email().trim() || null;
                 return http.post(path, body);
             }, function () {
-                var success = body.pin === null ? "subaccount.ownPinRemoved" : "subaccount.ownPinChanged";
+                var success = settingOwnPin ? "subaccount.ownPinSet"
+                    : body.pin === null ? "subaccount.ownPinRemoved" : "subaccount.ownPinChanged";
                 return refresh(self.primary() ? null : success);
             }, function (status) {
-                if (status === 403 && !self.primary()) {
-                    return "subaccount.currentPinRejected";
+                if (settingOwnPin && (status === 403 || status === 409)) {
+                    return refresh("subaccount.ownPinSetupRejected");
                 }
-                return status === 403 && body.proof ? "subaccount.proofRejected" : "subaccount.invalid";
+                var invalid = status === 403 && body.proof
+                    ? (self.primary() ? "subaccount.proofRejected" : "subaccount.currentPinRejected")
+                    : "subaccount.invalid";
+                self.message(i18n.t(invalid));
             });
         };
 

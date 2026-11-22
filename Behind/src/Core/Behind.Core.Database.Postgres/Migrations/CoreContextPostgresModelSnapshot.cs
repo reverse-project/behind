@@ -1611,9 +1611,6 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.Property<bool>("IsChild")
                     .HasColumnType("boolean");
 
-                b.Property<string>("PinHash")
-                    .HasColumnType("text");
-
                 b.Property<Guid>("PrimaryUserId")
                     .HasColumnType("uuid");
 
@@ -1625,6 +1622,20 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     {
                         t.HasCheckConstraint("CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\"");
                     });
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.UserSwitchPin", b =>
+            {
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.Property<string>("PinHash")
+                    .IsRequired()
+                    .HasColumnType("text");
+
+                b.HasKey("UserId");
+
+                b.ToTable("UserSwitchPins");
             });
 
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>
@@ -2127,6 +2138,17 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.UserSwitchPin", b =>
+            {
+                b.HasOne("Behind.Core.Domain.HumanUser", "User")
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("User");
             });
 
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>

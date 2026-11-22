@@ -24,6 +24,8 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
 
     public DbSet<ContentRestriction> ContentRestrictions => Set<ContentRestriction>();
 
+    public DbSet<UserSwitchPin> UserSwitchPins => Set<UserSwitchPin>();
+
     public DbSet<Subaccount> Subaccounts => Set<Subaccount>();
 
     public DbSet<ContentAgeOption> ContentAgeOptions => Set<ContentAgeOption>();
@@ -109,7 +111,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         modelBuilder.ApplySoftDelete(
             this,
             DeletionRecorded,
-            [..CoreSoftDeletedEntities, ..Modules.SoftDeletedEntities]);
+            [.. CoreSoftDeletedEntities, .. Modules.SoftDeletedEntities]);
         modelBuilder.ApplyContentRestrictions(this,
         [
             typeof(Site), typeof(SiteSection), typeof(News), typeof(NewsCategory), typeof(NewsComment),

@@ -1607,9 +1607,6 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.Property<bool>("IsChild")
                     .HasColumnType("INTEGER");
 
-                b.Property<string>("PinHash")
-                    .HasColumnType("TEXT");
-
                 b.Property<Guid>("PrimaryUserId")
                     .HasColumnType("TEXT");
 
@@ -1621,6 +1618,20 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                     {
                         t.HasCheckConstraint("CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\"");
                     });
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.UserSwitchPin", b =>
+            {
+                b.Property<Guid>("UserId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("PinHash")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.HasKey("UserId");
+
+                b.ToTable("UserSwitchPins");
             });
 
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>
@@ -2123,6 +2134,17 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
+            });
+
+        modelBuilder.Entity("Behind.Core.Domain.UserSwitchPin", b =>
+            {
+                b.HasOne("Behind.Core.Domain.HumanUser", "User")
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("User");
             });
 
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>

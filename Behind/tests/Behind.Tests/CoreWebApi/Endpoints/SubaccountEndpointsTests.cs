@@ -32,6 +32,28 @@ public sealed class SubaccountEndpointsTests
         return (http, queries, sessionId);
     }
 
+    [Fact]
+    public async Task ConcurrentPrimaryPinSetupPreservesWinningPinAndRollsBackNewChild()
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        var primary = await DatabaseSeedHelper.SeedHumanUserAsync(db);
+        var parent = AsUser(primary);
+        var roles = Substitute.For<IRoleCommands>();
+        var winningHash = PasswordHash.Create("000789").ToString();
+        db.SavingChanges += (_, _) => db.Database.ExecuteSql(
+            $"INSERT INTO UserSwitchPins (UserId, PinHash) VALUES ({primary}, {winningHash})");
+
+        var response = await SubaccountEndpoints.Create(new("Child", null, null, true, "001234", "002345"),
+            parent.Http, parent.Queries, db, roles, TimeProvider.System);
+
+        Assert.Equal(StatusCodes.Status409Conflict, Assert.IsAssignableFrom<IStatusCodeHttpResult>(response).StatusCode);
+        await using var verified = factory.CreateContext();
+        Assert.Equal(winningHash, (await verified.UserSwitchPins.SingleAsync()).PinHash.ToString());
+        Assert.False(await verified.Subaccounts.AnyAsync());
+        Assert.False(await verified.Users.AnyAsync(user => user.DisplayName == "Child"));
+    }
+
     [Theory]
     [InlineData(null, null)]
     [InlineData("000123", "child@example.test")]
@@ -53,10 +75,11 @@ public sealed class SubaccountEndpointsTests
         var childId = db.GetKey(link.User);
         Assert.Equal(primary, db.GetKey(link.PrimaryUser));
         Assert.NotEqual(primary, childId);
-        Assert.Equal(pin is not null, link.PinHash is not null);
+        var credential = await db.UserSwitchPins.SingleOrDefaultAsync();
+        Assert.Equal(pin is not null, credential is not null);
         if (pin is not null)
         {
-            var storedHash = Assert.IsType<PinHash>(link.PinHash);
+            var storedHash = Assert.IsType<PinHash>(credential!.PinHash);
             Assert.NotEqual(pin, storedHash.ToString());
             Assert.True(PasswordHash.CreateFromExisting(storedHash.ToString()).Verify(pin));
         }
@@ -82,6 +105,7 @@ public sealed class SubaccountEndpointsTests
 
         if (pin is not null)
         {
+            Assert.IsType<ForbidHttpResult>(await Switch(null));
             Assert.IsType<ForbidHttpResult>(await Switch("000000"));
             await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
         }
@@ -89,7 +113,7 @@ public sealed class SubaccountEndpointsTests
         await commands.Received(1).CreateForUserId(childId, Arg.Is<ValidSession>(s => s.FamilyPrimaryUserId == primary), Arg.Any<CancellationToken>());
         await commands.Received(1).InvalidateSession(parent.SessionId, primary, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
         Assert.IsType<NoContent>(await SubaccountEndpoints.Update(childId, update, parent.Http, parent.Queries, db, TimeProvider.System));
-        Assert.Null((await db.Subaccounts.AsNoTracking().SingleAsync()).PinHash);
+        Assert.False(await db.UserSwitchPins.AnyAsync());
         Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(null));
     }
 }

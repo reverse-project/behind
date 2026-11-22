@@ -733,7 +733,7 @@ Every management page (users, roles, sites) follows the same shape: a paged list
 
 Each `Subaccounts` row links two existing `Users` rows. Its primary key is the subaccount's `UserId`, so audit entries resolve to that user's profile label. `PrimaryUserId` identifies the family owner. Both database providers reject self-links and links that would create a second level. Hard-deleting the subaccount removes its link. A primary with existing links cannot be hard-deleted.
 
-The link stores the child flag and an optional masked PIN hash. The birthday belongs to the user's own profile. The nullable `Sessions.FamilyPrimaryUserId` records the primary that authorized a switch. Existing accounts and sessions need no backfill.
+The link stores the child flag. A primary or child user can own one optional credential in `UserSwitchPins`, keyed by the user's ID. The migration copies existing hashes verbatim. Downgrading restores child hashes to their links and removes primary PINs, which the older schema cannot store. The birthday belongs to the user's own profile. The nullable `Sessions.FamilyPrimaryUserId` records the primary that authorized a switch. Existing accounts and sessions need no backfill.
 
 ### Users management
 

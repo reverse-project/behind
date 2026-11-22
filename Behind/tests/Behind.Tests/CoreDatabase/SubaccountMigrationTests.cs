@@ -45,16 +45,32 @@ public sealed class SubaccountMigrationTests
     private static async Task VerifyFamilySchema(AbstractCoreContext db, bool upgrade)
     {
         var primary = Guid.NewGuid();
+        var legacyChild = Guid.NewGuid();
+        var legacyNoPin = Guid.NewGuid();
         if (upgrade)
         {
             await db.GetService<IMigrator>().MigrateAsync("20261118160000_PreserveIssuedBans");
             await db.Database.ExecuteSqlAsync(
                 $"INSERT INTO \"Users\" (\"Id\", \"DisplayName\") VALUES ({primary}, {"Primary"})");
+            await db.GetService<IMigrator>().MigrateAsync("20261122120000_AddSubaccounts");
+            await db.Database.ExecuteSqlAsync(
+                $"""INSERT INTO "Users" ("Id", "DisplayName") VALUES ({legacyChild}, {"Legacy"}), ({legacyNoPin}, {"No PIN"})""");
+            await db.Database.ExecuteSqlAsync(
+                $"""INSERT INTO "Subaccounts" ("UserId", "PrimaryUserId", "IsChild", "PinHash") VALUES ({legacyChild}, {primary}, {true}, {"legacy-hash"}), ({legacyNoPin}, {primary}, {true}, NULL)""");
         }
 
         await db.Database.MigrateAsync();
         Assert.False(db.Database.HasPendingModelChanges());
-        if (!upgrade)
+        if (upgrade)
+        {
+            var credential = await db.UserSwitchPins.Include(pin => pin.User).SingleAsync();
+            Assert.Equal(legacyChild, db.GetKey(credential.User));
+            Assert.Equal(new PinHash("legacy-hash"), credential.PinHash);
+            Assert.Equal(2, await db.Subaccounts.CountAsync());
+            await db.Database.ExecuteSqlAsync($"""DELETE FROM "Users" WHERE "Id" IN ({legacyChild}, {legacyNoPin})""");
+            Assert.False(await db.UserSwitchPins.AnyAsync());
+        }
+        else
         {
             await db.Database.ExecuteSqlAsync(
                 $"INSERT INTO \"Users\" (\"Id\", \"DisplayName\") VALUES ({primary}, {"Primary"})");
@@ -68,33 +84,35 @@ public sealed class SubaccountMigrationTests
         var otherId = db.GetKey(other);
         var primaryUser = await db.Users.FindAsync(primary) ?? throw new InvalidOperationException();
         var hash = new PinHash("hash-written-by-ef");
-        db.Subaccounts.Add(new Subaccount(primaryUser, child, true, hash));
+        db.Subaccounts.Add(new Subaccount(primaryUser, child, true));
+        db.UserSwitchPins.Add(new UserSwitchPin(child, hash));
         await db.SaveChangesAsync();
         db.ChangeTracker.Clear();
 
         Assert.Equal(hash.ToString(), await db.Database.SqlQuery<string>(
-            $"""SELECT "PinHash" AS "Value" FROM "Subaccounts" WHERE "UserId" = {childId}""").SingleAsync());
+            $"""SELECT "PinHash" AS "Value" FROM "UserSwitchPins" WHERE "UserId" = {childId}""").SingleAsync());
         await db.Database.ExecuteSqlAsync(
-            $"""UPDATE "Subaccounts" SET "PinHash" = {"legacy-hash"} WHERE "UserId" = {childId}""");
+            $"""UPDATE "UserSwitchPins" SET "PinHash" = {"legacy-hash"} WHERE "UserId" = {childId}""");
         var link = await db.Subaccounts
             .Include(account => account.PrimaryUser)
             .Include(account => account.User)
             .SingleAsync();
         Assert.Equal(primary, db.GetKey(link.PrimaryUser));
         Assert.Equal(childId, db.GetKey(link.User));
-        Assert.Equal((PinHash?)"legacy-hash", link.PinHash);
-        Assert.Equal("legacy-hash", (string?)link.PinHash);
-        var raw = db.FindRawTable("Subaccounts").Match(() => throw new InvalidOperationException(), table => table);
+        var pin = await db.UserSwitchPins.SingleAsync();
+        Assert.Equal((PinHash?)"legacy-hash", pin.PinHash);
+        Assert.Equal("legacy-hash", (string?)pin.PinHash);
+        var raw = db.FindRawTable("UserSwitchPins").Match(() => throw new InvalidOperationException(), table => table);
         Assert.True(raw.FindColumn("PinHash").Match(() => false, column => column.IsSensitive));
         var page = (await new RawDatabaseQueries(db).ListRows(
-                "Subaccounts", new RawRowQuery(new Flipper(1, 5), None, None, false)))
+                "UserSwitchPins", new RawRowQuery(new Flipper(1, 5), None, None, false)))
             .Match(() => throw new InvalidOperationException(), result => result);
         var rows = page.Results.Match(() => [], found => found.ToList());
         Assert.Equal(SensibleExtensions.MaskedValue, Assert.Single(rows).Values["PinHash"]);
-        db.Entry(link).Property(account => account.PinHash).CurrentValue = null;
+        db.UserSwitchPins.Remove(pin);
         await db.SaveChangesAsync();
         db.ChangeTracker.Clear();
-        Assert.Null((await db.Subaccounts.SingleAsync()).PinHash);
+        Assert.False(await db.UserSwitchPins.AnyAsync());
         db.ChangeTracker.Clear();
 
         var loaded = (await db.GetRepository<HumanUser, Guid>().TryFindAsync(childId)).GetOrElse(new HumanUser());
@@ -113,7 +131,7 @@ public sealed class SubaccountMigrationTests
         {
             var parent = await db.Users.FindAsync(parentId) ?? throw new InvalidOperationException();
             var linked = await db.Users.FindAsync(linkedId) ?? throw new InvalidOperationException();
-            db.Subaccounts.Add(new Subaccount(parent, linked, false, null));
+            db.Subaccounts.Add(new Subaccount(parent, linked, false));
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
             db.ChangeTracker.Clear();
         }

@@ -21,7 +21,7 @@ The line "Shown as ..." tells you how others will see you. Author names link to 
 
 Open **Profile → Subaccounts** on the primary account. Create a user with a display name and, optionally, an email address, birthday and numeric PIN. Mark the account as a child to let the primary account manage its birthday.
 
-Under **Profile** in the account menu, open **Switch User** and choose a linked user. Enter the destination user’s PIN if prompted. To return to the primary account, sign in with its usual credentials. An email-less subaccount can be used through the switcher. For independent sign-in, configure an address and complete the site’s usual sign-in and email verification steps.
+Under **Profile** in the account menu, open **Switch User** and choose a linked user. Enter the destination user’s PIN if prompted. When adding a subaccount, you can set a separate PIN for the primary account. Use it in Switch User to return from a family session. If you skip setup, sign in again with the primary account’s usual credentials. An email-less subaccount can be used through the switcher. For independent sign-in, configure an address and complete the site’s usual sign-in and email verification steps.
 
 ### Birthday and email privacy
 

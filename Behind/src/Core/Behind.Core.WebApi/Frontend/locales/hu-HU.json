@@ -2,6 +2,10 @@
   "name": "Magyar",
   "flag": "🇭🇺",
   "messages": {
+    "subaccount.primaryLabel": "Elsődleges fiók",
+    "subaccount.primaryPin": "Adjon meg egy PIN-kódot az elsődleges fiókba való visszaváltáshoz",
+    "subaccount.skipPrimaryPin": "Az elsődleges PIN-kód beállításának kihagyása",
+    "subaccount.primaryWarning": "Elsődleges PIN-kód nélkül újra be kell jelentkeznie, hogy visszatérjen az elsődleges fiókjába.",
     "subaccount.title": "Alfiókok",
     "subaccount.switch": "Felhasználóváltás",
     "subaccount.create": "Alfiók létrehozása",
@@ -755,6 +759,7 @@
     "audit.actions.ImpersonationStarted": "Megszemélyesítés megkezdve",
     "audit.actions.ImpersonationEnded": "Megszemélyesítés befejezve",
     "audit.entities.HumanUser": "Felhasználó",
+    "audit.entities.UserSwitchPin": "Fiókváltási PIN-kód",
     "audit.entities.Subaccount": "Alfiók",
     "audit.entities.User": "Felhasználó",
     "audit.entities.UserRole": "Szerepkör",

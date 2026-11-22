@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Text.Json;
 using Behind.Core.Common.Configuration;
+using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
 using Behind.Core.WebApi.Endpoints;
@@ -14,49 +16,83 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public sealed class SubaccountSessionTests
 {
-    [Fact]
-    public async Task OnlyASwitchedSessionCanMoveBetweenSiblingsAndNeverIntoThePrimary()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("000789")]
+    public async Task FamilySessionsCanReturnToPrimaryOnlyWithConfiguredPin(string? primaryPin)
     {
         using var factory = new TestDbContextFactory();
         await using var db = factory.CreateContext();
         var primary = await DatabaseSeedHelper.SeedHumanUserAsync(db, "parent@example.test");
         var primaryUser = await db.Users.FindAsync(primary) ?? throw new InvalidOperationException();
         var first = new HumanUser { DisplayName = "First" };
-        var second = new HumanUser { DisplayName = "Second" };
-        db.Users.AddRange(first, second);
+        db.Users.Add(first);
         var firstId = db.GetKey(first);
-        var secondId = db.GetKey(second);
-        db.Subaccounts.AddRange(new Subaccount(primaryUser, first, true, null), new Subaccount(primaryUser, second, true, null));
+        db.Subaccounts.Add(new Subaccount(primaryUser, first, true));
         await db.SaveChangesAsync();
         var commands = new SessionCommands(db);
         var queries = new SessionQueries(db);
         var manager = Substitute.For<UserManager<ApplicationUser>>(
             Substitute.For<IUserStore<ApplicationUser>>(), null, null, null, null, null, null, null, null);
         manager.FindByIdAsync(firstId.ToString()).Returns(new ApplicationUser { Id = firstId, DisplayName = "First" });
-        manager.FindByIdAsync(secondId.ToString()).Returns(new ApplicationUser { Id = secondId, DisplayName = "Second" });
+        manager.FindByIdAsync(primary.ToString()).Returns(new ApplicationUser { Id = primary, DisplayName = "Primary" });
         var jwt = new JwtSettings("issuer", "audience", new string('k', 64));
         var security = Options.Create(new SecurityConfiguration(false, None, Some(jwt), None));
         Task<Guid> Start(Guid userId) => commands.CreateForUserId(userId,
             new ValidSession(AccessToken.Create(first), RefreshToken.Create(first), "127.0.0.1", "test"));
-        Task<IResult> Switch(Guid sessionId, Guid target)
+        Task<IResult> Switch(Guid sessionId, Guid target, string? pin = null)
         {
             var http = SessionTestHelper.SignedIn(sessionId);
             http.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             http.Request.Headers.UserAgent = "test";
-            return SubaccountEndpoints.Switch(target, new(null), http, queries, db, manager, security, commands,
+            return SubaccountEndpoints.Switch(target, new(pin), http, queries, db, manager, security, commands,
                 new WallOfShameQueries(db), TimeProvider.System, NullLogger<SubaccountEndpoints>.Instance);
         }
 
+        var parentSession = await Start(primary);
+        var created = await SubaccountEndpoints.Create(new("Second", null, null, true, null, primaryPin),
+            SessionTestHelper.SignedIn(parentSession), queries, db, Substitute.For<IRoleCommands>(), TimeProvider.System);
+        Assert.Equal(StatusCodes.Status201Created, Assert.IsAssignableFrom<IStatusCodeHttpResult>(created).StatusCode);
+        var newAccount = JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(created).Value);
+        var secondId = newAccount.GetProperty("UserId").GetGuid();
+        if (primaryPin is not null)
+        {
+            var replacement = await SubaccountEndpoints.Create(new("Third", null, null, true, null, "000111"),
+                SessionTestHelper.SignedIn(parentSession), queries, db, Substitute.For<IRoleCommands>(), TimeProvider.System);
+            Assert.Equal(StatusCodes.Status409Conflict, Assert.IsAssignableFrom<IStatusCodeHttpResult>(replacement).StatusCode);
+        }
+        manager.FindByIdAsync(secondId.ToString()).Returns(new ApplicationUser { Id = secondId, DisplayName = "Second" });
+
+        async Task<JsonElement> List(Guid sessionId)
+        {
+            var response = await SubaccountEndpoints.List(SessionTestHelper.SignedIn(sessionId), queries, db);
+            return JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(response).Value);
+        }
+        Assert.Equal(primaryPin is not null, (await List(parentSession)).GetProperty("PrimaryHasPin").GetBoolean());
         var direct = await Start(firstId);
+        Assert.Empty((await List(direct)).GetProperty("Accounts").EnumerateArray());
+        Assert.IsType<ForbidHttpResult>(await Switch(direct, primary, primaryPin));
         Assert.IsType<ForbidHttpResult>(await Switch(direct, secondId));
 
-        var parentSession = await Start(primary);
         var entered = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(parentSession, firstId));
         var token = new JwtSecurityTokenHandler().ReadJwtToken(entered.Value!.AccessToken);
         var switchedSession = Guid.Parse(token.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
         Assert.DoesNotContain(token.Claims, claim => claim.Type == "email");
         Assert.True((await queries.TryFindById(parentSession)).Match(() => false, value => value is InvalidSession));
-        Assert.IsType<NotFound>(await Switch(switchedSession, primary));
-        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(switchedSession, secondId));
+        var targets = (await List(switchedSession)).GetProperty("Accounts").EnumerateArray().Select(item => item.GetProperty("UserId").GetGuid()).ToArray();
+        Assert.Contains(secondId, targets);
+        Assert.Equal(primaryPin is not null, targets.Contains(primary));
+        var outsider = await DatabaseSeedHelper.SeedHumanUserAsync(db, "outsider@example.test");
+        Assert.IsType<NotFound>(await Switch(switchedSession, outsider, primaryPin));
+        Assert.IsType<ForbidHttpResult>(await Switch(switchedSession, primary));
+        Assert.IsType<ForbidHttpResult>(await Switch(switchedSession, primary, "000111"));
+        var sibling = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(switchedSession, secondId));
+        if (primaryPin is not null)
+        {
+            var siblingToken = new JwtSecurityTokenHandler().ReadJwtToken(sibling.Value!.AccessToken);
+            var siblingSession = Guid.Parse(siblingToken.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
+            Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(siblingSession, primary, primaryPin));
+            Assert.True((await queries.TryFindById(siblingSession)).Match(() => false, value => value is InvalidSession));
+        }
     }
 }

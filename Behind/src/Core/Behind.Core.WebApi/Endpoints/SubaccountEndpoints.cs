@@ -25,7 +25,8 @@ public sealed class SubaccountEndpoints
         [property: Required, MaxLength(DisplayNameExtensions.MaxLength)] string DisplayName,
         [property: EmailAddress, MaxLength(255)] string? Email,
         DateOnly? Birthday, bool IsChild,
-        [property: RegularExpression(PinPattern), MaxLength(128)] string? Pin);
+        [property: RegularExpression(PinPattern), MaxLength(128)] string? Pin,
+        [property: RegularExpression(PinPattern), MaxLength(128)] string? PrimaryPin = null);
 
     public sealed record UpdateRequest(
         [property: Required, MaxLength(DisplayNameExtensions.MaxLength)] string DisplayName,
@@ -51,6 +52,7 @@ public sealed class SubaccountEndpoints
         }
 
         List<Account> accounts = [];
+        var primaryHasPin = family.CanSwitch && await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted);
         if (family.CanSwitch)
         {
             accounts = await (from link in db.Subaccounts
@@ -58,10 +60,20 @@ public sealed class SubaccountEndpoints
                               where EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId && EF.Property<Guid>(link, "UserId") != family.Current.UserId
                               orderby user.DisplayName, EF.Property<Guid>(link, "UserId")
                               select new Account(EF.Property<Guid>(link, "UserId"), user.DisplayName, link.IsChild, family.IsPrimary ? user.Birthday : null,
-                                  link.PinHash != null, family.IsPrimary ? user.Emails.OrderBy(e => EF.Property<Guid>(e, "Id")).Select(e => e.Value).FirstOrDefault() : null))
+                                  db.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == EF.Property<Guid>(link, "UserId")), family.IsPrimary ? user.Emails.OrderBy(e => EF.Property<Guid>(e, "Id")).Select(e => e.Value).FirstOrDefault() : null))
                 .ToListAsync(http.RequestAborted);
         }
-        return Results.Ok(new { family.IsPrimary, family.PrimaryUserId, Accounts = accounts });
+        if (!family.IsPrimary && primaryHasPin)
+        {
+            var primary = await ActiveUsers(db).Where(user => EF.Property<Guid>(user, "Id") == family.PrimaryUserId)
+                .Select(user => new Account(family.PrimaryUserId, user.DisplayName, false, null, true, null))
+                .SingleOrDefaultAsync(http.RequestAborted);
+            if (primary is not null)
+            {
+                accounts.Insert(0, primary);
+            }
+        }
+        return Results.Ok(new { family.IsPrimary, family.PrimaryUserId, PrimaryHasPin = primaryHasPin, Accounts = accounts });
     }
 
     [Authorize, IgnoreETag]
@@ -90,6 +102,15 @@ public sealed class SubaccountEndpoints
             return Results.Forbid();
         }
 
+        if (HashPin(request.PrimaryPin) is { } primaryPin)
+        {
+            if (await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted))
+            {
+                return Results.Conflict();
+            }
+            db.UserSwitchPins.Add(new UserSwitchPin(primary, primaryPin));
+        }
+
         var user = new HumanUser
         {
             DisplayName = request.DisplayName.Trim(),
@@ -98,9 +119,19 @@ public sealed class SubaccountEndpoints
         };
         db.Users.Add(user);
         var userId = db.GetKey(user);
-        var link = new Subaccount(primary, user, request.IsChild, HashPin(request.Pin));
-        db.Subaccounts.Add(link);
-        await db.SaveChangesAsync(http.RequestAborted);
+        db.Subaccounts.Add(new Subaccount(primary, user, request.IsChild));
+        if (HashPin(request.Pin) is { } childPin)
+        {
+            db.UserSwitchPins.Add(new UserSwitchPin(user, childPin));
+        }
+        try
+        {
+            await db.SaveChangesAsync(http.RequestAborted);
+        }
+        catch (DbUpdateException exception) when (UniqueConstraintViolation.Matches(exception, "PK_UserSwitchPins", "UserSwitchPins.UserId"))
+        {
+            return Results.Conflict();
+        }
         await roles.AssignBuiltIn(userId, BuiltInAccess.Users, http.RequestAborted);
         return Results.Created($"/profile/subaccounts/{userId}", new { UserId = userId });
     }
@@ -131,7 +162,22 @@ public sealed class SubaccountEndpoints
         db.Entry(target.Link).Property(l => l.IsChild).CurrentValue = request.IsChild;
         if (request.ClearPin || !string.IsNullOrEmpty(request.Pin))
         {
-            db.Entry(target.Link).Property(l => l.PinHash).CurrentValue = HashPin(request.Pin);
+            var credential = await PinsFor(db, userId).SingleOrDefaultAsync(http.RequestAborted);
+            if (HashPin(request.Pin) is { } hash)
+            {
+                if (credential is null)
+                {
+                    db.UserSwitchPins.Add(new UserSwitchPin(target.User, hash));
+                }
+                else
+                {
+                    db.Entry(credential).Property(pin => pin.PinHash).CurrentValue = hash;
+                }
+            }
+            else if (credential is not null)
+            {
+                db.UserSwitchPins.Remove(credential);
+            }
         }
         await db.SaveChangesAsync(http.RequestAborted);
         return Results.NoContent();
@@ -148,14 +194,23 @@ public sealed class SubaccountEndpoints
         {
             return Results.Forbid();
         }
-        var link = await db.Subaccounts.AsNoTracking().SingleOrDefaultAsync(l => EF.Property<Guid>(l, "PrimaryUserId") == family.PrimaryUserId
-            && EF.Property<Guid>(l, "UserId") == userId, http.RequestAborted);
-        if (link is null || !await ActiveUsers(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == userId, http.RequestAborted))
+        var isPrimaryTarget = userId == family.PrimaryUserId;
+        if (!isPrimaryTarget && !await db.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId
+            && EF.Property<Guid>(link, "UserId") == userId, http.RequestAborted))
         {
             return Results.NotFound();
         }
-        if (link.PinHash is not null && (string.IsNullOrEmpty(request.Pin)
-            || !PasswordHash.CreateFromExisting(link.PinHash.ToString()).Verify(request.Pin)))
+        if (!await ActiveUsers(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == userId, http.RequestAborted))
+        {
+            return Results.NotFound();
+        }
+        var credential = await PinsFor(db, userId).AsNoTracking().SingleOrDefaultAsync(http.RequestAborted);
+        if (credential is null && isPrimaryTarget)
+        {
+            return Results.Forbid();
+        }
+        if (credential is not null && (string.IsNullOrEmpty(request.Pin)
+            || !PasswordHash.CreateFromExisting(credential.PinHash.ToString()).Verify(request.Pin)))
         {
             return Results.Forbid();
         }
@@ -182,6 +237,9 @@ public sealed class SubaccountEndpoints
 
     private static IQueryable<HumanUser> ActiveUsers(AbstractCoreContext db) =>
         db.Users.InDeletionState(db, AbstractCoreContext.DeletionRecorded, DeletionState.Active);
+
+    private static IQueryable<UserSwitchPin> PinsFor(AbstractCoreContext db, Guid userId) =>
+        db.UserSwitchPins.Where(pin => EF.Property<Guid>(pin, "UserId") == userId);
 
     private static PinHash? HashPin(string? pin) => string.IsNullOrEmpty(pin) ? null : new PinHash(PasswordHash.Create(pin).ToString());
 

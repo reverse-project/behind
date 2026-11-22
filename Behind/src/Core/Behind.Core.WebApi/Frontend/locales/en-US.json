@@ -2,6 +2,10 @@
   "name": "English (International)",
   "flag": "🇺🇸",
   "messages": {
+    "subaccount.primaryLabel": "Primary account",
+    "subaccount.primaryPin": "Set a PIN to switch back to your primary account",
+    "subaccount.skipPrimaryPin": "Skip setting a primary PIN",
+    "subaccount.primaryWarning": "Without a primary PIN, you must sign in again to return to your primary account.",
     "subaccount.title": "Subaccounts",
     "subaccount.switch": "Switch User",
     "subaccount.create": "Create subaccount",
@@ -755,6 +759,7 @@
     "audit.actions.ImpersonationStarted": "Impersonation started",
     "audit.actions.ImpersonationEnded": "Impersonation ended",
     "audit.entities.HumanUser": "User",
+    "audit.entities.UserSwitchPin": "Account switching PIN",
     "audit.entities.Subaccount": "Subaccount",
     "audit.entities.User": "User",
     "audit.entities.UserRole": "Role",

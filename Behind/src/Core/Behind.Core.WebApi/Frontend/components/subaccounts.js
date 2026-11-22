@@ -10,6 +10,10 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.translate = i18n.t;
         self.accounts = ko.observableArray([]);
         self.primary = ko.observable(false);
+        self.primaryHasPin = ko.observable(false);
+        self.primaryUserId = ko.observable();
+        self.primaryPin = ko.observable("");
+        self.skipPrimaryPin = ko.observable(false);
         self.linked = ko.observable(false);
         self.selected = ko.observable();
         self.busy = ko.observable(false);
@@ -27,6 +31,8 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
 
         var select = self.selected.subscribe(function (account) {
             self.pin("");
+            self.primaryPin("");
+            self.skipPrimaryPin(false);
             self.name(account ? account.displayName : "");
             self.child(!!account && account.isChild);
             self.birthday(account && account.birthday || "");
@@ -36,7 +42,8 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         });
 
         self.label = function (account) {
-            return user.label({ id: account.userId, displayName: account.displayName });
+            var label = user.label({ id: account.userId, displayName: account.displayName });
+            return account.userId === self.primaryUserId() ? label + " (" + i18n.t("subaccount.primaryLabel") + ")" : label;
         };
 
         var load = function () {
@@ -49,7 +56,11 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             self.birthday("");
             self.clearPin(false);
             self.pin("");
+            self.primaryPin("");
+            self.skipPrimaryPin(false);
             self.primary(false);
+            self.primaryHasPin(false);
+            self.primaryUserId(null);
             self.linked(false);
             self.message("");
             if (!identity()) {
@@ -61,6 +72,8 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                     return;
                 }
                 if (response.ok) {
+                    self.primaryUserId(response.data.primaryUserId);
+                    self.primaryHasPin(!!response.data.primaryHasPin);
                     self.accounts(response.data.accounts);
                     self.primary(response.data.isPrimary);
                     self.linked(!response.data.isPrimary && !!response.data.primaryUserId);
@@ -119,6 +132,9 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                     return http.put(endpoint(account.userId), body);
                 }
 
+                if (!self.primaryHasPin() && !self.skipPrimaryPin()) {
+                    body.primaryPin = self.primaryPin();
+                }
                 body.email = self.email().trim() || null;
                 return http.post(path, body);
             }, function () {

@@ -21,7 +21,7 @@ A „Megjelenik mint: ..." sor megmondja, hogyan látnak Önt mások. A szerzőn
 
 Az elsődleges fiókban nyissa meg a **Profil → Alfiókok** részt. Hozzon létre egy felhasználót megjelenítési névvel. Az e-mail-cím, a születési dátum és a számjegyekből álló PIN-kód megadása választható. Gyermekfiók esetén a születési dátumot az elsődleges fiók kezelheti.
 
-A fiókmenüben a **Profil** alatt válassza a felhasználóváltást, majd a kívánt felhasználót. Ha a rendszer kéri, adja meg a célfiók PIN-kódját. Az elsődleges fiókba a szokásos módon jelentkezhet vissza. E-mail-cím nélkül az alfiók a fiókváltón keresztül érhető el. Önálló bejelentkezéshez állítson be e-mail-címet, és kövesse a webhely szokásos bejelentkezési és címmegerősítési lépéseit.
+A fiókmenüben a **Profil** alatt válassza a felhasználóváltást, majd a kívánt felhasználót. Ha a rendszer kéri, adja meg a célfiók PIN-kódját. Alfiók hozzáadásakor külön PIN-kódot állíthat be az elsődleges fiókhoz. Ezzel a felhasználóváltóban családi munkamenetből visszaválthat. Ha kihagyja a beállítást, újra be kell jelentkeznie az elsődleges fiókba. E-mail-cím nélkül az alfiók a fiókváltón keresztül érhető el. Önálló bejelentkezéshez állítson be e-mail-címet, és kövesse a webhely szokásos bejelentkezési és címmegerősítési lépéseit.
 
 ### Születési dátum és e-mail-adatvédelem
 

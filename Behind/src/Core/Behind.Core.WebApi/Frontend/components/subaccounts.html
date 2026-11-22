@@ -32,6 +32,18 @@
                 <input class="form-check-input" type="checkbox" data-bind="checked: clearPin">
                 <span data-bind="t: 'subaccount.clearPin'">Remove current PIN</span>
             </label>
+            <fieldset class="mb-3" data-bind="if: !selected() && !primaryHasPin()">
+                <legend class="h6" data-bind="t: 'subaccount.primaryLabel'">Primary account</legend>
+                <label class="form-label d-block" data-bind="ifnot: skipPrimaryPin">
+                    <span data-bind="t: 'subaccount.primaryPin'">Set a PIN to switch back to your primary account</span>
+                    <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" required autocomplete="new-password" data-bind="value: primaryPin">
+                </label>
+                <label class="form-check">
+                    <input class="form-check-input" type="checkbox" data-bind="checked: skipPrimaryPin">
+                    <span data-bind="t: 'subaccount.skipPrimaryPin'">Skip setting a primary PIN</span>
+                </label>
+                <p class="alert alert-warning mt-2" role="status" data-bind="visible: skipPrimaryPin, t: 'subaccount.primaryWarning'">Without a primary PIN, you must sign in again to return to your primary account.</p>
+            </fieldset>
             <button type="submit" class="btn btn-primary" data-bind="enable: !busy(), t: selected() ? 'common.save' : 'subaccount.create'"></button>
         </form>
     </section>

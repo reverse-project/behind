@@ -68,6 +68,11 @@ public sealed class PinMagicProofTests
         Assert.False(await PinMagicProof.Consume(token, adultId, adultId, PinProofOperation.Remove, http));
         Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(adultId, new("1234", false, new(MagicToken: token)),
             http, sessions, db));
+        db.ChangeTracker.Clear();
+        var storedPin = await db.UserSwitchPins.SingleAsync();
+        Assert.Equal(adultId, db.Entry(storedPin).Property<Guid>("UserId").CurrentValue);
+        Assert.True(PasswordHash.CreateFromExisting(storedPin.PinHash.ToString()).Verify("1234"));
+        Assert.False(await db.UserSwitchPins.AnyAsync(pin => EF.Property<Guid>(pin, "UserId") == childId));
         Assert.False(await PinMagicProof.Consume(token, adultId, adultId, PinProofOperation.Change, http));
     }
 

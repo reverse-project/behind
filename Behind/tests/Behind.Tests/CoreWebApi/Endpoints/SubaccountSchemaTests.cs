@@ -7,6 +7,19 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 public sealed class SubaccountSchemaTests
 {
     [Theory]
+    [InlineData("""{"displayName":"Alex","pin":"1234","proof":{"primaryPin":"9999"}}""", false)]
+    [InlineData("""{"displayName":"Alex","primaryPin":"1234","proof":{"primaryPin":"9999"}}""", false)]
+    [InlineData("""{"displayName":"Alex","pin":"1234","proof":{"currentPin":"9999","primaryPin":null}}""", true)]
+    [InlineData("""{"displayName":"Alex","primaryPin":"1234","proof":{"password":"secret"}}""", true)]
+    [InlineData("""{"displayName":"Alex","pin":"1234","proof":{"magicToken":"token"}}""", true)]
+    [InlineData("""{"displayName":"Alex","pin":"1234","proof":{"currentPin":"9999","primaryPin":"1111"}}""", false)]
+    [InlineData("""{"displayName":"Alex","proof":{"primaryPin":"9999"}}""", true)]
+    public void Version350RejectsPrimaryPinAsCreateProof(string request, bool expected)
+    {
+        Assert.Equal(expected, ReadDefinition("create", "3.5.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
+    [Theory]
     [InlineData("""{"pin":"0042","proof":{"currentPin":null,"password":"secret"}}""", true)]
     [InlineData("""{"pin":"0042","proof":{"currentPin":null,"magicToken":"token"}}""", true)]
     [InlineData("""{"clearPin":true,"proof":{"currentPin":null,"password":"secret"}}""", false)]

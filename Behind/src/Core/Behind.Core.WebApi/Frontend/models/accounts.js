@@ -1,6 +1,6 @@
 define(["ko", "models/http"], function (ko, http) {
-    var signIn = ko.observable(true);
-    var signUp = ko.observable(true);
+    var signIn = ko.observable(false);
+    var signUp = ko.observable(false);
     var password = ko.observable(true);
     var magicLink = ko.observable(true);
     var oidc = ko.observable(true);

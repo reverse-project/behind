@@ -184,8 +184,8 @@ public class EmbeddedFrontendTests
         Assert.Contains("params=\"items: userItems, variant: 'dropdown'\"", menu);
         Assert.Contains("click: signOut", menu);
         Assert.Contains("params=\"items: links, variant: 'navbar'\"", index);
-        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn() && canSignIn()\"><a class=\"nav-link\" href=\"#/sign-in\" data-bind=\"t: 'app.signIn'\">", index);
-        Assert.Contains("<li class=\"nav-item\" data-bind=\"visible: !isSignedIn() && canSignUp()\"><a class=\"nav-link\" href=\"#/sign-up\" data-bind=\"t: 'app.signUp'\">", index);
+        Assert.Contains("<li class=\"nav-item\" style=\"display: none\" data-bind=\"visible: !isSignedIn() && canSignIn()\"><a class=\"nav-link\" href=\"#/sign-in\" data-bind=\"t: 'app.signIn'\">", index);
+        Assert.Contains("<li class=\"nav-item\" style=\"display: none\" data-bind=\"visible: !isSignedIn() && canSignUp()\"><a class=\"nav-link\" href=\"#/sign-up\" data-bind=\"t: 'app.signUp'\">", index);
         Assert.Equal(1, index.Split("click: signOut").Length - 1);
         Assert.Contains("menus.follow(\"main\")", header);
         Assert.Contains("session.displayName()", header);

@@ -143,6 +143,16 @@ public sealed class SubaccountSchemaTests
         Assert.Equal(expected, ReadDefinition("switch", "3.0.0").Evaluate(JsonNode.Parse(request)).IsValid);
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"pin":null}""")]
+    [InlineData("""{"pin":""}""")]
+    [InlineData("""{"pin":"0001"}""")]
+    public void SwitchAllowsPrimaryRequestsWithoutDestinationPin(string request)
+    {
+        Assert.True(ReadDefinition("switch", "3.1.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
     [Fact]
     public void FamilyRequiresIndependentSwitchTargetsAndInvitationResponseCapability()
     {

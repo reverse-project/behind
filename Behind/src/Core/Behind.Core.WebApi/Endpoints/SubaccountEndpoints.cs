@@ -97,10 +97,11 @@ public sealed class SubaccountEndpoints
         }
         var switchAccounts = await (from user in family.Scope.Profiles(db)
                                     let userId = EF.Property<Guid>(user, "Id")
-                                    where userId != family.Current.UserId && db.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == userId)
+                                    let hasPin = db.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == userId)
+                                    where userId != family.Current.UserId && (family.IsPrimary || hasPin)
                                     orderby user.DisplayName, userId
                                     select new Account(userId, user.DisplayName, db.Subaccounts.Any(link => EF.Property<Guid>(link, "UserId") == userId && link.IsChild),
-                                        null, true, null, false)).ToListAsync(http.RequestAborted);
+                                        null, hasPin, null, false)).ToListAsync(http.RequestAborted);
         return Results.Ok(new
         {
             CanRespondToInvitations = security.Value.Accounts.LinkUnlink && isDirectSignIn,
@@ -349,8 +350,9 @@ public sealed class SubaccountEndpoints
             return Results.NotFound();
         }
         var credential = await PinsFor(db, userId).AsNoTracking().SingleOrDefaultAsync(http.RequestAborted);
-        if (credential is null || string.IsNullOrEmpty(request.Pin)
-            || !PasswordHash.CreateFromExisting(credential.PinHash.ToString()).Verify(request.Pin))
+        if (credential is null
+            ? !family.IsPrimary
+            : string.IsNullOrEmpty(request.Pin) || !PasswordHash.CreateFromExisting(credential.PinHash.ToString()).Verify(request.Pin))
         {
             return Results.Forbid();
         }

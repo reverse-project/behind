@@ -95,17 +95,19 @@
         <button type="button" class="btn btn-outline-secondary mb-2" data-bind="visible: moreCandidates, enable: !busy(), click: loadMore, t: 'subaccount.more'"></button>
     </section>
 </div>
-<section class="mt-4" data-bind="if: manager && requests().length">
-    <h2 class="h5" data-bind="t: 'subaccount.proposedParents'"></h2>
-    <p data-bind="t: 'subaccount.consentHelp'"></p>
-    <ul class="list-unstyled" data-bind="foreach: requests">
-        <li class="mb-2">
-            <span data-bind="text: displayName"></span>
-            <button type="button" class="btn btn-sm btn-primary" data-bind="click: $parent.confirmLink, enable: !$parent.busy(), t: 'subaccount.accept'"></button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: $parent.declineLink, enable: !$parent.busy(), t: 'subaccount.decline'"></button>
-        </li>
-    </ul>
-</section>
+<div data-bind="if: manager && requests().length">
+    <section class="mt-4">
+        <h2 class="h5" data-bind="t: 'subaccount.proposedParents'"></h2>
+        <p data-bind="t: 'subaccount.consentHelp'"></p>
+        <ul class="list-unstyled" data-bind="foreach: requests">
+            <li class="mb-2">
+                <span data-bind="text: displayName"></span>
+                <button type="button" class="btn btn-sm btn-primary" data-bind="click: $parent.confirmLink, enable: !$parent.busy(), t: 'subaccount.accept'"></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bind="click: $parent.declineLink, enable: !$parent.busy(), t: 'subaccount.decline'"></button>
+            </li>
+        </ul>
+    </section>
+</div>
 <div data-bind="if: !manager && (accounts().length || linked())">
     <details class="px-3 py-1" data-bind="click: function () { return true; }, clickBubble: false">
         <summary data-bind="t: 'subaccount.switch'">Switch User</summary>

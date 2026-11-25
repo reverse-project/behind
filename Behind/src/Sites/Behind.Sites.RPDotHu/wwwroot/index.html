@@ -42,8 +42,8 @@
                             <button type="button" class="dropdown-item" data-bind="click: signOut, t: 'app.signOut'">Sign out</button>
                         </div>
                     </li>
-                    <li class="nav-item" data-bind="visible: !isSignedIn() && canSignIn()"><a class="nav-link" href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a></li>
-                    <li class="nav-item" data-bind="visible: !isSignedIn() && canSignUp()"><a class="nav-link" href="#/sign-up" data-bind="t: 'app.signUp'">Sign up</a></li>
+                    <li class="nav-item" style="display: none" data-bind="visible: !isSignedIn() && canSignIn()"><a class="nav-link" href="#/sign-in" data-bind="t: 'app.signIn'">Sign in</a></li>
+                    <li class="nav-item" style="display: none" data-bind="visible: !isSignedIn() && canSignUp()"><a class="nav-link" href="#/sign-up" data-bind="t: 'app.signUp'">Sign up</a></li>
                 </ul>
             </div>
         </div>

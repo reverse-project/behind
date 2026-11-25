@@ -3,6 +3,9 @@
     "version": "1.0.3",
     "date": "2026-11-21",
     "changes": [
+      { "type": "fixed", "text": "Sign-in and sign-up menu items stay hidden until account settings are loaded and only appear when enabled." },
+      { "type": "fixed", "text": "Remove the empty invitation section's gap between Profile and Switch User in the account menu." },
+      { "type": "fixed", "text": "The primary account can switch to authorized linked profiles without a PIN when the destination has none. Saved destination PINs remain required; linked profiles can switch only to destinations with a PIN." },
       { "type": "added", "text": "Children can have more than one authorized adult. The profile switcher offers Adult and Child choices and uses the selected profile’s PIN, including after signing directly into a child profile." },
       { "type": "fixed", "text": "After switching back to the primary account, browse eligible accounts and release linked subaccounts from Profile. Sending and responding to invitations still requires a direct sign-in." },
       { "type": "added", "text": "Successful email sign-ins send a security alert to the verified address used to sign in. The alert includes the remote IP and user agent." },

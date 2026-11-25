@@ -623,17 +623,21 @@ public sealed class SubaccountEndpointsTests
             parent.Http, parent.Queries, db, manager, security, commands, Substitute.For<IWallOfShameQueries>(),
             TimeProvider.System, NullLogger<SubaccountEndpoints>.Instance);
 
-        Assert.IsType<ForbidHttpResult>(await Switch(null));
-        Assert.IsType<ForbidHttpResult>(await Switch("000000"));
-        await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
         if (pin is not null)
         {
+            Assert.IsType<ForbidHttpResult>(await Switch(null));
+            Assert.IsType<ForbidHttpResult>(await Switch("000000"));
+            await commands.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
             Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(pin));
-            await commands.Received(1).CreateForUserId(childId, Arg.Is<ValidSession>(s => s.FamilyPrimaryUserId == primary), Arg.Any<CancellationToken>());
-            await commands.Received(1).InvalidateSession(parent.SessionId, primary, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
         }
+        else
+        {
+            Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(null));
+        }
+        await commands.Received(1).CreateForUserId(childId, Arg.Is<ValidSession>(s => s.FamilyPrimaryUserId == primary), Arg.Any<CancellationToken>());
+        await commands.Received(1).InvalidateSession(parent.SessionId, primary, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
         Assert.IsType<NoContent>(await SubaccountEndpoints.Update(childId, update, parent.Http, parent.Queries, db, TimeProvider.System));
         Assert.False(await db.UserSwitchPins.AnyAsync());
-        Assert.IsType<ForbidHttpResult>(await Switch(null));
+        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(null));
     }
 }

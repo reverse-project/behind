@@ -21,6 +21,120 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public sealed class SubaccountSessionTests
 {
+    [Fact]
+    public async Task PrimaryCanSwitchToLinkedProfilesWithoutPins()
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        await VerifyPrimarySwitchingWithoutPins(db);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task PostgresPrimaryCanSwitchToLinkedProfilesWithoutPins()
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
+        var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres:Image is required.");
+        await using var container = new PostgreSqlBuilder(image).Build();
+        await container.StartAsync();
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString()).Options;
+        await using var db = new CoreContextPostgres(options);
+        await db.Database.MigrateAsync();
+        await VerifyPrimarySwitchingWithoutPins(db);
+    }
+
+    private static async Task VerifyPrimarySwitchingWithoutPins(AbstractCoreContext db)
+    {
+        var primary = new HumanUser { DisplayName = "Primary" };
+        var child = new HumanUser { DisplayName = "Child" };
+        var adult = new HumanUser { DisplayName = "Adult" };
+        var protectedChild = new HumanUser { DisplayName = "Protected" };
+        var outsider = new HumanUser { DisplayName = "Outsider" };
+        db.Users.AddRange(primary, child, adult, protectedChild, outsider);
+        db.Subaccounts.AddRange(new Subaccount(primary, child, true), new Subaccount(primary, adult, false),
+            new Subaccount(primary, protectedChild, true));
+        await db.SaveChangesAsync();
+
+        var primaryId = db.GetKey(primary);
+        var childId = db.GetKey(child);
+        var adultId = db.GetKey(adult);
+        var protectedId = db.GetKey(protectedChild);
+        var queries = new SessionQueries(db);
+        var commands = new SessionCommands(db);
+        var manager = Substitute.For<UserManager<ApplicationUser>>(
+            Substitute.For<IUserStore<ApplicationUser>>(), null, null, null, null, null, null, null, null);
+        foreach (var user in new[] { primary, child, adult, protectedChild })
+        {
+            var id = db.GetKey(user);
+            manager.FindByIdAsync(id.ToString()).Returns(new ApplicationUser { Id = id, DisplayName = user.DisplayName });
+        }
+        var security = Options.Create(new SecurityConfiguration(false, None,
+            Some(new JwtSettings("issuer", "audience", new string('k', 64))), None));
+
+        Task<Guid> Start(HumanUser user) => commands.CreateForUserId(db.GetKey(user),
+            new ValidSession(AccessToken.Create(user), RefreshToken.Create(user), "127.0.0.1", "test"));
+
+        async Task<JsonElement[]> Targets(Guid sessionId)
+        {
+            var result = await SubaccountEndpoints.List(SessionTestHelper.SignedIn(sessionId), queries, db, security);
+            return JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(result).Value)
+                .GetProperty("SwitchAccounts").EnumerateArray().ToArray();
+        }
+
+        Task<IResult> Switch(Guid sessionId, Guid destinationId, string? pin = null)
+        {
+            var http = SessionTestHelper.SignedIn(sessionId);
+            http.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            http.Request.Headers.UserAgent = "test";
+            return SubaccountEndpoints.Switch(destinationId, new(pin), http, queries, db, manager, security, commands,
+                new WallOfShameQueries(db), TimeProvider.System, NullLogger<SubaccountEndpoints>.Instance);
+        }
+
+        async Task<Guid> Enter(Guid sessionId, Guid destinationId, string? pin = null)
+        {
+            var result = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await Switch(sessionId, destinationId, pin));
+            var token = new JwtSecurityTokenHandler().ReadJwtToken(result.Value!.AccessToken);
+            var next = Guid.Parse(token.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
+            Assert.True((await queries.TryFindById(sessionId)).Match(() => false, session => session is InvalidSession));
+            Assert.True((await queries.TryFindByIdWithUserId(next)).Match(() => false,
+                session => session.UserId == destinationId && session.Session is ValidSession { FamilyPrimaryUserId: var anchor } && anchor == primaryId));
+            return next;
+        }
+
+        var primarySession = await Start(primary);
+        var targets = await Targets(primarySession);
+        Assert.Equal(new[] { adultId, childId, protectedId }.Order(),
+            targets.Select(target => target.GetProperty("UserId").GetGuid()).Order());
+        Assert.All(targets, target => Assert.False(target.GetProperty("HasPin").GetBoolean()));
+        db.UserSwitchPins.Add(new UserSwitchPin(primary, new PinHash(PasswordHash.Create("0001"))));
+        db.UserSwitchPins.Add(new UserSwitchPin(protectedChild, new PinHash(PasswordHash.Create("0002"))));
+        await db.SaveChangesAsync();
+        targets = await Targets(primarySession);
+        Assert.Equal(new[] { adultId, childId, protectedId }.Order(),
+            targets.Select(target => target.GetProperty("UserId").GetGuid()).Order());
+        Assert.All(targets, target => Assert.Equal(target.GetProperty("UserId").GetGuid() == protectedId,
+            target.GetProperty("HasPin").GetBoolean()));
+        Assert.IsType<NotFound>(await Switch(primarySession, db.GetKey(outsider)));
+        Assert.IsType<ForbidHttpResult>(await Switch(primarySession, protectedId));
+        Assert.IsType<ForbidHttpResult>(await Switch(primarySession, protectedId, "wrong"));
+
+        var childSession = await Enter(primarySession, childId);
+        Assert.Equal(new[] { primaryId, protectedId }.Order(),
+            (await Targets(childSession)).Select(target => target.GetProperty("UserId").GetGuid()).Order());
+        Assert.IsType<ForbidHttpResult>(await Switch(childSession, adultId));
+        Assert.IsType<ForbidHttpResult>(await Switch(childSession, primaryId));
+        var returnedPrimary = await Enter(childSession, primaryId, "0001");
+        Assert.Contains(await Targets(returnedPrimary), target => target.GetProperty("UserId").GetGuid() == adultId
+            && !target.GetProperty("HasPin").GetBoolean());
+        await Enter(returnedPrimary, adultId);
+
+        var directChild = await Start(child);
+        Assert.IsType<ForbidHttpResult>(await Switch(directChild, primaryId));
+        Assert.IsType<NotFound>(await Switch(directChild, adultId));
+        await Enter(await Start(primary), protectedId, "0002");
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("000789")]

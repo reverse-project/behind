@@ -172,6 +172,30 @@ test("filter the server-authorized profiles by Adult and Child and clear a PIN w
     panel.dispose();
 });
 
+test("the primary account menu switches to an authorized profile without a PIN", async () => {
+    const child = { userId: "child-without-pin", displayName: "Child", isChild: true, hasPin: false };
+    const { panel, requests, sessions } = await setup([child], true, false, false, [], {
+        manager: false,
+        switchAccounts: [child],
+        isLinked: false
+    });
+
+    assert.equal(panel.primary(), true);
+    assert.equal(panel.linked(), false);
+    assert.equal(panel.manager, false);
+    assert.deepEqual(Array.from(panel.accounts()), [child]);
+    const template = fs.readFileSync(path.join(frontend, "components/subaccounts.html"), "utf8");
+    const switcherCondition = template.match(/data-bind="if: (!manager[^"]+)"/)[1];
+    assert.ok(vm.runInNewContext(switcherCondition, panel));
+    assert.deepEqual(Array.from(panel.switchProfiles()), [child]);
+    panel.selected(child);
+    await panel.switchUser();
+    assert.equal(requests[0].url, "/profile/subaccounts/child-without-pin/switch");
+    assert.equal(requests[0].body.pin, null);
+    assert.deepEqual(sessions, [{ accessToken: "new-token" }]);
+    panel.dispose();
+});
+
 test("a linked profile can accept an invitation without management access", async () => {
     const invitation = { userId: "adult", displayName: "Alex", requestId: "second-adult" };
     const { panel, requests } = await setup([], false, false, false, [invitation], {
@@ -348,6 +372,7 @@ test("the common account menu and profile expose localized subaccount controls",
     const read = name => fs.readFileSync(path.join(frontend, name), "utf8");
     assert.match(read("components/menuitems.html"), /attributes.href === '#\/profile' && \$component.isDropdown/);
     assert.match(read("views/profile.html"), /<subaccount-panel params="manager: true, userId: userId">/);
+    assert.match(read("components/subaccounts.html"), /<div data-bind="if: manager && requests\(\)\.length">\s*<section class="mt-4">/);
     const labels = (source + read("components/subaccounts.html")).match(/subaccount\.[a-zA-Z]+/g);
     for (const locale of ["en-US", "hu-HU"]) {
         const messages = JSON.parse(read("locales/" + locale + ".json")).messages;

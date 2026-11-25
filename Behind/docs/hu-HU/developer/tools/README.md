@@ -24,6 +24,8 @@ dotnet run --project src/Core/Behind.Core.Tools -- startup create
 
 Az alapértelmezett adatkönyvtár a `data`, a konfigurációs könyvtár pedig a `.`. A konfigurációs könyvtárba a webes kiszolgáló minden konfigurációs fájlja bekerül, az összes alapértelmezett értékkel kitöltve: `appsettings.json` (naplózás és kikapcsolt OpenTelemetry), `security.json`, `database.json`, `backend.json`, `frontend.json`, `email.json` (naplózó szolgáltató), `forum.json` és `markdownviewer.json` (dokumentumok a `<data>/docs` alatt). A `--help` megmutatja a JWT-kibocsátó és -közönség, a webhely nyilvános címe (`--frontend-url`, alapértelmezés: `http://localhost:8080/`), az e-mail-megerősítés, a tanúsítványjelszó bekérése, a meglévő fájlok felülírása és a meglévő konfigurációk `--skip-existing` kapcsolóval történő megtartásának lehetőségeit.
 
+A konfigurációs fájlokat és a tanúsítványt az eszköz közvetlenül írja, a meglévő fájlokat felülíró `--force` esetén is, így a fájlok bind csatolásai megmaradnak. Az írás nem atomi; kényszerített újrageneráláskor állítsa le az olvasókat, írási hiba után pedig futtassa újra a parancsot. Ha egy elvárt fájl helyén könyvtár található, tartalmának ellenőrzése után helyezze azt át.
+
 ### Adatvédelmi tanúsítvány
 
 Adatvédelmi tanúsítvány és a hozzá tartozó `security.json` konfiguráció létrehozása:

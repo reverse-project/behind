@@ -124,6 +124,24 @@ public sealed class DataProtectionSetupTests : IDisposable
     }
 
     [Fact]
+    public void Run_ForceWritesExistingOutputAndCertificateInPlace()
+    {
+        Request(Some(OutputPath)).Run(new StringWriter());
+        using var output = new FileStream(OutputPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var certificate = new FileStream(CertificatePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        byte[] previousCertificate = File.ReadAllBytes(CertificatePath);
+
+        Request(Some(OutputPath), true).Run(new StringWriter());
+
+        using var reader = new StreamReader(output);
+        Assert.Equal(File.ReadAllText(OutputPath), reader.ReadToEnd());
+        using var copiedCertificate = new MemoryStream();
+        certificate.CopyTo(copiedCertificate);
+        Assert.Equal(File.ReadAllBytes(CertificatePath), copiedCertificate.ToArray());
+        Assert.NotEqual(previousCertificate, copiedCertificate.ToArray());
+    }
+
+    [Fact]
     public void Command_Create_GeneratesRandomPasswordAndSecurityFile()
     {
         var root = new RootCommand().AddDataProtectionCommands();

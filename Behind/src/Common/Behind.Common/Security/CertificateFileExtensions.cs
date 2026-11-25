@@ -46,6 +46,25 @@ public static class CertificateFileExtensions
         public void CreateCertificateFile(string password) =>
             path.WriteNewFile(CreateSelfSignedPfx(password));
 
+        public void CreateCertificateFileDirect(string password, bool overwrite) =>
+            path.WriteFileDirect(CreateSelfSignedPfx(password), overwrite);
+
+        public void WriteFileDirect(byte[] content, bool overwrite)
+        {
+            Path.GetDirectoryName(Path.GetFullPath(path))?.EnsureDirectory();
+            var options = new FileStreamOptions
+            {
+                Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
+                Access = FileAccess.Write
+            };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+            using var stream = new FileStream(path, options);
+            stream.Write(content);
+        }
+
         public void WriteNewFile(byte[] content)
         {
             Path.GetDirectoryName(Path.GetFullPath(path))?.EnsureDirectory();

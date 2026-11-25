@@ -106,11 +106,11 @@ docker compose up -d web
 Podman használatakor a `bash setup.sh podman` és `podman compose` parancsokat
 használja. Az előkészítés a tools konténerben futtatja a
 `startup create --skip-existing` parancsot, megőrzi a meglévő konfigurációt,
-létrehozza a hiányzó fájlokat, majd ellenőrzi, hogy a `config/caching.json`
-szabályos fájl. Ha az útvonal már könyvtár, tartalmának ellenőrzése után helyezze
-át, majd futtassa újra az előkészítést. A webes bind csatolás nem hoz létre
-hiányzó gazdagép-útvonalat, így az előkészítés kihagyása sem hoz létre ott
-észrevétlenül könyvtárat.
+létrehozza a hiányzó fájlokat, majd ellenőrzi, hogy minden konfigurációs útvonal
+szabályos fájl. Ha valamelyik útvonal már könyvtár, tartalmának ellenőrzése után
+helyezze át, majd futtassa újra az előkészítést. A többi szolgáltatás indítása
+előtt futtassa az előkészítést: a fájlok bind csatolásai máskülönben könyvtárakat
+hozhatnak létre a hiányzó gazdagép-útvonalakon.
 
 ### Rendszerkövetelmények
 

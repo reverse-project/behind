@@ -398,6 +398,41 @@ public sealed class StartupSetupTests : IDisposable
     }
 
     [Fact]
+    public void Run_ForceWritesExistingFilesInPlace()
+    {
+        Request().Run(new StringWriter());
+        using var security = new FileStream(SecurityPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var certificate = new FileStream(CertificatePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        string original = File.ReadAllText(SecurityPath);
+
+        Request(force: true).Run(new StringWriter());
+
+        using var reader = new StreamReader(security);
+        Assert.Equal(File.ReadAllText(SecurityPath), reader.ReadToEnd());
+        Assert.NotEqual(original, File.ReadAllText(SecurityPath));
+        using var copiedCertificate = new MemoryStream();
+        certificate.CopyTo(copiedCertificate);
+        Assert.Equal(File.ReadAllBytes(CertificatePath), copiedCertificate.ToArray());
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void Run_DirectoryAtFilePathFailsBeforeGeneratingAnything(bool force, bool skipExisting)
+    {
+        Directory.CreateDirectory(BackendPath);
+        File.WriteAllText(Path.Combine(BackendPath, "preserved"), "keep");
+
+        var exception = Assert.Throws<IOException>(() => Request(force, skipExisting).Run(new StringWriter()));
+
+        Assert.Contains(BackendPath, exception.Message);
+        Assert.False(File.Exists(SecurityPath));
+        Assert.False(File.Exists(CertificatePath));
+        Assert.Equal("keep", File.ReadAllText(Path.Combine(BackendPath, "preserved")));
+    }
+
+    [Fact]
     public void Run_ExistingFilesWithSkipExisting_KeepsThemAndSucceeds()
     {
         Request().Run(new StringWriter());

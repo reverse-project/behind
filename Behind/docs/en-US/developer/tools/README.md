@@ -24,6 +24,8 @@ dotnet run --project src/Core/Behind.Core.Tools -- startup create
 
 Defaults are `data` for the data directory and `.` for the configuration directory. The configuration directory receives every configuration file of the web host with all default values filled in: `appsettings.json` (logging and a disabled OpenTelemetry), `security.json`, `database.json`, `backend.json`, `frontend.json`, `email.json` (logger provider), `forum.json`, and `markdownviewer.json` (documents under `<data>/docs`). Use `--help` to see options for the JWT issuer and audience, the public site URL (`--frontend-url`, default `http://localhost:8080/`), email confirmation, certificate password prompting, overwriting files, and preserving existing files with `--skip-existing`.
 
+Configuration and certificate files are written directly, including when `--force` overwrites existing files, so file bind mounts remain intact. Writes are not atomic; stop readers during forced regeneration and rerun if a write fails. A directory at an expected file path must be moved aside after inspecting its contents.
+
 ### Data protection certificate
 
 Create a data protection certificate and its `security.json` configuration:

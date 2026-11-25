@@ -16,12 +16,7 @@ public static class DataProtectionSetupExtensions
     {
         public DataProtectionSettings CreateCertificate()
         {
-            if (request.Force)
-            {
-                File.Delete(request.CertificatePath);
-            }
-
-            request.CertificatePath.CreateCertificateFile(request.Password);
+            request.CertificatePath.CreateCertificateFileDirect(request.Password, request.Force);
 
             return new DataProtectionSettings(
                 Path.GetFullPath(request.KeysPath),
@@ -38,12 +33,7 @@ public static class DataProtectionSetupExtensions
                 none: () => output.WriteLine(json),
                 path =>
                 {
-                    if (request.Force)
-                    {
-                        File.Delete(path);
-                    }
-
-                    path.WriteNewFile(System.Text.Encoding.UTF8.GetBytes(json));
+                    path.WriteFileDirect(System.Text.Encoding.UTF8.GetBytes(json), request.Force);
                     output.WriteLine("Certificate: {0}", Path.GetFullPath(request.CertificatePath));
                     output.WriteLine("Security configuration: {0}", Path.GetFullPath(path));
                 });

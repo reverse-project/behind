@@ -3,6 +3,7 @@
     "version": "1.0.3",
     "date": "2026-11-21",
     "changes": [
+      { "type": "fixed", "text": "Startup and data protection tools write configuration and certificate files directly, including forced overwrites of file bind mounts. Compose setup detects directories at configuration file paths." },
       { "type": "added", "text": "Manage subaccounts from your profile and switch between linked users with optional PINs. Each subaccount has its own identity, optional email, child setting and birthday." },
       { "type": "added", "text": "Developers with the Configuration.Manage grant can enable forwarded client IPs in Settings, choose trusted proxy addresses or narrow networks and limit how many proxy hops Behind follows. Forwarding defaults to off." }
     ]

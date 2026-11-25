@@ -59,6 +59,13 @@ public static class StartupSetupExtensions
         public void Run(TextWriter output)
         {
             var plan = request.Plan;
+            var directories = plan.SelectMany(step => step.Artifact.OwnedPaths)
+                .Where(Directory.Exists).ToList();
+            if (directories.Count > 0)
+            {
+                throw new IOException($"Expected files but found directories: {string.Join(", ", directories)}.");
+            }
+
             var conflicts = plan.Where(step => step.Action == StartupArtifactAction.Conflict).ToList();
 
             if (conflicts.Count > 0)
@@ -86,7 +93,7 @@ public static class StartupSetupExtensions
                 request.DataPath(StartupSetupRequest.KeysDirectoryName),
                 request.Password,
                 None,
-                false).CreateCertificate();
+                request.Force).CreateCertificate();
 
             Directory.CreateDirectory(dataProtection.KeysPath);
 
@@ -235,7 +242,6 @@ public static class StartupSetupExtensions
                     output.WriteLine("Skipped (already exists): {0}", step.Artifact.ConfigurationPath);
                     break;
                 case StartupArtifactAction.Replace:
-                    step.Artifact.OwnedPaths.ToList().ForEach(File.Delete);
                     step.Write(output);
                     break;
                 default:
@@ -249,7 +255,9 @@ public static class StartupSetupExtensions
             var rendering = step.Artifact.Render();
 
             ConfigurationSchema.Validate(JsonNode.Parse(rendering.Content));
-            step.Artifact.ConfigurationPath.WriteNewFile(Encoding.UTF8.GetBytes(rendering.Content));
+            step.Artifact.ConfigurationPath.WriteFileDirect(
+                Encoding.UTF8.GetBytes(rendering.Content),
+                step.Action == StartupArtifactAction.Replace);
             output.WriteLine("Created: {0}", step.Artifact.ConfigurationPath);
             rendering.Messages.ToList().ForEach(message => output.WriteLine(message));
         }

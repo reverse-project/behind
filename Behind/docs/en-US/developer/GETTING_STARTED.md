@@ -103,10 +103,11 @@ docker compose up -d web
 
 Use `bash setup.sh podman` and `podman compose` when using Podman. Setup runs
 `startup create --skip-existing` through the tools container, preserving existing
-configuration and generating missing files, then checks that `config/caching.json`
-is a regular file. If that path is already a directory, move it aside after
-inspecting its contents, then rerun setup. The web bind mount refuses to create
-missing host paths, so skipping setup cannot silently create a directory there.
+configuration and generating missing files, then checks that all configuration
+paths are regular files. If any path is already a directory, move it aside after
+inspecting its contents, then rerun setup. Run setup before starting the other
+services: their file bind mounts may otherwise create directories for missing
+host paths.
 
 ### System Requirements
 

@@ -90,11 +90,17 @@ public sealed class EmailSignInNotificationTests
         users.FindByIdAsync(childId.ToString()).Returns(childUser);
 
         var mail = Substitute.For<IEmailSender>();
+        var settings = new SecurityConfiguration(
+            false, None, Some(new JwtSettings("issuer", "audience", new string('k', 64))), None)
+        {
+            SignInNotificationTimeoutMilliseconds = 10
+        };
+        var notificationOptions = Substitute.For<IOptionsSnapshot<SecurityConfiguration>>();
+        notificationOptions.Value.Returns(settings);
         await using var services = new ServiceCollection()
             .AddSingleton(mail)
+            .AddSingleton(notificationOptions)
             .BuildServiceProvider();
-        var settings = new SecurityConfiguration(
-            false, None, Some(new JwtSettings("issuer", "audience", new string('k', 64))), None);
         var security = Options.Create(settings);
         var commands = new SessionCommands(db);
         var queries = new SessionQueries(db);
@@ -193,6 +199,16 @@ public sealed class EmailSignInNotificationTests
             .Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
         Assert.True((await queries.TryFindById(sessionId)).Match(() => false, value => value is ValidSession));
         Assert.Single(mail.ReceivedCalls());
+        mail.ClearReceivedCalls();
+
+        var stalledDelivery = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        mail.SendEmailAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(_ => stalledDelivery.Task);
+        var signedInDespiteStalledDelivery = await CommitSignIn("child@example.test").WaitAsync(TimeSpan.FromSeconds(2));
+        var stalledSessionId = Guid.Parse(new JwtSecurityTokenHandler().ReadJwtToken(signedInDespiteStalledDelivery.AccessToken)
+            .Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
+        Assert.True((await queries.TryFindById(stalledSessionId)).Match(() => false, value => value is ValidSession));
+        stalledDelivery.SetResult(true);
 
         async Task<SignInEndpoints.SignInResponse> CommitSignIn(string address)
         {

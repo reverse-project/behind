@@ -18,8 +18,8 @@ public static class PinMagicProof
 {
     public sealed record RequestBody(string Operation);
 
-    private static string Purpose(Guid actorId, Guid targetId, string operation) =>
-        $"switch-pin/{actorId:N}/{targetId:N}/{operation}";
+    private static string Purpose(Guid actorId, Guid targetId, PinProofOperation operation) =>
+        $"switch-pin/{actorId:N}/{targetId:N}/{PinProofOperations.Value(operation)}";
 
     [Authorize, IgnoreETag]
     public static async Task<IResult> Request(Guid userId, RequestBody request, HttpContext http, ISessionQueries sessions,
@@ -28,13 +28,14 @@ public static class PinMagicProof
         IMagicLinkMailQueue mailQueue, TimeProvider clock)
     {
         http.Response.Headers.CacheControl = "no-store";
-        if (request.Operation is not ("change" or "remove" or "create"))
+        var operation = PinProofOperations.Parse(request.Operation);
+        if (operation is null)
         {
             return Results.BadRequest();
         }
 
         var actor = await SubaccountEndpoints.GetPinManager(userId, http, sessions, db);
-        if (actor is not { } actorId || (request.Operation == "create" && userId != actorId))
+        if (actor is not { } actorId || (operation == PinProofOperation.Create && userId != actorId))
         {
             return Results.Forbid();
         }
@@ -57,16 +58,17 @@ public static class PinMagicProof
 
         var link = MagicLink.Create(now, settings.EffectiveLinkLifetime, MagicLinkFunction.SwitchPin);
         var token = MagicLinkCredential.Create(link.Nonce, settings.ActualSecret, jwt.SigningKey,
-            Purpose(user.Id, userId, request.Operation)).Token;
+            Purpose(user.Id, userId, operation.Value)).Token;
         var url = frontend.ToFrontendLink("/profile/pin-proof",
-            [new("pinProof", token), new("pinTarget", userId.ToString()), new("pinOperation", request.Operation)]);
+            [new("pinProof", token), new("pinTarget", userId.ToString()), new("pinOperation", PinProofOperations.Value(operation.Value))]);
         await commands.Issue(user.Id, link, http.RequestAborted);
         return mailQueue.TryEnqueue(new MagicLinkMail(user, address.Value, url, MagicLinkFunction.SwitchPin))
             ? Results.NoContent()
             : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
     }
 
-    public static async Task<bool> Consume(string token, Guid actorId, Guid targetId, string operation, HttpContext http)
+    public static async Task<bool> Consume(
+        string token, Guid actorId, Guid targetId, PinProofOperation operation, HttpContext http)
     {
         var services = http.RequestServices;
         if (!services.GetRequiredService<IOptionsSnapshot<AccountsConfiguration>>().Value.MagicLink)

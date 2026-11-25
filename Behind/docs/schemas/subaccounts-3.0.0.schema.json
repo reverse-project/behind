@@ -216,6 +216,35 @@
         "canRelease"
       ]
     },
+    "switchAccount": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "birthday": {
+          "type": "null"
+        },
+        "isChild": {
+          "type": "boolean"
+        },
+        "email": {
+          "type": "null"
+        },
+        "userId": {
+          "$ref": "#/$defs/id"
+        },
+        "hasPin": {
+          "const": true
+        }
+      },
+      "required": [
+        "displayName",
+        "isChild",
+        "userId",
+        "hasPin"
+      ]
+    },
     "created": {
       "type": "object",
       "properties": {
@@ -270,7 +299,7 @@
         "switchAccounts": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/account"
+            "$ref": "#/$defs/switchAccount"
           }
         }
       },

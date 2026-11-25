@@ -140,6 +140,17 @@ public sealed class RawDatabaseCommandsTests : IDisposable
         Assert.Equal("Raw.After", difference.NewValue?.ToString());
     }
 
+    [Theory]
+    [InlineData("FamilyPrimaryUserId")]
+    [InlineData("FamilyManagerUserId")]
+    public async Task Update_CannotChangeSessionFamilyAuthority(string column)
+    {
+        await using var context = Audited();
+        var result = await Commands(context).Update("Sessions",
+            Values(("Id", Guid.NewGuid())), Values((column, Guid.NewGuid())));
+        Assert.IsType<RawWriteResult.Invalid>(result);
+    }
+
     [Fact]
     public async Task Update_WithSameValues_WritesNoAudit()
     {

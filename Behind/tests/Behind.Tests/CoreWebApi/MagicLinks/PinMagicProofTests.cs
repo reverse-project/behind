@@ -4,6 +4,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
+using Behind.Core.Domain;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.MagicLinks;
@@ -63,6 +64,8 @@ public sealed class PinMagicProofTests
         };
         Task<IResult> Issue(Guid target) => PinMagicProof.Request(target, new("remove"), http, sessions, db, manager,
             config, store, security, commands, new MagicLinkQueries(db), queue, new FixedTimeProvider(now));
+        Assert.IsType<BadRequest>(await PinMagicProof.Request(targetId, new("unknown"), http, sessions, db, manager,
+            config, store, security, commands, new MagicLinkQueries(db), queue, new FixedTimeProvider(now)));
         Assert.IsType<ForbidHttpResult>(await Issue(Guid.NewGuid()));
         Assert.False(queue.Reader.TryRead(out _));
         Assert.IsType<NoContent>(await Issue(targetId));
@@ -74,13 +77,13 @@ public sealed class PinMagicProofTests
         Assert.StartsWith("#/profile/pin-proof?", url.Fragment);
         var query = QueryHelpers.ParseQuery(url.Fragment.Split('?')[1]);
         var token = query["pinProof"].ToString();
-        Assert.False(await PinMagicProof.Consume(token, actorId, targetId, "change", http));
-        Assert.False(await PinMagicProof.Consume(token, actorId, actorId, "remove", http));
-        Assert.False(await PinMagicProof.Consume(token, targetId, targetId, "remove", http));
+        Assert.False(await PinMagicProof.Consume(token, actorId, targetId, PinProofOperation.Change, http));
+        Assert.False(await PinMagicProof.Consume(token, actorId, actorId, PinProofOperation.Remove, http));
+        Assert.False(await PinMagicProof.Consume(token, targetId, targetId, PinProofOperation.Remove, http));
         var remove = new SubaccountEndpoints.PinRequest(null, true, new(MagicToken: token));
         var result = await SubaccountEndpoints.ChangePin(targetId, remove, http, sessions, db);
         Assert.IsType(expire ? typeof(ForbidHttpResult) : typeof(NoContent), result);
         Assert.Equal(expire, await db.UserSwitchPins.AnyAsync());
-        Assert.False(await PinMagicProof.Consume(token, actorId, targetId, "remove", http));
+        Assert.False(await PinMagicProof.Consume(token, actorId, targetId, PinProofOperation.Remove, http));
     }
 }

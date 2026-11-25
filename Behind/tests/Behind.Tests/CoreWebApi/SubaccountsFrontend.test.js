@@ -196,6 +196,62 @@ test("the primary account menu switches to an authorized profile without a PIN",
     panel.dispose();
 });
 
+test("a switched adult manages children with their own proof and ends the session on release", async () => {
+    const child = { userId: "child", displayName: "Child", isChild: true, hasPin: true, canRelease: true };
+    const { panel, requests, session, location } = await setup([child], false, false, true, [], {
+        manager: true,
+        userId: "adult",
+        isLinked: true,
+        currentHasPin: true,
+        canManageChildren: true,
+        canBrowseAndRelease: true
+    });
+    assert.equal(panel.canManageChildren(), true);
+    assert.equal(panel.child(), true);
+    assert.deepEqual(Array.from(panel.managementAccounts()).map(account => account.userId), ["adult", "child"]);
+    panel.selected(child);
+    assert.deepEqual(Array.from(panel.proofMethods()), ["primaryPin", "password", "magicToken"]);
+    panel.pin("3333");
+    panel.proofMethod("primaryPin");
+    panel.credential("1111");
+    await panel.save();
+    assert.equal(requests[0].url, "/profile/subaccounts/child");
+    assert.equal(requests[0].body.proof.primaryPin, "1111");
+    assert.equal(requests[0].body.isChild, true);
+
+    panel.name("New child");
+    panel.pin("4444");
+    panel.proofMethod("currentPin");
+    panel.credential("1111");
+    await panel.save();
+    assert.equal(requests[1].url, "/profile/subaccounts");
+    assert.equal(requests[1].body.isChild, true);
+    assert.equal(requests[1].body.proof.currentPin, "1111");
+    assert.equal("primaryPin" in requests[1].body, false);
+
+    panel.selected(child);
+    await panel.release();
+    assert.equal(requests[2].method, "DELETE");
+    assert.equal(session.accessToken(), null);
+    assert.equal(location.hash, "#/sign-in");
+    panel.dispose();
+});
+
+test("a switched adult can enter an authorized child without a PIN", async () => {
+    const child = { userId: "child", displayName: "Child", isChild: true, hasPin: false };
+    const { panel, requests } = await setup([], false, false, false, [], {
+        manager: false,
+        isLinked: true,
+        canManageChildren: true,
+        switchAccounts: [child]
+    });
+    panel.selected(child);
+    await panel.switchUser();
+    assert.equal(requests[0].url, "/profile/subaccounts/child/switch");
+    assert.equal(requests[0].body.pin, null);
+    panel.dispose();
+});
+
 test("a linked profile can accept an invitation without management access", async () => {
     const invitation = { userId: "adult", displayName: "Alex", requestId: "second-adult" };
     const { panel, requests } = await setup([], false, false, false, [invitation], {

@@ -1,4 +1,4 @@
-define(["ko", "models/http"], function (ko, http) {
+define(["ko", "models/http", "models/session"], function (ko, http, session) {
     var restricted = ko.observable(false);
     var message = ko.observable("");
     var title = ko.observable("");
@@ -15,8 +15,9 @@ define(["ko", "models/http"], function (ko, http) {
         },
 
         load: function () {
+            var owner = session.generation();
             return http.get("/access/restriction").then(function (response) {
-                if (response.ok) {
+                if (response.ok && owner === session.generation()) {
                     title(response.data.title || "");
                     message(response.data.message || "");
                     restricted(!!response.data.restricted);

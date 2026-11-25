@@ -1668,8 +1668,13 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                     .ValueGeneratedOnAdd()
                     .HasColumnType("TEXT");
 
-                b.Property<Guid?>("FamilyPrimaryUserId")
-                    .HasColumnType("TEXT");
+                b.Property<Guid?>("FamilyManagerId")
+                    .HasColumnType("TEXT")
+                    .HasColumnName("FamilyManagerUserId");
+
+                b.Property<Guid?>("FamilyPrimaryId")
+                    .HasColumnType("TEXT")
+                    .HasColumnName("FamilyPrimaryUserId");
 
                 b.Property<Guid?>("ImpersonatorId")
                     .HasColumnType("TEXT");

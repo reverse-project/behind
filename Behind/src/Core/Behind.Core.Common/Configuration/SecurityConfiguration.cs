@@ -19,12 +19,16 @@ public record SecurityConfiguration(
     bool TwoFactorRequired = false
 )
 {
+    public const int DefaultSignInNotificationTimeoutMilliseconds = 10_000;
+
     public SecurityConfiguration() : this(false, None, None, None)
     {
 
     }
 
     public SecurityAccountSettings Accounts { get; init; } = new();
+
+    public int SignInNotificationTimeoutMilliseconds { get; init; } = DefaultSignInNotificationTimeoutMilliseconds;
 
     public const string SectionName = "Security";
 }

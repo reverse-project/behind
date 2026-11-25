@@ -74,7 +74,7 @@ Ha az érték futásidőben nem alakítható egész számmá, az alapérték ér
 Ez kiegészítő konfigurációváltozás: a mezőket elhagyó fájlok az alapértékeket kapják,
 a meglévő telepítések fájljait nem kell migrálni. Az induló generálás mindkét alapértéket
 tartalmazza. Az 1.0.0 dokumentumok és sémák változatlanok; a futásidejű ellenőrzés
-az 1.2.0 sémát használja. A korábban nagyobb audithalmazokat kereső telepítéseknél
+az 1.4.0 sémát használja. A korábban nagyobb audithalmazokat kereső telepítéseknél
 szűkíteni kell a keresést, vagy tudatosan növelni kell a konfigurált kereteket.
 A korlátozott keresés biztonsági javítás.
 

@@ -9,6 +9,7 @@ MUST order module widget feeds by audit creation time through IModuleCreationOrd
 MUST use the new extension(...) C# feature for extension methods
 MUST use extension method files with the filename ending with Extensions
 MUST use records, immutable objects and async await, thread safe solutions
+MUST use Option<T> instead of nullable references or nullable value types throughout the codebase; represent missing values explicitly, converting at framework and storage boundaries when required.
 MUST use functinal tools in the code or create new tools, monads if needed
 MUST implement common functions and objects in Behind.Common project
 MUST implement common database functions and objects in Behind.Common.Database project

@@ -6,7 +6,8 @@
 
 | Specification | Version | Status |
 | --- | --- | --- |
-| [Subaccount API](./subaccounts-3.1.0.md) | 3.1.0 | Current |
+| [Subaccount API](./subaccounts-3.2.0.md) | 3.2.0 | Current |
+| [Subaccount API](./subaccounts-3.1.0.md) | 3.1.0 | Superseded |
 | [Subaccount API](./subaccounts-3.0.0.md) | 3.0.0 | Superseded |
 | [Subaccount API](./subaccounts-2.5.0.md) | 2.5.0 | Superseded |
 | [Subaccount API](./subaccounts-2.4.0.md) | 2.4.0 | Previous |
@@ -18,7 +19,8 @@
 | [Subaccount API](./subaccounts-1.2.0.md) | 1.2.0 | Previous |
 | [Subaccount API](./subaccounts-1.1.0.md) | 1.1.0 | Previous |
 | [Subaccount API](./subaccounts-1.0.0.md) | 1.0.0 | Previous |
-| [Configuration JSON validation](./configuration-json-1.4.0.md) | 1.4.0 | Current |
+| [Configuration JSON validation](./configuration-json-1.5.0.md) | 1.5.0 | Current |
+| [Configuration JSON validation](./configuration-json-1.4.0.md) | 1.4.0 | Previous |
 | [Configuration JSON validation](./configuration-json-1.3.0.md) | 1.3.0 | Previous |
 | [Configuration JSON validation](./configuration-json-1.2.0.md) | 1.2.0 | Previous |
 | [Configuration JSON validation](./configuration-json-1.1.0.md) | 1.1.0 | Previous |

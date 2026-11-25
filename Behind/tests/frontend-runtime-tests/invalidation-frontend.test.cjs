@@ -145,6 +145,25 @@ test("invalidation skips disposed pending subscriptions and defers newly added h
     assert.throws(() => invalidation.invalidate(null), /topic/);
 });
 
+test("restriction results from a superseded session do not overwrite current state", async () => {
+    const response = deferred();
+    const generation = ko.observable(1);
+    const restriction = load("models/restriction.js", {
+        ko,
+        "models/http": { get: () => response.promise },
+        "models/session": { generation: () => generation() }
+    });
+
+    const pending = restriction.load();
+    generation(2);
+    response.resolve({ ok: true, data: { title: "Old account", message: "Old restriction", restricted: true } });
+    await pending;
+
+    assert.equal(restriction.title(), "");
+    assert.equal(restriction.message(), "");
+    assert.equal(restriction.restricted(), false);
+});
+
 const mutations = [
     ["create", [{ name: "main", title: "Main" }]],
     ["save", ["menu", { name: "main", title: "Main" }]],

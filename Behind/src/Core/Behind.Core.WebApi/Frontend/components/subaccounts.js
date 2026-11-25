@@ -10,6 +10,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.translate = i18n.t;
         self.accounts = ko.observableArray([]);
         self.primary = ko.observable(false);
+        self.canManageChildren = ko.observable(false);
         self.primaryHasPin = ko.observable(false);
         self.primaryUserId = ko.observable();
         self.primaryPin = ko.observable("");
@@ -59,7 +60,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         var profileIdentity = identity();
         var currentHasPin = ko.observable(null);
         self.editAccount = ko.pureComputed(function () {
-            if (!self.manager || self.primary()) {
+            if (!self.manager || self.canManageChildren()) {
                 return self.selected();
             }
             var id = ko.unwrap(params.userId);
@@ -68,21 +69,26 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         });
         self.pinOnly = ko.pureComputed(function () {
             var account = self.editAccount();
-            return account && (!self.primary() || account.isPrimary);
+            return account && (!self.canManageChildren() || account.isPrimary || account.isSelf);
         });
         self.managementAccounts = ko.pureComputed(function () {
-            return self.primary() ? [{ userId: self.primaryUserId(), isPrimary: true, hasPin: self.primaryHasPin() }].concat(self.accounts()) : [];
+            if (self.primary()) {
+                return [{ userId: self.primaryUserId(), isPrimary: true, hasPin: self.primaryHasPin() }].concat(self.accounts());
+            }
+            return self.canManageChildren()
+                ? [{ userId: ko.unwrap(params.userId), isSelf: true, hasPin: currentHasPin() }].concat(self.accounts()) : [];
         });
         self.proofMethods = ko.pureComputed(function () {
             var account = self.editAccount();
-            if (!self.primary()) {
+            if (!self.canManageChildren() || (account && account.isSelf)) {
                 return self.manager && account && account.hasPin ? ["currentPin"] : [];
             }
             var methods = [];
-            if (account ? account.hasPin : self.primaryHasPin()) {
+            if (self.primary() && (account ? account.hasPin : self.primaryHasPin())
+                || !self.primary() && !account && currentHasPin()) {
                 methods.push("currentPin");
             }
-            if (account && !account.isPrimary && self.primary() && self.primaryHasPin()) {
+            if (account && !account.isPrimary && (self.primary() ? self.primaryHasPin() : currentHasPin())) {
                 methods.push("primaryPin");
             }
             if (modes.password()) {
@@ -111,7 +117,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             self.credential("");
         };
         var operationChange = self.clearPin.subscribe(function () {
-            if (self.primary()) {
+            if (self.canManageChildren()) {
                 clearProof();
             }
         });
@@ -120,7 +126,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         });
         self.needsProof = ko.pureComputed(function () {
             var account = self.editAccount();
-            return self.changingPin() && (self.primary() || !!(account && account.hasPin));
+            return self.changingPin() && (self.canManageChildren() && !(account && account.isSelf) || !!(account && account.hasPin));
         });
         var select = self.editAccount.subscribe(function (account) {
             self.pin("");
@@ -128,7 +134,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             self.skipPrimaryPin(false);
             self.name(account && account.displayName || "");
             clearProof();
-            self.child(!!account && account.isChild);
+            self.child(account ? !!account.isChild : self.canManageChildren() && !self.primary());
             self.birthday(account && account.birthday || "");
             self.email("");
             self.clearPin(false);
@@ -138,6 +144,9 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.label = function (account) {
             if (account.isPrimary) {
                 return i18n.t("subaccount.primaryLabel");
+            }
+            if (account.isSelf) {
+                return i18n.t("subaccount.ownPin");
             }
             var label = user.label({ id: account.userId, displayName: account.displayName });
             return account.userId === self.primaryUserId() ? label + " (" + i18n.t("subaccount.primaryLabel") + ")" : label;
@@ -169,6 +178,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             self.skipPrimaryPin(false);
             currentHasPin(null);
             self.primary(false);
+            self.canManageChildren(false);
             self.primaryHasPin(false);
             self.primaryUserId(null);
             self.linked(false);
@@ -184,11 +194,15 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 if (response.ok) {
                     self.primaryUserId(response.data.primaryUserId);
                     self.primaryHasPin(!!response.data.primaryHasPin);
+                    self.primary(response.data.isPrimary);
+                    self.canManageChildren(response.data.canManageChildren ?? response.data.isPrimary);
+                    currentHasPin(typeof response.data.currentHasPin === "boolean" ? response.data.currentHasPin : null);
                     self.accounts(self.manager ? response.data.accounts : response.data.switchAccounts ?? response.data.accounts);
                     self.profileType(self.profileTypes()[0]);
-                    self.primary(response.data.isPrimary);
                     self.linked(response.data.isLinked ?? (!response.data.isPrimary && !!response.data.primaryUserId));
-                    currentHasPin(typeof response.data.currentHasPin === "boolean" ? response.data.currentHasPin : null);
+                    if (self.canManageChildren() && !self.primary()) {
+                        self.child(true);
+                    }
                     clearProof();
                     self.linkEnabled(!!response.data.linkUnlinkEnabled);
                     canRespondToInvitations(response.data.canRespondToInvitations ?? (self.linkEnabled() && self.primary()));
@@ -336,7 +350,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             if (!self.canBrowseAndRelease() || !account || !account.canRelease || self.busy()) {
                 return;
             }
-            var switched = self.linkRequiresDirectSignIn();
+            var switched = self.linkRequiresDirectSignIn() || !self.primary();
             var confirmation = i18n.t("subaccount.confirmRelease") + " " + self.label(account);
             if (switched) {
                 confirmation += "\n\n" + i18n.t("subaccount.releaseEndsSession");
@@ -358,13 +372,13 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         };
 
         self.requestPinProof = function () {
-            if (!self.manager || !self.primary()) {
+            if (!self.manager || !self.canManageChildren() || (self.selected() && self.selected().isSelf)) {
                 return;
             }
             var account = self.selected();
             var operation = account ? (self.clearPin() ? "remove" : "change") : "create";
             return perform(function () {
-                return http.post(endpoint(account ? account.userId : self.primaryUserId()) + "/pin-proof", { operation: operation });
+                return http.post(endpoint(account ? account.userId : self.primary() ? self.primaryUserId() : ko.unwrap(params.userId)) + "/pin-proof", { operation: operation });
             }, function () {
                 self.message(i18n.t("subaccount.mailInstructions"));
             }, "subaccount.denied");
@@ -372,13 +386,13 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
 
         self.save = function () {
             var account = self.editAccount();
-            var settingOwnPin = !self.primary() && account && !account.hasPin;
-            if (!self.manager || (!self.primary() && !account) || (self.pinOnly() && !self.changingPin()) || (settingOwnPin && self.clearPin())) {
+            var settingOwnPin = account && (!self.canManageChildren() || account.isSelf) && !account.hasPin;
+            if (!self.manager || (!self.canManageChildren() && !account) || (self.pinOnly() && !self.changingPin()) || (settingOwnPin && self.clearPin())) {
                 return;
             }
             var body = {
                 displayName: self.name().trim(),
-                isChild: self.child(),
+                isChild: self.primary() ? self.child() : true,
                 birthday: self.birthday() || null,
                 pin: self.clearPin() ? null : self.pin() || null
             };
@@ -399,7 +413,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                     return http.put(endpoint(account.userId), body);
                 }
 
-                if (!self.primaryHasPin() && !self.skipPrimaryPin()) {
+                if (self.primary() && !self.primaryHasPin() && !self.skipPrimaryPin()) {
                     body.primaryPin = self.primaryPin();
                 }
                 body.email = self.email().trim() || null;
@@ -407,13 +421,13 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
             }, function () {
                 var success = settingOwnPin ? "subaccount.ownPinSet"
                     : body.pin === null ? "subaccount.ownPinRemoved" : "subaccount.ownPinChanged";
-                return refresh(self.primary() ? null : success);
+                return refresh(self.canManageChildren() && !(account && account.isSelf) ? null : success);
             }, function (status) {
                 if (settingOwnPin && (status === 403 || status === 409)) {
                     return refresh("subaccount.ownPinSetupRejected");
                 }
                 var invalid = status === 403 && body.proof
-                    ? (self.primary() ? "subaccount.proofRejected" : "subaccount.currentPinRejected")
+                    ? (self.canManageChildren() && !(account && account.isSelf) ? "subaccount.proofRejected" : "subaccount.currentPinRejected")
                     : "subaccount.invalid";
                 self.message(i18n.t(invalid));
             });

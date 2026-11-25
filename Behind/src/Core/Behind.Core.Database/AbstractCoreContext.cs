@@ -141,6 +141,8 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         typeof(Grant),
         typeof(Restriction),
         typeof(Password),
+        typeof(Subaccount),
+        typeof(UserSwitchPin),
         typeof(WallOfShameEntry),
         typeof(Site),
         typeof(News),

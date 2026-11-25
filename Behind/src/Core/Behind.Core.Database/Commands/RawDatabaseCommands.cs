@@ -81,7 +81,8 @@ public sealed class RawDatabaseCommands(
         IReadOnlyList<RawValue> changes,
         CancellationToken cancellationToken)
     {
-        if (table.Name == "Sessions" && changes.Any(change => change.Column.Name is "UserId" or "ImpersonatorId"))
+        if (table.Name == "Sessions" && changes.Any(change =>
+                change.Column.Name is "UserId" or "ImpersonatorId" or "FamilyPrimaryUserId" or "FamilyManagerUserId"))
         {
             return new RawWriteResult.Invalid(["Session identity cannot be changed."]);
         }

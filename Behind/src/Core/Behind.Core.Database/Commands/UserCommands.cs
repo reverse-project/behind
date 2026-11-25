@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,9 +41,18 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task UnsetSwitchPin(Guid userId, CancellationToken cancellationToken = default) =>
-        context.UserSwitchPins.Where(pin => EF.Property<Guid>(pin, "UserId") == userId)
-            .ExecuteDeleteAsync(cancellationToken);
+    public async Task UnsetSwitchPin(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var pin = await context.UserSwitchPins
+            .SingleOrDefaultAsync(record => EF.Property<Guid>(record, "UserId") == userId, cancellationToken);
+        if (pin is null)
+        {
+            return;
+        }
+
+        context.UserSwitchPins.Remove(pin);
+        await context.SaveChangesAsync(cancellationToken);
+    }
 
     public async Task Restore(Guid userId, CancellationToken cancellationToken = default)
     {
@@ -57,6 +67,17 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
             return IUserCommands.HardDeleteOutcome.LinkedSubaccounts;
         }
 
+        using (context.SoftDelete.IncludeDeleted())
+        {
+            var releasedLinks = await context.Subaccounts
+                .Where(link => EF.Property<Guid>(link, "PrimaryUserId") == userId)
+                .ToListAsync(cancellationToken);
+            foreach (var link in releasedLinks)
+            {
+                context.HardDelete(link);
+            }
+        }
+
         await context.GetHardDeleteRepository<HumanUser, Guid>().HardDeleteAsync(userId, cancellationToken);
 
         try
@@ -66,6 +87,7 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
         }
         catch (DbUpdateException)
         {
+            context.ChangeTracker.Clear();
             return IUserCommands.HardDeleteOutcome.Rejected;
         }
     }

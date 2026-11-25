@@ -26,7 +26,7 @@ public sealed class ConfigurationSchemaTests : IDisposable
     [InlineData("AuditSearchMaxCandidates")]
     public void AuditSearchBudgets_HaveNumericSchemaAndPreserveDefaultsWhenOmitted(string property)
     {
-        Assert.Equal("configuration-1.4.0", ConfigurationSchema.Name);
+        Assert.Equal("configuration-1.5.0", ConfigurationSchema.Name);
         Assert.True(ConfigurationSchema.IsValid(JsonNode.Parse("""{"Backend":{}}""")));
         var root = new JsonObject { ["Backend"] = new JsonObject { [property] = 10000 } };
         Assert.True(ConfigurationSchema.IsValid(root));
@@ -38,6 +38,23 @@ public sealed class ConfigurationSchemaTests : IDisposable
         Assert.False(ConfigurationSchema.IsValid(root));
         Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxEntries);
         Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxCandidates);
+    }
+
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(10000, true)]
+    [InlineData(0, false)]
+    [InlineData(-1, false)]
+    public void SignInNotificationTimeoutRequiresAPositiveInteger(int milliseconds, bool expected)
+    {
+        var root = new JsonObject
+        {
+            ["Security"] = new JsonObject { ["SignInNotificationTimeoutMilliseconds"] = milliseconds }
+        };
+
+        Assert.Equal(expected, ConfigurationSchema.IsValid(root));
+        Assert.Equal(SecurityConfiguration.DefaultSignInNotificationTimeoutMilliseconds,
+            new SecurityConfiguration().SignInNotificationTimeoutMilliseconds);
     }
 
     [Fact]

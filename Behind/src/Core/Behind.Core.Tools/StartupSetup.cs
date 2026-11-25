@@ -68,6 +68,7 @@ public sealed record StartupSecuritySection(
     bool ReadOnlyConfiguration,
     bool EmailConfirmation,
     bool TwoFactorRequired,
+    int SignInNotificationTimeoutMilliseconds,
     SecurityAccountSettings Accounts,
     DataProtectionSettings DataProtection,
     SecretKey SecretKey,

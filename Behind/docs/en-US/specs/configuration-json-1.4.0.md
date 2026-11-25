@@ -74,7 +74,7 @@ be read as integers at runtime use the corresponding default.
 This is an additive configuration change: files omitting these properties retain
 the defaults, and existing installations require no file migration. Startup
 generation includes both defaults. Configuration 1.0.0 documents and schemas
-remain unchanged; runtime validation now uses configuration 1.2.0. Deployments
+remain unchanged; runtime validation now uses configuration 1.4.0. Deployments
 that previously searched larger audit sets must narrow the search or deliberately
 increase the configured budgets. This bounded-search behavior is a security repair.
 

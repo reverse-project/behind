@@ -1,13 +1,13 @@
-<div data-bind="if: manager && (primary() || editAccount())">
+<div data-bind="if: manager && (canManageChildren() || editAccount())">
     <section class="mt-4">
-        <h2 class="h5" data-bind="t: primary() ? 'subaccount.title' : 'subaccount.ownPin'">Subaccounts</h2>
+        <h2 class="h5" data-bind="t: canManageChildren() ? 'subaccount.title' : 'subaccount.ownPin'">Subaccounts</h2>
         <form data-bind="submit: save">
-            <!-- ko if: primary -->
+            <!-- ko if: canManageChildren -->
             <label class="form-label d-block">
                 <span data-bind="t: 'subaccount.choose'">Choose an account</span>
                 <select class="form-select" data-bind="options: managementAccounts, optionsText: label, optionsCaption: translate('subaccount.new'), value: selected, enable: !busy()"></select>
             </label>
-            <!-- ko ifnot: selected() && selected().isPrimary -->
+            <!-- ko ifnot: selected() && (selected().isPrimary || selected().isSelf) -->
             <label class="form-label d-block">
                 <span data-bind="t: 'profile.displayName'">Display name</span>
                 <input type="text" maxlength="500" required class="form-control" data-bind="value: name">
@@ -19,7 +19,7 @@
                 </label>
             </div>
             <label class="form-check mb-2">
-                <input type="checkbox" class="form-check-input" data-bind="checked: child">
+                <input type="checkbox" class="form-check-input" data-bind="checked: child, enable: primary">
                 <span data-bind="t: 'subaccount.child'">Child account</span>
             </label>
             <label class="form-label d-block">
@@ -28,15 +28,15 @@
             </label>
             <!-- /ko -->
             <!-- /ko -->
-            <!-- ko if: !primary() && editAccount() && editAccount().hasPin -->
+            <!-- ko if: (!canManageChildren() || (editAccount() && editAccount().isSelf)) && editAccount() && editAccount().hasPin -->
             <label class="form-label d-block">
                 <span data-bind="t: 'subaccount.yourCurrentPin'">Your current switching PIN</span>
                 <input class="form-control" type="password" inputmode="numeric" required autocomplete="off" data-bind="textInput: credential">
             </label>
             <!-- /ko -->
             <label class="form-label d-block">
-                <span data-bind="t: !primary() ? 'subaccount.ownNewPin' : editAccount() && editAccount().hasPin ? 'subaccount.replacePin' : 'subaccount.pin'"></span>
-                <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="new-password" data-bind="textInput: pin, enable: !clearPin(), attr: { required: !primary() && !clearPin() }">
+                <span data-bind="t: pinOnly() && !primary() ? 'subaccount.ownNewPin' : editAccount() && editAccount().hasPin ? 'subaccount.replacePin' : 'subaccount.pin'"></span>
+                <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="new-password" data-bind="textInput: pin, enable: !clearPin(), attr: { required: pinOnly() && !primary() && !clearPin() }">
             </label>
             <label class="form-check mb-2" data-bind="visible: editAccount() && editAccount().hasPin">
                 <input class="form-check-input" type="checkbox" data-bind="checked: clearPin">
@@ -54,7 +54,7 @@
                 </label>
                 <p class="alert alert-warning mt-2" role="status" data-bind="visible: skipPrimaryPin, t: 'subaccount.primaryWarning'">Without a primary PIN, you must sign in again to return to your primary account.</p>
             </fieldset>
-            <fieldset class="mb-3" data-bind="if: primary() && needsProof()">
+            <fieldset class="mb-3" data-bind="if: canManageChildren() && !(editAccount() && editAccount().isSelf) && needsProof()">
                 <legend class="h6" data-bind="t: 'subaccount.proofRequired'"></legend>
                 <p class="alert alert-warning" data-bind="visible: !proofMethods().length, t: 'subaccount.noProofMethod'"></p>
                 <select class="form-select" data-bind="visible: proofMethods().length, options: proofMethods, optionsText: proofLabel, value: proofMethod, attr: { 'aria-label': translate('subaccount.proofRequired') }"></select>
@@ -66,7 +66,7 @@
             </fieldset>
             <button type="submit" class="btn btn-primary" data-bind="enable: !busy() && (!pinOnly() || changingPin()), t: editAccount() ? 'common.save' : 'subaccount.create'"></button>
         </form>
-        <div class="mt-3" data-bind="if: primary() && canBrowseAndRelease() && selected() && !selected().isPrimary">
+        <div class="mt-3" data-bind="if: canManageChildren() && canBrowseAndRelease() && selected() && !selected().isPrimary && !selected().isSelf">
             <button type="button" class="btn btn-outline-danger" data-bind="click: release, enable: !busy() && selected().canRelease, t: 'subaccount.release'"></button>
             <p class="form-text" data-bind="visible: !selected().canRelease, t: 'subaccount.recovery'"></p>
         </div>
@@ -77,7 +77,7 @@
         </p>
         <!-- /ko -->
     </section>
-    <section class="mt-4" data-bind="if: primary() && canBrowseAndRelease()">
+    <section class="mt-4" data-bind="if: canManageChildren() && canBrowseAndRelease()">
         <h2 class="h5" data-bind="t: linkEnabled() ? 'subaccount.linkExisting' : 'subaccount.browse'"></h2>
         <form data-bind="submit: search">
             <label class="form-label d-block">

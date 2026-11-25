@@ -1672,8 +1672,13 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .ValueGeneratedOnAdd()
                     .HasColumnType("uuid");
 
-                b.Property<Guid?>("FamilyPrimaryUserId")
-                    .HasColumnType("uuid");
+                b.Property<Guid?>("FamilyManagerId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("FamilyManagerUserId");
+
+                b.Property<Guid?>("FamilyPrimaryId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("FamilyPrimaryUserId");
 
                 b.Property<Guid?>("ImpersonatorId")
                     .HasColumnType("uuid");

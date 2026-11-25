@@ -6,6 +6,29 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public sealed class SubaccountSchemaTests
 {
+    [Fact]
+    public void FamilyRequiresChildManagementCapabilityInVersion320()
+    {
+        var family = JsonNode.Parse("""
+            {
+              "accounts": [], "isPrimary": false,
+              "primaryUserId": "5418cd9a-dc39-4af9-9845-1891a543eda9",
+              "primaryHasPin": false, "canBrowseAndRelease": true,
+              "linkUnlinkEnabled": true, "linkUnlinkRequiresDirectSignIn": false,
+              "currentHasPin": true, "isLinked": true, "canRespondToInvitations": false,
+              "switchAccounts": []
+            }
+            """)!;
+        var schema = ReadDefinition("family", "3.2.0");
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["canManageChildren"] = "true";
+        Assert.False(schema.Evaluate(family).IsValid);
+        family["canManageChildren"] = true;
+        Assert.True(schema.Evaluate(family).IsValid);
+        family["canManageChildren"] = false;
+        Assert.True(schema.Evaluate(family).IsValid);
+    }
+
     [Theory]
     [InlineData("""{"displayName":"Family","clearPin":true,"pin":"1234"}""", false)]
     [InlineData("""{"displayName":"Family","clearPin":true,"pin":""}""", false)]
@@ -43,6 +66,99 @@ public sealed class SubaccountSchemaTests
         Assert.True(ReadDefinition("family").Evaluate(family).IsValid);
         Assert.False(ReadDefinition("create").Evaluate(request).IsValid);
         Assert.False(ReadDefinition("update").Evaluate(request).IsValid);
+    }
+
+    [Fact]
+    public void StoredBlankAccountNamesAreAllowedOnlyInResponses()
+    {
+        var account = JsonNode.Parse("""
+            {
+              "displayName": "",
+              "isChild": true,
+              "userId": "286a5ce1-e229-4dc7-b33b-5f8379455d97",
+              "hasPin": false,
+              "canRelease": false
+            }
+            """)!;
+        var request = JsonNode.Parse("""{"displayName":""}""")!;
+
+        Assert.True(ReadDefinition("account", "1.2.0").Evaluate(account).IsValid);
+        Assert.False(ReadDefinition("create", "1.2.0").Evaluate(request).IsValid);
+        Assert.False(ReadDefinition("update", "1.2.0").Evaluate(request).IsValid);
+    }
+
+    [Theory]
+    [InlineData("create", """{"displayName":"Alex","proof":null}""", true)]
+    [InlineData("create", """{"displayName":"Alex","pin":"0042","proof":null}""", false)]
+    [InlineData("create", """{"displayName":"Alex","pin":"0042","proof":{"currentPin":"0017"}}""", true)]
+    [InlineData("create", """{"displayName":"Alex","pin":"0042","proof":{"currentPin":"0017","primaryPin":null}}""", true)]
+    [InlineData("create", """{"displayName":"Alex","pin":"0042","proof":{"currentPin":"0017","primaryPin":"0022"}}""", false)]
+    [InlineData("update", """{"displayName":"Alex","proof":null}""", true)]
+    [InlineData("update", """{"displayName":"Alex","clearPin":true,"proof":null}""", false)]
+    [InlineData("update", """{"displayName":"Alex","clearPin":true,"proof":{"currentPin":"0017"}}""", true)]
+    public void PinProofMayBeNullOnlyWhenTheRequestDoesNotChangeAPin(string definition, string request, bool expected)
+    {
+        Assert.Equal(expected, ReadDefinition(definition, "3.1.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
+    [Theory]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":"0017","password":null}}""", true)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":"0017","password":"secret"}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":null,"password":null}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":"0017","primaryPin":null}}""", true)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":"0017","primaryPin":"0022"}}""", false)]
+    public void ProofAcceptsExactlyOneNonNullCredential(string request, bool expected)
+    {
+        Assert.Equal(expected, ReadDefinition("pinMutation", "3.1.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
+    [Fact]
+    public void SwitchTargetsHidePrivateDataAndVersion30RequiresTheirPin()
+    {
+        var family = JsonNode.Parse("""
+            {
+              "accounts": [{
+                "displayName":"Adult",
+                "birthday":"1980-01-01",
+                "email":"adult@example.test",
+                "isChild":false,
+                "userId":"5418cd9a-dc39-4af9-9845-1891a543eda9",
+                "hasPin":false,
+                "canRelease":false
+              }],
+              "isPrimary":true,
+              "primaryUserId":"5418cd9a-dc39-4af9-9845-1891a543eda9",
+              "primaryHasPin":false,
+              "canBrowseAndRelease":true,
+              "linkUnlinkEnabled":true,
+              "linkUnlinkRequiresDirectSignIn":false,
+              "currentHasPin":false,
+              "isLinked":false,
+              "canRespondToInvitations":false,
+              "switchAccounts": [{
+                "displayName":"Target",
+                "isChild":false,
+                "userId":"286a5ce1-e229-4dc7-b33b-5f8379455d97",
+                "hasPin":true
+              }]
+            }
+            """)!;
+
+        Assert.True(ReadDefinition("family", "3.1.0").Evaluate(family).IsValid);
+        Assert.True(ReadDefinition("family", "3.0.0").Evaluate(family).IsValid);
+        family["switchAccounts"]![0]!["email"] = "private@example.test";
+        Assert.False(ReadDefinition("family", "3.1.0").Evaluate(family).IsValid);
+        Assert.False(ReadDefinition("family", "3.0.0").Evaluate(family).IsValid);
+        family["switchAccounts"]![0]!["email"] = null;
+        family["switchAccounts"]![0]!["birthday"] = "1980-01-01";
+        Assert.False(ReadDefinition("family", "3.1.0").Evaluate(family).IsValid);
+        Assert.False(ReadDefinition("family", "3.0.0").Evaluate(family).IsValid);
+
+        family["switchAccounts"]![0]!["birthday"] = null;
+        family["switchAccounts"]![0]!["hasPin"] = false;
+        Assert.False(ReadDefinition("family", "3.0.0").Evaluate(family).IsValid);
+        family["switchAccounts"]![0]!["hasPin"] = true;
+        Assert.True(ReadDefinition("family", "3.0.0").Evaluate(family).IsValid);
     }
 
     [Theory]

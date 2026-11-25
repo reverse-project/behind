@@ -55,7 +55,8 @@ public sealed class SessionQueries(AbstractCoreContext context, IOptions<Securit
             {
                 UserId = EF.Property<Guid>(s, "UserId"),
                 ImpersonatorId = EF.Property<Guid?>(s, "ImpersonatorId"),
-                s.FamilyPrimaryUserId
+                FamilyPrimaryUserId = EF.Property<Guid?>(s, "FamilyPrimaryId"),
+                FamilyManagerUserId = EF.Property<Guid?>(s, "FamilyManagerId")
             })
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
@@ -70,7 +71,16 @@ public sealed class SessionQueries(AbstractCoreContext context, IOptions<Securit
             var fromLinkedProfile = await SubaccountSwitchScope.IsLinked(context, primaryId, cancellationToken);
             isRestrictedAdult = fromLinkedProfile && row.UserId != primaryId;
             var scope = new SubaccountSwitchScope(primaryId, fromLinkedProfile);
-            var linked = await scope.Profiles(context).AnyAsync(user => EF.Property<Guid>(user, "Id") == row.UserId, cancellationToken)
+            var managerValid = row.FamilyManagerUserId is not { } managerId
+                || fromLinkedProfile
+                    && await scope.Profiles(context).AnyAsync(user => EF.Property<Guid>(user, "Id") == managerId, cancellationToken)
+                    && await context.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == managerId
+                        && EF.Property<Guid>(link, "UserId") == primaryId, cancellationToken)
+                    && await new WallOfShameQueries(context).FindActiveBan(managerId, DateTimeOffset.UtcNow, cancellationToken) == None;
+            var actorScope = row.FamilyManagerUserId is { } manager
+                ? new SubaccountSwitchScope(manager, false) : scope;
+            var linked = managerValid
+                && await actorScope.Profiles(context).AnyAsync(user => EF.Property<Guid>(user, "Id") == row.UserId, cancellationToken)
                 && (row.UserId != primaryId || fromLinkedProfile
                     || await context.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == primaryId
                         && context.Users.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active)

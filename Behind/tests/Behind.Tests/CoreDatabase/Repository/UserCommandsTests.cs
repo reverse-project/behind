@@ -1,4 +1,5 @@
 using Behind.Core.Database.Auditing;
+using Behind.Common.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Queries;
@@ -40,7 +41,8 @@ public sealed class UserCommandsTests : IDisposable
         var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres:Image is required.");
         await using var container = new PostgreSqlBuilder(image).Build();
         await container.StartAsync();
-        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString()).Options;
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString())
+            .AddInterceptors(Auditing()).Options;
         await using var db = new CoreContextPostgres(options);
         await db.Database.MigrateAsync();
         await VerifyUnsetSwitchPin(db);
@@ -49,9 +51,12 @@ public sealed class UserCommandsTests : IDisposable
     [Fact]
     public async Task UnsetSwitchPinOnlyRemovesTheSelectedCredentialAndUpdatesUserListing()
     {
-        await using var db = _factory.CreateContext();
+        await using var db = _factory.CreateAuditedContext(AuditActor.Anonymous);
         await VerifyUnsetSwitchPin(db);
     }
+
+    private static AuditSaveChangesInterceptor Auditing() =>
+        new(() => new FixedAuditActorProvider(AuditActor.Anonymous), TimeProvider.System);
 
     private static async Task VerifyUnsetSwitchPin(AbstractCoreContext db)
     {
@@ -71,6 +76,20 @@ public sealed class UserCommandsTests : IDisposable
         await commands.UnsetSwitchPin(targetId);
         Assert.False(await HasPin(targetId));
         Assert.True(await HasPin(db.GetKey(other)));
+        using (db.SoftDelete.IncludeDeleted())
+        {
+            var unsetPin = await db.UserSwitchPins.SingleAsync(pin => EF.Property<Guid>(pin, "UserId") == targetId);
+            Assert.True(await db.Entry(unsetPin).IsDeletedAsync());
+            db.Restores.Mark(unsetPin);
+            db.Entry(unsetPin).Property(pin => pin.PinHash).CurrentValue = new PinHash("restored-hash");
+        }
+        await db.SaveChangesAsync();
+        Assert.True(await HasPin(targetId));
+        using (db.SoftDelete.IncludeDeleted())
+        {
+            var restoredPin = await db.UserSwitchPins.SingleAsync(pin => EF.Property<Guid>(pin, "UserId") == targetId);
+            Assert.False(await db.Entry(restoredPin).IsDeletedAsync());
+        }
     }
 
     [Fact]

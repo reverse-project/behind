@@ -1,12 +1,14 @@
 using System.Net;
 using Behind.Common.Templating;
 using Behind.Common.WebApi;
+using Behind.Core.Common.Configuration;
 using Behind.Core.Domain;
 using Behind.Core.WebApi.Middleware;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Behind.Core.WebApi.EmailSender;
 
@@ -36,11 +38,22 @@ internal static class EmailSignInNotification
     {
         try
         {
-            var sender = http.RequestServices?.GetService<IEmailSender>();
+            var services = http.RequestServices;
+            if (services is null)
+            {
+                return;
+            }
+
+            var sender = services.GetService<IEmailSender>();
             if (sender is null)
             {
                 return;
             }
+
+            var timeoutMilliseconds = services
+                .GetRequiredService<IOptionsSnapshot<SecurityConfiguration>>()
+                .Value.SignInNotificationTimeoutMilliseconds;
+            using var timeout = new CancellationTokenSource(timeoutMilliseconds);
 
             var html = DefaultEmailTemplates.EmailSignInAlert
                 .AddParameter(new Parameter("RemoteIp", WebUtility.HtmlEncode(signIn.RemoteIp)))
@@ -49,11 +62,11 @@ internal static class EmailSignInNotification
 
             if (sender is EmailSender configured)
             {
-                await configured.SendDeliveryEmailAsync(signIn.Email, Subject, html, CancellationToken.None);
+                await configured.SendDeliveryEmailAsync(signIn.Email, Subject, html, timeout.Token).WaitAsync(timeout.Token);
             }
             else
             {
-                await sender.SendEmailAsync(signIn.Email, Subject, html);
+                await sender.SendEmailAsync(signIn.Email, Subject, html).WaitAsync(timeout.Token);
             }
         }
         catch (Exception exception)

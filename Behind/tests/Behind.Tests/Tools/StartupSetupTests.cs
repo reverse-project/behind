@@ -268,6 +268,9 @@ public sealed class StartupSetupTests : IDisposable
 
         Assert.False(security.ReadOnlyConfiguration);
         Assert.False(security.TwoFactorRequired);
+        Assert.Equal(SecurityConfiguration.DefaultSignInNotificationTimeoutMilliseconds, security.SignInNotificationTimeoutMilliseconds);
+        Assert.Equal(SecurityConfiguration.DefaultSignInNotificationTimeoutMilliseconds,
+            Load(SecurityPath).GetValue<int>("Security:SignInNotificationTimeoutMilliseconds"));
         Assert.True(security.Accounts.Subaccounts);
         Assert.False(security.Accounts.LinkUnlink);
         Assert.Equal(SecurityAccountSettings.DefaultSwitchPinMaxLength, security.Accounts.SwitchPinMaxLength);

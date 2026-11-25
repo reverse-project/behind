@@ -49,6 +49,7 @@ public sealed class SubaccountMigrationTests
         var primary = Guid.NewGuid();
         var legacyChild = Guid.NewGuid();
         var legacyNoPin = Guid.NewGuid();
+        var legacySession = Guid.NewGuid();
         if (upgrade)
         {
             await db.GetService<IMigrator>().MigrateAsync("20261118160000_PreserveIssuedBans");
@@ -60,12 +61,29 @@ public sealed class SubaccountMigrationTests
             await db.Database.ExecuteSqlAsync(
                 $"""INSERT INTO "Subaccounts" ("UserId", "PrimaryUserId", "IsChild", "PinHash") VALUES ({legacyChild}, {primary}, {true}, {"legacy-hash"}), ({legacyNoPin}, {primary}, {true}, NULL)""");
             await db.GetService<IMigrator>().MigrateAsync("20261122140000_AddPendingFamilyLinks");
+            var userAgent = Guid.NewGuid();
+            var accessNonce = Guid.NewGuid();
+            var refreshNonce = Guid.NewGuid();
+            var issued = DateTime.UtcNow.Ticks;
+            var expires = DateTime.UtcNow.AddDays(1).Ticks;
+            await db.Database.ExecuteSqlAsync(
+                $"""INSERT INTO "UserAgents" ("Id", "Value") VALUES ({userAgent}, {"legacy-agent"})""");
+            await db.Database.ExecuteSqlAsync(
+                $"""INSERT INTO "Sessions" ("Id", "RemoteAddress", "UserAgentId", "UserId", "FamilyPrimaryUserId", "AccessToken_IssuedAt", "AccessToken_ExpiresAt", "AccessToken_Nonce", "RefreshToken_IssuedAt", "RefreshToken_ExpiresAt", "RefreshToken_Nonce") VALUES ({legacySession}, {"127.0.0.1"}, {userAgent}, {legacyChild}, {primary}, {issued}, {expires}, {accessNonce}, {issued}, {expires}, {refreshNonce})""");
         }
 
         await db.Database.MigrateAsync();
         Assert.False(db.Database.HasPendingModelChanges());
         if (upgrade)
         {
+            var session = await db.GetRepository<Session, Guid>().TryFindAsync(legacySession);
+            Assert.True(session.Match(() => false, value => value is ValidSession valid
+                && valid.FamilyPrimaryUserId == primary && valid.FamilyManagerUserId == None));
+            await db.GetService<IMigrator>().MigrateAsync("20261122150000_AllowSharedSubaccounts");
+            await db.Database.MigrateAsync();
+            session = await db.GetRepository<Session, Guid>().TryFindAsync(legacySession);
+            Assert.True(session.Match(() => false, value => value is ValidSession valid
+                && valid.FamilyPrimaryUserId == primary && valid.FamilyManagerUserId == None));
             var credential = await db.UserSwitchPins.Include(pin => pin.User).SingleAsync();
             Assert.Equal(legacyChild, db.GetKey(credential.User));
             Assert.Equal(new PinHash("legacy-hash"), credential.PinHash);

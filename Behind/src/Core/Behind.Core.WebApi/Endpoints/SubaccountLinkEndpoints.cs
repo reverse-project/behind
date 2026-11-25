@@ -38,7 +38,7 @@ public static class SubaccountLinkEndpoints
         http.Response.Headers.CacheControl = "no-store";
         var actor = (await http.FindCurrentSession(sessions)).Match<CurrentSession?>(() => null, value => value);
         if (actor is null || actor.IsImpersonated
-            || actor.FamilyPrimaryUserId is { } familyId && (!allowSwitchedPrimary || familyId != actor.UserId))
+            || actor.FamilyPrimaryUserId.Match(() => false, familyId => !allowSwitchedPrimary || familyId != actor.UserId))
         {
             return null;
         }
@@ -50,39 +50,47 @@ public static class SubaccountLinkEndpoints
     public static async Task<IResult> Candidates(string? query, HttpContext http, ISessionQueries sessions, AbstractCoreContext db,
         int? page = null, int? pageSize = null)
     {
-        var parent = await Actor(http, sessions, db, allowSwitchedPrimary: true);
-        if (parent is null)
+        var managers = await SubaccountEndpoints.GetFamilyManager(http, sessions, db, allowSwitchedPrimary: true);
+        foreach (var manager in managers.AsEnumerable())
         {
-            return Results.Forbid();
+            if (!await Roots(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == manager.PrimaryUserId, http.RequestAborted))
+            {
+                return Results.Forbid();
+            }
+            var parentId = manager.PrimaryUserId;
+            var search = query?.Trim().ToLowerInvariant() ?? "";
+            var pagination = Flipper.Create(page, pageSize, ManagedListExtensions.DefaultPageSize, ManagedListExtensions.MaxPageSize);
+            var candidates = EligibleChildren(db, parentId).Where(user => user.PendingLinkRequestId == null && user.DisplayName.ToLower().Contains(search))
+                .OrderBy(user => user.DisplayName).ThenBy(user => EF.Property<Guid>(user, "Id"));
+            var rows = await pagination.Apply(candidates).Select(user => new Candidate(EF.Property<Guid>(user, "Id"), user.DisplayName)).ToListAsync(http.RequestAborted);
+            return Results.Ok(rows.Select(row => row with { DisplayName = row.UserId.ToUserLabel(row.DisplayName) }));
         }
-        var parentId = db.GetKey(parent);
-        var search = query?.Trim().ToLowerInvariant() ?? "";
-        var pagination = Flipper.Create(page, pageSize, ManagedListExtensions.DefaultPageSize, ManagedListExtensions.MaxPageSize);
-        var candidates = EligibleChildren(db, parentId).Where(user => user.PendingLinkRequestId == null && user.DisplayName.ToLower().Contains(search))
-            .OrderBy(user => user.DisplayName).ThenBy(user => EF.Property<Guid>(user, "Id"));
-        var rows = await pagination.Apply(candidates).Select(user => new Candidate(EF.Property<Guid>(user, "Id"), user.DisplayName)).ToListAsync(http.RequestAborted);
-        return Results.Ok(rows.Select(row => row with { DisplayName = row.UserId.ToUserLabel(row.DisplayName) }));
+        return Results.Forbid();
     }
 
     [Authorize, IgnoreETag]
     public static async Task<IResult> RequestLink(Guid userId, HttpContext http, ISessionQueries sessions, AbstractCoreContext db)
     {
-        var parent = await Actor(http, sessions, db);
-        if (parent is null)
+        var managers = await SubaccountEndpoints.GetFamilyManager(http, sessions, db, allowSwitchedPrimary: false);
+        foreach (var manager in managers.AsEnumerable())
         {
-            return Results.Forbid();
+            if (!await Roots(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == manager.PrimaryUserId, http.RequestAborted))
+            {
+                return Results.Forbid();
+            }
+            var parentId = manager.PrimaryUserId;
+            var child = await EligibleChildren(db, parentId).SingleOrDefaultAsync(user => EF.Property<Guid>(user, "Id") == userId,
+                http.RequestAborted);
+            if (child is null || child.PendingLinkRequestId.HasValue)
+            {
+                return Results.Conflict();
+            }
+            db.Entry(child).Property(user => user.PendingParentId).CurrentValue = parentId;
+            db.Entry(child).Property(user => user.PendingLinkRequestId).CurrentValue = Guid.NewGuid();
+            await db.SaveChangesAsync(http.RequestAborted);
+            return Results.NoContent();
         }
-        var parentId = db.GetKey(parent);
-        var child = await EligibleChildren(db, parentId).SingleOrDefaultAsync(user => EF.Property<Guid>(user, "Id") == userId,
-            http.RequestAborted);
-        if (child is null || child.PendingLinkRequestId.HasValue)
-        {
-            return Results.Conflict();
-        }
-        db.Entry(child).Property(user => user.PendingParentId).CurrentValue = parentId;
-        db.Entry(child).Property(user => user.PendingLinkRequestId).CurrentValue = Guid.NewGuid();
-        await db.SaveChangesAsync(http.RequestAborted);
-        return Results.NoContent();
+        return Results.Forbid();
     }
 
     [Authorize, IgnoreETag]
@@ -130,7 +138,25 @@ public static class SubaccountLinkEndpoints
             {
                 return Results.Conflict();
             }
-            db.Subaccounts.Add(new Subaccount(parent, child, true));
+            using (db.SoftDelete.IncludeDeleted())
+            {
+                var previous = await db.Subaccounts.SingleOrDefaultAsync(link =>
+                    EF.Property<Guid>(link, "PrimaryUserId") == parentId
+                    && EF.Property<Guid>(link, "UserId") == childId, http.RequestAborted);
+                if (previous is null)
+                {
+                    db.Subaccounts.Add(new Subaccount(parent, child, true));
+                }
+                else if (await db.Entry(previous).IsDeletedAsync(http.RequestAborted))
+                {
+                    db.Restores.Mark(previous);
+                    db.Entry(previous).Property(link => link.IsChild).CurrentValue = true;
+                }
+                else
+                {
+                    return Results.Conflict();
+                }
+            }
             var obsolete = await db.Users.Where(user => user.PendingParentId == childId).ToListAsync(http.RequestAborted);
             foreach (var user in obsolete)
             {
@@ -153,36 +179,44 @@ public static class SubaccountLinkEndpoints
     public static async Task<IResult> Release(Guid userId, HttpContext http, ISessionQueries sessions, AbstractCoreContext db, TimeProvider clock,
         IOptions<SecurityConfiguration> security)
     {
-        var parent = await Actor(http, sessions, db, allowSwitchedPrimary: true);
-        if (parent is null)
+        var managers = await SubaccountEndpoints.GetFamilyManager(http, sessions, db, allowSwitchedPrimary: true);
+        foreach (var manager in managers.AsEnumerable())
         {
-            return Results.Forbid();
+            if (!await Roots(db).AnyAsync(user => EF.Property<Guid>(user, "Id") == manager.PrimaryUserId, http.RequestAborted))
+            {
+                return Results.Forbid();
+            }
+            var parentId = manager.PrimaryUserId;
+            var link = await db.Subaccounts.SingleOrDefaultAsync(row => EF.Property<Guid>(row, "UserId") == userId
+                && EF.Property<Guid>(row, "PrimaryUserId") == parentId && (manager.IsPrimary || row.IsChild), http.RequestAborted);
+            if (link is null)
+            {
+                return Results.NotFound();
+            }
+            if (!await db.Users.AnyAsync(user => EF.Property<Guid>(user, "Id") == userId && user.Emails.Any(email =>
+                    email.Value.Trim() != "" && (!security.Value.EmailConfirmation || email.ConfirmedAt != null)), http.RequestAborted))
+            {
+                return Results.Conflict();
+            }
+            var hasOtherLinks = await db.Subaccounts.AnyAsync(row => EF.Property<Guid>(row, "UserId") == userId
+                && EF.Property<Guid>(row, "PrimaryUserId") != parentId, http.RequestAborted);
+            var switched = await db.Sessions.Where(session => EF.Property<DateTimeOffset?>(session, "InvalidatedAt") == null
+                && (manager.IsSwitched && EF.Property<Guid>(session, "Id") == manager.SessionId
+                    || EF.Property<Guid?>(session, "FamilyPrimaryId") == parentId
+                    || EF.Property<Guid?>(session, "FamilyManagerId") == parentId && EF.Property<Guid>(session, "UserId") == userId
+                    || EF.Property<Guid?>(session, "FamilyPrimaryId") == userId
+                    && (!hasOtherLinks || EF.Property<Guid>(session, "UserId") == parentId
+                        || EF.Property<Guid?>(session, "FamilyManagerId") == parentId))).ToListAsync(http.RequestAborted);
+            var now = clock.GetUtcNow();
+            foreach (var session in switched)
+            {
+                db.Entry(session).Property<Guid?>("InvalidatedById").CurrentValue = manager.ActorId;
+                db.Entry(session).Property<DateTimeOffset?>("InvalidatedAt").CurrentValue = now;
+            }
+            db.Subaccounts.Remove(link);
+            await db.SaveChangesAsync(http.RequestAborted);
+            return Results.NoContent();
         }
-        var parentId = db.GetKey(parent);
-        var link = await db.Subaccounts.SingleOrDefaultAsync(row => EF.Property<Guid>(row, "UserId") == userId
-            && EF.Property<Guid>(row, "PrimaryUserId") == parentId, http.RequestAborted);
-        if (link is null)
-        {
-            return Results.NotFound();
-        }
-        if (!await db.Users.AnyAsync(user => EF.Property<Guid>(user, "Id") == userId && user.Emails.Any(email =>
-                email.Value.Trim() != "" && (!security.Value.EmailConfirmation || email.ConfirmedAt != null)), http.RequestAborted))
-        {
-            return Results.Conflict();
-        }
-        var hasOtherLinks = await db.Subaccounts.AnyAsync(row => EF.Property<Guid>(row, "UserId") == userId
-            && EF.Property<Guid>(row, "PrimaryUserId") != parentId, http.RequestAborted);
-        var switched = await db.Sessions.Where(session => EF.Property<DateTimeOffset?>(session, "InvalidatedAt") == null
-            && (session.FamilyPrimaryUserId == parentId || session.FamilyPrimaryUserId == userId
-                && (!hasOtherLinks || EF.Property<Guid>(session, "UserId") == parentId))).ToListAsync(http.RequestAborted);
-        var now = clock.GetUtcNow();
-        foreach (var session in switched)
-        {
-            db.Entry(session).Property<Guid?>("InvalidatedById").CurrentValue = parentId;
-            db.Entry(session).Property<DateTimeOffset?>("InvalidatedAt").CurrentValue = now;
-        }
-        db.Subaccounts.Remove(link);
-        await db.SaveChangesAsync(http.RequestAborted);
-        return Results.NoContent();
+        return Results.Forbid();
     }
 }

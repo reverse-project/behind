@@ -8,6 +8,10 @@
       "maxLength": 500,
       "pattern": "\\S"
     },
+    "responseName": {
+      "type": "string",
+      "maxLength": 500
+    },
     "email": {
       "type": [
         "string",
@@ -101,7 +105,7 @@
       "type": "object",
       "properties": {
         "displayName": {
-          "$ref": "#/$defs/name"
+          "$ref": "#/$defs/responseName"
         },
         "birthday": {
           "$ref": "#/$defs/birthday"

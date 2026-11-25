@@ -2,7 +2,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json;
 using Behind.Core.Common;
 using Behind.Core.Common.Configuration;
+using Behind.Common.Database;
 using Behind.Core.Database;
+using Behind.Core.Database.Auditing;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Postgres;
 using Behind.Core.Database.Queries;
@@ -21,6 +23,134 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public sealed class SubaccountSessionTests
 {
+    [Fact]
+    public async Task SwitchedAdultsCanManageAndEnterChildrenWithoutPins()
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateAuditedContext(AuditActor.Anonymous);
+        await VerifyAdultFamilySessions(db);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task PostgresSwitchedAdultsCanManageAndEnterChildrenWithoutPins()
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
+        var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres:Image is required.");
+        await using var container = new PostgreSqlBuilder(image).Build();
+        await container.StartAsync();
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString())
+            .AddInterceptors(new AuditSaveChangesInterceptor(
+                () => new FixedAuditActorProvider(AuditActor.Anonymous), TimeProvider.System)).Options;
+        await using var db = new CoreContextPostgres(options);
+        await db.Database.MigrateAsync();
+        await VerifyAdultFamilySessions(db);
+    }
+
+    private static async Task VerifyAdultFamilySessions(AbstractCoreContext db)
+    {
+        var primary = new HumanUser("Primary", [new Email("primary@example.test")], None);
+        var adult = new HumanUser("Adult", [new Email("adult@example.test")], None);
+        var child = new HumanUser("Child", [new Email("child@example.test")], None);
+        var sibling = new HumanUser("Sibling", [new Email("sibling@example.test")], None);
+        var candidate = new HumanUser("Candidate", [new Email("candidate@example.test")], None);
+        db.Users.AddRange(primary, adult, child, sibling, candidate);
+        var childLink = new Subaccount(primary, child, true);
+        db.Subaccounts.AddRange(new Subaccount(primary, adult, false), childLink, new Subaccount(primary, sibling, true));
+        db.UserSwitchPins.AddRange(new UserSwitchPin(primary, new PinHash(PasswordHash.Create("1111"))),
+            new UserSwitchPin(adult, new PinHash(PasswordHash.Create("2222"))));
+        await db.SaveChangesAsync();
+        var primaryId = db.GetKey(primary);
+        var adultId = db.GetKey(adult);
+        var childId = db.GetKey(child);
+        var siblingId = db.GetKey(sibling);
+        var queries = new SessionQueries(db);
+        var commands = new SessionCommands(db);
+        var manager = Substitute.For<UserManager<ApplicationUser>>(
+            Substitute.For<IUserStore<ApplicationUser>>(), null, null, null, null, null, null, null, null);
+        foreach (var user in new[] { primary, adult, child, sibling })
+        {
+            var id = db.GetKey(user);
+            manager.FindByIdAsync(id.ToString()).Returns(new ApplicationUser { Id = id, DisplayName = user.DisplayName });
+        }
+        var security = Options.Create(new SecurityConfiguration(false, None,
+            Some(new JwtSettings("issuer", "audience", new string('k', 64))), None));
+        Task<Guid> Start(HumanUser user) => commands.CreateForUserId(db.GetKey(user),
+            new ValidSession(AccessToken.Create(user), RefreshToken.Create(user), "127.0.0.1", "test"));
+
+        async Task<Guid> Switch(Guid sessionId, Guid destinationId, string? pin)
+        {
+            var http = SessionTestHelper.SignedIn(sessionId);
+            http.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            http.Request.Headers.UserAgent = "test";
+            var result = Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(await SubaccountEndpoints.Switch(
+                destinationId, new(pin), http, queries, db, manager, security, commands,
+                new WallOfShameQueries(db), TimeProvider.System, NullLogger<SubaccountEndpoints>.Instance));
+            var token = new JwtSecurityTokenHandler().ReadJwtToken(result.Value!.AccessToken);
+            return Guid.Parse(token.Claims.Single(claim => claim.Type == SessionClaimTypes.SessionId).Value);
+        }
+
+        async Task<JsonElement> Family(Guid sessionId) =>
+            JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(await SubaccountEndpoints.List(
+                SessionTestHelper.SignedIn(sessionId), queries, db, security)).Value);
+
+        var adultSession = await Switch(await Start(primary), adultId, "2222");
+        Assert.True((await Family(adultSession)).GetProperty("CanManageChildren").GetBoolean());
+        var adultHttp = SessionTestHelper.SignedIn(adultSession);
+        Assert.IsType<NoContent>(await SubaccountEndpoints.Update(siblingId,
+            new("Updated sibling", null, true, null, false), adultHttp, queries, db, TimeProvider.System));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(childId,
+            new("5555", false, new(PrimaryPin: "2222")), adultHttp, queries, db));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(childId,
+            new(null, true, new(PrimaryPin: "2222")), adultHttp, queries, db));
+        Assert.IsType<NoContent>(await SubaccountLinkEndpoints.RequestLink(db.GetKey(candidate), adultHttp, queries, db));
+        Assert.Equal(primaryId, candidate.PendingParentId);
+        var targets = (await Family(adultSession)).GetProperty("SwitchAccounts").EnumerateArray().ToArray();
+        Assert.Contains(targets, item => item.GetProperty("UserId").GetGuid() == siblingId && !item.GetProperty("HasPin").GetBoolean());
+        var childSession = await Switch(adultSession, childId, null);
+        Assert.False((await Family(childSession)).GetProperty("CanManageChildren").GetBoolean());
+        var returnedAdult = await Switch(childSession, adultId, "2222");
+        Assert.True((await Family(returnedAdult)).GetProperty("CanManageChildren").GetBoolean());
+
+        var viaChild = await Switch(await Start(child), primaryId, "1111");
+        Assert.True((await Family(viaChild)).GetProperty("CanManageChildren").GetBoolean());
+        Assert.True((await queries.TryFindActor(viaChild)).Match(() => false, actor => actor.IsRestrictedAdult));
+        var siblingSession = await Switch(viaChild, siblingId, null);
+        Assert.True((await queries.TryFindByIdWithUserId(siblingSession)).Match(() => false, session =>
+            session.Session is ValidSession valid && valid.FamilyPrimaryUserId == childId
+                && valid.FamilyManagerUserId == primaryId));
+        Assert.False((await Family(siblingSession)).GetProperty("CanManageChildren").GetBoolean());
+        await commands.InvalidateAllSessions(primaryId, primaryId, TimeProvider.System.GetUtcNow());
+        Assert.True((await queries.TryFindById(siblingSession)).Match(() => false, value => value is InvalidSession));
+
+        var additionalChild = new HumanUser("Additional", [new Email("additional@example.test")], None);
+        db.Users.Add(additionalChild);
+        db.Subaccounts.Add(new Subaccount(primary, additionalChild, true));
+        await db.SaveChangesAsync();
+        viaChild = await Switch(await Start(child), primaryId, "1111");
+        siblingSession = await Switch(viaChild, siblingId, null);
+        var releasingSession = await Switch(await Start(child), primaryId, "1111");
+        var releaseSecurity = Options.Create(security.Value with { EmailConfirmation = false });
+        Assert.IsType<NoContent>(await SubaccountLinkEndpoints.Release(db.GetKey(additionalChild),
+            SessionTestHelper.SignedIn(releasingSession), queries, db, TimeProvider.System, releaseSecurity));
+        Assert.True((await queries.TryFindById(releasingSession)).Match(() => false, value => value is InvalidSession));
+
+        var otherParent = new HumanUser("Other", [new Email("other@example.test")], None);
+        db.Users.Add(otherParent);
+        db.Subaccounts.Add(new Subaccount(otherParent, child, true));
+        await db.SaveChangesAsync();
+        var releaseHttp = SessionTestHelper.SignedIn(await Start(primary));
+        Assert.IsType<NoContent>(await SubaccountLinkEndpoints.Release(childId, releaseHttp, queries, db, TimeProvider.System, releaseSecurity));
+        Assert.True(await queries.TryFindActor(siblingSession) == None);
+        using (db.SoftDelete.IncludeDeleted())
+        {
+            var stored = await db.Sessions.SingleAsync(session => EF.Property<Guid>(session, "Id") == siblingSession);
+            Assert.NotNull(db.Entry(stored).Property<DateTimeOffset?>("InvalidatedAt").CurrentValue);
+            Assert.Equal(primaryId, db.Entry(stored).Property<Guid?>("InvalidatedById").CurrentValue);
+        }
+    }
+
     [Fact]
     public async Task PrimaryCanSwitchToLinkedProfilesWithoutPins()
     {
@@ -253,7 +383,7 @@ public sealed class SubaccountSessionTests
     public async Task SharedChildSwitchesToEachConsentingAdultWithScopedAccessAndIndependentRelease()
     {
         using var factory = new TestDbContextFactory();
-        await using var db = factory.CreateContext();
+        await using var db = factory.CreateAuditedContext(AuditActor.Anonymous);
         await VerifySharedChildSwitching(db);
     }
 
@@ -266,7 +396,9 @@ public sealed class SubaccountSessionTests
         var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres:Image is required.");
         await using var container = new PostgreSqlBuilder(image).Build();
         await container.StartAsync();
-        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString()).Options;
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString())
+            .AddInterceptors(new AuditSaveChangesInterceptor(
+                () => new FixedAuditActorProvider(AuditActor.Anonymous), TimeProvider.System)).Options;
         await using var db = new CoreContextPostgres(options);
         await db.Database.MigrateAsync();
         await VerifySharedChildSwitching(db);
@@ -355,16 +487,15 @@ public sealed class SubaccountSessionTests
         var restrictedHttp = SessionTestHelper.SignedIn(switchedSecond);
         var restrictedFamily = JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(
             await SubaccountEndpoints.List(restrictedHttp, queries, db, security)).Value);
-        Assert.Empty(restrictedFamily.GetProperty("Accounts").EnumerateArray());
+        Assert.Equal(new[] { childId, privateId }.Order(), restrictedFamily.GetProperty("Accounts").EnumerateArray()
+            .Select(account => account.GetProperty("UserId").GetGuid()).Order());
         Assert.False(restrictedFamily.GetProperty("IsPrimary").GetBoolean());
+        Assert.True(restrictedFamily.GetProperty("CanManageChildren").GetBoolean());
         var restrictedTargets = restrictedFamily.GetProperty("SwitchAccounts").EnumerateArray().ToArray();
         Assert.Contains(restrictedTargets, target => target.GetProperty("UserId").GetGuid() == childId && target.GetProperty("IsChild").GetBoolean());
-        Assert.DoesNotContain(restrictedTargets, target => target.GetProperty("UserId").GetGuid() == privateId);
-        Assert.IsType<NotFound>(await Switch(switchedSecond, privateId, "0004"));
-        Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Candidates(null, restrictedHttp, queries, db));
-        Assert.IsType<ForbidHttpResult>(await SubaccountLinkEndpoints.Release(privateId, restrictedHttp, queries, db,
-            TimeProvider.System, security));
-        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.Update(privateId,
+        Assert.Contains(restrictedTargets, target => target.GetProperty("UserId").GetGuid() == privateId);
+        Assert.IsType<Ok<IEnumerable<SubaccountLinkEndpoints.Candidate>>>(await SubaccountLinkEndpoints.Candidates(null, restrictedHttp, queries, db));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.Update(privateId,
             new("Updated", null, true, null, false), restrictedHttp, queries, db, TimeProvider.System));
 
         var returnedChild = await SwitchSuccessfully(switchedSecond, childId, "0003");
@@ -378,6 +509,18 @@ public sealed class SubaccountSessionTests
         Assert.True((await queries.TryFindById(switchedFirst)).Match(() => true, session => session is InvalidSession));
         Assert.True((await queries.TryFindById(survivingSecond)).Match(() => false, session => session is ValidSession));
         Assert.True((await queries.TryFindById(survivingChild)).Match(() => false, session => session is ValidSession));
+        using (db.SoftDelete.IncludeDeleted())
+        {
+            var invalidated = await db.Sessions.SingleAsync(session => EF.Property<Guid>(session, "Id") == switchedFirst);
+            var survivingAdult = await db.Sessions.SingleAsync(session => EF.Property<Guid>(session, "Id") == survivingSecond);
+            var survivingDirect = await db.Sessions.SingleAsync(session => EF.Property<Guid>(session, "Id") == survivingChild);
+            Assert.NotNull(db.Entry(invalidated).Property<DateTimeOffset?>("InvalidatedAt").CurrentValue);
+            Assert.Equal(firstId, db.Entry(invalidated).Property<Guid?>("InvalidatedById").CurrentValue);
+            Assert.Null(db.Entry(survivingAdult).Property<DateTimeOffset?>("InvalidatedAt").CurrentValue);
+            Assert.Null(db.Entry(survivingAdult).Property<Guid?>("InvalidatedById").CurrentValue);
+            Assert.Null(db.Entry(survivingDirect).Property<DateTimeOffset?>("InvalidatedAt").CurrentValue);
+            Assert.Null(db.Entry(survivingDirect).Property<Guid?>("InvalidatedById").CurrentValue);
+        }
         Assert.IsType<NotFound>(await Switch(survivingChild, firstId, "0001"));
         await SwitchSuccessfully(survivingChild, secondId, "0002");
 

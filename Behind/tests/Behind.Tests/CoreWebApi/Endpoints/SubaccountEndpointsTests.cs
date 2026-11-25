@@ -114,7 +114,7 @@ public sealed class SubaccountEndpointsTests
         Assert.IsType<NotFound>(await SubaccountLinkEndpoints.Release(db.GetKey(otherAdult),
             actor.Http, actor.Queries, db, TimeProvider.System, security));
 
-        db.Entry(db.Subaccounts.Local.Single(link => link.User == adult)).Property(link => link.IsChild).CurrentValue = true;
+        db.AppendSubaccountVersion(db.Subaccounts.Local.Single(link => link.User == adult), isChild: true);
         await db.SaveChangesAsync();
         var revoked = JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<IValueHttpResult>(
             await SubaccountEndpoints.List(actor.Http, actor.Queries, db, security)).Value);
@@ -431,22 +431,16 @@ public sealed class SubaccountEndpointsTests
         Assert.IsType<NoContent>(await SubaccountLinkEndpoints.Release(childId, parent.Http, parent.Queries, db, TimeProvider.System, security));
         Assert.True(await queries.TryFindById(switchedSession) == None);
         Assert.True((await queries.TryFindById(directSession)).Match(() => false, session => session is ValidSession));
-        Assert.False(await db.Subaccounts.AnyAsync());
-        using (db.SoftDelete.IncludeDeleted())
-        {
-            var released = await db.Subaccounts.SingleAsync();
-            Assert.True(await db.Entry(released).IsDeletedAsync());
-        }
+        Assert.False(await db.ActiveSubaccounts().AnyAsync());
+        var released = await db.LatestSubaccounts().SingleAsync();
+        Assert.False(released.IsActive);
         Assert.True(await db.Emails.AnyAsync(email => email.Value == "child@test.com"));
         Assert.IsType<NotFound>(await SubaccountLinkEndpoints.Confirm(current, child.Http, child.Queries, db));
         Assert.IsType<NoContent>(await SubaccountLinkEndpoints.RequestLink(childId, parent.Http, parent.Queries, db));
         var next = (await db.Users.FindAsync(childId))!.PendingLinkRequestId!.Value;
         Assert.IsType<NoContent>(await SubaccountLinkEndpoints.Confirm(next, child.Http, child.Queries, db));
-        using (db.SoftDelete.IncludeDeleted())
-        {
-            var restored = await db.Subaccounts.SingleAsync();
-            Assert.False(await db.Entry(restored).IsDeletedAsync());
-        }
+        var restored = await db.LatestSubaccounts().SingleAsync();
+        Assert.True(restored.IsActive);
         Assert.True((await queries.TryFindById(switchedSession)).Match(() => false, session => session is InvalidSession));
     }
 
@@ -594,21 +588,13 @@ public sealed class SubaccountEndpointsTests
         var security = Options.Create(new SecurityConfiguration(false, None, None, None, EmailConfirmation: false));
         Assert.IsType<NoContent>(await SubaccountLinkEndpoints.Release(
             childId, parent.Http, parent.Queries, db, TimeProvider.System, security));
-        Assert.False(await db.Subaccounts.AnyAsync());
-        using (db.SoftDelete.IncludeDeleted())
-        {
-            var link = await db.Subaccounts.SingleAsync();
-            Assert.True(await db.Entry(link).IsDeletedAsync());
-        }
+        Assert.False(await db.ActiveSubaccounts().AnyAsync());
+        Assert.False((await db.LatestSubaccounts().SingleAsync()).IsActive);
 
         Assert.IsType<NoContent>(await SubaccountLinkEndpoints.RequestLink(childId, parent.Http, parent.Queries, db));
         var requestId = (await db.Users.FindAsync(childId))!.PendingLinkRequestId!.Value;
         Assert.IsType<NoContent>(await SubaccountLinkEndpoints.Confirm(requestId, child.Http, child.Queries, db));
-        using (db.SoftDelete.IncludeDeleted())
-        {
-            var link = await db.Subaccounts.SingleAsync();
-            Assert.False(await db.Entry(link).IsDeletedAsync());
-        }
+        Assert.True((await db.LatestSubaccounts().SingleAsync()).IsActive);
 
         await new UserCommands(db).UnsetSwitchPin(childId);
         Assert.False(await db.UserSwitchPins.AnyAsync());
@@ -723,7 +709,7 @@ public sealed class SubaccountEndpointsTests
         await using var verified = createContext();
         Assert.Equal(winningHash, (await verified.UserSwitchPins.SingleAsync()).PinHash.ToString());
         Assert.Equal("Child", (await verified.Users.FindAsync(childId))!.DisplayName);
-        Assert.True((await verified.Subaccounts.SingleAsync()).IsChild);
+        Assert.True((await verified.ActiveSubaccounts().SingleAsync()).IsChild);
     }
 
     [Theory]

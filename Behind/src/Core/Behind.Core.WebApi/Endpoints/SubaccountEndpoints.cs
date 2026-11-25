@@ -82,7 +82,7 @@ public sealed class SubaccountEndpoints
             : await PinsFor(db, family.Current.UserId).AnyAsync(http.RequestAborted);
         if (!family.Scope.FromLinkedProfile || family.IsFamilyAdult)
         {
-            accounts = await (from link in db.Subaccounts
+            accounts = await (from link in db.ActiveSubaccounts()
                               join user in ActiveUsers(db) on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(user, "Id")
                               where EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId && EF.Property<Guid>(link, "UserId") != family.Current.UserId
                                   && (!family.IsFamilyAdult || link.IsChild)
@@ -105,11 +105,11 @@ public sealed class SubaccountEndpoints
         var switchAccounts = await (from user in family.SwitchProfiles(db)
                                     let userId = EF.Property<Guid>(user, "Id")
                                     let hasPin = db.UserSwitchPins.Any(pin => EF.Property<Guid>(pin, "UserId") == userId)
-                                    let isChild = db.Subaccounts.Any(link => EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId
+                                    let isChild = db.ActiveSubaccounts().Any(link => EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId
                                         && EF.Property<Guid>(link, "UserId") == userId && link.IsChild)
                                     where userId != family.Current.UserId && (family.IsPrimary || hasPin || family.IsFamilyAdult && isChild)
                                     orderby user.DisplayName, userId
-                                    select new Account(userId, user.DisplayName, db.Subaccounts.Any(link => EF.Property<Guid>(link, "UserId") == userId && link.IsChild),
+                                    select new Account(userId, user.DisplayName, db.ActiveSubaccounts().Any(link => EF.Property<Guid>(link, "UserId") == userId && link.IsChild),
                                         null, hasPin, null, false)).ToListAsync(http.RequestAborted);
         return Results.Ok(new
         {
@@ -212,7 +212,7 @@ public sealed class SubaccountEndpoints
         {
             return Results.BadRequest();
         }
-        var target = await (from link in db.Subaccounts
+        var target = await (from link in db.ActiveSubaccounts()
                             join user in ActiveUsers(db) on EF.Property<Guid>(link, "UserId") equals EF.Property<Guid>(user, "Id")
                             where EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId && EF.Property<Guid>(link, "UserId") == userId
                             select new { Link = link, User = user }).SingleOrDefaultAsync(http.RequestAborted);
@@ -225,7 +225,7 @@ public sealed class SubaccountEndpoints
             return Results.Forbid();
         }
         if (target.Link.IsChild && !request.IsChild
-            && await db.Subaccounts.AnyAsync(link =>
+            && await db.ActiveSubaccounts().AnyAsync(link =>
                 EF.Property<Guid>(link, "UserId") == userId
                 && EF.Property<Guid>(link, "PrimaryUserId") != family.PrimaryUserId, http.RequestAborted))
         {
@@ -242,7 +242,10 @@ public sealed class SubaccountEndpoints
         }
         db.Entry(target.User).Property(u => u.DisplayName).CurrentValue = request.DisplayName.Trim();
         db.Entry(target.User).Property(u => u.Birthday).CurrentValue = request.Birthday;
-        db.Entry(target.Link).Property(l => l.IsChild).CurrentValue = request.IsChild;
+        if (target.Link.IsChild != request.IsChild)
+        {
+            db.AppendSubaccountVersion(target.Link, isChild: request.IsChild);
+        }
         return await SavePinChanges(db, http);
     }
 
@@ -256,7 +259,7 @@ public sealed class SubaccountEndpoints
 
     private static IQueryable<HumanUser> ManagedUsers(AbstractCoreContext db, FamilySession family, Guid targetId) =>
         ActiveUsers(db).Where(user => EF.Property<Guid>(user, "Id") == targetId && (family.Current.UserId == targetId ||
-            db.Subaccounts.Any(link => EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId
+            db.ActiveSubaccounts().Any(link => EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId
                 && EF.Property<Guid>(link, "UserId") == targetId && (family.IsPrimary || link.IsChild))));
 
     [Authorize, IgnoreETag]
@@ -393,7 +396,7 @@ public sealed class SubaccountEndpoints
             return Results.NotFound();
         }
         var credential = await PinsFor(db, userId).AsNoTracking().SingleOrDefaultAsync(http.RequestAborted);
-        var isChild = await db.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId
+        var isChild = await db.ActiveSubaccounts().AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == family.PrimaryUserId
             && EF.Property<Guid>(link, "UserId") == userId && link.IsChild, http.RequestAborted);
         if (credential is null
             ? !(family.IsPrimary || family.IsFamilyAdult && isChild)
@@ -418,7 +421,7 @@ public sealed class SubaccountEndpoints
                     managerId = family.PrimaryUserId;
                 }
                 if (family.Scope.FromLinkedProfile
-                    && await db.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == userId
+                    && await db.ActiveSubaccounts().AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == userId
                         && EF.Property<Guid>(link, "UserId") == family.Scope.AnchorId, http.RequestAborted))
                 {
                     managerId = userId;
@@ -457,7 +460,7 @@ public sealed class SubaccountEndpoints
         var scope = new SubaccountSwitchScope(anchorId, fromLinkedProfile);
         var managerId = session.FamilyManagerUserId.ToNullable();
         if (managerId is { } manager
-            && (!fromLinkedProfile || !await db.Subaccounts.AnyAsync(link =>
+            && (!fromLinkedProfile || !await db.ActiveSubaccounts().AnyAsync(link =>
                 EF.Property<Guid>(link, "PrimaryUserId") == manager && EF.Property<Guid>(link, "UserId") == anchorId,
                 http.RequestAborted)))
         {
@@ -471,18 +474,18 @@ public sealed class SubaccountEndpoints
         }
         var isFamilyAdult = session.FamilyPrimaryUserId != None && (
             managerId is { } familyManager && session.UserId != anchorId
-                && (session.UserId == familyManager || await db.Subaccounts.AnyAsync(link =>
+                && (session.UserId == familyManager || await db.ActiveSubaccounts().AnyAsync(link =>
                     EF.Property<Guid>(link, "PrimaryUserId") == familyManager
                     && EF.Property<Guid>(link, "UserId") == session.UserId && !link.IsChild, http.RequestAborted))
             || managerId is null && (
             fromLinkedProfile && anchorId != session.UserId && !linked
             || !fromLinkedProfile && anchorId != session.UserId
-                && await db.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == anchorId
+                && await db.ActiveSubaccounts().AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == anchorId
                     && EF.Property<Guid>(link, "UserId") == session.UserId && !link.IsChild, http.RequestAborted)));
         var primaryId = managerId ?? (isFamilyAdult && fromLinkedProfile
             ? session.UserId
             : fromLinkedProfile && linked
-            ? await db.Subaccounts.Where(link => EF.Property<Guid>(link, "UserId") == session.UserId)
+            ? await db.ActiveSubaccounts().Where(link => EF.Property<Guid>(link, "UserId") == session.UserId)
                 .OrderBy(link => EF.Property<Guid>(link, "PrimaryUserId"))
                 .Select(link => (Guid?)EF.Property<Guid>(link, "PrimaryUserId")).FirstOrDefaultAsync(http.RequestAborted) ?? anchorId
             : anchorId);

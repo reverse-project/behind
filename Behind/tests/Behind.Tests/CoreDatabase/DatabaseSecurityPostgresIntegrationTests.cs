@@ -82,7 +82,7 @@ public sealed class DatabaseSecurityPostgresIntegrationTests
         Assert.True(await context.Users.IgnoreQueryFilters().AnyAsync(user => EF.Property<Guid>(user, "Id") == primaryId));
         Assert.True(await context.Users.AnyAsync(user => EF.Property<Guid>(user, "Id") == childId));
 
-        context.Subaccounts.Remove(await context.Subaccounts.SingleAsync());
+        context.AppendSubaccountVersion(await context.ActiveSubaccounts().SingleAsync(), isActive: false);
         await context.SaveChangesAsync();
 
         Assert.Equal(IUserCommands.HardDeleteOutcome.Deleted, await commands.HardDelete(primaryId));

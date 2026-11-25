@@ -141,7 +141,6 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         typeof(Grant),
         typeof(Restriction),
         typeof(Password),
-        typeof(Subaccount),
         typeof(UserSwitchPin),
         typeof(WallOfShameEntry),
         typeof(Site),
@@ -185,6 +184,19 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         CancellationToken cancellationToken = default
     )
     {
+        foreach (var entry in ChangeTracker.Entries<Subaccount>().Where(entry => entry.State == EntityState.Added))
+        {
+            var id = entry.VersionedId;
+            entry.StampVersionedKey(id.Key, id.Version == 0 ? VersionedColumns.FirstVersion : id.Version);
+        }
+
+        if (ChangeTracker.Entries<Subaccount>().Any(entry =>
+                entry.State == EntityState.Modified
+                || entry.State == EntityState.Deleted && !HardDeletes.IsMarked(entry.Entity)))
+        {
+            throw new InvalidOperationException("Subaccount versions are append-only.");
+        }
+
         await this.ExpandCascadingDeletesAsync(cancellationToken);
         var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         HardDeletes.Clear();

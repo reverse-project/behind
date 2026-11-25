@@ -21,14 +21,14 @@ public static class SubaccountLinkEndpoints
         db.Users.InDeletionState(db, AbstractCoreContext.DeletionRecorded, DeletionState.Active);
 
     private static IQueryable<HumanUser> Roots(AbstractCoreContext db) =>
-        ActiveUsers(db).Where(user => !db.Subaccounts.Any(link => EF.Property<Guid>(link, "UserId") == EF.Property<Guid>(user, "Id")));
+        ActiveUsers(db).Where(user => !db.ActiveSubaccounts().Any(link => EF.Property<Guid>(link, "UserId") == EF.Property<Guid>(user, "Id")));
 
     private static IQueryable<HumanUser> EligibleChildren(AbstractCoreContext db, Guid parentId) =>
         from user in ActiveUsers(db)
         let userId = EF.Property<Guid>(user, "Id")
         where userId != parentId && user.Emails.Any(email => email.Value.Trim() != "")
-            && !db.Subaccounts.Any(link => EF.Property<Guid>(link, "PrimaryUserId") == userId)
-            && !db.Subaccounts.Any(link => EF.Property<Guid>(link, "UserId") == userId
+            && !db.ActiveSubaccounts().Any(link => EF.Property<Guid>(link, "PrimaryUserId") == userId)
+            && !db.ActiveSubaccounts().Any(link => EF.Property<Guid>(link, "UserId") == userId
                 && (EF.Property<Guid>(link, "PrimaryUserId") == parentId || !link.IsChild))
         select user;
 
@@ -138,24 +138,20 @@ public static class SubaccountLinkEndpoints
             {
                 return Results.Conflict();
             }
-            using (db.SoftDelete.IncludeDeleted())
+            var previous = await db.LatestSubaccounts().SingleOrDefaultAsync(link =>
+                EF.Property<Guid>(link, "PrimaryUserId") == parentId
+                && EF.Property<Guid>(link, "UserId") == childId, http.RequestAborted);
+            if (previous is null)
             {
-                var previous = await db.Subaccounts.SingleOrDefaultAsync(link =>
-                    EF.Property<Guid>(link, "PrimaryUserId") == parentId
-                    && EF.Property<Guid>(link, "UserId") == childId, http.RequestAborted);
-                if (previous is null)
-                {
-                    db.Subaccounts.Add(new Subaccount(parent, child, true));
-                }
-                else if (await db.Entry(previous).IsDeletedAsync(http.RequestAborted))
-                {
-                    db.Restores.Mark(previous);
-                    db.Entry(previous).Property(link => link.IsChild).CurrentValue = true;
-                }
-                else
-                {
-                    return Results.Conflict();
-                }
+                db.Subaccounts.Add(new Subaccount(parent, child, true));
+            }
+            else if (!previous.IsActive)
+            {
+                db.AppendSubaccountVersion(previous, isChild: true, isActive: true);
+            }
+            else
+            {
+                return Results.Conflict();
             }
             var obsolete = await db.Users.Where(user => user.PendingParentId == childId).ToListAsync(http.RequestAborted);
             foreach (var user in obsolete)
@@ -187,7 +183,7 @@ public static class SubaccountLinkEndpoints
                 return Results.Forbid();
             }
             var parentId = manager.PrimaryUserId;
-            var link = await db.Subaccounts.SingleOrDefaultAsync(row => EF.Property<Guid>(row, "UserId") == userId
+            var link = await db.ActiveSubaccounts().SingleOrDefaultAsync(row => EF.Property<Guid>(row, "UserId") == userId
                 && EF.Property<Guid>(row, "PrimaryUserId") == parentId && (manager.IsPrimary || row.IsChild), http.RequestAborted);
             if (link is null)
             {
@@ -198,7 +194,7 @@ public static class SubaccountLinkEndpoints
             {
                 return Results.Conflict();
             }
-            var hasOtherLinks = await db.Subaccounts.AnyAsync(row => EF.Property<Guid>(row, "UserId") == userId
+            var hasOtherLinks = await db.ActiveSubaccounts().AnyAsync(row => EF.Property<Guid>(row, "UserId") == userId
                 && EF.Property<Guid>(row, "PrimaryUserId") != parentId, http.RequestAborted);
             var switched = await db.Sessions.Where(session => EF.Property<DateTimeOffset?>(session, "InvalidatedAt") == null
                 && (manager.IsSwitched && EF.Property<Guid>(session, "Id") == manager.SessionId
@@ -213,7 +209,7 @@ public static class SubaccountLinkEndpoints
                 db.Entry(session).Property<Guid?>("InvalidatedById").CurrentValue = manager.ActorId;
                 db.Entry(session).Property<DateTimeOffset?>("InvalidatedAt").CurrentValue = now;
             }
-            db.Subaccounts.Remove(link);
+            db.AppendSubaccountVersion(link, isActive: false);
             await db.SaveChangesAsync(http.RequestAborted);
             return Results.NoContent();
         }

@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,9 +11,14 @@ public sealed class SubaccountConfiguration : IEntityTypeConfiguration<Subaccoun
     {
         builder.ToTable("Subaccounts", table => table.HasCheckConstraint(
             "CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\""));
+        builder.HasVersionedKey();
+        builder.Property<Guid>("Key").ValueGeneratedOnAdd();
+        builder.Property(link => link.IsChild).IsRequired();
+        builder.Property(link => link.IsActive).IsRequired();
         builder.Property<Guid>("PrimaryUserId").ValueGeneratedNever();
         builder.Property<Guid>("UserId").ValueGeneratedNever();
-        builder.HasKey("PrimaryUserId", "UserId");
+        builder.HasIndex("PrimaryUserId");
+        builder.HasIndex("UserId");
         builder.HasOne(link => link.PrimaryUser).WithMany().HasForeignKey("PrimaryUserId").IsRequired().OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(link => link.User).WithMany().HasForeignKey("UserId").IsRequired().OnDelete(DeleteBehavior.Cascade);
     }

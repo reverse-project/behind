@@ -62,20 +62,17 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
 
     public async Task<IUserCommands.HardDeleteOutcome> HardDelete(Guid userId, CancellationToken cancellationToken = default)
     {
-        if (await context.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == userId, cancellationToken))
+        if (await context.ActiveSubaccounts().AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == userId, cancellationToken))
         {
             return IUserCommands.HardDeleteOutcome.LinkedSubaccounts;
         }
 
-        using (context.SoftDelete.IncludeDeleted())
+        var historicalLinks = await context.Subaccounts
+            .Where(link => EF.Property<Guid>(link, "PrimaryUserId") == userId)
+            .ToListAsync(cancellationToken);
+        foreach (var link in historicalLinks)
         {
-            var releasedLinks = await context.Subaccounts
-                .Where(link => EF.Property<Guid>(link, "PrimaryUserId") == userId)
-                .ToListAsync(cancellationToken);
-            foreach (var link in releasedLinks)
-            {
-                context.HardDelete(link);
-            }
+            context.HardDelete(link);
         }
 
         await context.GetHardDeleteRepository<HumanUser, Guid>().HardDeleteAsync(userId, cancellationToken);

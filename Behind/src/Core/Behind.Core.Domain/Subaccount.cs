@@ -8,6 +8,8 @@ public sealed record Subaccount
 
     public bool IsChild { get; init; }
 
+    public bool IsActive { get; init; }
+
     private Subaccount()
     {
     }
@@ -17,5 +19,9 @@ public sealed record Subaccount
         PrimaryUser = primaryUser;
         User = user;
         IsChild = isChild;
+        IsActive = true;
     }
+
+    public Subaccount NextVersion(bool isChild, bool isActive) =>
+        new(PrimaryUser, User, isChild) { IsActive = isActive };
 }

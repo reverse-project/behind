@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261122150000_AllowSharedSubaccounts";
+    public override string LastMigrationId => "20261125184523_VersionSubaccounts";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1435,6 +1435,38 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .HasAnnotation("Behind:ContentLocale", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<bool>("IsActive")
+                    .HasColumnType("boolean");
+
+                b.Property<bool>("IsChild")
+                    .HasColumnType("boolean");
+
+                b.Property<Guid>("PrimaryUserId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("PrimaryUserId");
+
+                b.HasIndex("UserId");
+
+                b.ToTable("Subaccounts", t =>
+                    {
+                        t.HasCheckConstraint("CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\"");
+                    });
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.User", b =>
             {
                 b.Property<Guid>("Id")
@@ -1603,27 +1635,6 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
-        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
-            {
-                b.Property<Guid>("PrimaryUserId")
-                    .HasColumnType("uuid");
-
-                b.Property<Guid>("UserId")
-                    .HasColumnType("uuid");
-
-                b.Property<bool>("IsChild")
-                    .HasColumnType("boolean");
-
-                b.HasKey("PrimaryUserId", "UserId");
-
-                b.HasIndex("UserId");
-
-                b.ToTable("Subaccounts", t =>
-                    {
-                        t.HasCheckConstraint("CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\"");
-                    });
-            });
-
         modelBuilder.Entity("Behind.Core.Domain.UserSwitchPin", b =>
             {
                 b.Property<Guid>("UserId")
@@ -1636,6 +1647,8 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasKey("UserId");
 
                 b.ToTable("UserSwitchPins");
+
+                b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>
@@ -2118,6 +2131,25 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .IsRequired();
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
+            {
+                b.HasOne("Behind.Core.Domain.HumanUser", "PrimaryUser")
+                    .WithMany()
+                    .HasForeignKey("PrimaryUserId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.HasOne("Behind.Core.Domain.HumanUser", "User")
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("PrimaryUser");
+
+                b.Navigation("User");
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.UserPasskey", b =>
             {
                 b.HasOne("Behind.Core.Domain.HumanUser", null)
@@ -2129,21 +2161,6 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.UserRecoveryCode", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
-                    .WithMany()
-                    .HasForeignKey("UserId")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired();
-            });
-
-        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
-            {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
-                    .WithMany()
-                    .HasForeignKey("PrimaryUserId")
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .IsRequired();
-
                 b.HasOne("Behind.Core.Domain.HumanUser", null)
                     .WithMany()
                     .HasForeignKey("UserId")

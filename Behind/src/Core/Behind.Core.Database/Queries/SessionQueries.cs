@@ -74,7 +74,7 @@ public sealed class SessionQueries(AbstractCoreContext context, IOptions<Securit
             var managerValid = row.FamilyManagerUserId is not { } managerId
                 || fromLinkedProfile
                     && await scope.Profiles(context).AnyAsync(user => EF.Property<Guid>(user, "Id") == managerId, cancellationToken)
-                    && await context.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == managerId
+                    && await context.ActiveSubaccounts().AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == managerId
                         && EF.Property<Guid>(link, "UserId") == primaryId, cancellationToken)
                     && await new WallOfShameQueries(context).FindActiveBan(managerId, DateTimeOffset.UtcNow, cancellationToken) == None;
             var actorScope = row.FamilyManagerUserId is { } manager
@@ -82,7 +82,7 @@ public sealed class SessionQueries(AbstractCoreContext context, IOptions<Securit
             var linked = managerValid
                 && await actorScope.Profiles(context).AnyAsync(user => EF.Property<Guid>(user, "Id") == row.UserId, cancellationToken)
                 && (row.UserId != primaryId || fromLinkedProfile
-                    || await context.Subaccounts.AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == primaryId
+                    || await context.ActiveSubaccounts().AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == primaryId
                         && context.Users.InDeletionState(context, AbstractCoreContext.DeletionRecorded, DeletionState.Active)
                             .Any(user => EF.Property<Guid>(user, "Id") == EF.Property<Guid>(link, "UserId")), cancellationToken))
                 && (row.UserId == primaryId

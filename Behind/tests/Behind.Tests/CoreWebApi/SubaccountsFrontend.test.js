@@ -83,13 +83,23 @@ async function setup(accounts, primary = true, primaryHasPin = false, linkUnlink
     vm.runInNewContext(source, {
         window,
         define: (_, factory) => {
-            const component = factory(ko, http, session, invalidation, { t: key => key }, { label: account => account.displayName }, { password: () => true, magicLink: () => true }, "");
+            const component = factory(ko, http, session, invalidation, { t: key => key }, { label: account => account.displayName }, { password: () => true, magicLink: () => true, subaccountSwitch: ko.observable(profile.switchEnabled ?? true) }, "");
             panel = new component.viewModel({ manager: profile.manager ?? primary, userId: profile.userId });
         }
     });
     await new Promise(resolve => setImmediate(resolve));
     return { panel, session, sessions, requests, reloads, location, http, invalidation, confirmations };
 }
+
+test("disabled account switching does not submit a switch", async () => {
+    const { panel, requests } = await setup([{ userId: "child", displayName: "Child", isChild: true }], true, false, false, [], { switchEnabled: false });
+    panel.selected({ userId: "child" });
+    await panel.switchUser();
+    assert.equal(requests.length, 0);
+    const template = fs.readFileSync(path.join(frontend, "components/subaccounts.html"), "utf8");
+    assert.match(template, /!manager && switchEnabled\(\) &&/);
+    panel.dispose();
+});
 
 test("create a child without a sign-in email and clear its PIN on edit", async () => {
     const child = { userId: "child", displayName: "Alex", isChild: true, birthday: "2017-10-12", hasPin: true };

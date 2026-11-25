@@ -17,7 +17,8 @@ public enum AccountMode
     TwoFactor,
     Passkey,
     PrimaryPasskey,
-    EmailTwoFactor
+    EmailTwoFactor,
+    SubaccountSwitch
 }
 
 public static class AccountModeExtensions
@@ -45,6 +46,7 @@ public sealed class AccountModeFilter(AccountMode mode) : IEndpointFilter
             AccountMode.Passkey => settings.TwoFactor && settings.Passkey,
             AccountMode.PrimaryPasskey => settings.Passkey,
             AccountMode.EmailTwoFactor => settings.TwoFactor && settings.EmailTwoFactor,
+            AccountMode.SubaccountSwitch => settings.SubaccountSwitch,
             _ => false
         };
 

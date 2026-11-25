@@ -1153,6 +1153,7 @@ public static class WebApiExtensions
                 .RequireAuthenticationTransaction()
                 .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy);
             subaccounts.MapPost("/{userId:guid}/switch", SubaccountEndpoints.Switch)
+                .RequireAccountMode(AccountMode.SubaccountSwitch)
                 .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.SwitchRequest>>()
                 .RequireAuthenticationTransaction()
                 .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy);

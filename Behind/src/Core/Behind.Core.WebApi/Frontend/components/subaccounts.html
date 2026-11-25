@@ -36,7 +36,7 @@
             <!-- /ko -->
             <label class="form-label d-block">
                 <span data-bind="t: pinOnly() && !primary() ? 'subaccount.ownNewPin' : editAccount() && editAccount().hasPin ? 'subaccount.replacePin' : 'subaccount.pin'"></span>
-                <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="new-password" data-bind="textInput: pin, enable: !clearPin(), attr: { required: pinOnly() && !primary() && !clearPin() }">
+                <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" autocomplete="new-password" data-bind="textInput: pin, enable: !clearPin(), attr: { required: pinOnly() && !primary() && !clearPin() }">
             </label>
             <label class="form-check mb-2" data-bind="visible: editAccount() && editAccount().hasPin">
                 <input class="form-check-input" type="checkbox" data-bind="checked: clearPin">
@@ -46,7 +46,7 @@
                 <legend class="h6" data-bind="t: 'subaccount.primaryLabel'">Primary account</legend>
                 <label class="form-label d-block" data-bind="ifnot: skipPrimaryPin">
                     <span data-bind="t: 'subaccount.primaryPin'">Set a PIN to switch back to your primary account</span>
-                    <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" required autocomplete="new-password" data-bind="textInput: primaryPin">
+                    <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" required autocomplete="new-password" data-bind="textInput: primaryPin">
                 </label>
                 <label class="form-check">
                     <input class="form-check-input" type="checkbox" data-bind="checked: skipPrimaryPin">
@@ -108,7 +108,7 @@
         </ul>
     </section>
 </div>
-<div data-bind="if: !manager && (accounts().length || linked())">
+<div data-bind="if: !manager && switchEnabled() && (accounts().length || linked())">
     <details class="px-3 py-1" data-bind="click: function () { return true; }, clickBubble: false">
         <summary data-bind="t: 'subaccount.switch'">Switch User</summary>
         <form class="mt-2" data-bind="submit: switchUser, visible: accounts().length">
@@ -123,7 +123,7 @@
             <div data-bind="if: selected() && selected().hasPin">
                 <label class="d-block">
                     <span data-bind="t: 'subaccount.enterPin'">Enter the selected profile’s PIN</span>
-                    <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="128" autocomplete="off" required data-bind="value: pin">
+                    <input class="form-control" type="password" inputmode="numeric" pattern="[0-9]+" autocomplete="off" required data-bind="value: pin">
                 </label>
             </div>
             <button class="btn btn-primary mt-2" type="submit" data-bind="enable: selected() && !busy(), t: 'subaccount.switch'">Switch User</button>

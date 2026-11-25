@@ -31,6 +31,7 @@ public class AccountsConfigurationTests
         Assert.True(configuration.TwoFactor);
         Assert.True(configuration.Passkey);
         Assert.True(configuration.EmailTwoFactor);
+        Assert.True(configuration.SubaccountSwitch);
     }
 
     [Fact]
@@ -50,6 +51,7 @@ public class AccountsConfigurationTests
     [InlineData("TwoFactor")]
     [InlineData("Passkey")]
     [InlineData("EmailTwoFactor")]
+    [InlineData("SubaccountSwitch")]
     public void Binding_ReadsSignInModes(string mode)
     {
         var configuration = Bind(new() { [$"Backend:Accounts:{mode}"] = "false" });
@@ -60,6 +62,7 @@ public class AccountsConfigurationTests
         Assert.Equal(mode != "TwoFactor", configuration.TwoFactor);
         Assert.Equal(mode != "Passkey", configuration.Passkey);
         Assert.Equal(mode != "EmailTwoFactor", configuration.EmailTwoFactor);
+        Assert.Equal(mode != "SubaccountSwitch", configuration.SubaccountSwitch);
     }
 
     [Fact]

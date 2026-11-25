@@ -12,8 +12,7 @@ public sealed class SubaccountPinLimitTests
     [Theory]
     [InlineData("4", 4)]
     [InlineData(null, 128)]
-    [InlineData("0", 128)]
-    [InlineData("129", 128)]
+    [InlineData("200", 200)]
     public async Task AllPinRequestsUseConfiguredLimit(string? configuredLimit, int expectedLimit)
     {
         using var input = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(configuredLimit is null
@@ -47,5 +46,26 @@ public sealed class SubaccountPinLimitTests
                 Assert.Equal(expectedStatus, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode);
             }
         }
+
+    }
+
+    [Fact]
+    public async Task InvalidConfiguredLimitFailsExplicitly()
+    {
+        using var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton(Options.Create(new SecurityConfiguration
+            {
+                Accounts = new SecurityAccountSettings { SwitchPinMaxLength = 0 }
+            }))
+            .BuildServiceProvider();
+        var context = new DefaultEndpointFilterInvocationContext(
+            new DefaultHttpContext { RequestServices = services },
+            [new SubaccountEndpoints.SwitchRequest("1234")]);
+
+        var result = await new SubaccountFeatureFilter(false)
+            .InvokeAsync(context, _ => ValueTask.FromResult<object?>(Results.NoContent()));
+
+        Assert.Equal(500, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode);
     }
 }

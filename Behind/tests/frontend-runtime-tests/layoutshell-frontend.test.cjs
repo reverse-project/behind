@@ -491,6 +491,16 @@ test("failed account settings requests do not enable authentication menu items",
     assert.equal(accounts.signUp(), false);
 });
 
+test("account settings report the independent switching toggle", async () => {
+    const ko = require(path.join(root, "libraries/knockout.min.js"));
+    const accounts = load("models/accounts.js", {
+        ko,
+        "models/http": { get: () => Promise.resolve({ ok: true, data: { subaccountSwitch: false } }) }
+    });
+    await accounts.load();
+    assert.equal(accounts.subaccountSwitch(), false);
+});
+
 test("chrome mounts preserve site-provided markup and dispose the bound view models", () => {
     const callbacks = [];
     const bindings = [];

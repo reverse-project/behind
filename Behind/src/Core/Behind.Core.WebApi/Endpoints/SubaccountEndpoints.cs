@@ -32,22 +32,22 @@ public sealed class SubaccountEndpoints
     public sealed record PinProof(string? CurrentPin = null, string? Password = null, string? MagicToken = null, string? PrimaryPin = null);
 
     public sealed record PinRequest(
-        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin,
+        [property: RegularExpression(PinPattern)] string? Pin,
         bool ClearPin, PinProof? Proof = null) : IPinRequest;
 
     public sealed record CreateRequest(
         [property: Required, MaxLength(DisplayNameExtensions.MaxLength)] string DisplayName,
         [property: EmailAddress, MaxLength(255)] string? Email,
         DateOnly? Birthday, bool IsChild,
-        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin,
-        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? PrimaryPin = null, PinProof? Proof = null) : IPinRequest;
+        [property: RegularExpression(PinPattern)] string? Pin,
+        [property: RegularExpression(PinPattern)] string? PrimaryPin = null, PinProof? Proof = null) : IPinRequest;
 
     public sealed record UpdateRequest(
         [property: Required, MaxLength(DisplayNameExtensions.MaxLength)] string DisplayName,
         DateOnly? Birthday, bool IsChild,
-        [property: RegularExpression(PinPattern), MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin, bool ClearPin, PinProof? Proof = null) : IPinRequest;
+        [property: RegularExpression(PinPattern)] string? Pin, bool ClearPin, PinProof? Proof = null) : IPinRequest;
 
-    public sealed record SwitchRequest([property: MaxLength(SecurityAccountSettings.DefaultSwitchPinMaxLength)] string? Pin) : IPinRequest;
+    public sealed record SwitchRequest(string? Pin) : IPinRequest;
 
     public sealed record Account(Guid UserId, string DisplayName, bool IsChild, DateOnly? Birthday, bool HasPin, string? Email, bool CanRelease);
 

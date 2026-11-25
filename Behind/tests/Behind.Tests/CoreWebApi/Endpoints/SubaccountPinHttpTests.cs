@@ -26,6 +26,51 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 public sealed class SubaccountPinHttpTests
 {
     [Fact]
+    public async Task HttpValidationHonorsConfiguredPinLimitAbove128()
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Services.AddSingleton(Options.Create(new SecurityConfiguration
+        {
+            Accounts = new SecurityAccountSettings { SwitchPinMaxLength = 200 }
+        }));
+        await using var app = builder.Build();
+        var group = app.MapGroup("/pins").AddEndpointFilter(new SubaccountFeatureFilter(false));
+        group.MapPost("/create", (SubaccountEndpoints.CreateRequest _) => Results.NoContent())
+            .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.CreateRequest>>();
+        group.MapPost("/update", (SubaccountEndpoints.UpdateRequest _) => Results.NoContent())
+            .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.UpdateRequest>>();
+        group.MapPost("/pin", (SubaccountEndpoints.PinRequest _) => Results.NoContent())
+            .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.PinRequest>>();
+        group.MapPost("/switch", (SubaccountEndpoints.SwitchRequest _) => Results.NoContent())
+            .AddEndpointFilter<DataAnnotationValidationFilter<SubaccountEndpoints.SwitchRequest>>();
+        await app.StartAsync();
+        var url = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
+        using var client = new HttpClient { BaseAddress = new Uri(url) };
+
+        foreach (var (pin, expected) in new[]
+        {
+            (new string('1', 200), HttpStatusCode.NoContent),
+            (new string('1', 201), HttpStatusCode.BadRequest)
+        })
+        {
+            var requests = new (string Path, object Body)[]
+            {
+                ("/pins/create", new SubaccountEndpoints.CreateRequest("Child", null, null, true, pin)),
+                ("/pins/create", new SubaccountEndpoints.CreateRequest("Child", null, null, true, null, pin)),
+                ("/pins/update", new SubaccountEndpoints.UpdateRequest("Child", null, true, pin, false)),
+                ("/pins/pin", new SubaccountEndpoints.PinRequest(pin, false)),
+                ("/pins/switch", new SubaccountEndpoints.SwitchRequest(pin))
+            };
+            foreach (var (path, body) in requests)
+            {
+                using var response = await client.PostAsJsonAsync(path, body);
+                Assert.Equal(expected, response.StatusCode);
+            }
+        }
+    }
+
+    [Fact]
     public async Task SqliteHttpRequestsVerifyActorPasswordAndRejectOldPin()
     {
         using var factory = new TestDbContextFactory();

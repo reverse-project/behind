@@ -7,6 +7,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
     var Panel = function (params) {
         var self = this;
         self.manager = !!params.manager;
+        self.switchEnabled = modes.subaccountSwitch;
         self.translate = i18n.t;
         self.accounts = ko.observableArray([]);
         self.primary = ko.observable(false);
@@ -436,7 +437,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         self.switchUser = function () {
             var account = self.selected();
             var sourceIdentity = currentIdentity();
-            if (!account || sourceIdentity === null) {
+            if (!self.switchEnabled() || !account || sourceIdentity === null) {
                 return;
             }
             return perform(function () {

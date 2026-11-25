@@ -14,7 +14,8 @@ public static class AccountModeSettings
         $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.Oidc)}",
         $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.TwoFactor)}",
         $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.Passkey)}",
-        $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.EmailTwoFactor)}"
+        $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.EmailTwoFactor)}",
+        $"{AccountsConfiguration.SectionName}:{nameof(AccountsConfiguration.SubaccountSwitch)}"
     ];
 
     public static bool CanAdd(JsonObject root, string file, string path)

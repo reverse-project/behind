@@ -3,6 +3,7 @@
     "version": "1.0.3",
     "date": "2026-11-21",
     "changes": [
+      { "type": "changed", "text": "Account switching can be disabled independently in backend.json. The maximum switching PIN length is configurable above or below the default of 128." },
       { "type": "fixed", "text": "Sign-in and sign-up menu items stay hidden until account settings are loaded and only appear when enabled." },
       { "type": "fixed", "text": "Remove the empty invitation section's gap between Profile and Switch User in the account menu." },
       { "type": "fixed", "text": "The primary account can switch to authorized linked profiles without a PIN when the destination has none. Switched adults can manage children and switch to children without a PIN when none is set; saved destination PINs remain required." },

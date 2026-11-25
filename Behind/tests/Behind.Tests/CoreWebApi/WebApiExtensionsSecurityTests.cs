@@ -158,6 +158,15 @@ public sealed class WebApiExtensionsSecurityTests : IDisposable
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
         using var client = new HttpClient { BaseAddress = new Uri(address) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", childToken);
+        app.Configuration["Backend:Accounts:SubaccountSwitch"] = "false";
+        using var settings = await client.GetAsync("/accounts/settings");
+        Assert.False((await settings.Content.ReadFromJsonAsync<AccountsSettingsResponse>())!.SubaccountSwitch);
+        using var familyWhileDisabled = await client.GetAsync("/profile/subaccounts");
+        Assert.Equal(HttpStatusCode.OK, familyWhileDisabled.StatusCode);
+        using var disabledSwitch = await client.PostAsJsonAsync($"/profile/subaccounts/{adultId}/switch", new { Pin = adultPin });
+        Assert.Equal(HttpStatusCode.NotFound, disabledSwitch.StatusCode);
+
+        app.Configuration["Backend:Accounts:SubaccountSwitch"] = "true";
         using var switched = await client.PostAsJsonAsync($"/profile/subaccounts/{adultId}/switch", new { Pin = adultPin });
         Assert.Equal(HttpStatusCode.OK, switched.StatusCode);
         var signIn = Assert.IsType<SignInEndpoints.SignInResponse>(await switched.Content.ReadFromJsonAsync<SignInEndpoints.SignInResponse>());

@@ -1,6 +1,7 @@
 using Behind.Core.Common.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Behind.Core.WebApi.Endpoints;
@@ -18,9 +19,14 @@ public sealed class SubaccountFeatureFilter(bool requiresLinking) : IEndpointFil
         }
         if (context.Arguments.OfType<SubaccountEndpoints.IPinRequest>().FirstOrDefault() is { } request)
         {
-            var maxLength = settings.SwitchPinMaxLength is >= 1 and <= SecurityAccountSettings.DefaultSwitchPinMaxLength
-                ? settings.SwitchPinMaxLength
-                : SecurityAccountSettings.DefaultSwitchPinMaxLength;
+            var maxLength = settings.SwitchPinMaxLength;
+            if (maxLength < 1)
+            {
+                http.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger<SubaccountFeatureFilter>()
+                    .LogError("Security:Accounts:SwitchPinMaxLength must be positive");
+                return ValueTask.FromResult<object?>(Results.Problem(statusCode: StatusCodes.Status500InternalServerError));
+            }
             var errors = new Dictionary<string, string[]>();
             if (request.Pin?.Length > maxLength)
             {

@@ -7,6 +7,14 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 public sealed class SubaccountSchemaTests
 {
     [Fact]
+    public void Version330AllowsLongPinsWithoutChangingVersion320()
+    {
+        var request = new JsonObject { ["pin"] = new string('1', 200) };
+        Assert.False(ReadDefinition("switch", "3.2.0").Evaluate(request).IsValid);
+        Assert.True(ReadDefinition("switch", "3.3.0").Evaluate(request).IsValid);
+    }
+
+    [Fact]
     public void FamilyRequiresChildManagementCapabilityInVersion320()
     {
         var family = JsonNode.Parse("""

@@ -164,7 +164,7 @@ public sealed class SubaccountEndpoints
             return Results.Forbid();
         }
 
-        if (HashPin(request.PrimaryPin) is not null)
+        if (!string.IsNullOrEmpty(request.PrimaryPin))
         {
             if (await PinsFor(db, family.PrimaryUserId).AnyAsync(http.RequestAborted))
             {
@@ -317,7 +317,11 @@ public sealed class SubaccountEndpoints
             var hash = await PinsFor(db, credential.UserId).SingleOrDefaultAsync(http.RequestAborted);
             return hash is not null && PasswordHash.CreateFromExisting(hash.PinHash.ToString()).Verify(credential.Pin);
         }
-        if (!family.CanManageChildren || (!family.IsPrimary && targetId == family.Current.UserId && operation != PinProofOperation.Create))
+        var adultSelfSetup = family.IsFamilyAdult && !family.IsLinked && targetId == family.Current.UserId
+            && operation == PinProofOperation.Change
+            && !await PinsFor(db, targetId).AnyAsync(http.RequestAborted);
+        if (!family.CanManageChildren || (!family.IsPrimary && targetId == family.Current.UserId
+            && operation != PinProofOperation.Create && !adultSelfSetup))
         {
             return false;
         }

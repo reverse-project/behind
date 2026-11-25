@@ -15,6 +15,39 @@ namespace Behind.Tests.CoreDatabase;
 
 public sealed class SubaccountMigrationTests
 {
+    [Fact]
+    public async Task SqliteRepairsAlreadyMigratedMixedCaseHistories()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var db = new CoreContextSqlite(
+            new DbContextOptionsBuilder<CoreContextSqlite>().UseSqlite(connection).Options);
+        await db.GetService<IMigrator>().MigrateAsync("20261122150000_AllowSharedSubaccounts");
+        var parent = Guid.NewGuid();
+        var child = Guid.NewGuid();
+        await db.Database.ExecuteSqlAsync(
+            $"""INSERT INTO "Users" ("Id", "DisplayName") VALUES ({parent}, {"Parent"}), ({child}, {"Child"})""");
+        await db.Database.ExecuteSqlAsync(
+            $"""INSERT INTO "Subaccounts" ("PrimaryUserId", "UserId", "IsChild") VALUES ({parent}, {child}, {true})""");
+        await db.GetService<IMigrator>().MigrateAsync("20261125184355_VersionSubaccounts");
+        var link = await db.ActiveSubaccounts().SingleAsync();
+        db.AppendSubaccountVersion(link, isActive: false);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        Assert.True(await db.ActiveSubaccounts().AnyAsync());
+
+        await db.Database.MigrateAsync();
+        db.ChangeTracker.Clear();
+        Assert.False(await db.ActiveSubaccounts().AnyAsync());
+        var keys = await db.Database.SqlQuery<string>($"""SELECT "Key" AS "Value" FROM "Subaccounts" """).ToListAsync();
+        Assert.Equal(2, keys.Count);
+        Assert.All(keys, key => Assert.Equal(keys[0], key));
+        Assert.Equal(keys[0].ToUpperInvariant(), keys[0]);
+        var exception = await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlAsync(
+            $"""INSERT INTO "Subaccounts" ("Key", "Version", "PrimaryUserId", "UserId", "IsChild", "IsActive") SELECT lower("Key"), "Version" + 1, "PrimaryUserId", "UserId", "IsChild", 1 FROM "Subaccounts" WHERE "Version" = 2"""));
+        Assert.Contains("Subaccounts keys must be uppercase", exception.Message);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -107,6 +140,10 @@ public sealed class SubaccountMigrationTests
             });
             Assert.Contains(preserved, link => db.GetKey(link.User) == legacyChild && link.IsActive);
             Assert.Contains(preserved, link => db.GetKey(link.User) == legacyNoPin && !link.IsActive);
+            db.AppendSubaccountVersion(preserved.Single(link => db.GetKey(link.User) == legacyChild), isActive: false);
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+            Assert.False(await db.ActiveSubaccounts().AnyAsync(link => EF.Property<Guid>(link, "UserId") == legacyChild));
             await db.Database.ExecuteSqlAsync($"""DELETE FROM "Users" WHERE "Id" IN ({legacyChild}, {legacyNoPin})""");
             Assert.False(await db.UserSwitchPins.AnyAsync());
         }
@@ -136,6 +173,8 @@ public sealed class SubaccountMigrationTests
         await db.SaveChangesAsync();
         db.ChangeTracker.Clear();
 
+        await Assert.ThrowsAnyAsync<DbException>(() => db.Database.ExecuteSqlAsync(
+            $"""UPDATE "Subaccounts" SET "IsChild" = NOT "IsChild" WHERE "UserId" = {childId}"""));
         var link = await db.ActiveSubaccounts().SingleAsync();
         var linkId = db.Entry(link).VersionedId;
         Assert.Equal(1, linkId.Version);

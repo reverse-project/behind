@@ -81,7 +81,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         });
         self.proofMethods = ko.pureComputed(function () {
             var account = self.editAccount();
-            if (!self.canManageChildren() || (account && account.isSelf)) {
+            if (!self.canManageChildren() || (account && account.isSelf && (account.hasPin || self.linked()))) {
                 return self.manager && account && account.hasPin ? ["currentPin"] : [];
             }
             var methods = [];
@@ -127,7 +127,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         });
         self.needsProof = ko.pureComputed(function () {
             var account = self.editAccount();
-            return self.changingPin() && (self.canManageChildren() && !(account && account.isSelf) || !!(account && account.hasPin));
+            return self.changingPin() && (self.canManageChildren() && (!(account && account.isSelf) || !self.linked()) || !!(account && account.hasPin));
         });
         var select = self.editAccount.subscribe(function (account) {
             self.pin("");
@@ -373,7 +373,8 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
         };
 
         self.requestPinProof = function () {
-            if (!self.manager || !self.canManageChildren() || (self.selected() && self.selected().isSelf)) {
+            if (!self.manager || !self.canManageChildren()
+                || (self.selected() && self.selected().isSelf && (self.selected().hasPin || self.linked()))) {
                 return;
             }
             var account = self.selected();
@@ -425,7 +426,7 @@ define(["ko", "models/http", "models/session", "models/invalidation", "models/i1
                 return refresh(self.canManageChildren() && !(account && account.isSelf) ? null : success);
             }, function (status) {
                 if (settingOwnPin && (status === 403 || status === 409)) {
-                    return refresh("subaccount.ownPinSetupRejected");
+                    return refresh(status === 403 && body.proof ? "subaccount.proofRejected" : "subaccount.ownPinSetupRejected");
                 }
                 var invalid = status === 403 && body.proof
                     ? (self.canManageChildren() && !(account && account.isSelf) ? "subaccount.proofRejected" : "subaccount.currentPinRejected")

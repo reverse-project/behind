@@ -206,6 +206,41 @@ test("the primary account menu switches to an authorized profile without a PIN",
     panel.dispose();
 });
 
+test("a switched unlinked adult sets its first PIN with verified proof", async () => {
+    const { panel, requests } = await setup([], false, false, false, [], {
+        manager: true, userId: "adult", isLinked: false, currentHasPin: false, canManageChildren: true
+    });
+    panel.selected(panel.managementAccounts()[0]);
+    panel.pin("1234");
+    assert.deepEqual(Array.from(panel.proofMethods()), ["password", "magicToken"]);
+    await panel.save();
+    assert.equal(requests.length, 0);
+    panel.proofMethod("magicToken");
+    await panel.requestPinProof();
+    assert.equal(requests[0].url, "/profile/subaccounts/adult/pin-proof");
+    assert.equal(requests[0].body.operation, "change");
+    panel.credential("email-token");
+    await panel.save();
+    assert.equal(requests[1].url, "/profile/subaccounts/adult/pin");
+    assert.equal(requests[1].body.proof.magicToken, "email-token");
+    const template = fs.readFileSync(path.join(frontend, "components/subaccounts.html"), "utf8");
+    assert.match(template, /editAccount\(\)\.isSelf && editAccount\(\)\.hasPin\) && needsProof/);
+    panel.dispose();
+});
+
+test("a switched adult receives proof guidance when first PIN verification fails", async () => {
+    const { panel, http } = await setup([], false, false, false, [], {
+        manager: true, userId: "adult", isLinked: false, currentHasPin: false, canManageChildren: true
+    });
+    panel.selected(panel.managementAccounts()[0]);
+    panel.pin("1234");
+    panel.credential("wrong password");
+    http.put = async () => ({ ok: false, status: 403 });
+    await panel.save();
+    assert.equal(panel.message(), "subaccount.proofRejected");
+    panel.dispose();
+});
+
 test("a switched adult manages children with their own proof and ends the session on release", async () => {
     const child = { userId: "child", displayName: "Child", isChild: true, hasPin: true, canRelease: true };
     const { panel, requests, session, location } = await setup([child], false, false, true, [], {

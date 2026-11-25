@@ -6,6 +6,20 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public sealed class SubaccountSchemaTests
 {
+    [Theory]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":null,"password":"secret"}}""", true)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":null,"magicToken":"token"}}""", true)]
+    [InlineData("""{"clearPin":true,"proof":{"currentPin":null,"password":"secret"}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":""}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":"0017","password":null}}""", true)]
+    [InlineData("""{"clearPin":true,"proof":{"currentPin":"0017"}}""", true)]
+    [InlineData("""{"pin":"0042","proof":{"currentPin":null,"password":null}}""", false)]
+    [InlineData("""{"pin":"0042","proof":{"password":"secret","magicToken":"token"}}""", false)]
+    public void Version340ValidatesSelfPinProof(string request, bool expected)
+    {
+        Assert.Equal(expected, ReadDefinition("selfPinMutation", "3.4.0").Evaluate(JsonNode.Parse(request)).IsValid);
+    }
+
     [Fact]
     public void Version330AllowsLongPinsWithoutChangingVersion320()
     {

@@ -61,6 +61,75 @@ public sealed class SubaccountEndpointsTests
     }
 
     [Fact]
+    public async Task SwitchedUnlinkedAdultCanSetFirstPinWithItsOwnPassword()
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        var adult = new HumanUser("Adult", [new Email("adult@example.test")], None);
+        var child = new HumanUser("Child", [new Email("child@example.test")], None);
+        db.Subaccounts.Add(new Subaccount(adult, child, true));
+        await db.SaveChangesAsync();
+        var adultId = db.GetKey(adult);
+        var actor = AsUser(adultId, db.GetKey(child));
+        var password = await SetPassword(db, adultId, actor.Http);
+
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(adultId, new("1234", false, null),
+            actor.Http, actor.Queries, db));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(adultId, new("1234", false, new(Password: "wrong")),
+            actor.Http, actor.Queries, db));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(adultId, new("1234", false, password),
+            actor.Http, actor.Queries, db));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(adultId, new("5678", false, password),
+            actor.Http, actor.Queries, db));
+        Assert.IsType<ForbidHttpResult>(await SubaccountEndpoints.ChangePin(adultId, new(null, true, password),
+            actor.Http, actor.Queries, db));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(adultId, new("5678", false, new(CurrentPin: "1234")),
+            actor.Http, actor.Queries, db));
+    }
+
+    [Fact]
+    public async Task SqliteConcurrentSwitchedAdultPinSetupPreservesWinner()
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        await VerifyConcurrentSwitchedAdultPinSetup(db, factory.CreateContext);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task PostgresConcurrentSwitchedAdultPinSetupPreservesWinner()
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
+        var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres:Image is required.");
+        await using var container = new PostgreSqlBuilder(image).Build();
+        await container.StartAsync();
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString()).Options;
+        await using var db = new CoreContextPostgres(options);
+        await db.Database.MigrateAsync();
+        await VerifyConcurrentSwitchedAdultPinSetup(db, () => new CoreContextPostgres(options));
+    }
+
+    private static async Task VerifyConcurrentSwitchedAdultPinSetup(AbstractCoreContext db, Func<AbstractCoreContext> createContext)
+    {
+        var adult = new HumanUser("Adult", [new Email("adult@example.test")], None);
+        var child = new HumanUser("Child", [new Email("child@example.test")], None);
+        db.Subaccounts.Add(new Subaccount(adult, child, true));
+        await db.SaveChangesAsync();
+        var adultId = db.GetKey(adult);
+        var actor = AsUser(adultId, db.GetKey(child));
+        var proof = await SetPassword(db, adultId, actor.Http);
+        var winningHash = PasswordHash.Create("9876").ToString();
+        db.SavingChanges += (_, _) => db.Database.ExecuteSql(
+            $"""INSERT INTO "UserSwitchPins" ("UserId", "PinHash") VALUES ({adultId}, {winningHash})""");
+
+        var result = await SubaccountEndpoints.ChangePin(adultId, new("1234", false, proof), actor.Http, actor.Queries, db);
+        Assert.Equal(StatusCodes.Status409Conflict, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode);
+        await using var verified = createContext();
+        Assert.Equal(winningHash, (await verified.UserSwitchPins.SingleAsync()).PinHash.ToString());
+    }
+
+    [Fact]
     public async Task SwitchedAdultManagesOnlyChildrenUsingItsOwnProof()
     {
         using var factory = new TestDbContextFactory();
@@ -465,7 +534,9 @@ public sealed class SubaccountEndpointsTests
 
         Assert.IsType<Conflict>(result);
         Assert.Equal(originalName, child.DisplayName);
-        Assert.Equal(2, await db.Subaccounts.CountAsync(link => link.IsChild));
+        var activeLinks = await db.ActiveSubaccounts().Where(link => EF.Property<Guid>(link, "UserId") == childId).ToListAsync();
+        Assert.Equal(2, activeLinks.Count);
+        Assert.All(activeLinks, link => Assert.True(link.IsChild));
     }
 
     [Theory]

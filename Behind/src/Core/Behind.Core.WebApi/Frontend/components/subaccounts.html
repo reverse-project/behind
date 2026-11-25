@@ -54,7 +54,7 @@
                 </label>
                 <p class="alert alert-warning mt-2" role="status" data-bind="visible: skipPrimaryPin, t: 'subaccount.primaryWarning'">Without a primary PIN, you must sign in again to return to your primary account.</p>
             </fieldset>
-            <fieldset class="mb-3" data-bind="if: canManageChildren() && !(editAccount() && editAccount().isSelf) && needsProof()">
+            <fieldset class="mb-3" data-bind="if: canManageChildren() && !(editAccount() && editAccount().isSelf && editAccount().hasPin) && needsProof()">
                 <legend class="h6" data-bind="t: 'subaccount.proofRequired'"></legend>
                 <p class="alert alert-warning" data-bind="visible: !proofMethods().length, t: 'subaccount.noProofMethod'"></p>
                 <select class="form-select" data-bind="visible: proofMethods().length, options: proofMethods, optionsText: proofLabel, value: proofMethod, attr: { 'aria-label': translate('subaccount.proofRequired') }"></select>

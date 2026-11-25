@@ -21,6 +21,56 @@ namespace Behind.Tests.CoreWebApi.MagicLinks;
 
 public sealed class PinMagicProofTests
 {
+    [Fact]
+    public async Task SwitchedAdultCanSetFirstPinWithScopedEmailProof()
+    {
+        using var factory = new TestDbContextFactory();
+        await using var db = factory.CreateContext();
+        var now = DateTimeOffset.UtcNow;
+        var adult = new HumanUser("Adult", [new Email("adult@example.test", now)], None);
+        var child = new HumanUser { DisplayName = "Child" };
+        db.Subaccounts.Add(new Subaccount(adult, child, true));
+        await db.SaveChangesAsync();
+        var adultId = db.GetKey(adult);
+        var childId = db.GetKey(child);
+        var sessionId = Guid.NewGuid();
+        var sessions = Substitute.For<ISessionQueries>();
+        sessions.TryFindByIdWithUserId(sessionId, Arg.Any<CancellationToken>())
+            .Returns(Some<(Session, Guid)>((new ValidSession(AccessToken.Create(adult),
+                RefreshToken.Create(adult), "127.0.0.1", "test") { FamilyPrimaryUserId = Some(childId) }, adultId)));
+        var manager = Substitute.For<UserManager<ApplicationUser>>(
+            Substitute.For<IUserStore<ApplicationUser>>(), null, null, null, null, null, null, null, null);
+        manager.FindByIdAsync(adultId.ToString()).Returns(new ApplicationUser { Id = adultId, Emails = adult.Emails });
+        var config = new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?> { ["Frontend:Url"] = "https://example.test/" }).Build();
+        var store = new MagicLinkSettingsStore(Some(new MagicLinkSettings(Uuid.CreateVersion7(now), None,
+            LinkLifetime: Some(TimeSpan.FromMinutes(5)))));
+        var security = Options.Create(new SecurityConfiguration(false, None,
+            Some(new JwtSettings("issuer", "audience", new string('k', 64))), None));
+        var commands = new MagicLinkCommands(db);
+        var queue = new MagicLinkMailQueue();
+        using var services = new ServiceCollection().AddOptions()
+            .AddSingleton<IMagicLinkSettingsStore>(store).AddSingleton(security)
+            .AddSingleton<IMagicLinkCommands>(commands).AddSingleton<TimeProvider>(new FixedTimeProvider(now))
+            .BuildServiceProvider();
+        var http = new DefaultHttpContext
+        {
+            RequestServices = services,
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("session_id", sessionId.ToString())], "test"))
+        };
+        Assert.IsType<NoContent>(await PinMagicProof.Request(adultId, new("change"), http, sessions, db, manager,
+            config, store, security, commands, new MagicLinkQueries(db), queue, new FixedTimeProvider(now)));
+        Assert.True(queue.Reader.TryRead(out var mail));
+        var query = QueryHelpers.ParseQuery(new Uri(mail.Link).Fragment.Split('?')[1]);
+        var token = query["pinProof"].ToString();
+        Assert.False(await PinMagicProof.Consume(token, childId, adultId, PinProofOperation.Change, http));
+        Assert.False(await PinMagicProof.Consume(token, adultId, childId, PinProofOperation.Change, http));
+        Assert.False(await PinMagicProof.Consume(token, adultId, adultId, PinProofOperation.Remove, http));
+        Assert.IsType<NoContent>(await SubaccountEndpoints.ChangePin(adultId, new("1234", false, new(MagicToken: token)),
+            http, sessions, db));
+        Assert.False(await PinMagicProof.Consume(token, adultId, adultId, PinProofOperation.Change, http));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

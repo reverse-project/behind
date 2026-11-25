@@ -24,6 +24,8 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
 
     public DbSet<ContentRestriction> ContentRestrictions => Set<ContentRestriction>();
 
+    public DbSet<UserSwitchPin> UserSwitchPins => Set<UserSwitchPin>();
+
     public DbSet<Subaccount> Subaccounts => Set<Subaccount>();
 
     public DbSet<ContentAgeOption> ContentAgeOptions => Set<ContentAgeOption>();
@@ -109,7 +111,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         modelBuilder.ApplySoftDelete(
             this,
             DeletionRecorded,
-            [..CoreSoftDeletedEntities, ..Modules.SoftDeletedEntities]);
+            [.. CoreSoftDeletedEntities, .. Modules.SoftDeletedEntities]);
         modelBuilder.ApplyContentRestrictions(this,
         [
             typeof(Site), typeof(SiteSection), typeof(News), typeof(NewsCategory), typeof(NewsComment),
@@ -139,6 +141,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         typeof(Grant),
         typeof(Restriction),
         typeof(Password),
+        typeof(UserSwitchPin),
         typeof(WallOfShameEntry),
         typeof(Site),
         typeof(News),
@@ -181,6 +184,19 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         CancellationToken cancellationToken = default
     )
     {
+        foreach (var entry in ChangeTracker.Entries<Subaccount>().Where(entry => entry.State == EntityState.Added))
+        {
+            var id = entry.VersionedId;
+            entry.StampVersionedKey(id.Key, id.Version == 0 ? VersionedColumns.FirstVersion : id.Version);
+        }
+
+        if (ChangeTracker.Entries<Subaccount>().Any(entry =>
+                entry.State == EntityState.Modified
+                || entry.State == EntityState.Deleted && !HardDeletes.IsMarked(entry.Entity)))
+        {
+            throw new InvalidOperationException("Subaccount versions are append-only.");
+        }
+
         await this.ExpandCascadingDeletesAsync(cancellationToken);
         var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         HardDeletes.Clear();

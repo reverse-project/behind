@@ -10,6 +10,7 @@ public static class RawDatabasePolicyExtensions
     {
         nameof(AuditLogEntry),
         nameof(Subaccount),
+        nameof(UserSwitchPin),
         "OidcAccountBindings",
         "OidcRoleOwnerships"
     };

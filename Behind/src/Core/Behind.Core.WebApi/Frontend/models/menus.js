@@ -194,7 +194,11 @@ define(["ko", "models/http", "models/results", "models/paging", "models/session"
         };
 
         var subscriptions = [
-            session.isSignedIn.subscribe(reload),
+            session.generation.subscribe(function () {
+                menu({ title: "", items: [] });
+                menu.error("");
+                reload();
+            }),
             session.grants.subscribe(reload),
             contentLocale.current.subscribe(reload),
             contentLocale.assignmentRevision.subscribe(reload),

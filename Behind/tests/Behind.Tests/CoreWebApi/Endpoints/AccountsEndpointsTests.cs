@@ -31,10 +31,11 @@ public class AccountsEndpointsTests
             Oidc = false,
             TwoFactor = false,
             Passkey = false,
-            EmailTwoFactor = false
+            EmailTwoFactor = false,
+            SubaccountSwitch = false
         }));
 
-        Assert.Equal(new AccountsSettingsResponse(true, true, false, false, false, false, false, false),
+        Assert.Equal(new AccountsSettingsResponse(true, true, false, false, false, false, false, false, false),
             Assert.IsType<JsonHttpResult<AccountsSettingsResponse>>(result).Value);
     }
 }

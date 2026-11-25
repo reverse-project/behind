@@ -25,7 +25,9 @@ public static class EntityEntryAuditExtensions
         public async Task<Option<AuditLogEntry.AuditAction>> ToAuditActionAsync(
             CancellationToken cancellationToken = default
         ) =>
-            entry.State switch
+            entry.IsRestored
+                ? Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Restored())
+                : entry.State switch
             {
                 EntityState.Added when entry.IsImpersonationSession =>
                     Some<AuditLogEntry.AuditAction>(new AuditLogEntry.ImpersonationStarted()),
@@ -35,7 +37,6 @@ public static class EntityEntryAuditExtensions
                 EntityState.Deleted when entry.IsHardDeleted => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.HardDeleted()),
                 EntityState.Deleted => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Deleted()),
                 EntityState.Modified => await entry.ToUpdatedActionAsync(cancellationToken),
-                EntityState.Unchanged when entry.IsRestored => Some<AuditLogEntry.AuditAction>(new AuditLogEntry.Restored()),
                 _ => None
             };
 

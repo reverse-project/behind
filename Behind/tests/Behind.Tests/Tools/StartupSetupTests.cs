@@ -268,6 +268,15 @@ public sealed class StartupSetupTests : IDisposable
 
         Assert.False(security.ReadOnlyConfiguration);
         Assert.False(security.TwoFactorRequired);
+        Assert.Equal(SecurityConfiguration.DefaultSignInNotificationTimeoutMilliseconds, security.SignInNotificationTimeoutMilliseconds);
+        Assert.Equal(SecurityConfiguration.DefaultSignInNotificationTimeoutMilliseconds,
+            Load(SecurityPath).GetValue<int>("Security:SignInNotificationTimeoutMilliseconds"));
+        Assert.True(security.Accounts.Subaccounts);
+        Assert.False(security.Accounts.LinkUnlink);
+        Assert.Equal(SecurityAccountSettings.DefaultSwitchPinMaxLength, security.Accounts.SwitchPinMaxLength);
+        Assert.Equal(SecurityAccountSettings.DefaultSwitchPinMaxLength, Load(SecurityPath).GetValue<int>("Security:Accounts:SwitchPinMaxLength"));
+        Assert.Equal("True", Load(SecurityPath)["Security:Accounts:Subaccounts"], ignoreCase: true);
+        Assert.Equal("False", Load(SecurityPath)["Security:Accounts:LinkUnlink"], ignoreCase: true);
         Assert.Equal(Some(MagicLinkSettings.DefaultRotationInterval), magicLink.RotationInterval);
         Assert.Equal(Some(MagicLinkSettings.DefaultRotationOverlap), magicLink.RotationOverlap);
         Assert.Equal(Some(MagicLinkSettings.DefaultLinkLifetime), magicLink.LinkLifetime);

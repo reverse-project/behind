@@ -84,6 +84,44 @@ public class UserManagementEndpointsTests
         _users.TryFindUser(TargetId, DeletionState.Active, Now, Arg.Any<CancellationToken>())
             .Returns(target is null ? None : Some(target));
 
+    [Fact]
+    public async Task UnsetPinRejectsSelfAndMissingTarget()
+    {
+        _access.GetUserAccess(ActorId, Arg.Any<CancellationToken>())
+            .Returns(new UserAccess([], [(Grant)"User.Manage"], []));
+        _users.TryFindUser(ActorId, DeletionState.Active, Now, Arg.Any<CancellationToken>())
+            .Returns(Some(Managed(ActorId)));
+        TargetIs(null);
+
+        var self = await UserManagementEndpoints.UnsetPin(ActorId, SignedIn(), _gate, _userCommands);
+        var missing = await UserManagementEndpoints.UnsetPin(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(403, ((IStatusCodeHttpResult)self).StatusCode);
+        Assert.Equal(404, ((IStatusCodeHttpResult)missing).StatusCode);
+        await _userCommands.DidNotReceiveWithAnyArgs().UnsetSwitchPin(default, default);
+    }
+
+    [Theory]
+    [InlineData(true, false, true)]
+    [InlineData(false, false, false)]
+    [InlineData(true, true, false)]
+    public async Task UnsetPinRequiresGrantAndProtectsEffectiveDevelopers(bool hasGrant, bool protectedTarget, bool allowed)
+    {
+        TargetIs(Managed(TargetId));
+        _access.GetUserAccess(ActorId, Arg.Any<CancellationToken>()).Returns(
+            hasGrant ? new UserAccess([], [(Grant)"User.Manage"], []) : UserAccess.Empty);
+        if (protectedTarget)
+        {
+            _access.GetUserAccess(TargetId, Arg.Any<CancellationToken>())
+                .Returns(new UserAccess([], [BuiltInAccess.RawDatabaseManage.Grant], []));
+        }
+
+        var result = await UserManagementEndpoints.UnsetPin(TargetId, SignedIn(), _gate, _userCommands);
+
+        Assert.Equal(allowed ? 204 : 403, ((IStatusCodeHttpResult)result).StatusCode);
+        await _userCommands.Received(allowed ? 1 : 0).UnsetSwitchPin(TargetId, Arg.Any<CancellationToken>());
+    }
+
     [Theory]
     [InlineData(true, false)]
     [InlineData(false, false)]
@@ -699,7 +737,7 @@ public class UserManagementEndpointsTests
     {
         SignedInAs(ActorId, developer: true);
         DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
-        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(true);
+        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(IUserCommands.HardDeleteOutcome.Deleted);
 
         var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
 
@@ -711,11 +749,24 @@ public class UserManagementEndpointsTests
     {
         SignedInAs(ActorId, developer: true);
         DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
-        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(false);
+        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(IUserCommands.HardDeleteOutcome.Rejected);
 
         var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
 
         Assert.IsType<Conflict>(result);
+    }
+
+    [Fact]
+    public async Task HardDelete_PrimaryWithLinkedSubaccounts_ReportsConflictReason()
+    {
+        SignedInAs(ActorId, developer: true);
+        DeletedTargetIs(Managed(TargetId) with { State = DeletionState.Deleted });
+        _userCommands.HardDelete(TargetId, Arg.Any<CancellationToken>()).Returns(IUserCommands.HardDeleteOutcome.LinkedSubaccounts);
+
+        var result = await UserManagementEndpoints.HardDelete(TargetId, SignedIn(), _gate, _userCommands);
+
+        var conflict = Assert.IsType<Conflict<UserManagementEndpoints.HardDeleteConflict>>(result);
+        Assert.Equal("linkedSubaccounts", conflict.Value!.Reason);
     }
 
     [Fact]

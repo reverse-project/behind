@@ -11,6 +11,8 @@ using System.Globalization;
 
 namespace Behind.Core.WebApi.Middleware;
 
+public sealed record AccountManagementMetadata;
+
 public sealed class SessionValidationMiddleware(
     RequestDelegate next,
     TimeProvider timeProvider,
@@ -36,10 +38,9 @@ public sealed class SessionValidationMiddleware(
             {
                 var sessionId = SessionIdOf(context)!.Value;
                 var actor = await sessionQueries.TryFindActor(sessionId, context.RequestAborted);
-                var found = actor.Match(
-                    () => throw new InvalidOperationException("The validated session no longer exists."),
-                    value => value);
-                await InvokeWithSessionContext(context, sessionId, found, userSettings, locales, configuration);
+                await actor.Match(
+                    () => context.Reject(SessionRejection.UnknownSession),
+                    found => InvokeWithSessionContext(context, sessionId, found, userSettings, locales, configuration));
             },
             found =>
             {
@@ -59,6 +60,13 @@ public sealed class SessionValidationMiddleware(
         LocaleCatalog locales,
         IConfiguration configuration)
     {
+        if (actor is { IsRestrictedAdult: true }
+            && context.GetEndpoint()?.Metadata.GetMetadata<AccountManagementMetadata>() is not null)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+
         var available = await locales.ListAsync(context.RequestAborted);
         var (_, locale) = ContentLocaleMiddleware.SelectLocale(context, available);
 

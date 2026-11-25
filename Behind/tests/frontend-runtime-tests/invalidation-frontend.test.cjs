@@ -42,6 +42,7 @@ function fixture() {
     const results = load("models/results.js", { "models/i18n": i18n });
     const session = {
         isSignedIn: ko.observable(false),
+        generation: ko.observable(0),
         grants: ko.observable(null),
         displayName: ko.observable(""),
         isImpersonating: ko.observable(false)
@@ -144,6 +145,25 @@ test("invalidation skips disposed pending subscriptions and defers newly added h
     assert.throws(() => invalidation.invalidate(null), /topic/);
 });
 
+test("restriction results from a superseded session do not overwrite current state", async () => {
+    const response = deferred();
+    const generation = ko.observable(1);
+    const restriction = load("models/restriction.js", {
+        ko,
+        "models/http": { get: () => response.promise },
+        "models/session": { generation: () => generation() }
+    });
+
+    const pending = restriction.load();
+    generation(2);
+    response.resolve({ ok: true, data: { title: "Old account", message: "Old restriction", restricted: true } });
+    await pending;
+
+    assert.equal(restriction.title(), "");
+    assert.equal(restriction.message(), "");
+    assert.equal(restriction.restricted(), false);
+});
+
 const mutations = [
     ["create", [{ name: "main", title: "Main" }]],
     ["save", ["menu", { name: "main", title: "Main" }]],
@@ -231,6 +251,7 @@ test("follow ignores stale responses and in-flight responses after disposal", as
     await invalidation.invalidate("menus");
     assert.equal(requests.length, 3);
     assert.equal(session.isSignedIn.getSubscriptionsCount(), 0);
+    assert.equal(session.generation.getSubscriptionsCount(), 0);
     assert.equal(session.grants.getSubscriptionsCount(), 0);
 });
 
@@ -254,6 +275,7 @@ test("header and menu widgets refresh while mounted and release every subscripti
         header.dispose();
         footer.dispose();
         assert.equal(session.isSignedIn.getSubscriptionsCount(), 0);
+        assert.equal(session.generation.getSubscriptionsCount(), 0);
         assert.equal(session.grants.getSubscriptionsCount(), 0);
         assert.equal(session.displayName.getSubscriptionsCount(), 0);
         const previous = calls.length;

@@ -92,6 +92,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 banReason: ko.pureComputed(function () {
                     return i18n.banReason(item.ban ? item.ban.reason : "");
                 }),
+                canUnsetPin: item.permissions.canUnsetPin,
                 canModerate: item.permissions.canModerate,
                 isDeleted: item.isDeleted,
                 canDelete: item.permissions.canDelete,
@@ -130,6 +131,15 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
             row.unban = function () {
                 return perform(function () {
                     return auth.unbanUser(item.id);
+                });
+            };
+            row.unsetPin = function () {
+                if (!row.canUnsetPin || self.busy() || !window.confirm(i18n.t("users.confirmUnsetPin", [row.name]))) {
+                    return Promise.resolve();
+                }
+
+                return perform(function () {
+                    return auth.unsetUserPin(item.id);
                 });
             };
             row.signOut = function () {

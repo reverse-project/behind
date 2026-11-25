@@ -11,7 +11,8 @@ public sealed record ManagedUserPermissions(
     bool CanDelete,
     bool CanManageDeleted,
     bool CanImpersonate,
-    bool CanConfirmEmail);
+    bool CanConfirmEmail,
+    bool CanUnsetPin = false);
 
 public sealed record ManagedUserItem(
     Guid Id,

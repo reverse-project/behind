@@ -21,7 +21,11 @@ The line "Shown as ..." tells you how others will see you. Author names link to 
 
 Open **Profile → Subaccounts** on the primary account. Create a user with a display name and, optionally, an email address, birthday and numeric PIN. Mark the account as a child to let the primary account manage its birthday.
 
-Under **Profile** in the account menu, open **Switch User** and choose a linked user. Enter the destination user’s PIN if prompted. To return to the primary account, sign in with its usual credentials. An email-less subaccount can be used through the switcher. For independent sign-in, configure an address and complete the site’s usual sign-in and email verification steps.
+Under **Profile** in the account menu, open **Switch User** and choose a linked user. From the primary account in its own family session, including after switching back to it, you can switch to an active linked profile without a PIN if that profile has no PIN. If the destination has a PIN, enter its correct PIN. Once you are in a linked profile, only authorized destinations with a PIN are offered; returning to the primary account requires its PIN. You can set a separate PIN for the primary account when adding a subaccount. Without it, sign in again with the primary account’s usual credentials to return. An email-less subaccount can be used through the switcher. For independent sign-in, configure an address and complete the site’s usual sign-in and email verification steps.
+
+When linking is enabled, you can browse by display name in **Profile** after direct sign-in or after switching back to your primary account. **Request link** is available after direct sign-in. The recipient signs in independently, reviews the proposed primary account in **Profile**, and accepts or declines.
+
+To detach a user, select the linked account under **Subaccounts** and choose **Release account**. You can do this after switching back to the primary account. Release preserves the account’s data and ends switched sessions in the family, including the one used to release the account if you had switched back. If the linked account lacks an eligible sign-in address, switch to it first and add one in **Profile → Email addresses**. Complete verification if required.
 
 ### Birthday and email privacy
 

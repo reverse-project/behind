@@ -25,6 +25,8 @@ public static class AuditLabelExtensions
 
     private sealed record Named(Guid Id, string Label);
 
+    private sealed record SubaccountNamed(Guid Id, Guid PrimaryUserId, string PrimaryName, Guid UserId, string UserName);
+
     private sealed record Owned(Guid Id, string Kind, Guid UserId);
 
     private static IEnumerable<Named> BuiltInUsers =>
@@ -122,6 +124,19 @@ public static class AuditLabelExtensions
                     item.EntityType + " minimum age " + item.MinimumAge))
                 .AsNoTracking()
                 .ToListAsync(cancellationToken),
+            .. (await context.LatestSubaccounts()
+                    .Where(link => ids.Contains(EF.Property<Guid>(link, VersionedColumns.Key)))
+                    .Select(link => new SubaccountNamed(
+                        EF.Property<Guid>(link, VersionedColumns.Key),
+                        EF.Property<Guid>(link.PrimaryUser, "Id"),
+                        link.PrimaryUser.DisplayName,
+                        EF.Property<Guid>(link.User, "Id"),
+                        link.User.DisplayName))
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken))
+                .Select(link => new Named(
+                    link.Id,
+                    $"Family link from {link.PrimaryUserId.ToUserLabel(link.PrimaryName)} to {link.UserId.ToUserLabel(link.UserName)}")),
             .. await context.Roles
                 .Where(role => ids.Contains(EF.Property<Guid>(role, "Id")))
                 .Select(role => new Named(EF.Property<Guid>(role, "Id"), role.Name))

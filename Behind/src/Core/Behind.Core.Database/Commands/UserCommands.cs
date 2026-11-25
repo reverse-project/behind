@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,24 +41,51 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
         await context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task UnsetSwitchPin(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var pin = await context.UserSwitchPins
+            .SingleOrDefaultAsync(record => EF.Property<Guid>(record, "UserId") == userId, cancellationToken);
+        if (pin is null)
+        {
+            return;
+        }
+
+        context.UserSwitchPins.Remove(pin);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task Restore(Guid userId, CancellationToken cancellationToken = default)
     {
         await context.GetRestoreRepository<HumanUser, Guid>().RestoreAsync(userId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<bool> HardDelete(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IUserCommands.HardDeleteOutcome> HardDelete(Guid userId, CancellationToken cancellationToken = default)
     {
+        if (await context.ActiveSubaccounts().AnyAsync(link => EF.Property<Guid>(link, "PrimaryUserId") == userId, cancellationToken))
+        {
+            return IUserCommands.HardDeleteOutcome.LinkedSubaccounts;
+        }
+
+        var historicalLinks = await context.Subaccounts
+            .Where(link => EF.Property<Guid>(link, "PrimaryUserId") == userId)
+            .ToListAsync(cancellationToken);
+        foreach (var link in historicalLinks)
+        {
+            context.HardDelete(link);
+        }
+
         await context.GetHardDeleteRepository<HumanUser, Guid>().HardDeleteAsync(userId, cancellationToken);
 
         try
         {
             await context.SaveChangesAsync(cancellationToken);
-            return true;
+            return IUserCommands.HardDeleteOutcome.Deleted;
         }
         catch (DbUpdateException)
         {
-            return false;
+            context.ChangeTracker.Clear();
+            return IUserCommands.HardDeleteOutcome.Rejected;
         }
     }
 }

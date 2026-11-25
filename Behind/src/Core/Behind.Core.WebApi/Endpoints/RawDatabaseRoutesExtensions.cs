@@ -1,3 +1,4 @@
+using Behind.Core.WebApi.Middleware;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
 using Microsoft.AspNetCore.Builder;
@@ -30,6 +31,7 @@ public static class RawDatabaseRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/raw-database/tables/{table}/rows", RawDatabaseEndpoints.Insert)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(manage)
                 .AddEndpointFilter<DataAnnotationValidationFilter<RawDatabaseEndpoints.InsertRowRequest>>()
                 .Produces<IReadOnlyDictionary<string, object?>>()
@@ -41,6 +43,7 @@ public static class RawDatabaseRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/raw-database/tables/{table}/rows/update", RawDatabaseEndpoints.Update)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(manage)
                 .AddEndpointFilter<DataAnnotationValidationFilter<RawDatabaseEndpoints.UpdateRowRequest>>()
                 .Produces<IReadOnlyDictionary<string, object?>>()
@@ -52,6 +55,7 @@ public static class RawDatabaseRoutesExtensions
                 .Produces(500);
 
             application.MapPost("/raw-database/tables/{table}/rows/delete", RawDatabaseEndpoints.Delete)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthorization(manage)
                 .AddEndpointFilter<DataAnnotationValidationFilter<RawDatabaseEndpoints.DeleteRowRequest>>()
                 .Produces(204)

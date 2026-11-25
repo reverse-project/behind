@@ -19,12 +19,27 @@ public record SecurityConfiguration(
     bool TwoFactorRequired = false
 )
 {
+    public const int DefaultSignInNotificationTimeoutMilliseconds = 10_000;
+
     public SecurityConfiguration() : this(false, None, None, None)
     {
-        
+
     }
-    
+
+    public SecurityAccountSettings Accounts { get; init; } = new();
+
+    public int SignInNotificationTimeoutMilliseconds { get; init; } = DefaultSignInNotificationTimeoutMilliseconds;
+
     public const string SectionName = "Security";
+}
+
+public sealed record SecurityAccountSettings
+{
+    public bool Subaccounts { get; init; } = true;
+    public const int DefaultSwitchPinMaxLength = 128;
+
+    public bool LinkUnlink { get; init; }
+    public int SwitchPinMaxLength { get; init; } = DefaultSwitchPinMaxLength;
 }
 
 [TypeConverter(typeof(SecretKeyTypeConverter))]
@@ -44,9 +59,9 @@ public sealed record Totp : SecretKey
     public const ushort DefaultKeySize = 20;
 
     public static readonly Totp Invalid = new(nameof(Invalid));
-    
+
     public string Value { get; init; }
-    
+
     private Totp(string value) => Value = value;
 
     public static Totp Generate(ushort? size = null) =>
@@ -75,9 +90,9 @@ public sealed record Totp : SecretKey
 public sealed record Uuid : SecretKey
 {
     public static readonly Uuid Empty = new(Guid.Empty);
-    
+
     public Guid Value { get; init; }
-    
+
     private Uuid(Guid value) => Value = value;
 
     public static Uuid CreateVersion7(DateTimeOffset timestamp) => new(Guid.CreateVersion7(timestamp));

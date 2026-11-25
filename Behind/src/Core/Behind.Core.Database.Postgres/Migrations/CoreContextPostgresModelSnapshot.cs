@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261122120000_AddSubaccounts";
+    public override string LastMigrationId => "20261125184523_VersionSubaccounts";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1435,6 +1435,38 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .HasAnnotation("Behind:ContentLocale", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<bool>("IsActive")
+                    .HasColumnType("boolean");
+
+                b.Property<bool>("IsChild")
+                    .HasColumnType("boolean");
+
+                b.Property<Guid>("PrimaryUserId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("PrimaryUserId");
+
+                b.HasIndex("UserId");
+
+                b.ToTable("Subaccounts", t =>
+                    {
+                        t.HasCheckConstraint("CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\"");
+                    });
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.User", b =>
             {
                 b.Property<Guid>("Id")
@@ -1603,28 +1635,20 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
-        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
+        modelBuilder.Entity("Behind.Core.Domain.UserSwitchPin", b =>
             {
                 b.Property<Guid>("UserId")
                     .HasColumnType("uuid");
 
-                b.Property<bool>("IsChild")
-                    .HasColumnType("boolean");
-
                 b.Property<string>("PinHash")
+                    .IsRequired()
                     .HasColumnType("text");
-
-                b.Property<Guid>("PrimaryUserId")
-                    .HasColumnType("uuid");
 
                 b.HasKey("UserId");
 
-                b.HasIndex("PrimaryUserId");
+                b.ToTable("UserSwitchPins");
 
-                b.ToTable("Subaccounts", t =>
-                    {
-                        t.HasCheckConstraint("CK_Subaccounts_DifferentUsers", "\"PrimaryUserId\" <> \"UserId\"");
-                    });
+                b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>
@@ -1661,8 +1685,13 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .ValueGeneratedOnAdd()
                     .HasColumnType("uuid");
 
-                b.Property<Guid?>("FamilyPrimaryUserId")
-                    .HasColumnType("uuid");
+                b.Property<Guid?>("FamilyManagerId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("FamilyManagerUserId");
+
+                b.Property<Guid?>("FamilyPrimaryId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("FamilyPrimaryUserId");
 
                 b.Property<Guid?>("ImpersonatorId")
                     .HasColumnType("uuid");
@@ -2003,6 +2032,12 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .HasColumnType("boolean")
                     .HasDefaultValue(true);
 
+                b.Property<Guid?>("PendingLinkRequestId")
+                    .HasColumnType("uuid");
+
+                b.Property<Guid?>("PendingParentId")
+                    .HasColumnType("uuid");
+
                 b.Property<Guid?>("ProfilePictureId")
                     .HasColumnType("uuid");
 
@@ -2096,6 +2131,25 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .IsRequired();
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
+            {
+                b.HasOne("Behind.Core.Domain.HumanUser", "PrimaryUser")
+                    .WithMany()
+                    .HasForeignKey("PrimaryUserId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.HasOne("Behind.Core.Domain.HumanUser", "User")
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("PrimaryUser");
+
+                b.Navigation("User");
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.UserPasskey", b =>
             {
                 b.HasOne("Behind.Core.Domain.HumanUser", null)
@@ -2114,19 +2168,15 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .IsRequired();
             });
 
-        modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
+        modelBuilder.Entity("Behind.Core.Domain.UserSwitchPin", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
-                    .WithMany()
-                    .HasForeignKey("PrimaryUserId")
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .IsRequired();
-
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.HumanUser", "User")
                     .WithMany()
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
+
+                b.Navigation("User");
             });
 
         modelBuilder.Entity("Behind.Core.Domain.UserTotp", b =>

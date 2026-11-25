@@ -42,9 +42,10 @@ public sealed class AccountModeFilterTests
     [InlineData(AccountMode.MagicLink)]
     [InlineData(AccountMode.TwoFactor)]
     [InlineData(AccountMode.Passkey)]
+    [InlineData(AccountMode.SubaccountSwitch)]
     public async Task DisabledModesAreRejected(AccountMode mode)
     {
-        var settings = new AccountsConfiguration { Password = false, MagicLink = false, TwoFactor = false, Passkey = false };
+        var settings = new AccountsConfiguration { Password = false, MagicLink = false, TwoFactor = false, Passkey = false, SubaccountSwitch = false };
         Assert.IsType<NotFound>(await Invoke(mode, settings));
         Assert.Equal("next", await Invoke(mode, new AccountsConfiguration()));
     }

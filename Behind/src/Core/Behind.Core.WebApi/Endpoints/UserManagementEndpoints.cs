@@ -19,6 +19,8 @@ public sealed class UserManagementEndpoints
     public const int MaxSearchLength = 200;
     public const int MaxReasonLength = 500;
 
+    public sealed record HardDeleteConflict(string Reason);
+
     public sealed record BanRequest([property: MaxLength(MaxReasonLength)] string? Reason = null);
 
     [Authorize]
@@ -124,6 +126,20 @@ public sealed class UserManagementEndpoints
             user.Id,
             managed.Role,
             httpContext.RequestAborted));
+
+    [Authorize]
+    [IgnoreETag]
+    public static Task<IResult> UnsetPin(
+        Guid id,
+        HttpContext httpContext,
+        UserManagementGate gate,
+        IUserCommands userCommands) =>
+        gate.Run(
+            httpContext,
+            id,
+            (actor, target) => actor.CanUnsetPin(target),
+            (_, target, _) => userCommands.UnsetSwitchPin(target.Id, httpContext.RequestAborted),
+            protectEffectiveDevelopers: true);
 
     [Authorize]
     [IgnoreETag]
@@ -236,9 +252,12 @@ public sealed class UserManagementEndpoints
             httpContext,
             id,
             (actor, target) => actor.CanManageDeleted(target),
-            async (_, target, _) => await userCommands.HardDelete(target.Id, httpContext.RequestAborted)
-                ? Results.NoContent()
-                : Results.Conflict(),
+            async (_, target, _) => await userCommands.HardDelete(target.Id, httpContext.RequestAborted) switch
+            {
+                IUserCommands.HardDeleteOutcome.Deleted => Results.NoContent(),
+                IUserCommands.HardDeleteOutcome.LinkedSubaccounts => Results.Conflict(new HardDeleteConflict("linkedSubaccounts")),
+                _ => Results.Conflict()
+            },
             DeletionState.Deleted);
 
     private static Task<IResult> ChangeRole(

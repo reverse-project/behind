@@ -436,6 +436,71 @@ test("header component instances get independent collapse targets and footer tem
     assert.match(fs.readFileSync(path.join(root, "index.html"), "utf8"), /<footer id="footer-container" class="behind-page-footer border-top py-3"><\/footer>/);
 });
 
+test("sign-in and sign-up navigation stays hidden until enabled account settings are available", async () => {
+    const ko = require(path.join(root, "libraries/knockout.min.js"));
+    let resolveSettings;
+    const accounts = load("models/accounts.js", {
+        ko,
+        "models/http": { get: () => new Promise(resolve => { resolveSettings = resolve; }) }
+    });
+    const pending = accounts.load();
+    assert.equal(accounts.signIn(), false);
+    assert.equal(accounts.signUp(), false);
+
+    const templates = [
+        path.join(root, "components/siteheader.html"),
+        path.resolve(root, "../../../Sites/Behind.Sites.FSE/wwwroot/index.html"),
+        path.resolve(root, "../../../Sites/Behind.Sites.RPDotHu/wwwroot/index.html")
+    ];
+    for (const template of templates) {
+        const html = fs.readFileSync(template, "utf8");
+        for (const [route, flag] of [["sign-in", "canSignIn"], ["sign-up", "canSignUp"]]) {
+            assert.match(html, new RegExp(`<li class="nav-item" style="display: none" data-bind="visible: !isSignedIn\\(\\) && ${flag}\\(\\)"><a class="nav-link" href="#/${route}"`));
+        }
+    }
+
+    resolveSettings({ ok: true, data: { signIn: true, signUp: false } });
+    await pending;
+    const signedIn = ko.observable(false);
+    const signInItem = { style: { display: "none" } };
+    const signUpItem = { style: { display: "none" } };
+    const update = () => {
+        ko.bindingHandlers.visible.update(signInItem, () => !signedIn() && accounts.signIn());
+        ko.bindingHandlers.visible.update(signUpItem, () => !signedIn() && accounts.signUp());
+    };
+    update();
+    assert.equal(signInItem.style.display, "");
+    assert.equal(signUpItem.style.display, "none");
+    accounts.signUp(true);
+    update();
+    assert.equal(signUpItem.style.display, "");
+    signedIn(true);
+    update();
+    assert.equal(signInItem.style.display, "none");
+    assert.equal(signUpItem.style.display, "none");
+});
+
+test("failed account settings requests do not enable authentication menu items", async () => {
+    const ko = require(path.join(root, "libraries/knockout.min.js"));
+    const accounts = load("models/accounts.js", {
+        ko,
+        "models/http": { get: () => Promise.resolve({ ok: false }) }
+    });
+    await accounts.load();
+    assert.equal(accounts.signIn(), false);
+    assert.equal(accounts.signUp(), false);
+});
+
+test("account settings report the independent switching toggle", async () => {
+    const ko = require(path.join(root, "libraries/knockout.min.js"));
+    const accounts = load("models/accounts.js", {
+        ko,
+        "models/http": { get: () => Promise.resolve({ ok: true, data: { subaccountSwitch: false } }) }
+    });
+    await accounts.load();
+    assert.equal(accounts.subaccountSwitch(), false);
+});
+
 test("chrome mounts preserve site-provided markup and dispose the bound view models", () => {
     const callbacks = [];
     const bindings = [];

@@ -102,6 +102,8 @@ public static class StartupSetupExtensions
                     false,
                     request.EmailConfirmation,
                     false,
+                    SecurityConfiguration.DefaultSignInNotificationTimeoutMilliseconds,
+                    new SecurityAccountSettings(),
                     dataProtection,
                     secretKey,
                     new JwtSettings(request.Issuer, request.Audience, JwtSettings.GenerateSigningKey()),

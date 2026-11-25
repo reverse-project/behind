@@ -12,13 +12,21 @@ public sealed record HumanUser : User
     public Guid? PersistedId { get; init; }
 
     public IEnumerable<Email> Emails { get; init; }
-    
+
     public string DisplayName { get; init; }
 
     public Guid? ProfilePictureId { get; init; }
 
     [Sensible]
     public DateOnly? Birthday { get; init; }
+
+    [Sensible]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid? PendingParentId { get; init; }
+
+    [Sensible]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid? PendingLinkRequestId { get; init; }
 
     public bool HideEmail { get; init; } = true;
 

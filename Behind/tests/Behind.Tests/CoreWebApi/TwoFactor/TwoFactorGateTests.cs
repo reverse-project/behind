@@ -2,6 +2,7 @@ using Behind.Core.Database;
 using Behind.Core.Database.Commands;
 using Behind.Core.Database.Queries;
 using Behind.Core.Common.Configuration;
+using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.TwoFactor;
 
 namespace Behind.Tests.CoreWebApi.TwoFactor;
@@ -48,6 +49,27 @@ public sealed class TwoFactorGateTests : IDisposable
         Assert.Equal(TwoFactorStage.Setup, ticket.Stage);
         Assert.Equal(user.Id, ticket.UserId);
         Assert.Equal(MagicLinkFunction.LostPassword, ticket.Function);
+    }
+
+    [Theory]
+    [InlineData(false, TwoFactorStage.Verify)]
+    [InlineData(true, TwoFactorStage.Setup)]
+    public async Task ChallengeEmail_PreservesOriginalSignInDetailsInTheProtectedTicket(
+        bool setupRequired, TwoFactorStage stage)
+    {
+        using var bed = new TwoFactorTestBed(setupRequired);
+        var user = await bed.SeedUser();
+        if (!setupRequired)
+        {
+            await bed.EnableTotp(user);
+        }
+
+        var signIn = new EmailSignInContext("original@test.com", "192.0.2.8", "original-browser");
+        var challenge = await bed.Gate.ChallengeEmail(user.Id, null, signIn);
+        var ticket = TicketOf(bed, challenge);
+
+        Assert.Equal(stage, ticket.Stage);
+        Assert.Equal(signIn, ticket.EmailSignIn);
     }
 
     [Fact]

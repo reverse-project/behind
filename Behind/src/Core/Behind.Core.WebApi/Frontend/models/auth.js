@@ -61,7 +61,11 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
         401: sessionExpired,
         403: "auth.userAction.forbidden",
         404: "auth.user.notFound",
-        409: "auth.userAction.referenced"
+        409: function (response) {
+            return i18n.t(response.data && response.data.reason === "linkedSubaccounts"
+                ? "auth.userAction.linkedSubaccounts"
+                : "auth.userAction.referenced");
+        }
     };
 
     var userAction = function (path, body, done) {
@@ -559,15 +563,18 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
         },
 
         loadSession: function () {
+            var owner = session.generation();
             return http.loadSession().then(function (response) {
-                if (response.ok) {
+                if (response.ok && owner === session.generation()) {
                     session.identify(user.label(response.data.user), user.grants(response.data.user));
                     session.confirmImpersonation(!!response.data.impersonator);
 
                     return { ok: true, message: "", data: response.data };
                 }
 
-                session.confirmImpersonation();
+                if (owner === session.generation()) {
+                    session.confirmImpersonation();
+                }
 
                 return failure(response, {
                     401: sessionExpired,
@@ -733,10 +740,18 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
         },
 
         stopImpersonating: function () {
-            return http.post("/impersonation/stop").then(function () {
+            return http.post("/impersonation/stop").then(function (response) {
+                if (response.stale) {
+                    return { ok: false, message: "" };
+                }
+
                 session.stopImpersonating();
                 return success("auth.impersonate.stopped");
             });
+        },
+
+        unsetUserPin: function (userId) {
+            return userAction(userId + "/pin/unset", undefined, "users.pinUnset");
         },
 
         signOutUser: function (userId) {
@@ -814,7 +829,11 @@ define(["models/http", "models/session", "models/user", "models/i18n", "models/w
         },
 
         signOut: function () {
-            return http.post("/sign/out").then(function () {
+            return http.post("/sign/out").then(function (response) {
+                if (response.stale) {
+                    return { ok: false, message: "" };
+                }
+
                 session.end();
                 return success("auth.signOut.done");
             });

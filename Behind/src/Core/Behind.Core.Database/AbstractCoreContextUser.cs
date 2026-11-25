@@ -9,7 +9,7 @@ namespace Behind.Core.Database;
 public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
 {
     public DbSet<HumanUser> Users => Set<HumanUser>();
-    
+
     public Guid GetKey(HumanUser entity) => entity.PersistedId ?? Entry(entity).Property<Guid>("Id").CurrentValue;
 
     public async Task<Guid> GetUserKeyAsync(User user, CancellationToken cancellationToken = default)
@@ -125,10 +125,20 @@ public partial class AbstractCoreContext : IRepository<HumanUser, Guid>
         await Users.AddAsync(aggregate, cancellationToken);
 
     void IRepository<HumanUser, Guid>.Update(HumanUser aggregate) =>
-        this.UpdateValuesByKey([GetKey(aggregate)], aggregate);
-    
+        UpdateUser(GetKey(aggregate), aggregate);
+
     void IRepository<HumanUser, Guid>.Update(Guid key, HumanUser aggregate) =>
-        this.UpdateValuesByKey([key], aggregate);
+        UpdateUser(key, aggregate);
+
+    private void UpdateUser(Guid key, HumanUser aggregate)
+    {
+        var stored = Users.Find(key) ?? throw new InvalidOperationException("Original user must exist.");
+        Entry(stored).CurrentValues.SetValues(aggregate with
+        {
+            PendingParentId = stored.PendingParentId,
+            PendingLinkRequestId = stored.PendingLinkRequestId
+        });
+    }
 
     void IRepository<HumanUser, Guid>.Delete(HumanUser aggregate) =>
         Users.ToImmutableEntityRepository(this).RemoveImmutable(aggregate);

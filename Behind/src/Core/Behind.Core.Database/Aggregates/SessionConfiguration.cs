@@ -71,5 +71,9 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<ValidSession
         builder.HasIndex("UserId");
         builder.HasIndex("ImpersonatorId");
         builder.HasIndex("InvalidatedAt");
+        builder.Ignore(s => s.FamilyPrimaryUserId);
+        builder.Ignore(s => s.FamilyManagerUserId);
+        builder.Property<Guid?>("FamilyPrimaryId").HasColumnName("FamilyPrimaryUserId");
+        builder.Property<Guid?>("FamilyManagerId").HasColumnName("FamilyManagerUserId");
     }
 }

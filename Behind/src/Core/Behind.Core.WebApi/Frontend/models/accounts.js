@@ -1,11 +1,12 @@
 define(["ko", "models/http"], function (ko, http) {
-    var signIn = ko.observable(true);
-    var signUp = ko.observable(true);
+    var signIn = ko.observable(false);
+    var signUp = ko.observable(false);
     var password = ko.observable(true);
     var magicLink = ko.observable(true);
     var oidc = ko.observable(true);
     var twoFactor = ko.observable(true);
     var passkey = ko.observable(true);
+    var subaccountSwitch = ko.observable(true);
 
     return {
         signIn: signIn,
@@ -15,6 +16,7 @@ define(["ko", "models/http"], function (ko, http) {
         oidc: oidc,
         twoFactor: twoFactor,
         passkey: passkey,
+        subaccountSwitch: subaccountSwitch,
 
         load: function () {
             return http.get("/accounts/settings").then(function (response) {
@@ -26,6 +28,7 @@ define(["ko", "models/http"], function (ko, http) {
                     oidc(response.data.oidc !== false);
                     twoFactor(response.data.twoFactor !== false);
                     passkey(response.data.passkey !== false);
+                    subaccountSwitch(response.data.subaccountSwitch !== false);
                 }
             });
         }

@@ -1,8 +1,12 @@
 using Behind.Common.Database;
+using Microsoft.Data.Sqlite;
+using Npgsql;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace Behind.Core.WebApi.Middleware;
+
+public sealed record SubaccountTransactionMetadata;
 
 public sealed class AuthenticationTransactionMiddleware(RequestDelegate next)
 {
@@ -36,7 +40,8 @@ public sealed class AuthenticationTransactionMiddleware(RequestDelegate next)
             buffered.Position = 0;
             await buffered.CopyToAsync(response, context.RequestAborted);
         }
-        catch (Exception exception) when (IsConcurrencyFailure(exception))
+        catch (Exception exception) when (IsConcurrencyFailure(exception)
+            || context.GetEndpoint()?.Metadata.GetMetadata<SubaccountTransactionMetadata>() is not null && IsFamilyConflict(exception))
         {
             try
             {
@@ -54,6 +59,14 @@ public sealed class AuthenticationTransactionMiddleware(RequestDelegate next)
             context.Features.Set<AuthenticationTransaction>(null);
         }
     }
+
+    private static bool IsFamilyConflict(Exception exception) =>
+        UniqueConstraintViolation.Matches(exception, "PK_Subaccounts", "Subaccounts.PrimaryUserId, Subaccounts.UserId")
+        || exception is SqliteException { SqliteErrorCode: 5 or 6 }
+        || exception is SqliteException { SqliteExtendedErrorCode: 1811 } sqlite
+            && sqlite.Message.Contains("Subaccounts allow only one level", StringComparison.Ordinal)
+        || exception is PostgresException { SqlState: "P0001", MessageText: "Subaccounts allow only one level" }
+        || exception.InnerException is { } inner && IsFamilyConflict(inner);
 
     private static bool IsConcurrencyFailure(Exception exception) =>
         exception is DbUpdateConcurrencyException

@@ -97,6 +97,7 @@ public sealed class SettingsChangeExtensionsTests
     [InlineData("TwoFactor")]
     [InlineData("Passkey")]
     [InlineData("EmailTwoFactor")]
+    [InlineData("SubaccountSwitch")]
     public void MissingAccountModesCanBeDisplayedAndSaved(string mode)
     {
         var root = JsonNode.Parse("""{"Backend":{"Accounts":{"SignIn":true}}}""")!.AsObject();

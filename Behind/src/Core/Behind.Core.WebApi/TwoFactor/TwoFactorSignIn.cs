@@ -70,6 +70,7 @@ public sealed class TwoFactorSignIn(
                 None,
                 function,
                 recoveryCodes is { Count: > 0 } ? recoveryCodes : null,
-                passwordResetGrants));
+                passwordResetGrants,
+                emailSignIn: ticket.EmailSignIn));
     }
 }

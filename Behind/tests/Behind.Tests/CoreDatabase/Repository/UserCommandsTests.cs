@@ -1,7 +1,13 @@
 using Behind.Core.Database.Auditing;
+using Behind.Common.Database;
 using Behind.Core.Database.Commands;
+using Behind.Core.Database.Postgres;
+using Behind.Core.Database.Queries;
+using Behind.Core.Database;
 using Behind.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Testcontainers.PostgreSql;
 
 namespace Behind.Tests.CoreDatabase.Repository;
 
@@ -24,6 +30,66 @@ public sealed class UserCommandsTests : IDisposable
             .Where(user => EF.Property<Guid>(user, "Id") == userId)
             .Select(user => user.DisplayName)
             .SingleAsync();
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task PostgresUnsetSwitchPinOnlyRemovesTheSelectedCredentialAndUpdatesUserListing()
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
+        var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres:Image is required.");
+        await using var container = new PostgreSqlBuilder(image).Build();
+        await container.StartAsync();
+        var options = new DbContextOptionsBuilder<CoreContextPostgres>().UseNpgsql(container.GetConnectionString())
+            .AddInterceptors(Auditing()).Options;
+        await using var db = new CoreContextPostgres(options);
+        await db.Database.MigrateAsync();
+        await VerifyUnsetSwitchPin(db);
+    }
+
+    [Fact]
+    public async Task UnsetSwitchPinOnlyRemovesTheSelectedCredentialAndUpdatesUserListing()
+    {
+        await using var db = _factory.CreateAuditedContext(AuditActor.Anonymous);
+        await VerifyUnsetSwitchPin(db);
+    }
+
+    private static AuditSaveChangesInterceptor Auditing() =>
+        new(() => new FixedAuditActorProvider(AuditActor.Anonymous), TimeProvider.System);
+
+    private static async Task VerifyUnsetSwitchPin(AbstractCoreContext db)
+    {
+        var target = new HumanUser("Managed target", [new Email("target@example.test")], None);
+        var other = new HumanUser("Managed peer", [new Email("peer@example.test")], None);
+        db.UserSwitchPins.AddRange(new UserSwitchPin(target, new PinHash("target-hash")), new UserSwitchPin(other, new PinHash("peer-hash")));
+        await db.SaveChangesAsync();
+
+        var targetId = db.GetKey(target);
+        var queries = new UserManagementQueries(db);
+        async Task<bool> HasPin(Guid id) =>
+            (await queries.TryFindUser(id, DeletionState.Active, DateTimeOffset.UtcNow)).Match(() => false, user => user.HasSwitchPin);
+
+        Assert.True(await HasPin(targetId));
+        var commands = new UserCommands(db);
+        await commands.UnsetSwitchPin(targetId);
+        await commands.UnsetSwitchPin(targetId);
+        Assert.False(await HasPin(targetId));
+        Assert.True(await HasPin(db.GetKey(other)));
+        using (db.SoftDelete.IncludeDeleted())
+        {
+            var unsetPin = await db.UserSwitchPins.SingleAsync(pin => EF.Property<Guid>(pin, "UserId") == targetId);
+            Assert.True(await db.Entry(unsetPin).IsDeletedAsync());
+            db.Restores.Mark(unsetPin);
+            db.Entry(unsetPin).Property(pin => pin.PinHash).CurrentValue = new PinHash("restored-hash");
+        }
+        await db.SaveChangesAsync();
+        Assert.True(await HasPin(targetId));
+        using (db.SoftDelete.IncludeDeleted())
+        {
+            var restoredPin = await db.UserSwitchPins.SingleAsync(pin => EF.Property<Guid>(pin, "UserId") == targetId);
+            Assert.False(await db.Entry(restoredPin).IsDeletedAsync());
+        }
     }
 
     [Fact]
@@ -124,7 +190,7 @@ public sealed class UserCommandsTests : IDisposable
     }
 
     [Fact]
-    public async Task HardDelete_AfterDelete_RemovesTheRowAndReturnsTrue()
+    public async Task HardDelete_AfterDelete_RemovesTheRowAndReportsDeleted()
     {
         var userId = await SeedUserAsync("purge@test.com");
 
@@ -135,14 +201,14 @@ public sealed class UserCommandsTests : IDisposable
 
         await using (var ctx = _factory.CreateAuditedContext(AuditActor.Anonymous))
         {
-            Assert.True(await new UserCommands(ctx).HardDelete(userId));
+            Assert.Equal(IUserCommands.HardDeleteOutcome.Deleted, await new UserCommands(ctx).HardDelete(userId));
         }
 
         Assert.False(await RowExistsAsync(userId));
     }
 
     [Fact]
-    public async Task HardDelete_UserReferencedByAuditEntries_ReturnsFalseAndKeepsTheRow()
+    public async Task HardDelete_UserReferencedByAuditEntries_ReportsRejectionAndKeepsTheRow()
     {
         var userId = await SeedUserAsync("attributed@test.com");
 
@@ -158,7 +224,7 @@ public sealed class UserCommandsTests : IDisposable
 
         await using (var ctx = _factory.CreateAuditedContext(AuditActor.Anonymous))
         {
-            Assert.False(await new UserCommands(ctx).HardDelete(userId));
+            Assert.Equal(IUserCommands.HardDeleteOutcome.Rejected, await new UserCommands(ctx).HardDelete(userId));
         }
 
         Assert.True(await RowExistsAsync(userId));

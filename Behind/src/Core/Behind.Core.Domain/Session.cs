@@ -13,7 +13,9 @@ public sealed record ValidSession(
     UserAgent UserAgent
 ) : Session
 {
-    public Guid? FamilyPrimaryUserId { get; init; }
+    public Option<Guid> FamilyPrimaryUserId { get; init; } = None;
+
+    public Option<Guid> FamilyManagerUserId { get; init; } = None;
 
     public Option<User> Impersonator { get; init; } = None;
 

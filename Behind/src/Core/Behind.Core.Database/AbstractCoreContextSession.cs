@@ -29,6 +29,8 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
             {
                 Session = s,
                 UserId = EF.Property<Guid>(s, "UserId"),
+                FamilyPrimaryId = EF.Property<Guid?>(s, "FamilyPrimaryId"),
+                FamilyManagerId = EF.Property<Guid?>(s, "FamilyManagerId"),
                 UserAgent = UserAgents
                     .Where(a => EF.Property<Guid>(a, "Id") == EF.Property<Guid>(s, "UserAgentId"))
                     .Select(a => a.Value)
@@ -52,6 +54,8 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
                     row.Session,
                     row.UserId,
                     row.ImpersonatorId,
+                    row.FamilyPrimaryId,
+                    row.FamilyManagerId,
                     row.UserAgent ?? throw new InvalidOperationException("The session user agent does not exist."),
                     cancellationToken));
     }
@@ -66,6 +70,8 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         var userAgentKey = await GetOrAddUserAgentKeyAsync(valid.UserAgent, cancellationToken);
         await Sessions.AddAsync(valid, cancellationToken);
         Entry(valid).Property("UserAgentId").CurrentValue = userAgentKey;
+        Entry(valid).Property<Guid?>("FamilyPrimaryId").CurrentValue = valid.FamilyPrimaryUserId.ToNullable();
+        Entry(valid).Property<Guid?>("FamilyManagerId").CurrentValue = valid.FamilyManagerUserId.ToNullable();
     }
 
     void IRepository<Session, Guid>.Update(Session aggregate) =>
@@ -101,6 +107,8 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         ValidSession session,
         Guid userId,
         Guid? impersonatorId,
+        Guid? familyPrimaryId,
+        Guid? familyManagerId,
         string userAgent,
         CancellationToken cancellationToken
     )
@@ -113,6 +121,8 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         return session with
         {
             User = user,
+            FamilyPrimaryUserId = familyPrimaryId.HasValue ? Some(familyPrimaryId.Value) : None,
+            FamilyManagerUserId = familyManagerId.HasValue ? Some(familyManagerId.Value) : None,
             Impersonator = impersonator,
             UserAgent = new UserAgent(userAgent),
             AccessToken = session.AccessToken with { User = user },
@@ -156,7 +166,8 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         var original = FindTrackedSession(key);
         var userAgentKey = GetOrAddUserAgentKey(replacement.UserAgent);
         var userId = original.Property<Guid>("UserId").CurrentValue;
-        var primaryId = original.Entity.FamilyPrimaryUserId;
+        var primaryId = original.Property<Guid?>("FamilyPrimaryId").CurrentValue;
+        var managerId = original.Property<Guid?>("FamilyManagerId").CurrentValue;
         var impersonatorId = original.Property<Guid?>("ImpersonatorId").CurrentValue;
         var invalidatedById = original.Property<Guid?>("InvalidatedById").CurrentValue;
         var invalidatedAt = original.Property<DateTimeOffset?>("InvalidatedAt").CurrentValue;
@@ -164,7 +175,8 @@ public partial class AbstractCoreContext : IRepository<Session, Guid>
         Sessions.ToImmutableEntityRepository(this).UpdateImmutable([key], replacement);
 
         var updated = Entry(replacement);
-        updated.Property(s => s.FamilyPrimaryUserId).CurrentValue = primaryId;
+        updated.Property<Guid?>("FamilyPrimaryId").CurrentValue = primaryId;
+        updated.Property<Guid?>("FamilyManagerId").CurrentValue = managerId;
         updated.Property("UserId").CurrentValue = userId;
         updated.Property("UserAgentId").CurrentValue = userAgentKey;
         updated.Property("ImpersonatorId").CurrentValue = impersonatorId;

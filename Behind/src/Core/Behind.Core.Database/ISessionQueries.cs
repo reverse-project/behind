@@ -15,7 +15,7 @@ public interface ISessionQueries
         bool SignedOut,
         Option<DateTimeOffset> SignedOutAt);
 
-    public sealed record SessionActor(Guid UserId, Option<Guid> ImpersonatorId);
+    public sealed record SessionActor(Guid UserId, Option<Guid> ImpersonatorId, bool IsRestrictedAdult = false);
 
     public sealed record UserSessions(PagedResult<SessionSummary> Active, PagedResult<SessionSummary> Ended);
 

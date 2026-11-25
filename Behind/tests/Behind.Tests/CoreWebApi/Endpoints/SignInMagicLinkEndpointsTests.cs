@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Data.Common;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
+using Behind.Core.WebApi.EmailSender;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Identity;
 using Behind.Core.WebApi.TwoFactor;
@@ -15,7 +16,9 @@ using Behind.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
@@ -122,7 +125,8 @@ public class SignInMagicLinkEndpointsTests
         ApplicationUser? user,
         Option<MagicLinkSettings> settings,
         string? token,
-        Option<JwtSettings>? jwt = null) =>
+        Option<JwtSettings>? jwt = null,
+        HttpContext? context = null) =>
         SignInEndpoints.SignInMagicLink(
             UserManagerFor(user),
             Security(jwt ?? Some(Jwt)),
@@ -133,7 +137,7 @@ public class SignInMagicLinkEndpointsTests
             _gate,
             _grants,
             _time,
-            NewHttpContext(),
+            context ?? NewHttpContext(),
             _logger,
             new SignInEndpoints.MagicLinkSignInRequest(token!));
 
@@ -581,6 +585,82 @@ public class SignInMagicLinkEndpointsTests
         Assert.Equal("unit-test", persisted.UserAgent.Value);
         var access = new JwtSecurityTokenHandler().ReadJwtToken(json.Value!.AccessToken);
         Assert.Equal(sessionId.ToString(), access.Claims.Single(c => c.Type == SessionClaimTypes.SessionId).Value);
+    }
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task SignInMagicLink_AlertsOnlyWhenTheBoundAddressIsStillConfirmed(bool newlyIssued, bool stillConfirmed)
+    {
+        var user = NewUser();
+        user.Emails = [new Email("other@test.com", Now), new Email("user@test.com", Now)];
+        var token = newlyIssued ? await IssueSignInToken(user) : TokenFor(Actual);
+        if (!stillConfirmed)
+        {
+            user.Emails = [new Email("other@test.com", Now), new Email("user@test.com")];
+        }
+
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Now, Arg.Any<CancellationToken>())
+            .Returns(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn)));
+        var sender = Substitute.For<IEmailSender>();
+        await using var services = new ServiceCollection().AddSingleton(sender).BuildServiceProvider();
+        await using var transaction = new AuthenticationTransaction(null);
+        var context = NewHttpContext();
+        context.RequestServices = services;
+        context.Features.Set(transaction);
+
+        var result = await Redeem(user, Some(Settings()), token, context: context);
+
+        Assert.IsType<JsonHttpResult<SignInEndpoints.SignInResponse>>(result);
+        Assert.Empty(sender.ReceivedCalls());
+
+        await transaction.CommitAsync();
+
+        if (newlyIssued && stillConfirmed)
+        {
+            await sender.Received(1).SendEmailAsync("user@test.com", "New sign-in to your account",
+                Arg.Is<string>(body => body.Contains("Remote IP: 10.1.2.3") && body.Contains("User agent: unit-test")));
+            Assert.Single(sender.ReceivedCalls());
+        }
+        else
+        {
+            Assert.Empty(sender.ReceivedCalls());
+        }
+    }
+
+    [Fact]
+    public async Task SignInMagicLink_WhenMfaIsRequiredPassesTheBoundAddressAndRedemptionRequestToTheGate()
+    {
+        var user = NewUser();
+        user.Emails = [new Email("other@test.com", Now), new Email("user@test.com", Now)];
+        var token = await IssueSignInToken(user);
+        var challenge = new TwoFactorChallengeResponse("ticket", [TwoFactorMethod.Totp], false, MagicLinkFunction.SignIn);
+        _magicLinks.Consume(Arg.Any<TokenNonce>(), Now, Arg.Any<CancellationToken>())
+            .Returns(Some(new MagicLinkRedemption(user.Id, MagicLinkFunction.SignIn)));
+        _gate.ChallengeEmail(user.Id, MagicLinkFunction.SignIn,
+                Arg.Any<EmailSignInContext>(), Arg.Any<CancellationToken>())
+            .Returns(Some(challenge));
+        var context = NewHttpContext();
+        context.Request.Headers["X-Forwarded-For"] = "203.0.113.41";
+        var sender = Substitute.For<IEmailSender>();
+        await using var services = new ServiceCollection().AddSingleton(sender).BuildServiceProvider();
+        context.RequestServices = services;
+
+        var result = await Redeem(user, Some(Settings()), token, context: context);
+
+        Assert.Equal(challenge, Assert.IsType<JsonHttpResult<TwoFactorChallengeResponse>>(result).Value);
+        await _gate.Received(1).ChallengeEmail(user.Id, MagicLinkFunction.SignIn,
+            new EmailSignInContext("user@test.com", "10.1.2.3", "unit-test"), Arg.Any<CancellationToken>());
+        await _sessions.DidNotReceiveWithAnyArgs().CreateForUserId(default, default!, default);
+        Assert.Empty(sender.ReceivedCalls());
+    }
+
+    private async Task<string> IssueSignInToken(ApplicationUser user)
+    {
+        Assert.IsType<NoContent>(await RequestLink(user, Some(Settings())));
+        var link = Assert.Single(QueuedMails()).Link;
+        return Uri.UnescapeDataString(link[(link.IndexOf('=') + 1)..]);
     }
 
     [Fact]

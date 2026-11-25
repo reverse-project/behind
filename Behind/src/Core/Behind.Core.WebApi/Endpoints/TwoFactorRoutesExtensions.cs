@@ -109,12 +109,14 @@ public static class TwoFactorRoutesExtensions
                 .ProfileStep<TwoFactorProfileEndpoints.StatusResponse>();
 
             application.MapPost($"{ProfileRoute}/totp", TwoFactorProfileEndpoints.BeginTotp)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAccountMode(AccountMode.TwoFactor)
                 .RequireAuthenticationTransaction()
                 .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy)
                 .ProfileStep<TotpSetup>();
 
             application.MapPost($"{ProfileRoute}/totp/confirm", TwoFactorProfileEndpoints.ConfirmTotp)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAccountMode(AccountMode.TwoFactor)
                 .AddEndpointFilter<DataAnnotationValidationFilter<TwoFactorProfileEndpoints.CodeRequest>>()
                 .RequireAuthenticationTransaction()
@@ -122,6 +124,7 @@ public static class TwoFactorRoutesExtensions
                 .ProfileStep<Enrolled>();
 
             application.MapDelete($"{ProfileRoute}/totp", TwoFactorProfileEndpoints.RemoveTotp)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthenticationTransaction()
                 .Produces(204)
                 .Produces(401)
@@ -131,12 +134,14 @@ public static class TwoFactorRoutesExtensions
                 .Produces(500);
 
             application.MapPost($"{ProfileRoute}/passkeys/options", TwoFactorProfileEndpoints.PasskeyOptions)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAccountMode(AccountMode.Passkey)
                 .RequireAuthenticationTransaction()
                 .RequireRateLimiting(TwoFactorExtensions.RateLimitPolicy)
                 .ProfileStep<PasskeyRegistrationChallenge>();
 
             application.MapPost($"{ProfileRoute}/passkeys", TwoFactorProfileEndpoints.AddPasskey)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAccountMode(AccountMode.Passkey)
                 .AddEndpointFilter<DataAnnotationValidationFilter<TwoFactorProfileEndpoints.PasskeyRegistrationRequest>>()
                 .RequireAuthenticationTransaction()
@@ -144,6 +149,7 @@ public static class TwoFactorRoutesExtensions
                 .ProfileStep<Enrolled>();
 
             application.MapDelete($"{ProfileRoute}/passkeys/{{id:guid}}", TwoFactorProfileEndpoints.RemovePasskey)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthenticationTransaction()
                 .Produces(204)
                 .Produces(401)
@@ -153,6 +159,7 @@ public static class TwoFactorRoutesExtensions
                 .Produces(500);
 
             application.MapPost($"{ProfileRoute}/recovery-codes", TwoFactorProfileEndpoints.RegenerateRecoveryCodes)
+                .WithMetadata(new AccountManagementMetadata())
                 .RequireAuthenticationTransaction()
                 .ProfileStep<Enrolled>();
         }

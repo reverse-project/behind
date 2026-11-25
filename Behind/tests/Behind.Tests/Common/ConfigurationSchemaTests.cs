@@ -26,7 +26,7 @@ public sealed class ConfigurationSchemaTests : IDisposable
     [InlineData("AuditSearchMaxCandidates")]
     public void AuditSearchBudgets_HaveNumericSchemaAndPreserveDefaultsWhenOmitted(string property)
     {
-        Assert.Equal("configuration-1.2.0", ConfigurationSchema.Name);
+        Assert.Equal("configuration-1.6.0", ConfigurationSchema.Name);
         Assert.True(ConfigurationSchema.IsValid(JsonNode.Parse("""{"Backend":{}}""")));
         var root = new JsonObject { ["Backend"] = new JsonObject { [property] = 10000 } };
         Assert.True(ConfigurationSchema.IsValid(root));
@@ -38,6 +38,23 @@ public sealed class ConfigurationSchemaTests : IDisposable
         Assert.False(ConfigurationSchema.IsValid(root));
         Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxEntries);
         Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxCandidates);
+    }
+
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(10000, true)]
+    [InlineData(0, false)]
+    [InlineData(-1, false)]
+    public void SignInNotificationTimeoutRequiresAPositiveInteger(int milliseconds, bool expected)
+    {
+        var root = new JsonObject
+        {
+            ["Security"] = new JsonObject { ["SignInNotificationTimeoutMilliseconds"] = milliseconds }
+        };
+
+        Assert.Equal(expected, ConfigurationSchema.IsValid(root));
+        Assert.Equal(SecurityConfiguration.DefaultSignInNotificationTimeoutMilliseconds,
+            new SecurityConfiguration().SignInNotificationTimeoutMilliseconds);
     }
 
     [Fact]
@@ -187,10 +204,22 @@ public sealed class ConfigurationSchemaTests : IDisposable
     }
 
     [Theory]
+    [InlineData("""{"security":{"accounts":{"subaccounts":false,"linkunlink":true}}}""", true)]
+    [InlineData("""{"Security":{"Accounts":{"Subaccounts":"false"}}}""", false)]
+    [InlineData("""{"Security":{"Accounts":{"LinkUnlink":1}}}""", false)]
     [InlineData("""{"backend":{"accounts":{"password":false}}}""", true)]
     [InlineData("""{"backend":{"accounts":{"password":"false"}}}""", false)]
     [InlineData("""{"SECURITY":{"Oidc":{"Providers":[{"RoleMappings":{"staff":["Staff"],"Staff":["Admin"]}}]}}}""", true)]
     [InlineData("""{"opentelemetry":{"logging":{"isenabled":"false"}}}""", false)]
+    [InlineData("""{"security":{"accounts":{"switchpinmaxlength":1}}}""", true)]
+    [InlineData("""{"Security":{"Accounts":{"SwitchPinMaxLength":128}}}""", true)]
+    [InlineData("""{"Security":{"Accounts":{"SwitchPinMaxLength":129}}}""", true)]
+    [InlineData("""{"Security":{"Accounts":{"SwitchPinMaxLength":2147483648}}}""", false)]
+    [InlineData("""{"Backend":{"Accounts":{"SubaccountSwitch":false}}}""", true)]
+    [InlineData("""{"Backend":{"Accounts":{"SubaccountSwitch":"false"}}}""", false)]
+    [InlineData("""{"Security":{"Accounts":{"SwitchPinMaxLength":0}}}""", false)]
+    [InlineData("""{"Security":{"Accounts":{"SwitchPinMaxLength":"12"}}}""", false)]
+    [InlineData("""{"Security":{"Accounts":{"SwitchPinMaxLength":1.5}}}""", false)]
     public void Schema_MatchesCaseInsensitiveConfigurationNames(string json, bool valid)
     {
         Assert.Equal(valid, ConfigurationSchema.IsValid(JsonNode.Parse(json)));

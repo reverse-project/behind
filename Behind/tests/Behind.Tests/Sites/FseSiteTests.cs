@@ -110,7 +110,7 @@ public class FseSiteTests
     [InlineData("/favicon.svg")]
     [InlineData("4621 Fényeslitke, Rákóczi u. 1.")]
     [InlineData("https://www.facebook.com/fenyeslitkeisportegyesulet")]
-    [InlineData("mailto:info@fenyeslitkese.hu")]
+    [InlineData("mailto:kapcsolat@fenyeslitkese.hu")]
     public void IndexHtml_LooksLikeTheActualSite(string marker)
     {
         Assert.Contains(marker, Read("wwwroot/index.html"));

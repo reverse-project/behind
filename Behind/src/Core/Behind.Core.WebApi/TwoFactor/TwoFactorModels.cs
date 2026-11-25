@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Behind.Core.Domain;
+using Behind.Core.WebApi.EmailSender;
 
 namespace Behind.Core.WebApi.TwoFactor;
 
@@ -31,7 +32,10 @@ public sealed record TwoFactorTicket(
     string? PrimaryCredentialId = null,
     Guid? Nonce = null,
     string? Email = null,
-    string? PrimaryOidcProviderId = null);
+    string? PrimaryOidcProviderId = null)
+{
+    public EmailSignInContext? EmailSignIn { get; init; }
+}
 
 public sealed record TwoFactorChallengeResponse(
     string Ticket,

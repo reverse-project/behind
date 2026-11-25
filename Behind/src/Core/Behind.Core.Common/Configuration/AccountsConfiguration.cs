@@ -19,4 +19,6 @@ public sealed record AccountsConfiguration
     public bool Passkey { get; init; } = true;
 
     public bool EmailTwoFactor { get; init; } = true;
+
+    public bool SubaccountSwitch { get; init; } = true;
 }

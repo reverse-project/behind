@@ -21,7 +21,11 @@ A „Megjelenik mint: ..." sor megmondja, hogyan látnak Önt mások. A szerzőn
 
 Az elsődleges fiókban nyissa meg a **Profil → Alfiókok** részt. Hozzon létre egy felhasználót megjelenítési névvel. Az e-mail-cím, a születési dátum és a számjegyekből álló PIN-kód megadása választható. Gyermekfiók esetén a születési dátumot az elsődleges fiók kezelheti.
 
-A fiókmenüben a **Profil** alatt válassza a felhasználóváltást, majd a kívánt felhasználót. Ha a rendszer kéri, adja meg a célfiók PIN-kódját. Az elsődleges fiókba a szokásos módon jelentkezhet vissza. E-mail-cím nélkül az alfiók a fiókváltón keresztül érhető el. Önálló bejelentkezéshez állítson be e-mail-címet, és kövesse a webhely szokásos bejelentkezési és címmegerősítési lépéseit.
+A fiókmenüben a **Profil** alatt válassza a felhasználóváltást, majd a kívánt felhasználót. Az elsődleges fiókból a saját családi munkamenetében, az arra való visszaváltás után is, PIN nélkül válthat aktív kapcsolt profilra, ha annak nincs PIN-kódja. Ha a célfióknak van PIN-kódja, a helyes kódot meg kell adni. Kapcsolt profilból csak PIN-nel rendelkező, engedélyezett célfiókok választhatók; az elsődleges fiókra visszaváltáshoz annak PIN-kódja szükséges. Alfiók hozzáadásakor külön PIN-kódot állíthat be az elsődleges fiókhoz. Enélkül a visszatéréshez az elsődleges fiók szokásos adataival újra be kell jelentkeznie. E-mail-cím nélkül az alfiók a fiókváltón keresztül érhető el. Önálló bejelentkezéshez állítson be e-mail-címet, és kövesse a webhely szokásos bejelentkezési és címmegerősítési lépéseit.
+
+Ha az összekapcsolás engedélyezett, a **Profilban** megjelenített név szerint kereshet közvetlen bejelentkezés után vagy az elsődleges fiókra visszaváltva. Az **Összekapcsolás kérése** gomb közvetlen bejelentkezés után érhető el. A címzett önállóan jelentkezik be, és a **Profilban** a javasolt elsődleges fiók megtekintése után elfogadhatja vagy elutasíthatja a kérést.
+
+Leválasztáshoz válassza ki az alfiókot, majd a **Fiók leválasztása** gombot. Ezt az elsődleges fiókra visszaváltva is megteheti. A leválasztás megőrzi a fiók adatait, és megszünteti a családban a fiókváltással indított munkameneteket, köztük a leválasztáshoz használt munkamenetet is, ha visszaváltott az elsődleges fiókra. Ha az alfióknak nincs bejelentkezésre alkalmas e-mail-címe, először váltson át arra a fiókra, és adjon meg egy címet a **Profil → E-mail-címek** részen. Szükség esetén erősítse meg a címet.
 
 ### Születési dátum és e-mail-adatvédelem
 

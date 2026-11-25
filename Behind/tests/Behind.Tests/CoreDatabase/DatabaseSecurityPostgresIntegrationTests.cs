@@ -50,7 +50,44 @@ public sealed class DatabaseSecurityPostgresIntegrationTests
         await context.Database.MigrateAsync();
         await new UserCommands(context).Delete(issuer);
         Assert.Single(await context.WallOfShameEntries.ToListAsync());
-        Assert.False(await new UserCommands(context).HardDelete(issuer));
+        Assert.Equal(IUserCommands.HardDeleteOutcome.Rejected, await new UserCommands(context).HardDelete(issuer));
+    }
+
+    [Fact]
+    public async Task HardDeletePrimaryRequiresUnlinkedSubaccounts()
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "postgresql.testsettings.json"));
+        var image = configuration["Postgres:Image"] ?? throw new InvalidOperationException("Postgres image required.");
+        await using var postgres = new PostgreSqlBuilder(image).Build();
+        await postgres.StartAsync();
+        await using var context = new CoreContextPostgres(new DbContextOptionsBuilder<CoreContextPostgres>()
+            .UseNpgsql(postgres.GetConnectionString())
+            .AddInterceptors(Auditing()).Options);
+        await context.Database.MigrateAsync();
+
+        var primaryId = await PostgresSecuritySeed.User(context, "primary@test.com");
+        var childId = await PostgresSecuritySeed.User(context, "child@test.com");
+        var primary = (await context.Users.FindAsync(primaryId))!;
+        var child = (await context.Users.FindAsync(childId))!;
+        context.Subaccounts.Add(new Subaccount(primary, child, true));
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var commands = new UserCommands(context);
+        await commands.Delete(primaryId);
+        context.ChangeTracker.Clear();
+
+        Assert.Equal(IUserCommands.HardDeleteOutcome.LinkedSubaccounts, await commands.HardDelete(primaryId));
+        Assert.True(await context.Users.IgnoreQueryFilters().AnyAsync(user => EF.Property<Guid>(user, "Id") == primaryId));
+        Assert.True(await context.Users.AnyAsync(user => EF.Property<Guid>(user, "Id") == childId));
+
+        context.AppendSubaccountVersion(await context.ActiveSubaccounts().SingleAsync(), isActive: false);
+        await context.SaveChangesAsync();
+
+        Assert.Equal(IUserCommands.HardDeleteOutcome.Deleted, await commands.HardDelete(primaryId));
+        Assert.False(await context.Users.IgnoreQueryFilters().AnyAsync(user => EF.Property<Guid>(user, "Id") == primaryId));
+        Assert.True(await context.Users.AnyAsync(user => EF.Property<Guid>(user, "Id") == childId));
     }
 
     [Fact]

@@ -5,6 +5,7 @@
     "markdownviewer.administration": "Documentation",
     "markdownviewer.title": "Documentation",
     "markdownviewer.notConfigured": "The documentation is not available yet. A developer has to set the source directory in the settings.",
+    "markdownviewer.sourceMissing": "The documentation source directory does not exist on the server. A developer has to check the settings and directory.",
     "markdownviewer.empty": "There are no documents yet.",
     "markdownviewer.back": "Back to administration",
     "markdownviewer.signInToManage": "to generate the documentation.",

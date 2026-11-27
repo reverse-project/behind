@@ -9,6 +9,23 @@ public static class AccessExtensions
 {
     extension(AbstractCoreContext context)
     {
+        public async Task<bool> IsUserReferencedByHistoryAsync(Guid userId, CancellationToken cancellationToken) =>
+            await context.AuditLogEntries.AnyAsync(audit =>
+                EF.Property<Guid?>(audit, "UserId") == userId
+                || EF.Property<Guid?>(audit, "BehalfOfId") == userId, cancellationToken)
+            || await context.WallOfShameEntries.IgnoreQueryFilters().AnyAsync(ban =>
+                EF.Property<Guid>(ban, "GivenById") == userId, cancellationToken);
+
+        public async Task RemoveUserAccessAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            foreach (var table in new[] { "UserRoles", "UserGrants", "UserRestrictions" })
+            {
+                var links = context.Set<Dictionary<string, object>>(table);
+                links.RemoveRange(await links.Where(link => EF.Property<Guid>(link, "UserId") == userId)
+                    .ToListAsync(cancellationToken));
+            }
+        }
+
         public async Task<IReadOnlyList<(Guid Id, Role Role)>> FindRolesOfUserAsync(
             Guid userId,
             CancellationToken cancellationToken = default)

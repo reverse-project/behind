@@ -23,7 +23,7 @@ public static class MarkdownViewerEndpoints
         MarkdownWorkspaceProvider provider,
         [FromQuery] string? locale = null) =>
         provider.Viewing.Match(
-            _ => Task.FromResult(Json(new MarkdownDocumentsResponse(
+            errors => Task.FromResult(Json(new MarkdownDocumentsResponse(
                 false,
                 MarkdownViewerConfiguration.DefaultTitle,
                 MarkdownViewerConfiguration.DefaultDocumentName,
@@ -31,7 +31,8 @@ public static class MarkdownViewerEndpoints
                 null,
                 null,
                 [],
-                []))),
+                [],
+                [..errors.Select(error => error.ToString())]))),
             async workspace =>
             {
                 var preferred = workspace.Candidates(locale, provider.DefaultLocale)[0];
@@ -45,7 +46,8 @@ public static class MarkdownViewerEndpoints
                     preferred.LocaleCode,
                     navigation.Home,
                     navigation.Entries,
-                    navigation.Sections));
+                    navigation.Sections,
+                    []));
             });
 
     [IgnoreETag]

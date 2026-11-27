@@ -1,4 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using System.Text.Json.Schema;
+using System.Text.Json.Serialization.Metadata;
 using Behind.Core.WebApi.Endpoints;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
@@ -7,6 +10,26 @@ public class RequestValidationTests
 {
     private static bool IsValid(object request) =>
         Validator.TryValidateObject(request, new ValidationContext(request), [], true);
+
+    [Fact]
+    public void ConfirmationRequestExportsItsSchemaAndPreservesTheOmittedEmailIdDefault()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+        };
+        var schema = options.GetJsonSchemaAsNode(typeof(SignUpEndpoints.ConfirmEmailRequest));
+        Assert.Equal("string", schema["properties"]!["emailId"]!["type"]!.GetValue<string>());
+        Assert.DoesNotContain("emailId",
+            schema["required"]?.AsArray().Select(value => value!.GetValue<string>()) ?? []);
+        var request = JsonSerializer.Deserialize<SignUpEndpoints.ConfirmEmailRequest>(
+            $$"""{"userId":"{{Guid.NewGuid()}}","token":"confirmation"}""", options);
+        Assert.Equal(Guid.Empty, request!.EmailId);
+        var emailId = Guid.NewGuid();
+        var supplied = JsonSerializer.Deserialize<SignUpEndpoints.ConfirmEmailRequest>(
+            $$"""{"userId":"{{request.UserId}}","token":"confirmation","emailId":"{{emailId}}"}""", options);
+        Assert.Equal(emailId, supplied!.EmailId);
+    }
 
     [Fact]
     public void SignInPasswordRequest_RequiresEmailAndPassword()

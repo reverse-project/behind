@@ -1,5 +1,14 @@
 # Database Architecture
 
+## Service identities
+
+Service users use the existing User TPC hierarchy and shadow Guid keys.
+Their access is stored independently in the shared user role/grant/restriction
+mappings. Shared authorship and audit references accept User, not just HumanUser;
+polymorphic TPC references have no concrete-table foreign key. Human-only
+credentials retain their existing relationships. SQLite and PostgreSQL migration
+and audit regressions cover the change. See [MCP](../specs/mcp-service-users-1.1.0.md).
+
 ## Role name uniqueness
 
 Role names are unique with exact, case-sensitive comparison: `Editor` and

@@ -1,5 +1,34 @@
 # WebApi konvenciók
 
+## MCP
+
+A `/mcp` hitelesített, állapotmentes Streamable HTTP-t használ JSON-RPC 2.0-val
+és Origin ellenőrzéssel. JSON-kérései külön DI-hatókörben a teljes alkalmazási
+láncon haladnak át, megőrizve a modul-, engedély-, nyelvi és életkori szűrőket,
+valamint a szolgáltatás saját auditazonosítóját. Az API-kulcs nem böngészős JWT.
+Lásd a [verziózott szerződést](../specs/mcp-service-users-1.1.0.md) és
+[`Mcp.http`](../../../Mcp.http).
+
+Az MCP minden `tools/list` kéréskor az aktuálisan engedélyezett modulok
+`ModuleEndpoint` metaadataiból és az API Explorerből deríti fel az eszközöket.
+A művelet neve a modul kulcsából, a HTTP-metódusból és az útvonalból áll;
+az útvonalparaméterek `by_<név>` alakban jelennek meg. Az objektum-bemeneti séma
+útvonalparamétereket, típusos lekérdezési paramétereket és JSON-kéréstörzset ír
+le; a kötelező mezők az API paraméterkötését követik. A felderítés nem szűr a
+hívó engedélyei szerint. A hívások egyszer a szokásos végponton és middleware-en
+haladnak át, ahol a rendszer az aktuális engedélyeket ellenőrzi. A modul
+elérhetőségének módosítása dinamikusan eltávolítja vagy megjeleníti az eszközöket.
+
+Az API Explorer válaszmetaadatai alapján azonosíthatók a JSON-válaszú műveletek.
+A tényleges válasz DTO-t `.Produces<Dto>()` deklarációval kell megadni; a bináris
+vagy más nem JSON válaszokat nem JSON metaadattal kell jelölni, hogy kimaradjanak
+az MCP-felderítésből. A multipart feltöltés és a bináris letöltés nem MCP-eszköz.
+A törzs nélküli sikeres műveletek is felderíthetők sikeres státusz-metaadat
+alapján, például `.Produces(204)`-gyel, és a szokásos `{status,body}` szöveges
+eredményt adják, üres `body` karakterlánccal.
+Az `api_schema` és az `api_request` változatlanul elérhető. Lásd az
+[MCP és szolgáltatásfelhasználók 1.1.0](../specs/mcp-service-users-1.1.0.md) specifikációt.
+
 ## Kéréskultúra és naplókontextus
 
 A kérés formázási és felületi kultúrája először a kiválasztott érvényes tartalmi nyelv, majd az ellenőrzött munkamenet felhasználójának mentett nyelve, végül a `Frontend:Site:DefaultLocale` (ennek hiányában `en-US`). Mindkét kultúra csak a kérés idejére érvényes, utána visszaáll. Az ezen belül keletkező OpenTelemetry napló tartalmazza a `session.locale` mezőt, ellenőrzött munkamenetnél pedig a `session.id`, `user.id`, `session.impersonated` és adott esetben `session.impersonator.id` mezőt. Ezek nem függenek az OpenTelemetry `IncludeScopes` beállításától; hitelesítési adat, IP-cím és böngészőazonosító nem kerül hozzájuk.
@@ -528,7 +557,7 @@ A `Behind.MarkdownViewer.WebApi` az `UseMarkdownViewer()` hívással térképezi
 
 | Végpont | Hozzáférés |
 |---|---|
-| `GET /markdownviewer/documents?locale=` | nyilvános; `{ configured, title, defaultDocument, locales, locale, home, entries: [{ path, title }], sections: [{ title, path, entries }] }` (a `sections` a bejegyzéseket a legfelső szintű mappák szerint csoportosítja, a kezdődokumentum nélkül); a `locale` a kiválasztott nyelvi mappa: a kért, különben az alapértelmezett (`Frontend:Site:DefaultLocale`), különben az első; a `locales` nyelvi mappák nélkül üres |
+| `GET /markdownviewer/documents?locale=` | nyilvános; `{ configured, title, defaultDocument, locales, locale, home, entries: [{ path, title }], sections: [{ title, path, entries }], errors }` (a `sections` a bejegyzéseket a legfelső szintű mappák szerint csoportosítja, a kezdődokumentum nélkül); az `errors` megkülönbözteti a `source-not-configured` és `source-missing` hibákat; a `locale` a kiválasztott nyelvi mappa: a kért, különben az alapértelmezett (`Frontend:Site:DefaultLocale`), különben az első; a `locales` nyelvi mappák nélkül üres. Lásd a [válasz specifikációját](../specs/markdown-documents-response-1.1.0.md). |
 | `GET /markdownviewer/documents/{**path}?locale=` | nyilvános; egy dokumentum megtisztított HTML-je `{ path, title, html, locale }` (ha a kért nyelven hiányzik, az alapértelmezett, majd az első nyelvre vált), `404` mindenre, ami nem felsorolt Markdown fájl |
 | `GET /markdownviewer/files/{**path}?locale=` | nyilvános; a forráskönyvtár egy képe (`nosniff`, `no-cache`, a vektoros képek elszigetelő `Content-Security-Policy`-val), `404` minden másra |
 | `POST /markdownviewer/generate` | `MarkdownViewer.Write`; `{ outputDirectory, pages, assets, removed }`, `400` `{ errors: [kód] }` (`source-not-configured`, `source-missing`, `output-not-configured`, `output-overlaps-source`), `500` `{ errors: ["generation-failed"] }` |
@@ -1028,6 +1057,12 @@ private Exceptional<ExecutedCommand> ExecuteCommand(ValidatedCommand cmd)
 ```
 
 ## OpenAPI dokumentáció
+
+Az e-mail megerősítési kérés a `Guid.Empty` alapértéket megőrző,
+kétparaméteres delegáló `[JsonConstructor]` konstruktort választja.
+Ez elkerüli, hogy a sémaexportáló a reflektált `Guid EmailId = default` értéket
+nullként kezelje. A JSON-mező továbbra is opcionális. A regressziós tesztek a
+teljes `/openapi/v1.json` dokumentumot és az MCP `api_schema` felderítését is ellenőrzik.
 
 ### Végpontok dokumentálása
 

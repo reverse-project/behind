@@ -19,6 +19,10 @@ public static class AuditLogResponseExtensions
                     nameof(HumanUser),
                     id.HasValue ? id.Value.ToUserLabel(human.DisplayName) : human.DisplayName,
                     human.Emails.Select(email => email.Value).ToList()) { Id = id },
+                ServiceUser service => new AuditLogActor(
+                    nameof(ServiceUser),
+                    id.HasValue ? id.Value.ToUserLabel(service.Name) : service.Name,
+                    []) { Id = id },
                 SystemUser => new AuditLogActor(nameof(SystemUser), "System", []),
                 GuestUser => new AuditLogActor(nameof(GuestUser), "Guest", []),
                 UnknownUser unknown => new AuditLogActor(nameof(UnknownUser), $"Unknown user {unknown.Id}", []),

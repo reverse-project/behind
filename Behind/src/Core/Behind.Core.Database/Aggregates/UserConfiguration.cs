@@ -24,6 +24,17 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             builder.HasIndex(h => h.DisplayName);
         });
 
+    public static void ApplyServiceUser(ModelBuilder modelBuilder) =>
+        modelBuilder.Entity<ServiceUser>(builder =>
+        {
+            builder.ToTable("ServiceUsers");
+            builder.Property(user => user.Name).HasMaxLength(ServiceUser.MaxNameLength).IsRequired();
+            builder.Property(user => user.ApiKeyHash).HasMaxLength(64).IsRequired();
+            builder.Property(user => user.Enabled).IsRequired();
+            builder.Property<long>("Version").IsConcurrencyToken();
+            builder.HasIndex(user => user.Name);
+        });
+
     public static void ApplyUserAccess(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity("UserGrants", ug =>
@@ -33,7 +44,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
             ug.HasKey("UserId", "GrantId");
 
-            ug.HasOne(typeof(HumanUser))
+            ug.HasOne(typeof(User))
                 .WithMany()
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade);
@@ -51,7 +62,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
             ur.HasKey("UserId", "RestrictionId");
 
-            ur.HasOne(typeof(HumanUser))
+            ur.HasOne(typeof(User))
                 .WithMany()
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade);
@@ -105,7 +116,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                 .HasForeignKey("RoleId")
                 .OnDelete(DeleteBehavior.Cascade);
 
-            ur.HasOne(typeof(HumanUser))
+            ur.HasOne(typeof(User))
                 .WithMany()
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade);

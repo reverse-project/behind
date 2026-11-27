@@ -141,6 +141,7 @@ public static class DatabaseServiceExtensions
             services.AddScoped<AbstractVersioningContext>(serviceProvider =>
                 serviceProvider.GetRequiredService<TVersioning>());
             services.AddScoped<AbstractCoreContext>(serviceProvider => serviceProvider.GetRequiredService<TCore>());
+            services.AddScoped<IServiceUserStore, ServiceUserStore>();
             services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<TCore>());
             services.AddScoped<ICoreDatabaseMigrator, TMigrator>();
 

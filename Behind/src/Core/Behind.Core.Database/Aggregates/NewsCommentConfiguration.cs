@@ -21,7 +21,7 @@ public sealed class NewsCommentConfiguration : IEntityTypeConfiguration<NewsComm
         builder.Property<Guid>(NewsIdProperty).IsRequired();
 
         builder.Property<Guid>(AuthorIdProperty).IsRequired();
-        builder.HasOne<HumanUser>()
+        builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(AuthorIdProperty)
             .OnDelete(DeleteBehavior.Cascade);

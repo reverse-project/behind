@@ -50,8 +50,9 @@ public partial class AbstractCoreContext : IRepository<WallOfShameEntry, Guid>
             return None;
         }
 
-        var user = result.UserId.ToUser(result.DisplayName, result.UserEmails);
-        var givenBy = result.GivenById.ToUser(result.GivenByDisplayName, result.GivenByEmails);
+        var services = await this.ServiceUserNames([result.UserId, result.GivenById], cancellationToken);
+        var user = result.UserId.ToUser(result.DisplayName, result.UserEmails, services);
+        var givenBy = result.GivenById.ToUser(result.GivenByDisplayName, result.GivenByEmails, services);
 
         Option<DateTimeOffset> expires = result.ExpiresAt.HasValue
             ? Some(result.ExpiresAt.Value)

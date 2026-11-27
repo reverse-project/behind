@@ -10,6 +10,7 @@ define(["ko", "models/i18n", "modules/markdownviewer/models/markdownviewer"], fu
 
         self.message = ko.observable("");
         self.configured = ko.observable(true);
+        self.sourceMissing = ko.observable(false);
         self.title = ko.observable("");
         self.entries = ko.observableArray([]);
         self.sections = ko.observableArray([]);
@@ -80,8 +81,14 @@ define(["ko", "models/i18n", "modules/markdownviewer/models/markdownviewer"], fu
             return paths.indexOf(data.defaultDocument) >= 0 ? data.defaultDocument : paths[0];
         };
 
-        var open = function (path) {
+        var generation = 0;
+
+        var open = function (path, currentGeneration) {
             return markdownviewer.page(path, wantedLocale()).then(function (result) {
+                if (currentGeneration !== generation) {
+                    return;
+                }
+
                 self.message(result.message);
                 self.current(result.ok ? result.data : null);
             });
@@ -105,7 +112,13 @@ define(["ko", "models/i18n", "modules/markdownviewer/models/markdownviewer"], fu
         };
 
         var load = function () {
+            var currentGeneration = ++generation;
+
             return markdownviewer.list(wantedLocale()).then(function (result) {
+                if (currentGeneration !== generation) {
+                    return;
+                }
+
                 self.message(result.message);
 
                 if (!result.ok) {
@@ -113,6 +126,7 @@ define(["ko", "models/i18n", "modules/markdownviewer/models/markdownviewer"], fu
                 }
 
                 self.configured(result.data.configured);
+                self.sourceMissing((result.data.errors || []).indexOf("source-missing") >= 0);
                 self.listLocale(result.data.locale);
                 self.title(result.data.title);
                 self.entries(result.data.entries);
@@ -125,7 +139,7 @@ define(["ko", "models/i18n", "modules/markdownviewer/models/markdownviewer"], fu
                     return Promise.resolve();
                 }
 
-                return open(choose(result.data));
+                return open(choose(result.data), currentGeneration);
             });
         };
 

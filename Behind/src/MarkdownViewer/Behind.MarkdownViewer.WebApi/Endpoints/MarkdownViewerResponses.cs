@@ -10,6 +10,7 @@ public sealed record MarkdownDocumentsResponse(
     string? Locale,
     string? Home,
     IReadOnlyList<MarkdownEntry> Entries,
-    IReadOnlyList<MarkdownSection> Sections);
+    IReadOnlyList<MarkdownSection> Sections,
+    IReadOnlyList<string> Errors);
 
 public sealed record MarkdownProblemsResponse(IReadOnlyList<string> Errors);

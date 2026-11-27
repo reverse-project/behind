@@ -109,7 +109,11 @@ internal static class NewsQueryExtensions
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return names.ToDictionary(item => item.Id, item => item.Id.ToUserLabel(item.DisplayName));
+            var serviceNames = await context.ServiceUserNames(userIds, cancellationToken);
+            return names.ToDictionary(item => item.Id, item => item.Id.ToUserLabel(item.DisplayName))
+                .Concat(serviceNames.Select(item => new KeyValuePair<Guid, string>(
+                    item.Key, item.Key.ToUserLabel(item.Value))))
+                .ToDictionary(item => item.Key, item => item.Value);
         }
 
         public async Task<NewsLookups> LookupsAsync(

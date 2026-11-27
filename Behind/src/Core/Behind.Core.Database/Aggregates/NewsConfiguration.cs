@@ -32,7 +32,7 @@ public sealed class NewsConfiguration : IEntityTypeConfiguration<News>
             .IsRequired(false);
 
         builder.Property<Guid>(AuthorIdProperty).IsRequired();
-        builder.HasOne<HumanUser>()
+        builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(AuthorIdProperty)
             .OnDelete(DeleteBehavior.Cascade);

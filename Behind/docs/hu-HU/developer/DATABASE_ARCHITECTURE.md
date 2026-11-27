@@ -1,5 +1,14 @@
 # Adatbázis-architektúra
 
+## Szolgáltatásidentitások
+
+A szolgáltatásfelhasználók a User TPC hierarchiát és Guid árnyékkulcsot használják.
+Saját hozzáférésük a közös szerepkör-, engedély- és korlátozásleképezésekben tárolódik.
+A közös szerző- és audithivatkozások Userre mutatnak, nem csak HumanUserre;
+a polimorf TPC hivatkozásnak nincs konkrét táblára mutató idegenkulcsa.
+Az emberi hitelesítőadatok kapcsolatai megmaradnak. SQLite és PostgreSQL migrációs
+és audittesztek fedik le a változást. Lásd [MCP](../specs/mcp-service-users-1.1.0.md).
+
 ## Szerepkörnevek egyedisége
 
 A szerepkörnevek pontos, kis- és nagybetűérzékeny összehasonlítással egyediek:

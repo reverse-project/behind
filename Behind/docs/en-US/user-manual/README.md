@@ -15,6 +15,8 @@ This manual describes what you can do in the Behind web application today.
 
 ## For administrators and developers
 
+- **[Service users and AI agents](./managing-service-users.md)** - independent service identities, bearer keys, MCP settings and automatic module tools.
+
 - **[Contact forms and inbox](./managing-contact.md)** - configuring forms and recipients, marking requests read, retrying email delivery and deleting records.
 
 - **[Administration](./administration.md)** - the Administration page and who can see it.

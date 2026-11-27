@@ -28,6 +28,8 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
 
     public DbSet<Subaccount> Subaccounts => Set<Subaccount>();
 
+    public DbSet<ServiceUser> ServiceUsers => Set<ServiceUser>();
+
     public DbSet<ContentAgeOption> ContentAgeOptions => Set<ContentAgeOption>();
 
     public DbSet<ContentLocale> ContentLocales => Set<ContentLocale>();
@@ -100,6 +102,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         modelBuilder.ApplyConfiguration(new ActiveVersionConfiguration());
         modelBuilder.Entity<ActiveVersion>().ToTable("ActiveVersions", table => table.ExcludeFromMigrations());
         UserConfiguration.ApplyHumanUser(modelBuilder);
+        UserConfiguration.ApplyServiceUser(modelBuilder);
         UserConfiguration.ApplyUserRoles(modelBuilder);
         UserConfiguration.ApplyOidcPersistence(modelBuilder);
         UserConfiguration.ApplyUserAccess(modelBuilder);
@@ -195,6 +198,16 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
                 || entry.State == EntityState.Deleted && !HardDeletes.IsMarked(entry.Entity)))
         {
             throw new InvalidOperationException("Subaccount versions are append-only.");
+        }
+
+        foreach (var entry in ChangeTracker.Entries<User>().Where(entry =>
+                     entry.State == EntityState.Deleted && HardDeletes.IsMarked(entry.Entity)))
+        {
+            var id = entry.Property<Guid>("Id").CurrentValue;
+            if (await this.IsUserReferencedByHistoryAsync(id, cancellationToken))
+            {
+                throw new DbUpdateException("A user referenced by audit entries cannot be permanently deleted.");
+            }
         }
 
         await this.ExpandCascadingDeletesAsync(cancellationToken);

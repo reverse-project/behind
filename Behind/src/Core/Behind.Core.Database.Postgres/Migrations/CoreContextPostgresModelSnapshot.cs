@@ -17,7 +17,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261125184523_VersionSubaccounts";
+    public override string LastMigrationId => "20261127201546_AddServiceUsers";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -1438,6 +1438,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
         modelBuilder.Entity("Behind.Core.Domain.Subaccount", b =>
             {
                 b.Property<Guid>("Key")
+                    .ValueGeneratedOnAdd()
                     .HasColumnType("uuid");
 
                 b.Property<long>("Version")
@@ -2046,9 +2047,35 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                 b.ToTable("Users");
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.ServiceUser", b =>
+            {
+                b.HasBaseType("Behind.Core.Domain.User");
+
+                b.Property<string>("ApiKeyHash")
+                    .IsRequired()
+                    .HasMaxLength(64)
+                    .HasColumnType("character varying(64)");
+
+                b.Property<bool>("Enabled")
+                    .HasColumnType("boolean");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("character varying(500)");
+
+                b.Property<long>("Version")
+                    .IsConcurrencyToken()
+                    .HasColumnType("bigint");
+
+                b.HasIndex("Name");
+
+                b.ToTable("ServiceUsers");
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.Article", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("AuthorId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -2057,12 +2084,12 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.AuditLogEntry", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("BehalfOfId")
                     .OnDelete(DeleteBehavior.NoAction);
 
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.NoAction);
@@ -2070,7 +2097,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.Download", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("UploadedById")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -2088,7 +2115,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.Gallery", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("AuthorId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -2106,7 +2133,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.News", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("AuthorId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -2115,7 +2142,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.NewsComment", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("AuthorId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -2215,13 +2242,13 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Behind.Core.Domain.WallOfShameEntry", b =>
             {
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("GivenById")
                     .OnDelete(DeleteBehavior.ClientNoAction)
                     .IsRequired();
 
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -2314,7 +2341,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
 
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -2329,7 +2356,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
 
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -2344,7 +2371,7 @@ partial class CoreContextPostgresModelSnapshot : ModelSnapshot
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
 
-                b.HasOne("Behind.Core.Domain.HumanUser", null)
+                b.HasOne("Behind.Core.Domain.User", null)
                     .WithMany()
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)

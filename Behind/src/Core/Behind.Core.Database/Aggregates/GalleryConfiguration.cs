@@ -20,7 +20,7 @@ public sealed class GalleryConfiguration : IEntityTypeConfiguration<Gallery>
         builder.Property(gallery => gallery.Description).IsRequired();
 
         builder.Property<Guid>(AuthorIdProperty).IsRequired();
-        builder.HasOne<HumanUser>()
+        builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(AuthorIdProperty)
             .OnDelete(DeleteBehavior.Cascade);

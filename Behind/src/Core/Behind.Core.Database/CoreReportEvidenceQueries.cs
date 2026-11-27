@@ -14,8 +14,11 @@ public sealed class CoreReportEvidenceQueries(AbstractCoreContext context)
     {
         if (sourceType == "profile")
         {
-            return await context.Users.Where(user => EF.Property<Guid>(user, "Id") == id)
+            var human = await context.Users.Where(user => EF.Property<Guid>(user, "Id") == id)
                 .Select(user => new Evidence(id, user.DisplayName))
+                .AsNoTracking().SingleOrDefaultAsync(cancellationToken);
+            return human ?? await context.ServiceUsers.Where(user => EF.Property<Guid>(user, "Id") == id)
+                .Select(user => new Evidence(id, user.Name))
                 .AsNoTracking().SingleOrDefaultAsync(cancellationToken);
         }
 

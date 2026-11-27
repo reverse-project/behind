@@ -1,5 +1,12 @@
 # Project Overview
 
+Core includes an opt-in stateless HTTP/JSON-RPC MCP endpoint for AI agents.
+Independent ServiceUser identities authenticate with revocable bearer keys and
+use their own existing authorization roles/grants. The backend Settings UI
+controls availability and identity management. MCP automatically discovers
+JSON operations from installed, enabled modules. See
+[MCP](../specs/mcp-service-users-1.1.0.md).
+
 ## Shared caching
 
 Core registers Common.WebApi HybridCache for every host, including sites.
@@ -498,3 +505,10 @@ for configuration and database composition. Only active modules are exposed by
 `GET /modules`, public menus and layouts. Each module maps APIs with `ModuleEndpoint`
 group metadata; Common's middleware blocks disabled APIs and frontend assets.
 Settings includes unset configuration properties and installed module switches.
+MCP reads the active module catalog and API Explorer metadata on every
+`tools/list` request. JSON operations, including management and lifecycle
+operations, are exposed without grant-based filtering; calls still execute once
+through the ordinary middleware with the service user's live permissions.
+Module tools vanish when a module is disabled. Multipart uploads and binary
+downloads are excluded; endpoint response metadata must describe JSON DTOs
+with `.Produces<T>()` and distinguish non-JSON responses.

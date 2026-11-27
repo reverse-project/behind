@@ -17,6 +17,7 @@ function setup(files, readOnly = false) {
     function Editor() {
         this.loads = 0;
         this.invalidate = () => {};
+        this.key = ko.observable("");
         this.load = async () => { this.loads++; return { ok: true }; };
         this.canSave = ko.observable(true);
         this.request = () => ({});
@@ -24,11 +25,11 @@ function setup(files, readOnly = false) {
     const deps = {
         ko, 'models/settings': settings, 'models/session': { isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: () => grants() },
         'models/i18n': { t: key => key }, 'viewmodels/emailsettings': Editor, 'viewmodels/loggingsettings': Editor,
-        'viewmodels/opentelemetrysettings': Editor, 'viewmodels/oidcsettings': Editor, 'viewmodels/forwardedheaderssettings': Editor
+        'viewmodels/opentelemetrysettings': Editor, 'viewmodels/oidcsettings': Editor, 'viewmodels/forwardedheaderssettings': Editor,'viewmodels/serviceusersettings': Editor
     };
     let Settings;
     vm.runInNewContext(fs.readFileSync(path.join(core, 'viewmodels/settings.js'), 'utf8'), {
-        define(names, factory) { Settings = factory(...names.map(name => deps[name])); }, Promise,
+        define(names, factory) { Settings = factory(...names.map(name => deps[name])); }, Promise, URL,
         window: { location: { reload() {} } }
     });
     return { view: new Settings(), saved, grants };
@@ -36,6 +37,23 @@ function setup(files, readOnly = false) {
 const field = (path, type, value, sensitive = false) => ({ path, type, value, sensitive, editable: true, action: null });
 const file = (name, fields, editor = null) => ({ name, fields, editor });
 const plain = value => JSON.parse(JSON.stringify(value));
+
+test('MCP limits and origins are validated before saving', async () => {
+    const { view } = setup([file('backend.json', [
+        field('Backend:Mcp:MaxRequestBytes', 'number', '1048576'),
+        field('Backend:Mcp:AllowedOrigins', 'array', '[]')
+    ])]);
+    await view.refresh();
+    const [limit, origins] = view.selected().fields;
+    limit.value('0');
+    assert.equal(view.selected().isValid(), false);
+    limit.value('2');
+    origins.structured.add();
+    origins.structured.items()[0].value('https://example.com/path');
+    assert.equal(view.selected().isValid(), false);
+    origins.structured.items()[0].value('https://example.com');
+    assert.equal(view.selected().isValid(), true);
+});
 
 test('list and connection editors add, edit, remove, preserve secrets and discard', async () => {
     const { view, saved } = setup([file('caching.json', [

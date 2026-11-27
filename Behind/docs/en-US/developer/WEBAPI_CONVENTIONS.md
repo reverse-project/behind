@@ -1,5 +1,33 @@
 # WebApi Conventions
 
+## MCP
+
+`/mcp` uses authenticated stateless Streamable HTTP with JSON-RPC 2.0 and
+Origin validation. Its JSON request tool dispatches through the application
+pipeline in a separate DI scope, preserving module, authorization, locale and
+age checks and independent service audit attribution. API keys are not browser
+JWTs. See [versioned contract](../specs/mcp-service-users-1.1.0.md) and
+[`Mcp.http`](../../../Mcp.http).
+
+MCP tools are discovered from each currently enabled module's `ModuleEndpoint`
+metadata and API Explorer on every `tools/list` request. An operation's tool
+name is based on its module key, HTTP method and route, with path parameters
+rendered as `by_<name>`. Its object input schema describes route parameters,
+typed query parameters and JSON request bodies; required fields follow API
+binding. Discovery does not filter by the caller's grants. Calls dispatch once
+through the ordinary endpoint and middleware pipeline, where live permissions
+are enforced. Module availability changes remove tools dynamically.
+
+API Explorer response metadata determines which operations return JSON. Declare
+the actual response DTO with `.Produces<Dto>()`; identify binary or otherwise
+non-JSON responses with non-JSON response metadata so they are excluded from
+MCP discovery. Multipart uploads and binary downloads are not MCP tools.
+Bodyless successes remain discoverable through success-status metadata such as
+`.Produces(204)` and return the normal `{status,body}` text result, with an
+empty `body` string. Existing
+`api_schema` and `api_request` tools remain available. See
+[MCP and service users 1.1.0](../specs/mcp-service-users-1.1.0.md).
+
 ## Request culture and log context
 
 Request formatting and UI culture use the selected valid content locale, then the validated session user's saved language, then `Frontend:Site:DefaultLocale` (or `en-US`). Both cultures are scoped to the request and restored afterwards. OpenTelemetry logs emitted within this scope include `session.locale` and, for validated sessions, `session.id`, `user.id`, `session.impersonated`, and `session.impersonator.id` when applicable. These attributes do not depend on the OpenTelemetry `IncludeScopes` option; credentials, IP addresses and user agents are not added.
@@ -528,7 +556,7 @@ A module web API project exposes `Add<Module>()`/`Use<Module>()`, like `AddCore(
 
 | Endpoint | Access |
 |---|---|
-| `GET /markdownviewer/documents?locale=` | open; `{ configured, title, defaultDocument, locales, locale, home, entries: [{ path, title }], sections: [{ title, path, entries }] }` (`sections` group the entries by top level folder, without the home document); `locale` is the language folder that was picked: the requested one, else the default one (`Frontend:Site:DefaultLocale`), else the first; `locales` is empty without language folders |
+| `GET /markdownviewer/documents?locale=` | open; `{ configured, title, defaultDocument, locales, locale, home, entries: [{ path, title }], sections: [{ title, path, entries }], errors }` (`sections` group the entries by top level folder, without the home document); `errors` distinguishes `source-not-configured` and `source-missing`; `locale` is the language folder that was picked: the requested one, else the default one (`Frontend:Site:DefaultLocale`), else the first; `locales` is empty without language folders. See [response specification](../specs/markdown-documents-response-1.1.0.md). |
 | `GET /markdownviewer/documents/{**path}?locale=` | open; the sanitized HTML `{ path, title, html, locale }` of a document (falls back to the default, then the first language when it is missing in the requested one), `404` for anything that is not a listed Markdown file |
 | `GET /markdownviewer/files/{**path}?locale=` | open; an image of the source directory (`nosniff`, `no-cache`, vector images with a sandboxing `Content-Security-Policy`), `404` for anything else |
 | `POST /markdownviewer/generate` | `MarkdownViewer.Write`; `{ outputDirectory, pages, assets, removed }`, `400` `{ errors: [code] }` (`source-not-configured`, `source-missing`, `output-not-configured`, `output-overlaps-source`), `500` `{ errors: ["generation-failed"] }` |
@@ -1028,6 +1056,12 @@ private Exceptional<ExecutedCommand> ExecuteCommand(ValidatedCommand cmd)
 ```
 
 ## OpenAPI Documentation
+
+The email confirmation request selects a delegating two-argument
+`[JsonConstructor]` preserving `Guid.Empty`. This avoids
+the schema exporter's handling of a reflected `Guid EmailId = default` as null.
+The JSON field remains optional. Regressions cover both the complete
+`/openapi/v1.json` document and its MCP `api_schema` discovery.
 
 ### Documenting Endpoints
 

@@ -1,5 +1,12 @@
 # Tartományi modell tervezése
 
+## Szolgáltatásfelhasználók
+
+A `ServiceUser` önálló lezárt `User` altípus, a `HumanUser` mintájára, Guid EF
+árnyékkulccsal, id tulajdonság nélkül. Saját szerepkörei, engedélyei és
+korlátozásai vannak, nem a létrehozóé. A kulcslenyomat érzékeny és nem API-mező.
+Lásd az [MCP-szerződést](../specs/mcp-service-users-1.1.0.md).
+
 ## Privát beszélgetések és felhasználói jelentések
 
 A privát tartalom, a postaláda állapota és a tiltólista külön változtathatatlan, verziózott rekordok. Az olvasás és törlés csak az aktuális felhasználó postaládáját érinti. A felhasználók és szerepkörök titkos címzettek is lehetnek; a titkos személyazonosságot és privát válaszokat vetítés, számolás és lapozás előtt kell kiszűrni. A rendszerválaszt csak a szerző, az eredeti feladó és az erre jogosult moderátor látja. A csoporttagság az előzmények átírása nélkül változhat.

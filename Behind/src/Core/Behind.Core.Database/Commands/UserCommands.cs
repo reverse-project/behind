@@ -75,6 +75,7 @@ public sealed class UserCommands(AbstractCoreContext context) : IUserCommands
             context.HardDelete(link);
         }
 
+        await context.RemoveUserAccessAsync(userId, cancellationToken);
         await context.GetHardDeleteRepository<HumanUser, Guid>().HardDeleteAsync(userId, cancellationToken);
 
         try

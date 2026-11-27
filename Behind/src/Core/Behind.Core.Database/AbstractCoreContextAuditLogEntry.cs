@@ -50,12 +50,14 @@ public partial class AbstractCoreContext : IRepository<AuditLogEntry, Guid>
             return None;
         }
 
+        var ids = new[] { result.UserId, result.BehalfOfId }.OfType<Guid>().ToList();
+        var services = await this.ServiceUserNames(ids, cancellationToken);
         User user = result.UserId.HasValue
-            ? result.UserId.Value.ToUser(result.DisplayName, result.PrimaryEmails)
+            ? result.UserId.Value.ToUser(result.DisplayName, result.PrimaryEmails, services)
             : new GuestUser(None);
 
         Option<User> behalfOf = result.BehalfOfId.HasValue
-            ? Some(result.BehalfOfId.Value.ToUser(result.BehalfOfDisplayName, result.BehalfOfEmails))
+            ? Some(result.BehalfOfId.Value.ToUser(result.BehalfOfDisplayName, result.BehalfOfEmails, services))
             : None;
 
         return Some(result.Audit with

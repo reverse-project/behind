@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Markdown documents list response 1.1.0",
+  "type": "object",
+  "properties": {
+    "configured": { "type": "boolean" },
+    "title": { "type": "string" },
+    "defaultDocument": { "type": "string" },
+    "locales": { "type": "array", "items": { "type": "string" } },
+    "locale": { "type": ["string", "null"] },
+    "home": { "type": ["string", "null"] },
+    "entries": { "type": "array", "items": { "$ref": "#/$defs/entry" } },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "path": { "type": ["string", "null"] },
+          "entries": { "type": "array", "items": { "$ref": "#/$defs/entry" } }
+        },
+        "required": ["title", "path", "entries"],
+        "additionalProperties": false
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "enum": ["source-not-configured", "source-missing"] }
+    }
+  },
+  "required": ["configured", "title", "defaultDocument", "locales", "locale", "home", "entries", "sections", "errors"],
+  "additionalProperties": false,
+  "if": { "properties": { "configured": { "const": true } }, "required": ["configured"] },
+  "then": { "properties": { "errors": { "maxItems": 0 } } },
+  "else": {
+    "properties": {
+      "errors": { "minItems": 1, "maxItems": 1 },
+      "locales": { "maxItems": 0 },
+      "locale": { "type": "null" },
+      "home": { "type": "null" },
+      "entries": { "maxItems": 0 },
+      "sections": { "maxItems": 0 }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "properties": { "path": { "type": "string" }, "title": { "type": "string" } },
+      "required": ["path", "title"],
+      "additionalProperties": false
+    }
+  }
+}

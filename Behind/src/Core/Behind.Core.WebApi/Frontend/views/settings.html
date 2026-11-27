@@ -16,6 +16,55 @@
             <input type="text" class="form-control font-monospace mb-2" readonly aria-label="Authenticator URI" data-bind="value: uri, tAttr: { 'aria-label': 'settings.authenticatorUri' }">
             <div class="settings-qrcode" data-bind="html: qrCode"></div>
         </div>
+        <section class="mb-4" data-bind="visible: isBackendSelected, with: serviceUsers">
+            <h2 class="h5" data-bind="t: 'settings.serviceUsers.title'"></h2>
+            <p class="text-body-secondary" data-bind="t: 'settings.serviceUsers.help'"></p>
+            <p class="text-danger" role="alert" data-bind="visible: message, text: message"></p>
+            <div class="alert alert-warning" role="status" data-bind="visible: key">
+                <p data-bind="t: 'settings.serviceUsers.keyOnce'"></p>
+                <input class="form-control font-monospace" type="text" readonly data-bind="value: key, tAttr: { 'aria-label': 'settings.serviceUsers.key' }">
+                <button type="button" class="btn btn-outline-secondary mt-2" data-bind="click: function () { key(''); }, t: 'settings.serviceUsers.dismiss'"></button>
+            </div>
+            <form class="row g-2 mb-3" data-bind="submit: create">
+                <label class="col-md-5"><span data-bind="t: 'settings.serviceUsers.name'"></span>
+                    <input class="form-control" type="text" data-bind="value: name, enable: canWrite">
+                </label>
+                <div class="col-md-2 align-self-end"><button type="submit" class="btn btn-primary" data-bind="enable: canCreate, t: 'settings.serviceUsers.create'"></button></div>
+            </form>
+            <button type="button" class="btn btn-outline-secondary mb-2" data-bind="visible: isDeveloper, enable: !busy(), click: showDeleted, text: deleted() ? $root.text('settings.serviceUsers.showActive') : $root.text('settings.serviceUsers.showDeleted')"></button>
+            <button type="button" class="btn btn-outline-secondary mb-2" data-bind="enable: !busy(), click: load, t: 'settings.serviceUsers.reload'"></button>
+            <div data-bind="foreach: users">
+                <div class="border rounded p-2 mb-2">
+                    <div class="fw-semibold" data-bind="text: name"></div>
+                    <div class="text-body-secondary" data-bind="text: id"></div>
+                    <div data-bind="text: enabled ? $root.text('settings.serviceUsers.enabled') : $root.text('settings.serviceUsers.disabled')"></div>
+                    <div class="d-flex flex-wrap gap-2 mt-2" data-bind="if: !$parent.deleted()">
+                        <button type="button" class="btn btn-outline-primary" data-bind="click: $parent.toggle, enable: $parent.canWrite, text: enabled ? $root.text('settings.serviceUsers.disable') : $root.text('settings.serviceUsers.enable')"></button>
+                        <button type="button" class="btn btn-outline-secondary" data-bind="click: $parent.rotate, enable: $parent.canWrite, t: 'settings.serviceUsers.rotate'"></button>
+                        <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.remove, enable: $parent.canRemove, t: 'settings.serviceUsers.delete'"></button>
+                        <button type="button" class="btn btn-outline-secondary" data-bind="click: $parent.openAccess, enable: !$parent.busy(), t: 'settings.serviceUsers.access'"></button>
+                    </div>
+                    <div class="mt-3" data-bind="if: $parent.accessId() === id">
+                        <p data-bind="visible: $parent.accessLoading, t: 'users.loadingAccess'"></p>
+                        <h3 class="h6" data-bind="t: 'users.calculatedGrants'"></h3>
+                        <div class="d-flex flex-wrap gap-1 mb-3" data-bind="foreach: $parent.calculatedGrants">
+                            <span class="badge text-bg-success" data-bind="text: $data"></span>
+                        </div>
+                        <h3 class="h6" data-bind="t: 'users.roles'"></h3>
+                        <div class="d-flex flex-wrap gap-3 mb-3" data-bind="foreach: $parent.availableRoles">
+                            <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="value: id, checked: $parents[1].selectedRoleIds, enable: $parents[1].canSaveAccess() && !isRequired"> <span data-bind="text: name"></span></label>
+                        </div>
+                        <h3 class="h6" data-bind="t: 'users.directGrants'"></h3>
+                        <access-editor params="access: $parent.accessEditor, enabled: $parent.canSaveAccess()"></access-editor>
+                        <button type="button" class="btn btn-sm btn-primary mt-3" data-bind="click: $parent.saveAccess, enable: $parent.canSaveAccess, t: 'users.saveAccess'"></button>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-2" data-bind="if: $parent.deleted() && $parent.isDeveloper()">
+                        <button type="button" class="btn btn-outline-primary" data-bind="click: $parent.restore, enable: $parent.canDevelop, t: 'settings.serviceUsers.restore'"></button>
+                        <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.hardDelete, enable: $parent.canDevelop, t: 'settings.serviceUsers.hardDelete'"></button>
+                    </div>
+                </div>
+            </div>
+        </section>
         <form class="mb-4" data-bind="visible: isBackendSelected, submit: saveForwardedHeaders">
             <fieldset data-bind="with: forwarded, enable: forwarded.canEdit">
                 <legend class="h6" data-bind="t: 'settings.forwarded.title'"></legend>
@@ -415,6 +464,7 @@
         <form data-bind="with: selected, submit: save, visible: isFieldTabSelected">
             <p class="alert alert-info" data-bind="visible: name === 'caching.json', t: 'settings.caching.help'">Caching changes require a restart. Choose Memory or RedisCompatible. Key selects a masked value in ConnectionStrings; missing connections use memory only.</p>
             <p class="alert alert-info" data-bind="visible: name === 'backend.json', t: 'settings.modules.notice'"></p>
+            <p class="alert alert-info" data-bind="visible: name === 'backend.json', t: 'settings.serviceUsers.originHelp'"></p>
             <div data-bind="foreach: sections">
                 <fieldset class="mb-4">
                     <legend class="h6 text-body-secondary" data-bind="text: title"></legend>

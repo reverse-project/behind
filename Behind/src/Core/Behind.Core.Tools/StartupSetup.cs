@@ -121,6 +121,8 @@ public sealed record StartupBackendSection(
 
     public ForwardedHeadersConfiguration ForwardedHeaders { get; init; } = new();
 
+    public McpConfiguration Mcp { get; init; } = new();
+
     public int AuditSearchMaxEntries { get; init; } = new BackendConfiguration().AuditSearchMaxEntries;
 
     public int AuditSearchMaxCandidates { get; init; } = new BackendConfiguration().AuditSearchMaxCandidates;

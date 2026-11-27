@@ -20,7 +20,7 @@ public sealed class ArticleConfiguration : IEntityTypeConfiguration<Article>
         builder.Property(article => article.Content).IsRequired();
 
         builder.Property<Guid>(AuthorIdProperty).IsRequired();
-        builder.HasOne<HumanUser>()
+        builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(AuthorIdProperty)
             .OnDelete(DeleteBehavior.Cascade);

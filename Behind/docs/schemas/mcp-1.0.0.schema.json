@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind MCP JSON-RPC 1.0.0",
+  "type": "object",
+  "properties": {
+    "jsonrpc": { "const": "2.0" },
+    "id": { "type": ["string", "number", "null"] },
+    "method": { "type": "string" },
+    "params": { "type": "object" },
+    "result": { "type": "object" },
+    "error": {
+      "type": "object",
+      "properties": { "code": { "type": "integer" }, "message": { "type": "string" } },
+      "required": ["code", "message"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["jsonrpc"],
+  "oneOf": [
+    { "required": ["id", "method"], "properties": { "id": { "type": ["string", "number"] } }, "not": { "anyOf": [{ "required": ["result"] }, { "required": ["error"] }] } },
+    { "required": ["method"], "properties": { "method": { "pattern": "^notifications/" } }, "not": { "anyOf": [{ "required": ["id"] }, { "required": ["result"] }, { "required": ["error"] }] } },
+    { "required": ["id", "result"], "not": { "anyOf": [{ "required": ["method"] }, { "required": ["error"] }] } },
+    { "required": ["id", "error"], "not": { "anyOf": [{ "required": ["method"] }, { "required": ["result"] }] } }
+  ],
+  "additionalProperties": false
+}

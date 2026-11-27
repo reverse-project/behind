@@ -95,6 +95,14 @@ public sealed class RawDatabaseCatalogTests : IDisposable
         Assert.False(raw.FindColumn("UserId").Match(() => true, found => found.IsSensitive));
     }
 
+    [Fact]
+    public void RawTables_FlagServiceUserKeyHashAsSensitive()
+    {
+        using var context = _factory.CreateContext();
+        var table = context.FindRawTable("ServiceUsers").Match(() => throw new InvalidOperationException(), found => found);
+        Assert.True(table.FindColumn("ApiKeyHash").Match(() => false, found => found.IsSensitive));
+    }
+
     [Theory]
     [InlineData("Email")]
     [InlineData("ConversationId")]

@@ -91,14 +91,17 @@ public sealed class AuditLogEntryQueries(AbstractCoreContext context, IEnumerabl
             stableOrder.Apply(projectionQuery)
         ).ToListAsync(cancellationToken);
 
+        var serviceIds = items.SelectMany(item => new[] { item.UserId, item.BehalfOfId })
+            .OfType<Guid>().Distinct().ToList();
+        var services = await context.ServiceUserNames(serviceIds, cancellationToken);
         var populatedItems = items.Select(item =>
         {
             User user = item.UserId.HasValue
-                ? item.UserId.Value.ToUser(item.DisplayName, item.PrimaryEmails)
+                ? item.UserId.Value.ToUser(item.DisplayName, item.PrimaryEmails, services)
                 : new GuestUser(None);
 
             var behalfOf = item.BehalfOfId.HasValue
-                ? Some(item.BehalfOfId.Value.ToUser(item.BehalfOfDisplayName, item.BehalfOfEmails))
+                ? Some(item.BehalfOfId.Value.ToUser(item.BehalfOfDisplayName, item.BehalfOfEmails, services))
                 : None;
 
             return item.Audit with { User = user, BehalfOf = behalfOf, ActorId = item.UserId, BehalfOfActorId = item.BehalfOfId };

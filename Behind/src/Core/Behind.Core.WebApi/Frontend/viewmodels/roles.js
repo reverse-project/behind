@@ -85,6 +85,9 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
                     return auth.hardDeleteRole(row.id);
                 });
             };
+            row.dispose = function () {
+                row.editor.dispose();
+            };
 
             return row;
         };
@@ -123,5 +126,12 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
         };
 
         self.activate = self.list.activate;
+        self.dispose = function () {
+            self.list.dispose();
+            self.canManage.dispose();
+            self.isDenied.dispose();
+            self.canCreateDeveloperRole.dispose();
+            self.canCreate.dispose();
+        };
     };
 });

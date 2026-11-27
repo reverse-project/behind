@@ -7,6 +7,7 @@
   ],
   "$defs": {
     "OrdinaryFileUpdateRequest": {
+      "$anchor": "ordinary-file-update-request",
       "type": "object",
       "required": ["values"],
       "properties": {
@@ -23,6 +24,7 @@
       "additionalProperties": false
     },
     "AppSettingsUpdateRequest": {
+      "$anchor": "appsettings-update-request",
       "type": "object",
       "required": ["values", "logging", "openTelemetry"],
       "properties": {

@@ -65,7 +65,13 @@ define(["ko", "models/modules"], function (ko, modules) {
                     return { grants: pick("grant").concat(hiddenGrants), restrictions: pick("restrict").concat(hiddenRestrictions) };
                 }
             };
-            modules.registerAccessEditor(refresh);
+            var disposeRefresh = typeof modules.registerAccessEditor === "function"
+                ? modules.registerAccessEditor(refresh)
+                : function () {};
+            editor.dispose = function () {
+                disposeRefresh();
+                rows.dispose();
+            };
             return editor;
         },
 

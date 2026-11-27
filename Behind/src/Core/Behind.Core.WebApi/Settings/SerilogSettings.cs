@@ -45,15 +45,10 @@ public static class SerilogSettings
     public static JsonNode Mask(JsonNode value) => Transform(value, string.Empty, (path, scalar) =>
         path.IsSensitiveConfigurationPath ? JsonValue.Create(Text(scalar).MaskSensitiveValue())! : scalar.DeepClone());
 
-    public static Option<JsonNode> Merge(JsonNode existing, JsonElement incoming)
+    public static Option<JsonNode> Merge(JsonNode existing, JsonElement incoming, string path = "Serilog:WriteTo")
     {
         if (incoming.ValueKind != JsonValueKind.Array || !HasUniqueProperties(incoming)
-            || incoming.EnumerateArray().Any(item => item.ValueKind == JsonValueKind.String
-                ? string.IsNullOrWhiteSpace(item.GetString())
-                : item.ValueKind != JsonValueKind.Object
-                    || !item.TryGetProperty("Name", out var name)
-                    || name.ValueKind != JsonValueKind.String
-                    || string.IsNullOrWhiteSpace(name.GetString())))
+            || !ValidEntries(path, incoming))
         {
             return None;
         }
@@ -95,6 +90,33 @@ public static class SerilogSettings
             return matches.Length == 1 ? matches[0].DeepClone() : scalar.DeepClone();
         });
         return ambiguous ? None : Some(result);
+    }
+
+    private static bool ValidEntries(string path, JsonElement incoming)
+    {
+        if (string.Equals(path, "Serilog:Using", StringComparison.OrdinalIgnoreCase))
+        {
+            return incoming.EnumerateArray().All(item =>
+                item.ValueKind == JsonValueKind.String
+                && !string.IsNullOrWhiteSpace(item.GetString()));
+        }
+
+        return incoming.EnumerateArray().All(item =>
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                return false;
+            }
+            foreach (var property in item.EnumerateObject())
+            {
+                if (string.Equals(property.Name, "Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    return property.Value.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(property.Value.GetString());
+                }
+            }
+            return false;
+        });
     }
 
     private static Option<JsonValue> SamePositionSecret(JsonNode existing, JsonNode incoming, string path)

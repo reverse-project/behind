@@ -80,6 +80,17 @@ define(["ko", "models/http"], function (ko, http) {
         registerAccessEditor: function (refresh) {
             accessEditors.push(refresh);
             refresh();
+            var registered = true;
+            return function () {
+                if (!registered) {
+                    return;
+                }
+                registered = false;
+                var index = accessEditors.indexOf(refresh);
+                if (index >= 0) {
+                    accessEditors.splice(index, 1);
+                }
+            };
         }
     };
 });

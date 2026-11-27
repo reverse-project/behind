@@ -35,6 +35,11 @@ define(["ko", "models/session", "models/pager", "models/letterpager"], function 
 
         list.refresh = function () {
             if (!config.allowed()) {
+                list.items().forEach(function (item) {
+                    if (item.dispose) {
+                        item.dispose();
+                    }
+                });
                 list.items([]);
                 return Promise.resolve();
             }
@@ -66,6 +71,11 @@ define(["ko", "models/session", "models/pager", "models/letterpager"], function 
                     }
 
                     list.pager.update(page);
+                    list.items().forEach(function (item) {
+                        if (item.dispose) {
+                            item.dispose();
+                        }
+                    });
                     list.items(page.items.map(function (item) {
                         return config.present(item, result.data);
                     }));
@@ -110,6 +120,15 @@ define(["ko", "models/session", "models/pager", "models/letterpager"], function 
             });
 
             return list.refresh();
+        };
+
+        list.dispose = function () {
+            list.items().forEach(function (item) {
+                if (item.dispose) {
+                    item.dispose();
+                }
+            });
+            list.items([]);
         };
 
         return list;

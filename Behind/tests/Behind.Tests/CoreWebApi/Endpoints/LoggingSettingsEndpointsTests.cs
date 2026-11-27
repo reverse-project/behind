@@ -225,6 +225,36 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task Update_SerilogUsingRejectsObjectEntries()
+    {
+        var before = File.ReadAllText(PathOf("appsettings.json"));
+        var request = new SettingsUpdateRequest(
+            new Dictionary<string, JsonElement>
+            {
+                ["Serilog:Using"] = JsonDocument.Parse("""[{"Name":"Serilog.Sinks.Console"}]""").RootElement.Clone()
+            }, new LoggingSettingsRequest("Warning", []), DisabledOpenTelemetry);
+
+        Assert.IsType<BadRequest>(await SettingsEndpoints.Update(
+            "appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None));
+        Assert.Equal(before, File.ReadAllText(PathOf("appsettings.json")));
+    }
+
+    [Fact]
+    public async Task Update_SerilogDirectiveNameIsCaseInsensitive()
+    {
+        var before = File.ReadAllText(PathOf("appsettings.json"));
+        var request = new SettingsUpdateRequest(
+            new Dictionary<string, JsonElement>
+            {
+                ["Serilog:WriteTo"] = JsonDocument.Parse("""[{"name":"Console"}]""").RootElement.Clone()
+            }, new LoggingSettingsRequest("Warning", []), DisabledOpenTelemetry);
+
+        Assert.IsType<NoContent>(await SettingsEndpoints.Update(
+            "appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None));
+        Assert.NotEqual(before, File.ReadAllText(PathOf("appsettings.json")));
+    }
+
+    [Fact]
     public async Task GetLogging_ReadsTheLevels()
     {
         var result = await SettingsEndpoints.GetLogging("appsettings.json", Catalog, CancellationToken.None);

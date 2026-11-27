@@ -76,5 +76,12 @@ define(["ko", "models/auth", "models/access", "models/modules"], function (ko, a
                 restrictions: selection.restrictions
             });
         };
+
+        self.dispose = function () {
+            self.editor.dispose();
+            self.hasMessage.dispose();
+            self.calculatedGrants.dispose();
+            self.hasCalculatedGrants.dispose();
+        };
     };
 });

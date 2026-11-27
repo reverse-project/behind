@@ -45,7 +45,7 @@ public static class SettingsChangeExtensions
             var existing = KnownSettings.FindNode(root, path) ?? field?.Value;
             if (isEditable && existing is JsonArray && field is not null && SerilogSettings.IsCollection(file, path))
             {
-                return SerilogSettings.Merge(existing, incoming).Map(node => KeyValuePair.Create(field.Path, (JsonNode?)node));
+                return SerilogSettings.Merge(existing, incoming, path).Map(node => KeyValuePair.Create(field.Path, (JsonNode?)node));
             }
             if (existing is JsonObject or JsonArray && field is null)
             {

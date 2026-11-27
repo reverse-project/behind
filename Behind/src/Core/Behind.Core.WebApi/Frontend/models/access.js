@@ -70,7 +70,7 @@ define(["ko", "models/modules"], function (ko, modules) {
                 : function () {};
             editor.dispose = function () {
                 disposeRefresh();
-                rows.dispose();
+                editor.rows.dispose();
             };
             return editor;
         },

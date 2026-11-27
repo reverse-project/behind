@@ -103,6 +103,10 @@ public static class SerilogSettings
 
         return incoming.EnumerateArray().All(item =>
         {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                return !string.IsNullOrWhiteSpace(item.GetString());
+            }
             if (item.ValueKind != JsonValueKind.Object)
             {
                 return false;

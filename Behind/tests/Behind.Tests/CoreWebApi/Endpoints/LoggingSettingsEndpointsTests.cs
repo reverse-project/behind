@@ -254,6 +254,23 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
         Assert.NotEqual(before, File.ReadAllText(PathOf("appsettings.json")));
     }
 
+    [Theory]
+    [InlineData("Serilog:Enrich", """["FromLogContext"]""")]
+    [InlineData("Serilog:WriteTo", """["Console"]""")]
+    public async Task Update_AcceptsStringShorthandInDirectiveCollections(string path, string json)
+    {
+        var request = new SettingsUpdateRequest(
+            new Dictionary<string, JsonElement>
+            {
+                [path] = JsonDocument.Parse(json).RootElement.Clone()
+            }, new LoggingSettingsRequest("Warning", []), DisabledOpenTelemetry);
+
+        Assert.IsType<NoContent>(await SettingsEndpoints.Update(
+            "appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None));
+        Assert.Equal(json, JsonNode.Parse(File.ReadAllText(PathOf("appsettings.json")))!
+            ["Serilog"]![path.Split(':')[1]]!.ToJsonString());
+    }
+
     [Fact]
     public async Task GetLogging_ReadsTheLevels()
     {

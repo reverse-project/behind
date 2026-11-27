@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using System.Text.Json;
+using Behind.Common.Configuration;
 using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.Settings;
@@ -54,7 +55,7 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
             CancellationToken.None);
 
     [Fact]
-    public async Task Get_ListsTheAppSettingsFileWithTheLoggingEditorAndNoRawFields()
+    public async Task Get_ListsTheAppSettingsFileWithTheLoggingEditorAndAllowedHosts()
     {
         var response = Assert.IsType<JsonHttpResult<SettingsResponse>>(
             await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(), CancellationToken.None)).Value!;
@@ -62,7 +63,146 @@ public sealed class LoggingSettingsEndpointsTests : IDisposable
         var entry = response.Files.Single();
         Assert.Equal("appsettings.json", entry.Name);
         Assert.Equal("logging", entry.Editor);
-        Assert.Empty(entry.Fields);
+        Assert.Equal("*", Assert.Single(entry.Fields, field => field.Path == "AllowedHosts").Value);
+    }
+
+    [Fact]
+    public async Task Update_SavesAllowedHostsAlongsideLogging()
+    {
+        var request = new SettingsUpdateRequest(
+            new Dictionary<string, JsonElement> { ["AllowedHosts"] = JsonDocument.Parse("\"example.org\"").RootElement.Clone() },
+            new LoggingSettingsRequest("Warning", []), DisabledOpenTelemetry);
+        var result = await SettingsEndpoints.Update("appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None);
+        Assert.IsType<NoContent>(result);
+        Assert.Equal("example.org", (string?)JsonNode.Parse(File.ReadAllText(PathOf("appsettings.json")))!["AllowedHosts"]);
+        Assert.Equal("Warning", (string?)Levels("appsettings.json")["Default"]);
+    }
+
+    [Fact]
+    public async Task Get_OffersSerilogCollectionsAndMasksNestedSecrets()
+    {
+        File.WriteAllText(PathOf("appsettings.json"),
+            """{"Serilog":{"WriteTo":[{"Name":"Custom","Args":{"apiKey":"my-secret-value","other":{"Password":"another-secret"}}}]}}""");
+
+        var response = Assert.IsType<JsonHttpResult<SettingsResponse>>(
+            await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(), CancellationToken.None)).Value!;
+        var fields = Assert.Single(response.Files).Fields;
+        Assert.All(new[] { "Serilog:Using", "Serilog:Enrich", "Serilog:WriteTo", "Serilog:AuditTo", "Serilog:Filter", "Serilog:Destructure" }, path =>
+            Assert.Equal("array", Assert.Single(fields, field => field.Path == path).Type));
+        Assert.DoesNotContain(fields, field => field.Path.StartsWith("Serilog:WriteTo:", StringComparison.OrdinalIgnoreCase));
+        var serialized = JsonSerializer.Serialize(response);
+        Assert.DoesNotContain("my-secret-value", serialized);
+        Assert.DoesNotContain("another-secret", serialized);
+        Assert.Contains("my-secret-value".MaskSensitiveValue(), serialized);
+    }
+
+    [Fact]
+    public async Task Get_UsesEmbeddedDefaultsForMissingSerilogCollectionsWithoutWriting()
+    {
+        var before = File.ReadAllText(PathOf("appsettings.json"));
+        var response = Assert.IsType<JsonHttpResult<SettingsResponse>>(
+            await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(), CancellationToken.None)).Value!;
+        var fields = Assert.Single(response.Files).Fields;
+
+        Assert.Contains("Serilog.Sinks.Console", Assert.Single(fields, field => field.Path == "Serilog:Using").Value);
+        Assert.Contains("FromLogContext", Assert.Single(fields, field => field.Path == "Serilog:Enrich").Value);
+        Assert.Contains("Console", Assert.Single(fields, field => field.Path == "Serilog:WriteTo").Value);
+        Assert.Equal("[]", Assert.Single(fields, field => field.Path == "Serilog:AuditTo").Value);
+        Assert.Equal(before, File.ReadAllText(PathOf("appsettings.json")));
+    }
+
+    [Fact]
+    public async Task Get_NonArraySerilogCollectionKeepsItsExistingScalarFields()
+    {
+        File.WriteAllText(PathOf("appsettings.json"), """{"Serilog":{"WriteTo":{"Console":{"Name":"Console"}}}}""");
+        var response = Assert.IsType<JsonHttpResult<SettingsResponse>>(
+            await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(), CancellationToken.None)).Value!;
+        var fields = Assert.Single(response.Files).Fields;
+        Assert.DoesNotContain(fields, field => field.Path == "Serilog:WriteTo");
+        Assert.Equal("Console", Assert.Single(fields, field => field.Path == "Serilog:WriteTo:Console:Name").Value);
+    }
+
+    [Fact]
+    public async Task Update_SerilogCollectionsPreservesNestedSecretsWhenEntriesMove()
+    {
+        File.WriteAllText(PathOf("appsettings.json"),
+            """{"Serilog":{"WriteTo":[{"Name":"Remove"},{"Name":"Custom","Args":{"apiKey":"my-secret-value","other":{"Password":"another-secret"},"token":12345678,"custom":{"value":7}}}]}}""");
+        var response = Assert.IsType<JsonHttpResult<SettingsResponse>>(
+            await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(), CancellationToken.None)).Value!;
+        var field = Assert.Single(Assert.Single(response.Files).Fields, field => field.Path == "Serilog:WriteTo");
+        Assert.DoesNotContain("12345678", field.Value);
+        var entries = JsonNode.Parse(field.Value)!.AsArray();
+        entries.RemoveAt(0);
+        entries[0]!["Name"] = "Changed";
+        var request = new SettingsUpdateRequest(
+            new Dictionary<string, JsonElement> { [field.Path] = JsonSerializer.SerializeToElement(entries) },
+            new LoggingSettingsRequest("Warning", []), DisabledOpenTelemetry);
+        Assert.True(JsonSchemas.IsValid("settings-response-1.1.0",
+            JsonSerializer.SerializeToNode(response, new JsonSerializerOptions(JsonSerializerDefaults.Web))));
+        Assert.True(JsonSchemas.IsValid("settings-update-1.1.0",
+            JsonSerializer.SerializeToNode(request, new JsonSerializerOptions(JsonSerializerDefaults.Web))));
+
+        Assert.IsType<NoContent>(await SettingsEndpoints.Update(
+            "appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None));
+
+        var saved = JsonNode.Parse(File.ReadAllText(PathOf("appsettings.json")))!["Serilog"]!["WriteTo"]![0]!;
+        Assert.Equal("Changed", (string?)saved["Name"]);
+        Assert.Equal("my-secret-value", (string?)saved["Args"]!["apiKey"]);
+        Assert.Equal("another-secret", (string?)saved["Args"]!["other"]!["Password"]);
+        Assert.Equal(12345678, (int?)saved["Args"]!["token"]);
+        Assert.Equal(7, (int?)saved["Args"]!["custom"]!["value"]);
+    }
+
+    [Fact]
+    public async Task Update_AmbiguousMaskedSerilogSecretsIsRejectedWithoutWriting()
+    {
+        File.WriteAllText(PathOf("appsettings.json"),
+            """{"Serilog":{"WriteTo":[{"Name":"A","Args":{"apiKey":"ab1234yz"}},{"Name":"B","Args":{"apiKey":"ab5678yz"}}]}}""");
+        var before = File.ReadAllText(PathOf("appsettings.json"));
+        var request = new SettingsUpdateRequest(
+            new Dictionary<string, JsonElement>
+            {
+                ["Serilog:WriteTo"] = JsonDocument.Parse("""[{"Name":"B","Args":{"apiKey":"ab....yz"}}]""").RootElement.Clone()
+            }, new LoggingSettingsRequest("Warning", []), DisabledOpenTelemetry);
+
+        Assert.IsType<BadRequest>(await SettingsEndpoints.Update(
+            "appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None));
+        Assert.Equal(before, File.ReadAllText(PathOf("appsettings.json")));
+    }
+
+    [Fact]
+    public void SerilogBlankSecretsPreserveOnlyTheSameUnambiguousEntry()
+    {
+        var existing = JsonNode.Parse(
+            """[{"Name":"First","Args":{"Password":"first-secret"}},{"Name":"Second","Args":{"Password":"second-secret"}}]""")!;
+        var unchanged = JsonDocument.Parse(
+            """[{"Name":"First","Args":{"Password":""}},{"Name":"Second","Args":{"Password":"  "}}]""").RootElement;
+        var result = SerilogSettings.Merge(existing, unchanged).GetOrElse(new JsonArray());
+        Assert.Equal("first-secret", (string?)result[0]!["Args"]!["Password"]);
+        Assert.Equal("second-secret", (string?)result[1]!["Args"]!["Password"]);
+
+        var reordered = JsonDocument.Parse(
+            """[{"Name":"Second","Args":{"Password":""}},{"Name":"First","Args":{"Password":""}}]""").RootElement;
+        Assert.Equal(None, SerilogSettings.Merge(existing, reordered));
+        var duplicate = JsonNode.Parse(
+            """[{"Name":"First","Args":{"Password":"one"}},{"Name":"First","Args":{"Password":"two"}}]""")!;
+        Assert.Equal(None, SerilogSettings.Merge(duplicate, JsonDocument.Parse(
+            """[{"Name":"First","Args":{"Password":""}},{"Name":"First","Args":{"Password":""}}]""").RootElement));
+    }
+
+    [Fact]
+    public async Task Update_DuplicateSerilogArgumentNamesAreRejectedWithoutWriting()
+    {
+        var before = File.ReadAllText(PathOf("appsettings.json"));
+        var request = new SettingsUpdateRequest(
+            new Dictionary<string, JsonElement>
+            {
+                ["Serilog:WriteTo"] = JsonDocument.Parse("""[{"Name":"Custom","Args":{"Token":"a","token":"b"}}]""").RootElement.Clone()
+            }, new LoggingSettingsRequest("Warning", []), DisabledOpenTelemetry);
+
+        Assert.IsType<BadRequest>(await SettingsEndpoints.Update(
+            "appsettings.json", request, Catalog, TestLocales.Embedded, Security(), _logger, CancellationToken.None));
+        Assert.Equal(before, File.ReadAllText(PathOf("appsettings.json")));
     }
 
     [Fact]

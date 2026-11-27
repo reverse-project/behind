@@ -1,4 +1,5 @@
 using Behind.Common.Modules;
+using Behind.Common.WebApi.Middleware;
 using Behind.Sport.Database;
 using Behind.Sport.WebApi.Endpoints;
 using Microsoft.AspNetCore.Builder;
@@ -24,7 +25,8 @@ public static class SportWebApiExtensions
     {
         public WebApplication UseSport()
         {
-            application.MapSportEndpoints();
+            application.MapGroup("").WithMetadata(new ModuleEndpoint(SportModule.Descriptor.Key))
+                .MapSportEndpoints();
 
             return application;
         }

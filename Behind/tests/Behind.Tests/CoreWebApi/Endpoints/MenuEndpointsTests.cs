@@ -3,6 +3,7 @@ using Behind.Core.Database;
 using Behind.Core.WebApi.Endpoints;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Configuration;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
 
@@ -164,6 +165,27 @@ public class MenuEndpointsTests
         var nested = Assert.Single(item.Children);
         Assert.Equal((child.Id, "Child", "#/child", MenuTarget.NewWindow, MenuItemKind.Link), (nested.Id, nested.Title, nested.Url, nested.Target, nested.Kind));
         Assert.Empty(nested.Children);
+    }
+
+    [Fact]
+    public async Task Resolve_HidesDisabledModuleLinksIncludingNestedLocalizedLinks()
+    {
+        var queries = Substitute.For<IMenuQueries>();
+        var child = new IMenuQueries.MenuItemView(Guid.NewGuid(), "Notes", "#/hu-HU/notes", MenuTarget.CurrentPage, MenuItemKind.Link, []);
+        queries.Resolve(default!, default, default).ReturnsForAnyArgs(
+        [
+            new IMenuQueries.MenuView(MenuId, "main", "Main menu",
+            [
+                new IMenuQueries.MenuItemView(ItemId, "Group", "#/group", MenuTarget.CurrentPage, MenuItemKind.User, [child]),
+                child with { Id = Guid.NewGuid(), Url = "#/notes" }
+            ])
+        ]);
+        var availability = new ModuleAvailability(new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?> { ["Backend:Modules:notes"] = "false" }).Build());
+        var result = await MenuEndpoints.Resolve(new DefaultHttpContext(), Substitute.For<ISessionQueries>(),
+            queries, ["main"], NotesModule.Catalog, availability);
+        var menu = Assert.Single(Assert.IsType<JsonHttpResult<MenusResponse>>(result).Value!.Menus);
+        Assert.Empty(Assert.Single(menu.Items).Children);
     }
 
     [Fact]

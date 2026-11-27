@@ -826,3 +826,11 @@ extension(Session)
 - Review DATABASE_ARCHITECTURE.md for persistence mapping
 - Check WEBAPI_CONVENTIONS.md for API representation
 - See FUNCTIONAL_PROGRAMMING.md for result handling
+
+## Module availability
+
+Installed module identity is distinct from runtime availability.
+`Backend:Modules:<key>` disables feature access without changing domain entities,
+versions, stored files or grants. Core remains required. Shared entrypoints use
+`ModuleAvailability` and configuration-assembly entity ownership to enforce this
+boundary, including content-locale and age editing.

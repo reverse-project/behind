@@ -1,4 +1,4 @@
-define(["ko", "models/profiles", "models/auth", "models/i18n"], function (ko, profiles, auth, i18n) {
+define(["ko", "models/profiles", "models/auth", "models/i18n", "models/modules"], function (ko, profiles, auth, i18n, modules) {
     return function PublicProfileViewModel(context) {
         var self = this;
         var id = context.params.id;
@@ -21,6 +21,11 @@ define(["ko", "models/profiles", "models/auth", "models/i18n"], function (ko, pr
                 self.message(result.message);
 
                 if (result.ok) {
+                    if (result.data.moderation) {
+                        ["effectiveGrants", "directGrants", "directRestrictions"].forEach(function (field) {
+                            result.data.moderation[field] = modules.visibleGrants(result.data.moderation[field]);
+                        });
+                    }
                     self.profile(result.data);
                 }
 

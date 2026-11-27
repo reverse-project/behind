@@ -96,7 +96,8 @@ test("profile history and banned sign-in errors use the same localized reason", 
     i18n.useAccount("hu-HU");
     await i18n.apply();
     const Profile = load("viewmodels/publicprofile.js", {
-        ko, "models/i18n": i18n, "models/auth": {}, "models/profiles": {}
+        ko, "models/i18n": i18n, "models/auth": {}, "models/profiles": {},
+        "models/modules": { visibleGrants: names => names }
     });
     const profile = new Profile({ params: { id: "person" } });
     assert.equal(profile.banReason("Misconduct"), "Szabályszegés");

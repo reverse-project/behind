@@ -219,6 +219,17 @@ public sealed class StartupSetupTests : IDisposable
     {
         Request().Run(new StringWriter());
 
+        var modules = Bind<BackendConfiguration>(BackendPath, BackendConfiguration.SectionName).Modules;
+        var optionalModules = new[]
+        {
+            Behind.Contact.WebApi.ContactModule.Descriptor,
+            Behind.Forum.WebApi.ForumModule.Descriptor,
+            Behind.MarkdownViewer.WebApi.MarkdownViewerModule.Descriptor,
+            Behind.Quotes.WebApi.QuotesModule.Descriptor,
+            Behind.Sport.WebApi.SportModule.Descriptor
+        };
+        Assert.Equal(optionalModules.Select(module => module.Key).Order(), modules.Keys.Order());
+        Assert.All(modules.Values, Assert.True);
         Assert.Equal(new ContentRestrictionsConfiguration(), Bind<ContentRestrictionsConfiguration>(BackendPath, ContentRestrictionsConfiguration.SectionName));
         Assert.Equal(new DownloadsConfiguration(), Bind<DownloadsConfiguration>(BackendPath, DownloadsConfiguration.SectionName));
         Assert.Equal(new CommentsConfiguration(), Bind<CommentsConfiguration>(BackendPath, CommentsConfiguration.SectionName));
@@ -244,9 +255,8 @@ public sealed class StartupSetupTests : IDisposable
         Assert.Equal(new SitesConfiguration { IndexSlug = string.Empty }, Bind<SitesConfiguration>(FrontendPath, SitesConfiguration.SectionName));
         Assert.Equal(new GalleriesConfiguration(), Bind<GalleriesConfiguration>(FrontendPath, GalleriesConfiguration.SectionName));
         Assert.Equal(new CarouselsConfiguration(), Bind<CarouselsConfiguration>(FrontendPath, CarouselsConfiguration.SectionName));
-        Assert.Equal(Json(FrontendOptions.Default), Json(Bind<FrontendOptions>(FrontendPath, FrontendOptions.SectionName)));
+        Assert.Equal(Json(FrontendOptions.Default), Json(FrontendOptions.Read(Load(FrontendPath))));
         var staticFiles = JsonNode.Parse(FrontendOptions.Default.ToConfigurationJson())!.AsObject();
-        staticFiles.Remove(nameof(FrontendOptions.CompressedMimeTypes));
         Assert.True(JsonNode.DeepEquals(staticFiles, JsonNode.Parse(File.ReadAllText(FrontendPath))!["Frontend"]!["StaticFiles"]));
         Assert.Equal(StartupSetupRequest.DefaultFrontendUrl, Load(FrontendPath)["Frontend:Url"]);
     }

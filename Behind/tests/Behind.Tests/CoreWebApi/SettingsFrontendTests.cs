@@ -84,7 +84,7 @@ public class SettingsFrontendTests
         Assert.Contains("window.confirm(", viewModel);
         Assert.Contains("settings[kind](self.selected().name, field.path)", viewModel);
         Assert.Contains("settings.save(tab.name, values)", viewModel);
-        Assert.Contains("field.sensitive ? \"\" : field.value", viewModel);
+        Assert.Contains("field.sensitive && field.type !== \"object\" && field.type !== \"array\" ? \"\" : field.value", viewModel);
     }
 
     [Fact]

@@ -139,7 +139,8 @@ public static class WebApiExtensions
 
             builder.Services.AddSingleton(services => ConfigurationFileCatalog.For(
                 builder.Environment.ContentRootPath,
-                services.GetRequiredService<ModuleCatalog>().ConfigurationFiles));
+                services.GetRequiredService<ModuleCatalog>().ConfigurationFiles,
+                services.GetRequiredService<ModuleCatalog>().Modules.Select(module => module.Key)));
             builder.Services.AddMagicLink(
                 new FileInfo(Path.Combine(builder.Environment.ContentRootPath, "security.json"))
             );
@@ -310,8 +311,7 @@ public static class WebApiExtensions
         {
             builder.Services.AddStaticFrontend();
             builder.Services.AddReloadableOptions(
-                configuration => configuration.GetSection(FrontendOptions.SectionName).Get<FrontendOptions>()
-                                 ?? FrontendOptions.Default);
+                FrontendOptions.Read);
             builder.Services.AddSingleton(
                 new LocaleCatalog(EmbeddedFrontend.CreateFileProvider(builder.Environment.WebRootPath)));
 
@@ -345,6 +345,8 @@ public static class WebApiExtensions
             application.UseCorrelationId();
             application.UseRequestLogging();
             application.UseExceptionHandler(_ => { });
+            application.UseRouting();
+            application.UseMiddleware<ModuleAvailabilityMiddleware>();
             application.UseStaticFrontend(EmbeddedFrontend.CreateFileProvider(
                 application.Environment.WebRootPath,
                 application.Services.GetRequiredService<ModuleCatalog>()));

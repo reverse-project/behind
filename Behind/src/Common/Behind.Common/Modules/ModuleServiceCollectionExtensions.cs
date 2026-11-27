@@ -23,6 +23,7 @@ public static class ModuleServiceCollectionExtensions
         public IServiceCollection AddModuleCatalog()
         {
             services.TryAddSingleton(ResolveCatalog);
+            services.TryAddSingleton<ModuleAvailability>();
 
             return services;
         }

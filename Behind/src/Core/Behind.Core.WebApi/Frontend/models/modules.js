@@ -1,5 +1,6 @@
 define(["ko", "models/http"], function (ko, http) {
     var modules = ko.observableArray([]);
+    var availableGrants = ko.observableArray([]);
     var loadedStyles = {};
 
     var collect = function (select) {
@@ -29,6 +30,13 @@ define(["ko", "models/http"], function (ko, http) {
     return {
         modules: modules,
 
+        visibleGrants: function (names) {
+            var available = availableGrants();
+            return names.filter(function (name) {
+                return available.indexOf(name) >= 0;
+            });
+        },
+
         routes: function () {
             return collect(function (module) {
                 return module.routes;
@@ -56,6 +64,11 @@ define(["ko", "models/http"], function (ko, http) {
         load: function () {
             return http.get("/modules").then(function (response) {
                 modules(listed(response));
+                if (!response.ok || !response.data || !Array.isArray(response.data.availableGrants)) {
+                    console.error("Module access visibility could not be loaded");
+                }
+                availableGrants(response.ok && response.data && Array.isArray(response.data.availableGrants)
+                    ? response.data.availableGrants : []);
                 collect(function (module) {
                     return module.styles;
                 }).forEach(applyStyle);

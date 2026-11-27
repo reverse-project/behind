@@ -5,6 +5,8 @@ namespace Behind.Core.WebApi.Settings;
 
 public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<string> Names)
 {
+    public IReadOnlyList<string> ModuleKeys { get; init; } = [];
+
     public const string BackendFile = "backend.json";
     public const string EmailEditor = "email";
     public const string EmailFile = "email.json";
@@ -35,6 +37,13 @@ public sealed record ConfigurationFileCatalog(DirectoryInfo Root, IReadOnlyList<
 
     public static ConfigurationFileCatalog For(string root, IEnumerable<string> moduleNames) =>
         new(new DirectoryInfo(root), [.. DefaultNames.Concat(moduleNames).Distinct(StringComparer.OrdinalIgnoreCase)]);
+
+    public static ConfigurationFileCatalog For(
+        string root, IEnumerable<string> moduleNames, IEnumerable<string> moduleKeys) =>
+        For(root, moduleNames) with
+        {
+            ModuleKeys = [..moduleKeys.Where(key => key != "core").Distinct(StringComparer.Ordinal)]
+        };
 
     public IReadOnlyList<FileInfo> Files =>
     [

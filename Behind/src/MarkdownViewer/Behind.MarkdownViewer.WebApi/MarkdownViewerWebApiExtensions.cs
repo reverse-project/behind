@@ -1,5 +1,6 @@
 using Behind.Common.Configuration;
 using Behind.Common.Modules;
+using Behind.Common.WebApi.Middleware;
 using Behind.MarkdownViewer.Common;
 using Behind.MarkdownViewer.WebApi.Endpoints;
 using Microsoft.AspNetCore.Builder;
@@ -29,7 +30,8 @@ public static class MarkdownViewerWebApiExtensions
     {
         public WebApplication UseMarkdownViewer()
         {
-            application.MapMarkdownViewerEndpoints();
+            application.MapGroup("").WithMetadata(new ModuleEndpoint(MarkdownViewerModule.Descriptor.Key))
+                .MapMarkdownViewerEndpoints();
 
             return application;
         }

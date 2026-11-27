@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/user", "models/i18n"], function (ko, auth, session, user, i18n) {
+define(["ko", "models/auth", "models/session", "models/user", "models/i18n", "models/modules"], function (ko, auth, session, user, i18n, modules) {
     var elevationTargets = [
         { value: "administrator", label: "session.target.administrator", role: "Administrators" },
         { value: "developer", label: "session.target.developer", role: "Developers" }
@@ -37,7 +37,7 @@ define(["ko", "models/auth", "models/session", "models/user", "models/i18n"], fu
             userId: data.user.id,
             emails: data.user.emails,
             roles: data.user.roles.map(function (role) {
-                return { name: role.name, grants: role.grants.join(", ") };
+                return { name: role.name, grants: modules.visibleGrants(role.grants).join(", ") };
             }),
             roleNames: data.user.roles.map(function (role) {
                 return role.name;

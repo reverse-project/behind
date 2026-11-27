@@ -13,6 +13,33 @@ Mindkét engedély a `Developers` szerepkörhöz tartozik. Az adminisztrátorok 
 
 ## Fülek
 
+Minden ismert beállítás megjelenik akkor is, ha JSON-tulajdonsága hiányzik vagy
+null. A hiányzó értékek az alapértéket mutatják, fájlírás nélkül; a Mentés csak
+a módosításokat írja ki. A listák és kapcsolati térképek strukturált szerkesztőt
+kapnak; összetett egyéni értékek JSON-ként is szerkeszthetők. Az e-mail,
+naplózás, telemetria, OIDC és továbbított fejlécek saját űrlapjai megtartják
+ellenőrzéseiket és a titkok védelmét.
+
+## Modulok vészkapcsolói
+
+A **backend.json > Backend > Modules** rész minden telepített opcionális
+modulhoz kapcsolót ad. A hiányzó kapcsoló bekapcsoltat jelent; a kötelező Core
+modulnak nincs kapcsolója. Kikapcsolva a modul API-jai és fájljai, médiái,
+hírfolyamai és kezelési műveletei elutasítottak, oldalai, menüpontjai és widgetjei
+eltűnnek. A megszakítható aktív kérések megszakadnak. A tárolt adatok és
+konfiguráció megmaradnak. A modul beállításai továbbra is szerkeszthetők,
+visszakapcsolva az eredeti jogosultságok szerint ismét elérhető.
+
+A modul jogosultságai és korlátozásai a szerepkör-, felhasználó-, munkamenet- és
+profilnézetekben a visszakapcsolásig rejtve maradnak. Más hozzáférések szerkesztése
+megőrzi ezeket az értékeket. A szerepkör jogosultságainak kifejezett alaphelyzetbe
+állítása továbbra is az alapértelmezett jogosultságokat állítja vissza.
+
+A kapcsolók kiszolgáló-újraindítás nélkül érvényesülnek. Mentésük frissíti a
+böngészőt az útvonalak és widgetek újraépítéséhez. Más nyitott böngészőkben az
+előzőleg megjelenített tartalom eltávolításához újratöltés kell; a kiszolgáló
+azonnal tiltja a hozzáférést.
+
 A **caching.json** fül a HybridCache beállításait tartalmazza. A **Provider**
 választó értékei **Memory** (alapérték) és **RedisCompatible** (Valkey).
 A **Key** a **ConnectionStrings** egyik kapcsolatának neve; a létrehozott név
@@ -81,7 +108,14 @@ Az `appsettings.json` fül értéklista helyett a naplószintek űrlapja:
 
 1. Válassza ki az **Alapértelmezett szintet**: a naplóba írt legalacsonyabb szintet (Verbose, Debug, Information, Warning, Error vagy Fatal). A **Nincs beállítva** meghagyja a beépített alapértéket (Information).
 2. A **Szintek forrásonként** alatt vegyen fel egy forrást, egy névteret, például `Microsoft.AspNetCore` vagy `Behind`, és válassza ki a szintjét. A saját szinttel rendelkező forrás figyelmen kívül hagyja az alapértelmezett szintet. Minden forrásnak különböző névvel kell rendelkeznie; az **Eltávolítás** töröl egyet.
-3. Válassza a **Mentés** gombot. Csak a szintek íródnak a fájlba; minden más benne úgy marad, ahogy volt. Az új szintek azonnal érvénybe lépnek.
+3. A **Mentés** kiírja a szinteket, a telemetriát és a módosított mezőket, a többi tulajdonság megtartásával. Az új szintek azonnal érvénybe lépnek. Az **Elvetés** újratölti a mentett értékeket.
+
+Ugyanez a fül szerkesztőt ad a Serilog assemblykhez, gazdagítókhoz, sinkekhez,
+szűrőkhöz, strukturáláshoz és argumentumaikhoz. Elemek hozzáadhatók és eltávolíthatók a többi egyéni
+tulajdonság elvesztése nélkül. Az érzékeny argumentumok maszkoltak; a csere
+üresen hagyása megtartja a titkot. Egy elem eltávolítása az argumentumait,
+köztük a titkokat is törli. Assemblyk, sinkek, gazdagítók, szűrők vagy strukturálás módosítása után
+indítsa újra az alkalmazást.
 
 ## A titkok maszkolva vannak
 
@@ -106,7 +140,7 @@ Egyes titkokat nem lehet beírni; helyettük gomb van:
 | `Security:SecretKey` (adminisztrátori jogosultságemelés) | **Generálás** | Új hitelesítő titkot hoz létre. |
 | `Security:Elevation:DeveloperSecretKey` (fejlesztői jogosultságemelés) | **Generálás** | Új hitelesítő titkot hoz létre, akkor is, ha még nincs beállítva. |
 | `Security:Jwt:SigningKey` | **Generálás** | Új, véletlenszerű aláírókulcsot hoz létre. Mindenkinek újra be kell jelentkeznie. |
-| `Security:MagicLink:ActualSecret` | **Forgatás** | A jelenlegi varázshivatkozás-titok régi titokká válik, amelyet a konfigurált átfedési ideig még elfogad a rendszer, és mostantól új titkot használ. Azonnal érvénybe lép. |
+| `Security:MagicLink:ActualSecret` | **Forgatás** | A jelenlegi varázshivatkozás-titok régi titokká válik, amelyet a konfigurált átfedési ideig még elfogad a rendszer, és mostantól új titkot használ. Hiányzó titok esetén inicializálás történik. Azonnal érvénybe lép. |
 
 Egy hitelesítő titok generálása **egyszer** megmutatja a hitelesítő címét és egy QR-kódot. Azonnal adja hozzá a hitelesítőjéhez; az oldal soha többé nem mutatja meg. Az új titok azonnal érvénybe lép. Minden gomb megerősítést kér.
 

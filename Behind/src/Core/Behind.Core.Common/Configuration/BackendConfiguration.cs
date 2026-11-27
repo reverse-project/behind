@@ -12,6 +12,8 @@ public sealed record BackendConfiguration
 
     public int AuditSearchMaxCandidates { get; init; } = 10000;
 
+    public IReadOnlyDictionary<string, bool> Modules { get; init; } = new Dictionary<string, bool>();
+
     public static BackendConfiguration Read(IConfiguration? configuration)
     {
         var section = configuration?.GetSection(SectionName);
@@ -22,6 +24,7 @@ public sealed record BackendConfiguration
         return defaults with
         {
             DataDirectory = section?[nameof(DataDirectory)],
+            Modules = section?.GetSection(nameof(Modules)).Get<Dictionary<string, bool>>() ?? new Dictionary<string, bool>(),
             AuditSearchMaxEntries = ReadBudget(nameof(AuditSearchMaxEntries), defaults.AuditSearchMaxEntries),
             AuditSearchMaxCandidates = ReadBudget(nameof(AuditSearchMaxCandidates), defaults.AuditSearchMaxCandidates)
         };

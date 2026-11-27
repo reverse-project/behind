@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Behind.Common;
 using Behind.Common.Database;
+using Behind.Common.Modules;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Database;
@@ -39,7 +40,9 @@ public sealed class MenuEndpoints
         HttpContext httpContext,
         ISessionQueries sessionQueries,
         IMenuQueries queries,
-        [FromQuery(Name = "name")] string[]? names = null)
+        [FromQuery(Name = "name")] string[]? names = null,
+        [FromServices] ModuleCatalog? modules = null,
+        [FromServices] ModuleAvailability? availability = null)
     {
         httpContext.Response.Headers.CacheControl = ManagedListExtensions.NoStore;
 
@@ -57,7 +60,11 @@ public sealed class MenuEndpoints
         var viewer = (await httpContext.FindCurrentSession(sessionQueries)).Map(session => session.UserId);
         var menus = await queries.Resolve(wanted, viewer, httpContext.RequestAborted);
 
-        return Results.Json(new MenusResponse(menus.Select(menu => menu.ToResponse()).ToList()));
+        return Results.Json(new MenusResponse(menus.Select(menu =>
+        {
+            var response = menu.ToResponse();
+            return modules is not null && availability is not null ? response.Visible(modules, availability) : response;
+        }).ToList()));
     }
 
     [IgnoreETag]

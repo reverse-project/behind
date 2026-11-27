@@ -35,16 +35,22 @@ public static class LoggingSettingsExtensions
         public Task WriteAppSettingsAsync(
             MinimumLevelConfiguration logging,
             OpenTelemetrySettingsRequest openTelemetry,
-            CancellationToken cancellationToken = default) =>
-            file.SetJsonNodesAsync(
-                new Dictionary<string, JsonNode?>
+            CancellationToken cancellationToken = default,
+            IReadOnlyDictionary<string, JsonNode?>? additional = null)
+        {
+            var values = new Dictionary<string, JsonNode?>
                 {
                     [MinimumLevelConfiguration.SectionPath] = logging.IsEmpty
                         ? null
                         : JsonSerializer.SerializeToNode(logging, WriteOptions),
                     [OpenTelemetryConfiguration.SectionName] = JsonSerializer.SerializeToNode(openTelemetry, WriteOptions)
-                },
-                cancellationToken);
+                };
+            foreach (var (path, node) in additional ?? new Dictionary<string, JsonNode?>())
+            {
+                values[path] = node;
+            }
+            return file.SetJsonNodesAsync(values, cancellationToken);
+        }
     }
 
     extension(MinimumLevelConfiguration configuration)

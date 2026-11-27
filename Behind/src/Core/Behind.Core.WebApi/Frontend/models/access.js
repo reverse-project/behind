@@ -1,4 +1,4 @@
-define(["ko"], function (ko) {
+define(["ko", "models/modules"], function (ko, modules) {
     var choices = [
         { value: "none", label: "access.choice.none" },
         { value: "grant", label: "access.choice.grant" },
@@ -24,6 +24,8 @@ define(["ko"], function (ko) {
 
         create: function () {
             var rows = ko.observableArray([]);
+            var hiddenGrants = [];
+            var hiddenRestrictions = [];
 
             var pick = function (state) {
                 return rows()
@@ -37,14 +39,20 @@ define(["ko"], function (ko) {
 
             return {
                 choices: choices,
-                rows: rows,
+                rows: ko.pureComputed(function () {
+                    var visible = modules.visibleGrants(rows().map(function (row) { return row.name; }));
+                    return rows().filter(function (row) { return visible.indexOf(row.name) >= 0; });
+                }),
                 load: function (available, grants, restrictions) {
-                    rows(available.map(function (name) {
+                    var visible = modules.visibleGrants(available);
+                    hiddenGrants = grants.filter(function (name) { return visible.indexOf(name) < 0; });
+                    hiddenRestrictions = restrictions.filter(function (name) { return visible.indexOf(name) < 0; });
+                    rows(visible.map(function (name) {
                         return { name: name, state: ko.observable(stateOf(name, grants, restrictions)) };
                     }));
                 },
                 request: function () {
-                    return { grants: pick("grant"), restrictions: pick("restrict") };
+                    return { grants: pick("grant").concat(hiddenGrants), restrictions: pick("restrict").concat(hiddenRestrictions) };
                 }
             };
         },

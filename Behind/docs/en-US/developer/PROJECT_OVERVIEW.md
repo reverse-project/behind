@@ -489,3 +489,12 @@ Domain objects use `record` types for:
 - Review [CODING_STANDARDS.md](./CODING_STANDARDS.md) for mandatory practices
 - Study [FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md) for pattern understanding
 - Check [DESIGN_PATTERNS.md](./DESIGN_PATTERNS.md) for architectural decisions
+
+## Optional module availability
+
+`ModuleAvailability` reads reloadable `Backend:Modules:<key>` switches, defaulting
+to true; Core is always enabled. Installed descriptors remain in `ModuleCatalog`
+for configuration and database composition. Only active modules are exposed by
+`GET /modules`, public menus and layouts. Each module maps APIs with `ModuleEndpoint`
+group metadata; Common's middleware blocks disabled APIs and frontend assets.
+Settings includes unset configuration properties and installed module switches.

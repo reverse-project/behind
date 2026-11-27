@@ -15,4 +15,4 @@ public sealed record ModuleResponse(
     IReadOnlyList<string> Styles,
     IReadOnlyList<ModuleWidgetResponse> Widgets);
 
-public sealed record ModulesResponse(IReadOnlyList<ModuleResponse> Modules);
+public sealed record ModulesResponse(IReadOnlyList<ModuleResponse> Modules, IReadOnlyList<string> AvailableGrants);

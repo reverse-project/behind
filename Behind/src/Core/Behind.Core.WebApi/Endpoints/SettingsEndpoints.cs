@@ -6,6 +6,7 @@ using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.MagicLinks;
 using Behind.Core.WebApi.Settings;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using static Behind.Common.FunctionalExtensions;
@@ -23,8 +24,10 @@ public sealed class SettingsEndpoints
         var available = await locales.ListAsync(cancellationToken);
         var files = await Task.WhenAll(
             catalog.Files.Select(file => catalog.EditorOf(file).Match(
-                () => file.ToSettingsFile(available, cancellationToken),
-                editor => Task.FromResult(new SettingsFileResponse(file.Name, [], editor)))));
+                () => file.ToSettingsFile(available, catalog.ModuleKeys, cancellationToken),
+                async editor => editor == ConfigurationFileCatalog.LoggingEditor
+                    ? (await file.ToSettingsFile(available, catalog.ModuleKeys, cancellationToken)) with { Editor = editor }
+                    : new SettingsFileResponse(file.Name, [], editor))));
 
         return Results.Json(new SettingsResponse(security.Value.ReadOnlyConfiguration, files));
     }
@@ -36,7 +39,8 @@ public sealed class SettingsEndpoints
         LocaleCatalog locales,
         IOptions<SecurityConfiguration> security,
         ILogger<SettingsEndpoints> logger,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IConfiguration? configuration = null)
     {
         var target = catalog.Find(file);
         if (target == None)
@@ -62,7 +66,7 @@ public sealed class SettingsEndpoints
             async configurationFile =>
             {
                 var changes = (await configurationFile.ReadJsonAsync(cancellationToken))
-                    .PlanChanges(configurationFile.Name, request.Values);
+                    .PlanChanges(configurationFile.Name, request.Values, catalog.ModuleKeys);
 
                 return await changes.Match(
                     () => Task.FromResult<IResult>(Results.BadRequest()),
@@ -73,7 +77,25 @@ public sealed class SettingsEndpoints
                             return Results.BadRequest();
                         }
 
+                        ResilientJsonConfigurationProvider[] providers = [];
+                        if (planned.Keys.Any(path => path.StartsWith("Backend:Modules:", StringComparison.OrdinalIgnoreCase))
+                            && configuration is not null)
+                        {
+                            var root = configuration as IConfigurationRoot
+                                ?? throw new InvalidOperationException("Configuration cannot be reloaded.");
+                            providers = [..root.Providers.OfType<ResilientJsonConfigurationProvider>()
+                                .Where(provider => provider.IsFor(configurationFile))];
+                            if (providers.Length == 0)
+                            {
+                                throw new InvalidOperationException("The backend configuration file has no reloadable provider.");
+                            }
+                        }
+
                         await configurationFile.SetJsonNodesAsync(planned, cancellationToken);
+                        foreach (var provider in providers)
+                        {
+                            provider.Load();
+                        }
 
                         logger.LogInformation(
                             "Settings of {File} changed: {Paths}",
@@ -91,7 +113,7 @@ public sealed class SettingsEndpoints
         CancellationToken cancellationToken)
     {
         if (request.Values is null
-            || request.Values.Count != 0
+            || request.Values.Keys.Any(KnownSettings.IsManagedAppSettingsPath)
             || request.Logging is null
             || request.OpenTelemetry is null)
         {
@@ -100,19 +122,22 @@ public sealed class SettingsEndpoints
 
         var logging = request.Logging.ToConfiguration();
         var openTelemetry = request.OpenTelemetry.ToNormalizedRequest();
+        var changes = (await target.ReadJsonAsync(cancellationToken)).PlanChanges(target.Name, request.Values);
 
         return await logging.Match(
             () => Task.FromResult<IResult>(Results.BadRequest()),
             async minimumLevel => await openTelemetry.Match(
                 () => Task.FromResult<IResult>(Results.BadRequest()),
-                async configuration =>
+                async configuration => await changes.Match(
+                () => Task.FromResult<IResult>(Results.BadRequest()),
+                async planned =>
                 {
-                    await target.WriteAppSettingsAsync(minimumLevel, configuration, cancellationToken);
+                    await target.WriteAppSettingsAsync(minimumLevel, configuration, cancellationToken, planned);
 
                     logger.LogInformation("App settings of {File} changed", () => [target.Name]);
 
                     return Results.NoContent();
-                }));
+                })));
     }
 
     public static Task<IResult> Generate(
@@ -150,7 +175,12 @@ public sealed class SettingsEndpoints
                     () => Task.FromResult<IResult>(Results.BadRequest()),
                     async action =>
                     {
-                        if (!await rotator.RotateNowAsync(cancellationToken))
+                        var root = await target.ReadJsonAsync(cancellationToken);
+                        var secret = KnownSettings.FindNode(root, action.Path);
+                        var missing = secret is null || secret is System.Text.Json.Nodes.JsonValue value
+                            && value.TryGetValue<string>(out var text) && string.IsNullOrWhiteSpace(text);
+                        if (!await rotator.RotateNowAsync(cancellationToken,
+                            missing ? generated => ReadInitialMagicLink(target, action.Path, generated) : null))
                         {
                             return Results.NotFound();
                         }
@@ -159,6 +189,16 @@ public sealed class SettingsEndpoints
 
                         return Results.Json(new SettingsActionResponse(action.Path, null));
                     }));
+
+    private static MagicLinkSettings ReadInitialMagicLink(FileInfo target, string path, Uuid secret)
+    {
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonFile(target.FullName);
+        configuration.AddInMemoryCollection(new Dictionary<string, string?> { [path] = secret.ToConfigurationValue() });
+        return configuration.GetSection($"{SecurityConfiguration.SectionName}:{nameof(SecurityConfiguration.MagicLink)}")
+            .GetOptionAware<MagicLinkSettings>()
+            ?? throw new InvalidOperationException("Magic link settings cannot be initialized.");
+    }
 
     public static async Task<IResult> GetForwardedHeaders(ConfigurationFileCatalog catalog, CancellationToken cancellationToken) =>
         await catalog.Find(ConfigurationFileCatalog.BackendFile).Match(

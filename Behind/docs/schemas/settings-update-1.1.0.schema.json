@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind settings update request 1.1.0",
+  "type": "object",
+  "required": ["values"],
+  "properties": {
+    "values": { "type": "object", "additionalProperties": true },
+    "logging": {
+      "type": ["object", "null"],
+      "required": ["overrides"],
+      "properties": {
+        "default": { "type": ["string", "null"] },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "level"],
+            "properties": { "source": { "type": "string" }, "level": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "openTelemetry": {
+      "type": ["object", "null"],
+      "required": ["isEnabled", "traces", "metrics", "logging"],
+      "properties": {
+        "serviceName": { "type": ["string", "null"], "maxLength": 256 },
+        "isEnabled": { "type": "boolean" },
+        "traces": { "$ref": "#/$defs/Exporter" },
+        "metrics": { "$ref": "#/$defs/Exporter" },
+        "logging": { "$ref": "#/$defs/LoggingExporter" }
+      }
+    }
+  },
+  "$defs": {
+    "Exporter": {
+      "type": "object",
+      "required": ["isEnabled"],
+      "properties": {
+        "isEnabled": { "type": "boolean" },
+        "endpoint": { "type": ["string", "null"] },
+        "protocol": { "type": ["string", "null"] },
+        "instruments": { "type": ["array", "null"], "items": { "type": "string" } }
+      }
+    },
+    "LoggingExporter": {
+      "allOf": [
+        { "$ref": "#/$defs/Exporter" },
+        {
+          "type": "object",
+          "properties": {
+            "includeFormattedMessage": { "type": ["boolean", "null"] },
+            "includeScopes": { "type": ["boolean", "null"] },
+            "parseStateValues": { "type": ["boolean", "null"] }
+          }
+        }
+      ]
+    }
+  }
+}

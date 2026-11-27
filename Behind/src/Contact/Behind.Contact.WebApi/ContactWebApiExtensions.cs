@@ -1,5 +1,6 @@
 using Behind.Common.Modules;
 using Behind.Common.WebApi;
+using Behind.Common.WebApi.Middleware;
 using Behind.Contact.Database;
 using Behind.Contact.WebApi.Endpoints;
 using Microsoft.AspNetCore.Builder;
@@ -26,7 +27,8 @@ public static class ContactWebApiExtensions
     {
         public WebApplication UseContact()
         {
-            application.MapContactEndpoints();
+            application.MapGroup("").WithMetadata(new ModuleEndpoint(ContactModule.Descriptor.Key))
+                .MapContactEndpoints();
             return application;
         }
     }

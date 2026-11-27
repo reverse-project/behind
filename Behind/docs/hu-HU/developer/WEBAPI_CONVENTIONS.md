@@ -1271,3 +1271,19 @@ public async Task<IActionResult> CreateAsync(CreateDto dto)
 - A hibakezelési mintákhoz nézze meg a FUNCTIONAL_PROGRAMMING.md fájlt
 - Az adatelérésről lásd a DATABASE_ARCHITECTURE.md fájlt
 - Az e-mail szolgáltatásokat a felhasználói értesítésekhez és fiókkezeléshez az [EMAIL_SENDER_IMPLEMENTATION.md](./EMAIL_SENDER_IMPLEMENTATION.md) segítségével konfigurálja
+
+## Modulok vészkapcsolóinak érvényesítése
+
+A modulvégpontok Common.WebApi.Middleware `ModuleEndpoint(<leíró kulcsa>)`
+metaadatú csoporton keresztül legyenek leképezve. A `ModuleAvailabilityMiddleware`
+az útvonalválasztás után, a statikus frontend és a kezelők előtt fut; a tiltott
+API-kra és fájlokra 404 és no-store választ ad, az aktív kérések megszakítását
+pedig a konfiguráció újratöltéséhez kapcsolja. A közös adapterek a modulcsoporton
+kívül is ellenőrizzék az elérhetőséget. A `GET /modules` csak aktív leírókat ad;
+a telepített konfigurációs fülek Configuration.Read/Manage és a meglévő csak
+olvasható védelem mellett továbbra is elérhetők.
+Az `availableGrants` a Core és az aktív modulok jogosultságait sorolja fel a
+felületi szűréshez; nem módosítja a jogosultságellenőrzést vagy a telepített
+hozzáférési katalógust. A szerepkör- és felhasználószerkesztőknek mentéskor
+meg kell őrizniük a rejtett választásokat. Lásd a
+[modulfelderítés 1.1.0](../specs/module-discovery-1.1.0.md) leírását.

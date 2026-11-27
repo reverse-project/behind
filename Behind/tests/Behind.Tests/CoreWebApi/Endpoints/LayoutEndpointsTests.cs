@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using NSubstitute;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
@@ -51,6 +52,28 @@ public sealed class LayoutEndpointsTests
         var value = Assert.IsType<LayoutConfiguration>(Assert.IsAssignableFrom<IValueHttpResult>(result).Value);
         Assert.Single(value.Layouts);
         Assert.False(value.Layouts[0].Deleted);
+    }
+
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 2)]
+    public async Task PublicRead_FiltersModuleWidgetsWithoutChangingStoredPlacements(bool enabled, int count)
+    {
+        var service = Substitute.For<ILayoutService>();
+        var configuration = new LayoutConfiguration
+        {
+            Layouts = [new SiteLayout
+            {
+                Sections = [new LayoutSection { Widgets = [new() { Type = "core.content" }, new() { Type = "notes.feed" }] }]
+            }]
+        };
+        service.Read(Arg.Any<CancellationToken>()).Returns(configuration);
+        var availability = new ModuleAvailability(new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?> { ["Backend:Modules:notes"] = enabled.ToString() }).Build());
+        var result = await LayoutEndpoints.Get(service, default, new DefaultHttpContext(), NotesModule.Catalog, availability);
+        var value = Assert.IsType<LayoutConfiguration>(Assert.IsAssignableFrom<IValueHttpResult>(result).Value);
+        Assert.Equal(count, Assert.Single(Assert.Single(value.Layouts).Sections).Widgets.Count);
+        Assert.Equal(2, Assert.Single(Assert.Single(configuration.Layouts).Sections).Widgets.Count);
     }
 
     [Theory]

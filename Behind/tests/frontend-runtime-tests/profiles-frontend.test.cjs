@@ -9,6 +9,7 @@ const ko = require(path.join(core, "libraries/knockout.min.js"));
 
 function load(file, dependencies = {}, browserWindow = { confirm: () => true }) {
     let result;
+    dependencies = Object.assign({ "models/modules": { visibleGrants: names => names } }, dependencies);
     vm.runInNewContext(fs.readFileSync(path.join(core, file), "utf8"), {
         define(names, factory) {
             if (typeof names === "function") {

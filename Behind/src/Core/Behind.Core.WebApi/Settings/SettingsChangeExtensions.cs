@@ -91,6 +91,19 @@ public static class SettingsChangeExtensions
             if (old is JsonValue scalar && scalar.TryGetValue<string>(out var previous)
                 && (string.IsNullOrWhiteSpace(text) || text == previous.MaskSensitiveValue()))
             {
+                var mask = previous.MaskSensitiveValue();
+                var ambiguous = !string.IsNullOrWhiteSpace(text)
+                    && existing
+                        .Select(pair => pair.Value)
+                        .OfType<JsonValue>()
+                        .Select(value => value.TryGetValue<string>(out var candidate) ? candidate : null)
+                        .Where(candidate => candidate is not null)
+                        .Distinct(StringComparer.Ordinal)
+                        .Count(candidate => candidate!.MaskSensitiveValue() == mask) > 1;
+                if (ambiguous)
+                {
+                    return None;
+                }
                 text = previous;
             }
             else if (!string.IsNullOrWhiteSpace(text))
@@ -109,10 +122,31 @@ public static class SettingsChangeExtensions
                 {
                     text = matches[0]!;
                 }
+                else if (matches.Count == 0 && IsSensitiveMask(text))
+                {
+                    return None;
+                }
             }
             result[property.Name] = text;
         }
         return Some<JsonNode>(result);
+    }
+
+    private static bool IsSensitiveMask(string text)
+    {
+        if (text == "....")
+        {
+            return true;
+        }
+        if (text.Length is >= 3 and <= 5)
+        {
+            return text[0] != '.'
+                && text[^1] != '.'
+                && text[1..^1].All(character => character == '.');
+        }
+        return text.Length >= 6
+            && text[2..^2].All(character => character == '.')
+            && text.Length == 2 + text[2..^2].Length + 2;
     }
 
     extension(JsonElement element)

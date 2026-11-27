@@ -48,6 +48,7 @@ public sealed class ModuleAvailabilityTests
         Assert.False(availability.IsRouteEnabled(Catalog, "#/notes/123?view=public"));
         Assert.False(availability.IsRouteEnabled(Catalog, "#/hu-HU/notes/123"));
         Assert.True(availability.IsRouteEnabled(Catalog, "#/news/123"));
+        Assert.True(availability.IsRouteEnabled(Catalog, "#/news/notes"));
         Assert.False(availability.IsWidgetEnabled(Catalog, "notes.feed"));
         Assert.True(availability.IsWidgetEnabled(Catalog, "core.news"));
     }

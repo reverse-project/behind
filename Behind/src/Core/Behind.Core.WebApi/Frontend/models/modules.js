@@ -2,6 +2,7 @@ define(["ko", "models/http"], function (ko, http) {
     var modules = ko.observableArray([]);
     var availableGrants = ko.observableArray([]);
     var loadedStyles = {};
+    var accessEditors = [];
 
     var collect = function (select) {
         return modules().reduce(function (all, module) {
@@ -69,10 +70,16 @@ define(["ko", "models/http"], function (ko, http) {
                 }
                 availableGrants(response.ok && response.data && Array.isArray(response.data.availableGrants)
                     ? response.data.availableGrants : []);
+                accessEditors.forEach(function (editor) { editor(); });
                 collect(function (module) {
                     return module.styles;
                 }).forEach(applyStyle);
             });
+        },
+
+        registerAccessEditor: function (refresh) {
+            accessEditors.push(refresh);
+            refresh();
         }
     };
 });

@@ -26,6 +26,18 @@ define(["ko", "models/modules"], function (ko, modules) {
             var rows = ko.observableArray([]);
             var hiddenGrants = [];
             var hiddenRestrictions = [];
+            var loadedAvailable = [];
+            var loadedGrants = [];
+            var loadedRestrictions = [];
+
+            var refresh = function () {
+                var visible = modules.visibleGrants(loadedAvailable);
+                hiddenGrants = loadedGrants.filter(function (name) { return visible.indexOf(name) < 0; });
+                hiddenRestrictions = loadedRestrictions.filter(function (name) { return visible.indexOf(name) < 0; });
+                rows(visible.map(function (name) {
+                    return { name: name, state: ko.observable(stateOf(name, loadedGrants, loadedRestrictions)) };
+                }));
+            };
 
             var pick = function (state) {
                 return rows()
@@ -37,24 +49,24 @@ define(["ko", "models/modules"], function (ko, modules) {
                     });
             };
 
-            return {
+            var editor = {
                 choices: choices,
                 rows: ko.pureComputed(function () {
                     var visible = modules.visibleGrants(rows().map(function (row) { return row.name; }));
                     return rows().filter(function (row) { return visible.indexOf(row.name) >= 0; });
                 }),
                 load: function (available, grants, restrictions) {
-                    var visible = modules.visibleGrants(available);
-                    hiddenGrants = grants.filter(function (name) { return visible.indexOf(name) < 0; });
-                    hiddenRestrictions = restrictions.filter(function (name) { return visible.indexOf(name) < 0; });
-                    rows(visible.map(function (name) {
-                        return { name: name, state: ko.observable(stateOf(name, grants, restrictions)) };
-                    }));
+                    loadedAvailable = available;
+                    loadedGrants = grants;
+                    loadedRestrictions = restrictions;
+                    refresh();
                 },
                 request: function () {
                     return { grants: pick("grant").concat(hiddenGrants), restrictions: pick("restrict").concat(hiddenRestrictions) };
                 }
             };
+            modules.registerAccessEditor(refresh);
+            return editor;
         },
 
         calculate: function (roles, grants, restrictions) {

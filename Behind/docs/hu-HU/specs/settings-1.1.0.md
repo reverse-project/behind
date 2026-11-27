@@ -27,7 +27,9 @@ szerkesztő továbbra is a saját szakaszáért felel.
 
 A `PUT /settings/{file}` `Configuration.Manage` jogosultságot igényel;
 kérése a [beállításmódosítás sémáját](../../schemas/settings-update-1.1.0.schema.json)
-követi. A `values` térkép kettősponttal elválasztott útvonalakhoz adja a
+követi, az `OrdinaryFileUpdateRequest` a közönséges fájlokra, az
+`AppSettingsUpdateRequest` pedig az `appsettings.json`-ra vonatkozik.
+A `values` térkép kettősponttal elválasztott útvonalakhoz adja a
 tipizált módosításokat. Az appsettings esetén a `logging` és `openTelemetry` is
 kötelező. A teljes fájl sémaellenőrzése, a csak olvasható védelem és az
 atomi fájlcsere megmarad.

@@ -47,7 +47,13 @@ public static class SerilogSettings
 
     public static Option<JsonNode> Merge(JsonNode existing, JsonElement incoming)
     {
-        if (incoming.ValueKind != JsonValueKind.Array || !HasUniqueProperties(incoming))
+        if (incoming.ValueKind != JsonValueKind.Array || !HasUniqueProperties(incoming)
+            || incoming.EnumerateArray().Any(item => item.ValueKind == JsonValueKind.String
+                ? string.IsNullOrWhiteSpace(item.GetString())
+                : item.ValueKind != JsonValueKind.Object
+                    || !item.TryGetProperty("Name", out var name)
+                    || name.ValueKind != JsonValueKind.String
+                    || string.IsNullOrWhiteSpace(name.GetString())))
         {
             return None;
         }
@@ -67,12 +73,13 @@ public static class SerilogSettings
             if (string.IsNullOrWhiteSpace(text))
             {
                 var previous = SamePositionSecret(existing, parsed, path);
-                if (previous is null)
-                {
-                    ambiguous = true;
-                    return scalar.DeepClone();
-                }
-                return previous.DeepClone();
+                return previous.Match(
+                    () =>
+                    {
+                        ambiguous = true;
+                        return scalar.DeepClone();
+                    },
+                    value => value.DeepClone());
             }
 
             var matches = values.Where(value => Text(value).MaskSensitiveValue() == text)
@@ -81,12 +88,16 @@ public static class SerilogSettings
             {
                 ambiguous = true;
             }
+            if (matches.Length == 0 && IsSensitiveMask(text))
+            {
+                ambiguous = true;
+            }
             return matches.Length == 1 ? matches[0].DeepClone() : scalar.DeepClone();
         });
         return ambiguous ? None : Some(result);
     }
 
-    private static JsonValue? SamePositionSecret(JsonNode existing, JsonNode incoming, string path)
+    private static Option<JsonValue> SamePositionSecret(JsonNode existing, JsonNode incoming, string path)
     {
         JsonNode? before = existing;
         JsonNode? after = incoming;
@@ -109,29 +120,56 @@ public static class SerilogSettings
             }
             else
             {
-                return null;
+                return None;
             }
         }
-        return before as JsonValue;
+        return before is JsonValue value ? Some(value) : None;
     }
 
     private static bool SameUniqueIdentity(JsonArray before, JsonArray after, int index)
     {
         var name = EntryName(before[index]);
-        return name is not null
-            && string.Equals(name, EntryName(after[index]), StringComparison.OrdinalIgnoreCase)
-            && before.Count(item => string.Equals(name, EntryName(item), StringComparison.OrdinalIgnoreCase)) == 1
-            && after.Count(item => string.Equals(name, EntryName(item), StringComparison.OrdinalIgnoreCase)) == 1;
+        return name.Match(
+            () => false,
+            beforeName => EntryName(after[index]).Match(
+                () => false,
+                afterName => string.Equals(beforeName, afterName, StringComparison.OrdinalIgnoreCase)
+                    && before.Count(item => EntryName(item).Match(
+                        () => false,
+                        candidate => string.Equals(beforeName, candidate, StringComparison.OrdinalIgnoreCase))) == 1
+                    && after.Count(item => EntryName(item).Match(
+                        () => false,
+                        candidate => string.Equals(beforeName, candidate, StringComparison.OrdinalIgnoreCase))) == 1));
     }
 
-    private static string? EntryName(JsonNode? node)
+    private static Option<string> EntryName(JsonNode? node)
     {
         if (node is not JsonObject obj)
         {
-            return null;
+            return None;
         }
         var name = obj.FirstOrDefault(pair => string.Equals(pair.Key, "Name", StringComparison.OrdinalIgnoreCase)).Value;
-        return name is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+        return name is JsonValue value && value.TryGetValue<string>(out var text) && !string.IsNullOrWhiteSpace(text)
+            ? Some(text)
+            : None;
+    }
+
+    private static bool IsSensitiveMask(string text)
+    {
+        if (text == "....")
+        {
+            return true;
+        }
+        if (text.Length is >= 3 and <= 5)
+        {
+            return text[0] != '.'
+                && text[^1] != '.'
+                && text[1..^1].All(character => character == '.');
+        }
+        return text.Length >= 6
+            && text[0..2].All(character => character != '.')
+            && text[^2..].All(character => character != '.')
+            && text[2..^2].All(character => character == '.');
     }
 
     private static void CollectSecrets(JsonNode? node, string path, Dictionary<string, List<JsonValue>> secrets)

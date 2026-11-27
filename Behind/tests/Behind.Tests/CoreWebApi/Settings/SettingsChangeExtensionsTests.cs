@@ -195,16 +195,29 @@ public sealed class SettingsChangeExtensionsTests
     public void ConnectionMapRenamesPreserveUniqueMaskedValuesAndRejectAmbiguousMasks()
     {
         var root = JsonNode.Parse(
-            """{"ConnectionStrings":{"Default":"a-secret-value","One":"ab1234xy","Two":"ab5678xy"}}""")!.AsObject();
+            """{"ConnectionStrings":{"Default":"a-secret-value","One":"cd1234xy","Two":"ef5678xy"}}""")!.AsObject();
         var renamed = root.PlanChanges("database.json", Values(("ConnectionStrings",
-            """{"Renamed":"a-..........ue","one":"ab....xy","Two":"ab....xy"}""")))
+            """{"Renamed":"a-..........ue","one":"cd....xy","Two":"ef....xy"}""")))
             .GetOrElse(new Dictionary<string, JsonNode?>());
 
         Assert.Equal("a-secret-value", (string?)renamed["ConnectionStrings"]!["Renamed"]);
-        Assert.Equal("ab1234xy", (string?)renamed["ConnectionStrings"]!["one"]);
-        Assert.Equal("ab5678xy", (string?)renamed["ConnectionStrings"]!["Two"]);
+        Assert.Equal("cd1234xy", (string?)renamed["ConnectionStrings"]!["one"]);
+        Assert.Equal("ef5678xy", (string?)renamed["ConnectionStrings"]!["Two"]);
         Assert.Equal(None, root.PlanChanges("database.json", Values(("ConnectionStrings", """{"Renamed":"ab....xy"}"""))));
         Assert.NotEqual(None, root.PlanChanges("database.json", Values(("ConnectionStrings", """{"New":"new-secret"}"""))));
+    }
+
+    [Fact]
+    public void ConnectionMapRejectsAStaleMaskedValueButAcceptsANewSecret()
+    {
+        var root = JsonNode.Parse(
+            """{"ConnectionStrings":{"Default":"a-current-secret"}}""")!.AsObject();
+        Assert.Equal(None, root.PlanChanges("database.json", Values(
+            ("ConnectionStrings", """{"Default":"a...............et"}"""))));
+        var planned = root.PlanChanges("database.json", Values(
+            ("ConnectionStrings", """{"Default":"a-new-secret"}"""))).Match(
+                () => throw new InvalidOperationException(), found => found);
+        Assert.Equal("a-new-secret", (string?)planned["ConnectionStrings"]!["Default"]);
     }
 
     [Fact]

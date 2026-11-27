@@ -26,7 +26,9 @@ own sections.
 ## Updates
 
 `PUT /settings/{file}` requires `Configuration.Manage`; its request follows the
-[settings update schema](../../schemas/settings-update-1.1.0.schema.json).
+[settings update schema](../../schemas/settings-update-1.1.0.schema.json), with
+`OrdinaryFileUpdateRequest` for ordinary files and `AppSettingsUpdateRequest`
+for `appsettings.json`.
 The `values` map contains typed changed values by colon-separated path.
 For appsettings, `logging` and `openTelemetry` are also required. Full file
 schema validation, read-only protection and atomic replacement remain in effect.

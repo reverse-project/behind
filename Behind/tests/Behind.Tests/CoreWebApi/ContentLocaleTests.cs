@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 
 namespace Behind.Tests.CoreWebApi;
@@ -409,7 +410,9 @@ public sealed class ContentLocaleTests : IDisposable
         });
         var http = new DefaultHttpContext();
         http.Items[ContentLocaleMiddleware.Header] = "hu-HU";
-        var result = await LayoutEndpoints.Get(layouts, CancellationToken.None, http);
+        var availability = new ModuleAvailability(new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?>()).Build());
+        var result = await LayoutEndpoints.Get(layouts, CancellationToken.None, NotesModule.Catalog, availability, http);
         var value = Assert.IsType<LayoutConfiguration>(Assert.IsAssignableFrom<IValueHttpResult>(result).Value);
         Assert.Equal("default", value.DefaultLayout);
         Assert.Equal(["default", "hungarian"], value.Layouts.Select(layout => layout.Id));

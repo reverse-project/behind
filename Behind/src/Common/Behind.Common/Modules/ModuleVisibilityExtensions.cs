@@ -13,10 +13,12 @@ public static class ModuleVisibilityExtensions
             }
 
             var segments = url[(hash + 2)..].Split('?', 2)[0].TrimEnd('/').Split('/');
-            return !catalog.Modules.Where(module => !availability.IsEnabled(module.Key))
+            var disabledRoutes = catalog.Modules.Where(module => !availability.IsEnabled(module.Key))
                 .SelectMany(module => module.Routes)
-                .Any(route => Matches(route.Path[2..].TrimEnd('/').Split('/'), segments, 0)
-                    || Matches(route.Path[2..].TrimEnd('/').Split('/'), segments, 1));
+                .Select(route => route.Path[2..].TrimEnd('/').Split('/'))
+                .ToArray();
+            return !disabledRoutes.Any(route => Matches(route, segments, 0)
+                || IsContentLocale(segments[0]) && Matches(route, segments, 1));
         }
 
         public bool IsWidgetEnabled(ModuleCatalog catalog, string key) =>
@@ -29,4 +31,10 @@ public static class ModuleVisibilityExtensions
         pattern.Length == segments.Length - offset
         && pattern.Select((segment, index) =>
             segment.StartsWith(':') || segment == segments[index + offset]).All(matches => matches);
+
+    private static bool IsContentLocale(string segment) =>
+        segment.Length >= 5
+        && segment[2] == '-'
+        && segment[..2].All(char.IsLetter)
+        && segment[3..].All(character => char.IsLetterOrDigit(character));
 }

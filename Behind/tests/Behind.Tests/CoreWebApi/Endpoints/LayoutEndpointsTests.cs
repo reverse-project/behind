@@ -19,6 +19,10 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public sealed class LayoutEndpointsTests
 {
+    private static ModuleCatalog Catalog => NotesModule.Catalog;
+    private static ModuleAvailability EnabledAvailability => new(new ConfigurationBuilder().AddInMemoryCollection(
+        new Dictionary<string, string?>()).Build());
+
     private static LayoutConfiguration Configuration() => new()
     {
         Layouts = [new SiteLayout(), new SiteLayout { Id = "deleted", Name = "Deleted", Deleted = true }]
@@ -48,7 +52,7 @@ public sealed class LayoutEndpointsTests
     {
         var service = Substitute.For<ILayoutService>();
         service.Read(Arg.Any<CancellationToken>()).Returns(Configuration());
-        var result = await LayoutEndpoints.Get(service, CancellationToken.None);
+        var result = await LayoutEndpoints.Get(service, CancellationToken.None, Catalog, EnabledAvailability);
         var value = Assert.IsType<LayoutConfiguration>(Assert.IsAssignableFrom<IValueHttpResult>(result).Value);
         Assert.Single(value.Layouts);
         Assert.False(value.Layouts[0].Deleted);
@@ -70,7 +74,7 @@ public sealed class LayoutEndpointsTests
         service.Read(Arg.Any<CancellationToken>()).Returns(configuration);
         var availability = new ModuleAvailability(new ConfigurationBuilder().AddInMemoryCollection(
             new Dictionary<string, string?> { ["Backend:Modules:notes"] = enabled.ToString() }).Build());
-        var result = await LayoutEndpoints.Get(service, default, new DefaultHttpContext(), NotesModule.Catalog, availability);
+        var result = await LayoutEndpoints.Get(service, default, NotesModule.Catalog, availability, new DefaultHttpContext());
         var value = Assert.IsType<LayoutConfiguration>(Assert.IsAssignableFrom<IValueHttpResult>(result).Value);
         Assert.Equal(count, Assert.Single(Assert.Single(value.Layouts).Sections).Widgets.Count);
         Assert.Equal(2, Assert.Single(Assert.Single(configuration.Layouts).Sections).Widgets.Count);

@@ -9,6 +9,10 @@ namespace Behind.Tests.CoreWebApi.Endpoints;
 
 public class MenuEndpointsTests
 {
+    private static ModuleCatalog Catalog => NotesModule.Catalog;
+    private static ModuleAvailability EnabledAvailability => new(new ConfigurationBuilder().AddInMemoryCollection(
+        new Dictionary<string, string?>()).Build());
+
     private static readonly Guid MenuId = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid ItemId = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid RoleId = Guid.Parse("44444444-4444-4444-4444-444444444444");
@@ -80,6 +84,8 @@ public class MenuEndpointsTests
             new DefaultHttpContext(),
             Substitute.For<ISessionQueries>(),
             queries,
+            Catalog,
+            EnabledAvailability,
             [" ", ""]);
 
         Assert.IsType<BadRequest>(result);
@@ -92,7 +98,9 @@ public class MenuEndpointsTests
         Assert.IsType<BadRequest>(await MenuEndpoints.Resolve(
             new DefaultHttpContext(),
             Substitute.For<ISessionQueries>(),
-            Substitute.For<IMenuQueries>()));
+            Substitute.For<IMenuQueries>(),
+            Catalog,
+            EnabledAvailability));
     }
 
     [Fact]
@@ -104,6 +112,8 @@ public class MenuEndpointsTests
             new DefaultHttpContext(),
             Substitute.For<ISessionQueries>(),
             Substitute.For<IMenuQueries>(),
+            Catalog,
+            EnabledAvailability,
             names));
     }
 
@@ -114,7 +124,8 @@ public class MenuEndpointsTests
         queries.Resolve(default!, default, default).ReturnsForAnyArgs([]);
         var context = new DefaultHttpContext();
 
-        await MenuEndpoints.Resolve(context, Substitute.For<ISessionQueries>(), queries, ["main", " MAIN ", "footer"]);
+        await MenuEndpoints.Resolve(context, Substitute.For<ISessionQueries>(), queries, Catalog, EnabledAvailability,
+            ["main", " MAIN ", "footer"]);
 
         Assert.Equal("no-store", context.Response.Headers.CacheControl);
         await queries.Received(1).Resolve(
@@ -133,6 +144,8 @@ public class MenuEndpointsTests
             SessionTestHelper.SignedIn(SessionId),
             SessionTestHelper.SessionQueries(SessionId, UserId),
             queries,
+            Catalog,
+            EnabledAvailability,
             ["main"]);
 
         await queries.Received(1).Resolve(Arg.Any<IReadOnlyCollection<string>>(), Some(UserId), Arg.Any<CancellationToken>());
@@ -156,6 +169,8 @@ public class MenuEndpointsTests
             new DefaultHttpContext(),
             Substitute.For<ISessionQueries>(),
             queries,
+            Catalog,
+            EnabledAvailability,
             ["main"]);
 
         var menu = Assert.Single(Assert.IsType<JsonHttpResult<MenusResponse>>(result).Value!.Menus);
@@ -183,7 +198,7 @@ public class MenuEndpointsTests
         var availability = new ModuleAvailability(new ConfigurationBuilder().AddInMemoryCollection(
             new Dictionary<string, string?> { ["Backend:Modules:notes"] = "false" }).Build());
         var result = await MenuEndpoints.Resolve(new DefaultHttpContext(), Substitute.For<ISessionQueries>(),
-            queries, ["main"], NotesModule.Catalog, availability);
+            queries, NotesModule.Catalog, availability, ["main"]);
         var menu = Assert.Single(Assert.IsType<JsonHttpResult<MenusResponse>>(result).Value!.Menus);
         Assert.Empty(Assert.Single(menu.Items).Children);
     }

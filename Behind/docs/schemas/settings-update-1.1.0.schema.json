@@ -1,38 +1,61 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Behind settings update request 1.1.0",
-  "type": "object",
-  "required": ["values"],
-  "properties": {
-    "values": { "type": "object", "additionalProperties": true },
-    "logging": {
-      "type": ["object", "null"],
-      "required": ["overrides"],
+  "oneOf": [
+    { "$ref": "#/$defs/AppSettingsUpdateRequest" },
+    { "$ref": "#/$defs/OrdinaryFileUpdateRequest" }
+  ],
+  "$defs": {
+    "OrdinaryFileUpdateRequest": {
+      "type": "object",
+      "required": ["values"],
       "properties": {
-        "default": { "type": ["string", "null"] },
-        "overrides": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["source", "level"],
-            "properties": { "source": { "type": "string" }, "level": { "type": "string" } }
+        "values": { "type": "object", "additionalProperties": true },
+        "logging": { "type": ["object", "null"] },
+        "openTelemetry": { "type": ["object", "null"] }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["logging"] },
+          { "required": ["openTelemetry"] }
+        ]
+      },
+      "additionalProperties": false
+    },
+    "AppSettingsUpdateRequest": {
+      "type": "object",
+      "required": ["values", "logging", "openTelemetry"],
+      "properties": {
+        "values": { "type": "object", "additionalProperties": true },
+        "logging": {
+          "type": "object",
+          "required": ["overrides"],
+          "properties": {
+            "default": { "type": ["string", "null"] },
+            "overrides": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["source", "level"],
+                "properties": { "source": { "type": "string" }, "level": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "openTelemetry": {
+          "type": "object",
+          "required": ["isEnabled", "traces", "metrics", "logging"],
+          "properties": {
+            "serviceName": { "type": ["string", "null"], "maxLength": 256 },
+            "isEnabled": { "type": "boolean" },
+            "traces": { "$ref": "#/$defs/Exporter" },
+            "metrics": { "$ref": "#/$defs/Exporter" },
+            "logging": { "$ref": "#/$defs/LoggingExporter" }
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
-    "openTelemetry": {
-      "type": ["object", "null"],
-      "required": ["isEnabled", "traces", "metrics", "logging"],
-      "properties": {
-        "serviceName": { "type": ["string", "null"], "maxLength": 256 },
-        "isEnabled": { "type": "boolean" },
-        "traces": { "$ref": "#/$defs/Exporter" },
-        "metrics": { "$ref": "#/$defs/Exporter" },
-        "logging": { "$ref": "#/$defs/LoggingExporter" }
-      }
-    }
-  },
-  "$defs": {
     "Exporter": {
       "type": "object",
       "required": ["isEnabled"],

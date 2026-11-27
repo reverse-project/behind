@@ -16,9 +16,11 @@ namespace Behind.Core.WebApi.Endpoints;
 public static class LayoutEndpoints
 {
     public static async Task<IResult> Get(
-        ILayoutService layouts, CancellationToken cancellationToken, HttpContext? context = null,
-        [FromServices] ModuleCatalog? modules = null,
-        [FromServices] ModuleAvailability? availability = null)
+        ILayoutService layouts,
+        CancellationToken cancellationToken,
+        [FromServices] ModuleCatalog modules,
+        [FromServices] ModuleAvailability availability,
+        HttpContext? context = null)
     {
         var configuration = await layouts.Read(cancellationToken);
         var locale = context?.Items[Middleware.ContentLocaleMiddleware.Header] as string;
@@ -29,16 +31,14 @@ public static class LayoutEndpoints
             ?? visible.FirstOrDefault(layout => layout.Locale is null);
         return Results.Json(configuration with
         {
-            Layouts = modules is not null && availability is not null
-                ? [..visible.Select(layout => layout with
+            Layouts = [..visible.Select(layout => layout with
+            {
+                Badges = [..layout.Badges.Where(badge => availability.IsRouteEnabled(modules, badge.Link))],
+                Sections = [..layout.Sections.Select(section => section with
                 {
-                    Badges = [..layout.Badges.Where(badge => availability.IsRouteEnabled(modules, badge.Link))],
-                    Sections = [..layout.Sections.Select(section => section with
-                    {
-                        Widgets = [..section.Widgets.Where(widget => availability.IsWidgetEnabled(modules, widget.Type))]
-                    })]
+                    Widgets = [..section.Widgets.Where(widget => availability.IsWidgetEnabled(modules, widget.Type))]
                 })]
-                : visible,
+            })],
             DefaultLayout = ids.Contains(configuration.DefaultLayout) ? configuration.DefaultLayout : fallback?.Id ?? "",
             Assignments = configuration.Assignments.Where(assignment => ids.Contains(assignment.Layout)).ToArray()
         });

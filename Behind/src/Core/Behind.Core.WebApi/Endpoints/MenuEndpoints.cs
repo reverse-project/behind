@@ -40,9 +40,9 @@ public sealed class MenuEndpoints
         HttpContext httpContext,
         ISessionQueries sessionQueries,
         IMenuQueries queries,
-        [FromQuery(Name = "name")] string[]? names = null,
-        [FromServices] ModuleCatalog? modules = null,
-        [FromServices] ModuleAvailability? availability = null)
+        [FromServices] ModuleCatalog modules,
+        [FromServices] ModuleAvailability availability,
+        [FromQuery(Name = "name")] string[]? names = null)
     {
         httpContext.Response.Headers.CacheControl = ManagedListExtensions.NoStore;
 
@@ -63,7 +63,7 @@ public sealed class MenuEndpoints
         return Results.Json(new MenusResponse(menus.Select(menu =>
         {
             var response = menu.ToResponse();
-            return modules is not null && availability is not null ? response.Visible(modules, availability) : response;
+            return response.Visible(modules, availability);
         }).ToList()));
     }
 

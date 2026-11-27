@@ -1,6 +1,8 @@
 define(["ko", "models/http"], function (ko, http) {
     var modules = ko.observableArray([]);
+    var availableGrants = ko.observableArray([]);
     var loadedStyles = {};
+    var accessEditors = [];
 
     var collect = function (select) {
         return modules().reduce(function (all, module) {
@@ -29,6 +31,13 @@ define(["ko", "models/http"], function (ko, http) {
     return {
         modules: modules,
 
+        visibleGrants: function (names) {
+            var available = availableGrants();
+            return names.filter(function (name) {
+                return available.indexOf(name) >= 0;
+            });
+        },
+
         routes: function () {
             return collect(function (module) {
                 return module.routes;
@@ -56,10 +65,32 @@ define(["ko", "models/http"], function (ko, http) {
         load: function () {
             return http.get("/modules").then(function (response) {
                 modules(listed(response));
+                if (!response.ok || !response.data || !Array.isArray(response.data.availableGrants)) {
+                    console.error("Module access visibility could not be loaded");
+                }
+                availableGrants(response.ok && response.data && Array.isArray(response.data.availableGrants)
+                    ? response.data.availableGrants : []);
+                accessEditors.forEach(function (editor) { editor(); });
                 collect(function (module) {
                     return module.styles;
                 }).forEach(applyStyle);
             });
+        },
+
+        registerAccessEditor: function (refresh) {
+            accessEditors.push(refresh);
+            refresh();
+            var registered = true;
+            return function () {
+                if (!registered) {
+                    return;
+                }
+                registered = false;
+                var index = accessEditors.indexOf(refresh);
+                if (index >= 0) {
+                    accessEditors.splice(index, 1);
+                }
+            };
         }
     };
 });

@@ -1,6 +1,7 @@
 using Behind.Core.WebApi.Middleware;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
+using Behind.Core.WebApi.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -13,6 +14,7 @@ public static class RawDatabaseRoutesExtensions
     {
         public void MapRawDatabaseEndpoints()
         {
+            application = application.MapGroup("").AddEndpointFilter<ModuleRawDatabaseFilter>();
             var manage = ManagedListExtensions.DeletedRecordsGrant;
 
             application.MapGet("/raw-database/tables", RawDatabaseEndpoints.Tables)

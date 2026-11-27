@@ -828,3 +828,11 @@ extension(Session)
 - A perzisztencia-leképezésről lásd a DATABASE_ARCHITECTURE.md fájlt
 - Az API-reprezentációról lásd a WEBAPI_CONVENTIONS.md fájlt
 - Az eredménykezelésről lásd a FUNCTIONAL_PROGRAMMING.md fájlt
+
+## Modulok elérhetősége
+
+A telepített modul azonossága és futásidejű elérhetősége külön fogalom.
+A `Backend:Modules:<key>` az entitások, verziók, fájlok és jogosultságok módosítása
+nélkül tiltja a funkciót. A Core kötelező. A közös belépési pontok a
+`ModuleAvailability` és a konfigurációs assembly entitástulajdonlása alapján
+érvényesítik ezt a határt, a tartalomnyelv és korhatár szerkesztésénél is.

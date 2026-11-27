@@ -1,4 +1,5 @@
 using Behind.Common.Modules;
+using Behind.Core.Domain;
 
 namespace Behind.Core.WebApi.Endpoints;
 
@@ -22,6 +23,19 @@ public static class ModuleResponseExtensions
 
     extension(ModuleCatalog catalog)
     {
-        public ModulesResponse ToResponse() => new([..catalog.Modules.Select(module => module.ToResponse())]);
+        public ModulesResponse ToResponse(AccessCatalog access, ModuleAvailability availability)
+        {
+            var active = availability.Active(catalog);
+            var activeKeys = active.Modules.Select(module => module.Key).ToHashSet(StringComparer.Ordinal);
+            var disabledAreas = catalog.Modules
+                .Where(module => !activeKeys.Contains(module.Key))
+                .SelectMany(module => module.GrantAreas)
+                .Select(area => area.Area)
+                .ToHashSet(StringComparer.Ordinal);
+
+            return new(
+                [..active.Modules.Select(module => module.ToResponse())],
+                [..access.Grants.Where(grant => !disabledAreas.Contains(grant.Area)).Select(grant => grant.Grant.Name)]);
+        }
     }
 }

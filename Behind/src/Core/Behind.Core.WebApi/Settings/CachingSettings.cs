@@ -36,6 +36,11 @@ public static class CachingSettings
             return value.ValueKind == JsonValueKind.String;
         }
 
+        if (string.Equals(path, "ConnectionStrings", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.ValueKind == JsonValueKind.Object;
+        }
+
         return path.StartsWith("ConnectionStrings:", StringComparison.OrdinalIgnoreCase)
             && value.ValueKind == JsonValueKind.String;
     }

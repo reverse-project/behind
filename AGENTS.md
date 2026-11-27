@@ -63,6 +63,8 @@ MUST contribute scheduled actions only by registering a scoped Behind.Common.Web
 MUST keep EF models isolated by context type, installed ModuleCatalog and design-time state through IModuleModelContext and ModuleModelCacheKeyFactory (Common.Database, configured by AbstractCoreContext). Never share a cached model between flattened contexts with different installed modules.
 
 ## Persistence and concurrency
+MUST enforce optional module kill switches through `ModuleAvailability` (`Behind.Common.Modules`) and `Backend:Modules:<descriptor key>` (missing means enabled; Core is required). Map every module endpoint through a group with `ModuleEndpoint` metadata so the shared middleware blocks disabled APIs and cancels active requests; module frontend files are also blocked. Shared adapters that can invoke a module outside its endpoint group must check availability. Preserve the installed catalog, flattened EF model, migrations, data and grants; filter only runtime discovery, public navigation/widgets and raw table access. Keep disabled module configuration editable so it can be re-enabled.
+
 MUST propagate the caller-observed version through updates and enforce it atomically; stale versioned requests return a conflict instead of reloading the latest version and applying stale state.
 MUST make multi-record identity creation and linking atomic, and serialize concurrent role creation or ownership changes with bounded retries for serialization conflicts; read-then-write checks alone do not protect concurrent workflows.
 

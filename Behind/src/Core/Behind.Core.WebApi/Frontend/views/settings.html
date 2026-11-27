@@ -115,6 +115,29 @@
             </div>
         </form>
         <form data-bind="submit: saveAppSettings, visible: isLoggingSelected">
+            <p class="form-text" data-bind="t: 'settings.serilog.restart'">Restart the application after changing Serilog assemblies, sinks, enrichers, filters or destructuring.</p>
+            <div data-bind="if: isLoggingSelected">
+                <div data-bind="with: selected">
+                    <div data-bind="foreach: fields">
+                        <div class="row mb-3 align-items-center">
+                            <label class="col-md-4 col-form-label" data-bind="text: label, attr: { for: 'setting-' + path }"></label>
+                            <div class="col-md-8">
+                                <div data-bind="if: isBoolean">
+                                    <input type="checkbox" role="switch" class="form-check-input" data-bind="checked: value, enable: $root.canEdit() && editable, attr: { id: 'setting-' + path }">
+                                </div>
+                                <div data-bind="if: isStructured">
+                                    <fieldset data-bind="enable: editable && $root.canEdit()">
+                                        <div data-bind="template: { name: 'settings-structured-editor', data: $data }"></div>
+                                    </fieldset>
+                                </div>
+                                <div data-bind="if: !isBoolean && !isStructured">
+                                    <input class="form-control" data-bind="value: value, enable: $root.canEdit() && editable, attr: { type: sensitive ? 'password' : isNumber ? 'number' : 'text', placeholder: placeholder, id: 'setting-' + path }">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div data-bind="with: logging">
             <fieldset class="mb-4">
                 <legend class="h6 text-body-secondary" data-bind="t: 'settings.logging.minimum'">Minimum log level</legend>
@@ -291,6 +314,8 @@
             </div>
             <div class="d-flex gap-2 mb-4" data-bind="visible: $root.canManage">
                 <button type="submit" class="btn btn-primary" data-bind="enable: $root.canSaveAppSettings, t: 'common.save'">Save</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="click: $root.discardAppSettings, enable: $root.canEdit, t: 'common.discard'">Discard</button>
+                <button type="button" class="btn btn-outline-secondary" data-bind="click: $root.discard, enable: selected() && selected().isChanged() && $root.canEdit(), t: 'common.discard'">Discard</button>
             </div>
         </form>
         <form class="mb-4" data-bind="with: oidc, submit: $root.saveOidc, visible: $root.isOidcSelected">
@@ -389,6 +414,7 @@
         </form>
         <form data-bind="with: selected, submit: save, visible: isFieldTabSelected">
             <p class="alert alert-info" data-bind="visible: name === 'caching.json', t: 'settings.caching.help'">Caching changes require a restart. Choose Memory or RedisCompatible. Key selects a masked value in ConnectionStrings; missing connections use memory only.</p>
+            <p class="alert alert-info" data-bind="visible: name === 'backend.json', t: 'settings.modules.notice'"></p>
             <div data-bind="foreach: sections">
                 <fieldset class="mb-4">
                     <legend class="h6 text-body-secondary" data-bind="text: title"></legend>
@@ -406,6 +432,9 @@
                                 <div data-bind="if: editable && isNumber">
                                     <input type="number" class="form-control" data-bind="value: value, enable: $root.canEdit, attr: { id: 'setting-' + path }">
                                 </div>
+                                <div data-bind="if: editable && isStructured">
+                                    <div data-bind="template: { name: 'settings-structured-editor', data: $data }"></div>
+                                </div>
                                 <div data-bind="if: editable && hasOptions">
                                     <select class="form-select" data-bind="options: options, optionsValue: 'value', optionsText: 'label', value: value, enable: $root.canEdit, attr: { id: 'setting-' + path }"></select>
                                 </div>
@@ -422,9 +451,61 @@
                 </fieldset>
             </div>
             <div class="d-flex gap-2" data-bind="visible: $root.canManage">
-                <button type="submit" class="btn btn-primary" data-bind="enable: isChanged() && $root.canEdit(), t: 'common.save'">Save</button>
+                <button type="submit" class="btn btn-primary" data-bind="enable: isChanged() && isValid() && $root.canEdit(), t: 'common.save'">Save</button>
                 <button type="button" class="btn btn-outline-secondary" data-bind="click: $root.discard, enable: isChanged() && $root.canEdit(), t: 'common.discard'">Discard</button>
             </div>
         </form>
     </div>
+<script type="text/html" id="settings-structured-editor">
+    <div data-bind="with: structured">
+        <div data-bind="if: visual">
+            <div data-bind="foreach: items">
+                <div class="border rounded p-2 mb-2">
+                    <div data-bind="if: $parent.connections">
+                        <div class="d-flex flex-wrap gap-2">
+                            <input class="form-control" data-bind="textInput: name, enable: $root.canEdit, attr: { 'aria-label': $root.text('settings.structured.name'), placeholder: $root.text('settings.structured.name') }">
+                            <input type="password" autocomplete="new-password" class="form-control" data-bind="textInput: value, enable: $root.canEdit, attr: { 'aria-label': $root.text('settings.structured.connection'), placeholder: isNew ? $root.text('settings.structured.connection') : $root.text('settings.keepCurrent') }">
+                            <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.remove, enable: $root.canEdit, t: 'common.remove'"></button>
+                        </div>
+                    </div>
+                    <div data-bind="if: !$parent.connections && !isNamed">
+                        <div class="d-flex flex-wrap gap-2">
+                            <input class="form-control" data-bind="textInput: value, enable: $root.canEdit, attr: { 'aria-label': $root.text('settings.structured.value') }">
+                            <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.remove, enable: $root.canEdit, t: 'common.remove'"></button>
+                        </div>
+                    </div>
+                    <div data-bind="if: !$parent.connections && isNamed">
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <input class="form-control" data-bind="textInput: name, enable: $root.canEdit, attr: { 'aria-label': $root.text('settings.structured.name'), placeholder: $root.text('settings.structured.name') }">
+                            <button type="button" class="btn btn-outline-danger" data-bind="click: $parent.remove, enable: $root.canEdit, t: 'common.remove'"></button>
+                        </div>
+                        <div data-bind="foreach: args">
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <input class="form-control" data-bind="textInput: name, enable: $root.canEdit, attr: { 'aria-label': $root.text('settings.structured.argument'), placeholder: $root.text('settings.structured.argument') }">
+                                <input class="form-control" autocomplete="new-password" data-bind="textInput: value, enable: $root.canEdit, attr: { type: sensitive() || jsonSensitive() ? 'password' : 'text', 'aria-label': $root.text('settings.structured.value'), placeholder: sensitive() && !isNew ? $root.text('settings.keepCurrent') : $root.text('settings.structured.value') }">
+                                <label><input type="checkbox" data-bind="checked: json, enable: $root.canEdit"> <span data-bind="t: 'settings.structured.jsonValue'"></span></label>
+                                <button type="button" class="btn btn-outline-danger" data-bind="click: function () { $parents[1].removeArgument($parent, $data); }, enable: $root.canEdit, t: 'common.remove'"></button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary" data-bind="click: function () { $parent.addArgument($data); }, enable: $root.canEdit, t: 'settings.structured.addArgument'"></button>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" data-bind="click: add, enable: $root.canEdit, t: 'settings.structured.add'"></button>
+            <button type="button" class="btn btn-outline-secondary" data-bind="visible: serilog, click: addNamed, enable: $root.canEdit, t: 'settings.structured.addNamed'"></button>
+        </div>
+        <div data-bind="ifnot: visual">
+            <div data-bind="if: connections || serilog || !supported() || $parent.sensitive">
+                <div class="form-text" data-bind="t: 'settings.structured.preview'"></div>
+                <pre class="small text-break" data-bind="text: preview"></pre>
+                <input type="password" autocomplete="new-password" class="form-control font-monospace" data-bind="textInput: $parent.value, enable: $root.canEdit, attr: { 'aria-label': $root.text('settings.structured.json') }">
+            </div>
+            <div data-bind="if: !connections && !serilog && supported() && !$parent.sensitive">
+                <textarea rows="4" class="form-control font-monospace" data-bind="textInput: $parent.value, enable: $root.canEdit, attr: { 'aria-label': $root.text('settings.structured.json') }"></textarea>
+            </div>
+        </div>
+        <button type="button" class="btn btn-link px-0" data-bind="click: toggle, enable: $root.canEdit() && (visual() ? valid() : supported()), text: $root.text(visual() ? 'settings.structured.editJson' : 'settings.structured.editList')"></button>
+        <p class="text-danger" role="alert" data-bind="visible: !$parent.valid(), t: 'settings.structured.invalid'"></p>
+    </div>
+</script>
 </section>

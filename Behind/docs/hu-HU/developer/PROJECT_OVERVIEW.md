@@ -489,3 +489,13 @@ A domain objektumok `record` típusokat használnak a következőkért:
 - Tekintse át a [CODING_STANDARDS.md](./CODING_STANDARDS.md) fájlt a kötelező gyakorlatokért
 - Tanulmányozza a [FUNCTIONAL_PROGRAMMING.md](./FUNCTIONAL_PROGRAMMING.md) fájlt a minták megértéséhez
 - Nézze meg a [DESIGN_PATTERNS.md](./DESIGN_PATTERNS.md) fájlt az architekturális döntésekért
+
+## Opcionális modulok elérhetősége
+
+A `ModuleAvailability` az újratölthető `Backend:Modules:<key>` kapcsolókat olvassa,
+alapértékük true; a Core mindig engedélyezett. A telepített leírók megmaradnak a
+`ModuleCatalog`-ban a konfiguráció és az adatbázis összeállításához. A `GET /modules`,
+nyilvános menük és elrendezések csak aktív modulokat mutatnak. Minden modul
+`ModuleEndpoint` csoportmetaadattal képezi le API-jait; a közös middleware tiltja
+a kikapcsolt API-kat és frontend-fájlokat. A Beállítások a hiányzó konfigurációs
+tulajdonságokat és a telepített modulok kapcsolóit is mutatja.

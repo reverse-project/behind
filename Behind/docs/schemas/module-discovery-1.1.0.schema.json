@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://behind.dev/schemas/module-discovery-1.1.0.schema.json",
+  "type": "object",
+  "required": ["modules", "availableGrants"],
+  "properties": {
+    "availableGrants": { "type": "array", "items": { "type": "string" } },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "path", "routes", "administrationPages", "styles", "widgets"],
+        "properties": {
+          "key": { "type": "string" },
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "routes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "controller", "open"],
+              "properties": {
+                "path": { "type": "string" },
+                "controller": { "type": "string" },
+                "open": { "type": "boolean" }
+              }
+            }
+          },
+          "administrationPages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "icon", "href", "grant"],
+              "properties": {
+                "name": { "type": "string" },
+                "icon": { "type": "string" },
+                "href": { "type": "string" },
+                "grant": { "type": "string" }
+              }
+            }
+          },
+          "styles": { "type": "array", "items": { "type": "string" } },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["key", "name", "model"],
+              "properties": {
+                "key": { "type": "string" },
+                "name": { "type": "string" },
+                "model": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -37,6 +37,7 @@ public sealed record SettingsAction(
     public static readonly SettingsAction JwtSigningKey = new(
         "Security:Jwt:SigningKey",
         SettingsActionKind.Generate,
+        true,
         Generate: () => new GeneratedSecret(JwtSettings.GenerateSigningKey(), None));
 
     public static readonly SettingsAction MagicLinkSecret = new(

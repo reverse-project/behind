@@ -110,6 +110,15 @@ public sealed record StartupBackendSection(
     SchedulerConfiguration Scheduler
 )
 {
+    public IReadOnlyDictionary<string, bool> Modules { get; init; } = new Dictionary<string, bool>
+    {
+        ["contact"] = true,
+        ["quotes"] = true,
+        ["sport"] = true,
+        ["forum"] = true,
+        ["markdownviewer"] = true
+    };
+
     public ForwardedHeadersConfiguration ForwardedHeaders { get; init; } = new();
 
     public int AuditSearchMaxEntries { get; init; } = new BackendConfiguration().AuditSearchMaxEntries;
@@ -130,10 +139,19 @@ public sealed record StartupFrontendSection(
 
 public sealed record StartupSiteSection(string Title, string Copyright, string DefaultLocale);
 
-// Mirrors Behind.Common.WebApi FrontendOptions; StartupSetupTests guards that the values stay identical.
-// CompressedMimeTypes is left out: the configuration binder appends list items to the initialized defaults.
 public sealed record StartupStaticFilesSection
 {
+    public IReadOnlyList<string> CompressedMimeTypes { get; init; } =
+    [
+        "text/html",
+        "text/css",
+        "text/javascript",
+        "application/javascript",
+        "application/manifest+json",
+        "image/svg+xml",
+        "text/plain"
+    ];
+
     public bool Minify { get; init; } = true;
 
     public bool Compress { get; init; } = true;

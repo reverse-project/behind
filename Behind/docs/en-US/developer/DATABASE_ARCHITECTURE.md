@@ -1250,3 +1250,10 @@ extension(IServiceCollection)
 - Configure entities with Fluent API
 - Manage migrations carefully
 - Optimize queries to avoid N+1 problems
+
+## Module kill switches and data retention
+
+Runtime module switches do not change the installed catalog or EF model cache
+key. Tables, migrations, audit history and grant assignments remain intact.
+`ModuleRawDatabaseFilter` hides and blocks disabled module tables using their
+configuration assemblies; it never deletes data. Re-enabling restores access.

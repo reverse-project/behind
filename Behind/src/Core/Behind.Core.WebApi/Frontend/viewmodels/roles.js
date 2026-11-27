@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/access", "models/managedlist", "models/i18n"], function (ko, auth, session, access, createManagedList, i18n) {
+define(["ko", "models/auth", "models/session", "models/access", "models/managedlist", "models/i18n", "models/modules"], function (ko, auth, session, access, createManagedList, i18n, modules) {
     return function RolesViewModel() {
         var self = this;
 
@@ -27,8 +27,8 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
                 isDeleted: item.isDeleted,
                 isDeveloper: item.isDeveloper,
                 canSetDeveloper: item.canSetDeveloper,
-                grants: item.grants,
-                restrictions: item.restrictions,
+                grants: modules.visibleGrants(item.grants),
+                restrictions: modules.visibleGrants(item.restrictions),
                 canEdit: item.canEdit,
                 canResetGrants: item.canResetGrants,
                 canDelete: item.canDelete,
@@ -37,7 +37,7 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
             };
 
             row.edit = function () {
-                row.editor.load(data.availableGrants, row.grants, row.restrictions);
+                row.editor.load(data.availableGrants, item.grants, item.restrictions);
                 row.editing(true);
             };
             row.cancel = function () {
@@ -85,6 +85,9 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
                     return auth.hardDeleteRole(row.id);
                 });
             };
+            row.dispose = function () {
+                row.editor.dispose();
+            };
 
             return row;
         };
@@ -123,5 +126,12 @@ define(["ko", "models/auth", "models/session", "models/access", "models/managedl
         };
 
         self.activate = self.list.activate;
+        self.dispose = function () {
+            self.list.dispose();
+            self.canManage.dispose();
+            self.isDenied.dispose();
+            self.canCreateDeveloperRole.dispose();
+            self.canCreate.dispose();
+        };
     };
 });

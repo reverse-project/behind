@@ -6,6 +6,7 @@
 
 | Specifikáció | Verzió | Állapot |
 | --- | --- | --- |
+| [Modulfelderítés](./module-discovery-1.1.0.md) | 1.1.0 | Aktuális |
 | [Alfiókok API](./subaccounts-3.5.0.md) | 3.5.0 | Aktuális |
 | [Alfiókok API](./subaccounts-3.4.0.md) | 3.4.0 | Elavult |
 | [Alfiókok API](./subaccounts-3.3.0.md) | 3.3.0 | Elavult |
@@ -22,7 +23,9 @@
 | [Alfiókok API](./subaccounts-1.2.0.md) | 1.2.0 | Korábbi |
 | [Alfiókok API](./subaccounts-1.1.0.md) | 1.1.0 | Korábbi |
 | [Alfiókok API](./subaccounts-1.0.0.md) | 1.0.0 | Korábbi |
-| [Konfigurációs JSON ellenőrzése](./configuration-json-1.6.0.md) | 1.6.0 | Aktuális |
+| [Konfigurációs JSON és beállítások](./configuration-json-1.7.0.md) | 1.7.0 | Aktuális |
+| [Beállítások felfedezése és módosítása](./settings-1.1.0.md) | 1.1.0 | Aktuális |
+| [Konfigurációs JSON ellenőrzése](./configuration-json-1.6.0.md) | 1.6.0 | Korábbi |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.5.0.md) | 1.5.0 | Korábbi |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.4.0.md) | 1.4.0 | Korábbi |
 | [Konfigurációs JSON ellenőrzése](./configuration-json-1.3.0.md) | 1.3.0 | Korábbi |

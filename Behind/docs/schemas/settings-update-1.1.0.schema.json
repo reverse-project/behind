@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind settings update request 1.1.0",
+  "oneOf": [
+    { "$ref": "#/$defs/AppSettingsUpdateRequest" },
+    { "$ref": "#/$defs/OrdinaryFileUpdateRequest" }
+  ],
+  "$defs": {
+    "OrdinaryFileUpdateRequest": {
+      "$anchor": "ordinary-file-update-request",
+      "type": "object",
+      "required": ["values"],
+      "properties": {
+        "values": { "type": "object", "additionalProperties": true },
+        "logging": { "type": ["object", "null"] },
+        "openTelemetry": { "type": ["object", "null"] }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["logging"] },
+          { "required": ["openTelemetry"] }
+        ]
+      },
+      "additionalProperties": false
+    },
+    "AppSettingsUpdateRequest": {
+      "$anchor": "appsettings-update-request",
+      "type": "object",
+      "required": ["values", "logging", "openTelemetry"],
+      "properties": {
+        "values": { "type": "object", "additionalProperties": true },
+        "logging": {
+          "type": "object",
+          "required": ["overrides"],
+          "properties": {
+            "default": { "type": ["string", "null"] },
+            "overrides": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["source", "level"],
+                "properties": { "source": { "type": "string" }, "level": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "openTelemetry": {
+          "type": "object",
+          "required": ["isEnabled", "traces", "metrics", "logging"],
+          "properties": {
+            "serviceName": { "type": ["string", "null"], "maxLength": 256 },
+            "isEnabled": { "type": "boolean" },
+            "traces": { "$ref": "#/$defs/Exporter" },
+            "metrics": { "$ref": "#/$defs/Exporter" },
+            "logging": { "$ref": "#/$defs/LoggingExporter" }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Exporter": {
+      "type": "object",
+      "required": ["isEnabled"],
+      "properties": {
+        "isEnabled": { "type": "boolean" },
+        "endpoint": { "type": ["string", "null"] },
+        "protocol": { "type": ["string", "null"] },
+        "instruments": { "type": ["array", "null"], "items": { "type": "string" } }
+      }
+    },
+    "LoggingExporter": {
+      "allOf": [
+        { "$ref": "#/$defs/Exporter" },
+        {
+          "type": "object",
+          "properties": {
+            "includeFormattedMessage": { "type": ["boolean", "null"] },
+            "includeScopes": { "type": ["boolean", "null"] },
+            "parseStateValues": { "type": ["boolean", "null"] }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind settings discovery response 1.1.0",
+  "type": "object",
+  "required": ["readOnly", "files"],
+  "properties": {
+    "readOnly": { "type": "boolean" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "fields"],
+        "properties": {
+          "name": { "type": "string" },
+          "editor": { "type": ["string", "null"] },
+          "fields": { "type": "array", "items": { "$ref": "#/$defs/Field" } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Field": {
+      "type": "object",
+      "required": ["path", "type", "value", "sensitive", "editable"],
+      "properties": {
+        "path": { "type": "string" },
+        "type": { "enum": ["string", "number", "boolean", "array", "object"] },
+        "value": { "type": "string", "description": "JSON text for collections; sensitive nested values are masked." },
+        "sensitive": { "type": "boolean" },
+        "editable": { "type": "boolean" },
+        "action": { "enum": [null, "generate", "rotate"] },
+        "options": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "properties": {
+              "value": { "type": "string" },
+              "label": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

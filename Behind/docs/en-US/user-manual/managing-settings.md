@@ -13,6 +13,30 @@ Both grants belong to the `Developers` role. Administrators never have these gra
 
 ## Tabs
 
+All known settings are shown even when their JSON properties are missing or null.
+Missing values show their defaults without writing them to disk; Save writes only
+your changes. Lists and connection maps have structured editors; complex custom
+values can still be edited as JSON. Dedicated email, logging, telemetry,
+OIDC and forwarded-header forms retain their validation and secret protection.
+
+## Module kill switches
+
+In **backend.json > Backend > Modules**, each installed optional module has an
+on/off switch. Missing switches default to on; Core is required and has no switch.
+Turning a module off rejects its APIs and files, including media, feeds and
+management operations, and hides its pages, navigation and widgets. Existing
+cancellable requests are cancelled. Stored data and configuration are preserved.
+The module's settings remain editable, so turning it back on restores access
+under the original permissions.
+
+Its grants and restrictions are hidden in role, user, session and profile views
+until reactivation. Editing other access selections preserves those hidden values.
+The explicit role grant reset still resets that role's grants to its defaults.
+
+Switches apply without restarting the server. Saving module switches refreshes
+the browser to rebuild its routes and widgets. Other open browsers must reload
+to remove already rendered content; server access is blocked immediately.
+
 The **caching.json** tab controls HybridCache. **Provider** is a dropdown containing
 **Memory** (default) and **RedisCompatible** (Valkey). **Key** names a connection
 under **ConnectionStrings**; the generated name is **CachingConnection**.
@@ -81,7 +105,13 @@ The `appsettings.json` tab is a form for the log levels instead of a list of val
 
 1. Choose the **Default level**: the lowest level that is written to the log (Verbose, Debug, Information, Warning, Error or Fatal). **Not set** leaves the built-in default (Information).
 2. Under **Levels per source** add a source, a namespace such as `Microsoft.AspNetCore` or `Behind`, and choose its level. A source with its own level ignores the default level. Every source needs a different name; **Remove** deletes one.
-3. Choose **Save**. Only the levels are written to the file; everything else in it stays as it was. The new levels apply immediately.
+3. Choose **Save** to write the levels, telemetry and changed fields while preserving other properties. The new levels apply immediately. **Discard** reloads the saved values.
+
+The same tab provides editors for Serilog assemblies, enrichers, sinks, filters, destructuring and
+their arguments. Add or remove entries without losing other custom properties.
+Sensitive argument values are masked; leave a replacement blank to keep it.
+Removing an entry removes its arguments, including secrets. Restart the
+application after changing assemblies, sinks, enrichers, filters or destructuring.
 
 ## Secrets are masked
 
@@ -106,7 +136,7 @@ Some secrets cannot be typed; they have a button instead:
 | `Security:SecretKey` (administrator elevation) | **Generate** | Creates a new authenticator secret. |
 | `Security:Elevation:DeveloperSecretKey` (developer elevation) | **Generate** | Creates a new authenticator secret, also when none is set yet. |
 | `Security:Jwt:SigningKey` | **Generate** | Creates a new random signing key. Everybody has to sign in again. |
-| `Security:MagicLink:ActualSecret` | **Rotate** | The current magic link secret becomes the old secret, which is still accepted for the configured overlap, and a new secret is used from now on. It applies immediately. |
+| `Security:MagicLink:ActualSecret` | **Rotate** | The current magic link secret becomes the old secret, which is still accepted for the configured overlap, and a new secret is used from now on. If no secret is configured, it is initialized. It applies immediately. |
 
 Generating an authenticator secret shows its authenticator address and a QR code **once**. Add it to your authenticator at once; the page never shows it again. The new secret applies immediately. Every button asks for confirmation.
 

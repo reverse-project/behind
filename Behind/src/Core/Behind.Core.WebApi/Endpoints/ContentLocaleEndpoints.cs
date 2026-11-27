@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Behind.Common.Database;
+using Behind.Common.Database.Modules;
 using Behind.Common.Modules;
 using Behind.Common.WebApi;
 using Behind.Common.WebApi.Filters;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Behind.Core.WebApi.Endpoints;
 
@@ -164,6 +166,12 @@ public static class ContentLocaleEndpoints
         string entityType, Guid id, HttpContext http, AbstractCoreContext context,
         IAuthorizationService authorization, IEnumerable<IContentLocalePermission> permissions)
     {
+        if (http.RequestServices.GetService<ModuleAvailability>() is { } availability
+            && !availability.IsEntityEnabled(context.Modules, entityType))
+        {
+            return Results.NotFound();
+        }
+
         var type = context.LocalizedContentTypes.SingleOrDefault(type => type.Name == entityType);
         if (type is null || id == Guid.Empty)
         {

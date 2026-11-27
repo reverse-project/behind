@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/access"], function (ko, auth, access) {
+define(["ko", "models/auth", "models/access", "models/modules"], function (ko, auth, access, modules) {
     return function UserAccessViewModel(userId, save) {
         var self = this;
 
@@ -21,7 +21,7 @@ define(["ko", "models/auth", "models/access"], function (ko, auth, access) {
             });
             var selection = self.editor.request();
 
-            return access.calculate(chosen, selection.grants, selection.restrictions);
+            return modules.visibleGrants(access.calculate(chosen, selection.grants, selection.restrictions));
         });
 
         self.hasCalculatedGrants = ko.pureComputed(function () {
@@ -75,6 +75,13 @@ define(["ko", "models/auth", "models/access"], function (ko, auth, access) {
                 grants: selection.grants,
                 restrictions: selection.restrictions
             });
+        };
+
+        self.dispose = function () {
+            self.editor.dispose();
+            self.hasMessage.dispose();
+            self.calculatedGrants.dispose();
+            self.hasCalculatedGrants.dispose();
         };
     };
 });

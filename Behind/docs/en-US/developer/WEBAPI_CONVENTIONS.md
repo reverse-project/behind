@@ -1271,3 +1271,17 @@ public async Task<IActionResult> CreateAsync(CreateDto dto)
 - Check FUNCTIONAL_PROGRAMMING.md for error handling patterns
 - See DATABASE_ARCHITECTURE.md for data access
 - Configure Email Services with [EMAIL_SENDER_IMPLEMENTATION.md](./EMAIL_SENDER_IMPLEMENTATION.md) for user notifications and account management
+
+## Module kill-switch enforcement
+
+Map module endpoints through a group with Common.WebApi.Middleware
+`ModuleEndpoint(<descriptor key>)` metadata. `ModuleAvailabilityMiddleware` runs
+after routing and before static frontend or handlers, returns 404 with no-store
+for disabled APIs/assets, and links active request cancellation to configuration
+reloads. Shared adapters must check availability outside the module group.
+`GET /modules` returns only active descriptors; installed configuration tabs remain
+accessible with Configuration.Read/Manage and existing read-only protection.
+Its `availableGrants` lists Core and active module grants for frontend display
+filtering; it does not change authorization or the installed access catalog. Role
+and user editors must retain hidden selections when saving visible changes. See
+[module discovery 1.1.0](../specs/module-discovery-1.1.0.md).

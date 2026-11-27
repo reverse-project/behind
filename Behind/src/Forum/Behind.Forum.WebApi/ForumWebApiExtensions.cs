@@ -1,6 +1,7 @@
 using Behind.Common.Configuration;
 using Behind.Common.Modules;
 using Behind.Common.WebApi;
+using Behind.Common.WebApi.Middleware;
 using Behind.Forum.Common;
 using Behind.Forum.Database;
 using Behind.Forum.WebApi.Endpoints;
@@ -33,7 +34,8 @@ public static class ForumWebApiExtensions
     {
         public WebApplication UseForum()
         {
-            application.MapForumEndpoints();
+            application.MapGroup("").WithMetadata(new ModuleEndpoint(ForumModule.Descriptor.Key))
+                .MapForumEndpoints();
 
             return application;
         }

@@ -26,6 +26,7 @@ public sealed class RawDatabaseEndpointsHttpTests : IAsyncLifetime
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddModuleCatalog();
         builder.Services.AddAuthorization(options =>
             options.AddPolicy(ManagedListExtensions.DeletedRecordsGrant, policy => policy.RequireAssertion(_ => true)));
         builder.Services.AddScoped<IAuditActorProvider>(_ => new FixedAuditActorProvider(AuditActor.Anonymous));

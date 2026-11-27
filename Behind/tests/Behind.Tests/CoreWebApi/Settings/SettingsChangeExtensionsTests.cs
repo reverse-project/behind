@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Behind.Common.Configuration;
+using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.Settings;
 
 namespace Behind.Tests.CoreWebApi.Settings;
@@ -120,5 +121,126 @@ public sealed class SettingsChangeExtensionsTests
 
         Assert.Empty(AccountModeSettings.Missing(root, "backend.json"));
         Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Accounts:Password", "false"))));
+    }
+
+    [Fact]
+    public void MissingKnownValuesAreTypedAndUnknownOrConflictingPathsAreRejected()
+    {
+        var root = JsonNode.Parse("""{"Backend":{"Scheduler":{},"Accounts":"invalid"}}""")!.AsObject();
+        var fields = KnownSettings.Fields(root, "backend.json", []);
+        Assert.Equal(SchedulerConfiguration.DefaultTickSeconds,
+            fields.Single(field => field.Path == "Backend:Scheduler:TickSeconds").Value.GetValue<int>());
+        Assert.DoesNotContain(fields, field => field.Path.StartsWith("Backend:Accounts:"));
+        Assert.NotEqual(None, root.PlanChanges("backend.json", Values(("Backend:Scheduler:TickSeconds", "30"))));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Scheduler:TickSeconds", "\"30\""))));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Scheduler:Unknown", "30"))));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Accounts:SignIn", "false"))));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Scheduler", "{}"))));
+    }
+
+    [Fact]
+    public void ModuleSwitchesOnlyAcceptInstalledKeys()
+    {
+        var root = JsonNode.Parse("""{"Backend":{"Modules":{"forum":false,"uninstalled":true}}}""")!.AsObject();
+        var fields = KnownSettings.Fields(root, "backend.json", ["forum", "sport"]);
+        Assert.False(fields.Single(field => field.Path == "Backend:Modules:forum").Value.GetValue<bool>());
+        Assert.True(fields.Single(field => field.Path == "Backend:Modules:sport").Value.GetValue<bool>());
+        Assert.NotEqual(None, root.PlanChanges("backend.json", Values(("Backend:Modules:sport", "false")), ["forum", "sport"]));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Modules:uninstalled", "false")), ["forum"]));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Modules:core", "false")), ["forum"]));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Modules:forum", "\"false\"")), ["forum"]));
+    }
+
+    [Fact]
+    public void StructuredValuesPreserveMaskedConnectionsAndRejectOverlappingChanges()
+    {
+        var root = JsonNode.Parse("""{"ConnectionStrings":{"Default":"a-secret-value","Old":"to-remove"}}""")!.AsObject();
+        var values = Values(("ConnectionStrings", """{"Default":"a-..........ue","New":"new-secret"}"""));
+        var planned = root.PlanChanges("database.json", values).Match(
+            () => throw new InvalidOperationException(), found => found);
+        Assert.Equal("a-secret-value", (string?)planned["ConnectionStrings"]!["Default"]);
+        Assert.Null(planned["ConnectionStrings"]!["Old"]);
+        Assert.Equal("new-secret", (string?)planned["ConnectionStrings"]!["New"]);
+        Assert.Equal(None, root.PlanChanges("database.json", Values(
+            ("ConnectionStrings", "{}"), ("ConnectionStrings:Default", "\"new\""))));
+        Assert.Equal(None, root.PlanChanges("database.json", Values(("ConnectionStrings", """{"Bad":1}"""))));
+    }
+
+    [Fact]
+    public void ExistingArrayEntriesRemainEditableAndStoredCasingIsPreserved()
+    {
+        var root = JsonNode.Parse("""{"custom":{"items":[{"name":"old"}]}}""")!.AsObject();
+        var planned = root.PlanChanges("other.json", Values(("Custom:Items:0:Name", "\"new\"")))
+            .GetOrElse(new Dictionary<string, JsonNode?>());
+        Assert.Equal("new", (string?)planned["custom:items:0:name"]);
+    }
+
+    [Fact]
+    public void ConnectionMapsPreserveBlankSecretsAllowExplicitClearingAndRejectDuplicateNames()
+    {
+        var root = JsonNode.Parse("""{"ConnectionStrings":{"Default":"secret","Empty":""}}""")!.AsObject();
+        var planned = root.PlanChanges("database.json", Values(("ConnectionStrings",
+            """{"Default":"","Empty":"","New":"new-secret"}"""))).GetOrElse(new Dictionary<string, JsonNode?>());
+        Assert.Equal("secret", (string?)planned["ConnectionStrings"]!["Default"]);
+        Assert.Equal("", (string?)planned["ConnectionStrings"]!["Empty"]);
+        Assert.Equal("new-secret", (string?)planned["ConnectionStrings"]!["New"]);
+        Assert.NotEqual(None, root.PlanChanges("database.json", Values(("ConnectionStrings", """{"Default":null}"""))));
+        Assert.Equal(None, root.PlanChanges("database.json", Values(("ConnectionStrings",
+            """{"Default":"x","default":"y"}"""))));
+        Assert.Equal(None, root.PlanChanges("database.json", Values(
+            ("ConnectionStrings:Default", "\"x\""), ("connectionstrings:default", "\"y\""))));
+    }
+
+    [Fact]
+    public void ConnectionMapRenamesPreserveUniqueMaskedValuesAndRejectAmbiguousMasks()
+    {
+        var root = JsonNode.Parse(
+            """{"ConnectionStrings":{"Default":"a-secret-value","One":"cd1234xy","Two":"ef5678xy"}}""")!.AsObject();
+        var renamed = root.PlanChanges("database.json", Values(("ConnectionStrings",
+            """{"Renamed":"a-..........ue","one":"cd....xy","Two":"ef....xy"}""")))
+            .GetOrElse(new Dictionary<string, JsonNode?>());
+
+        Assert.Equal("a-secret-value", (string?)renamed["ConnectionStrings"]!["Renamed"]);
+        Assert.Equal("cd1234xy", (string?)renamed["ConnectionStrings"]!["one"]);
+        Assert.Equal("ef5678xy", (string?)renamed["ConnectionStrings"]!["Two"]);
+        Assert.Equal(None, root.PlanChanges("database.json", Values(("ConnectionStrings", """{"Renamed":"ab....xy"}"""))));
+        Assert.NotEqual(None, root.PlanChanges("database.json", Values(("ConnectionStrings", """{"New":"new-secret"}"""))));
+    }
+
+    [Fact]
+    public void ConnectionMapRejectsAStaleMaskedValueButAcceptsANewSecret()
+    {
+        var root = JsonNode.Parse(
+            """{"ConnectionStrings":{"Default":"a-current-secret"}}""")!.AsObject();
+        Assert.Equal(None, root.PlanChanges("database.json", Values(
+            ("ConnectionStrings", """{"Default":"a...............et"}"""))));
+        var planned = root.PlanChanges("database.json", Values(
+            ("ConnectionStrings", """{"Default":"a-new-secret"}"""))).Match(
+                () => throw new InvalidOperationException(), found => found);
+        Assert.Equal("a-new-secret", (string?)planned["ConnectionStrings"]!["Default"]);
+    }
+
+    [Fact]
+    public void MissingDefaultsRespectPropertyCasingAndModuleSchemaDefaults()
+    {
+        var root = JsonNode.Parse("""{"backend":{"accounts":{},"scheduler":{}}}""")!.AsObject();
+        var fields = KnownSettings.Fields(root, "backend.json", []);
+        Assert.True(fields.Single(field => field.Path == "backend:accounts:SignIn").Value.GetValue<bool>());
+        Assert.Equal(SchedulerConfiguration.DefaultTickSeconds,
+            fields.Single(field => field.Path == "backend:scheduler:TickSeconds").Value.GetValue<int>());
+        Assert.Equal("Post", KnownSettings.Fields(new JsonObject(), "forum.json", [])
+            .Single(field => field.Path == "Forum:Moderation").Value.GetValue<string>());
+        Assert.Equal("README.md", KnownSettings.Fields(new JsonObject(), "markdownviewer.json", [])
+            .Single(field => field.Path == "MarkdownViewer:DefaultDocument").Value.GetValue<string>());
+    }
+
+    [Fact]
+    public void MissingStringListAcceptsArrayButNotOtherTypes()
+    {
+        var root = new JsonObject();
+        var fields = KnownSettings.Fields(root, "frontend.json", []);
+        Assert.IsType<JsonArray>(fields.Single(field => field.Path == "Frontend:StaticFiles:CompressedMimeTypes").Value);
+        Assert.NotEqual(None, root.PlanChanges("frontend.json", Values(("Frontend:StaticFiles:CompressedMimeTypes", """["text/plain"]"""))));
+        Assert.Equal(None, root.PlanChanges("frontend.json", Values(("Frontend:StaticFiles:CompressedMimeTypes", "\"text/plain\""))));
     }
 }

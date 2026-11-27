@@ -14,20 +14,32 @@ public sealed class MagicLinkSecretRotator(
     public Task<bool> RotateIfNeededAsync(CancellationToken cancellationToken = default) =>
         RotateAsync(false, cancellationToken);
 
-    public Task<bool> RotateNowAsync(CancellationToken cancellationToken = default) =>
-        RotateAsync(true, cancellationToken);
+    public Task<bool> RotateNowAsync(
+        CancellationToken cancellationToken = default,
+        Func<Uuid, MagicLinkSettings>? initialize = null) =>
+        RotateAsync(true, cancellationToken, initialize);
 
-    private async Task<bool> RotateAsync(bool force, CancellationToken cancellationToken)
+    private async Task<bool> RotateAsync(
+        bool force, CancellationToken cancellationToken, Func<Uuid, MagicLinkSettings>? initialize = null)
     {
         await _rotationGate.WaitAsync(cancellationToken);
 
         try
         {
             return await store.Current.Match(
-                none: () =>
+                none: async () =>
                 {
+                    if (force && initialize is not null)
+                    {
+                        var initial = initialize(Uuid.CreateVersion7(timeProvider.GetUtcNow()));
+                        await persister.PersistAsync(initial, cancellationToken);
+                        store.Replace(initial);
+                        logger.LogInformation("Magic link secrets initialized");
+                        return true;
+                    }
+
                     logger.LogDebug("Magic link secret rotation skipped: magic links are not configured");
-                    return Task.FromResult(false);
+                    return false;
                 },
                 some: current => AdvanceAsync(current, force, cancellationToken));
         }

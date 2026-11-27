@@ -1254,3 +1254,11 @@ extension(IServiceCollection)
 - Konfigurálja az entitásokat a Fluent API-val
 - Kezelje gondosan a migrációkat
 - Optimalizálja a lekérdezéseket az N+1 problémák elkerülése érdekében
+
+## Modulkapcsolók és adatmegőrzés
+
+A futásidejű modulkapcsoló nem módosítja a telepített katalógust vagy az EF
+modellgyorsítótár kulcsát. A táblák, migrációk, auditnapló és jogosultságok
+megmaradnak. A `ModuleRawDatabaseFilter` a konfigurációs assembly alapján elrejti
+és tiltja a kikapcsolt modul tábláit, adatot nem töröl. Visszakapcsolva ismét
+elérhetők.

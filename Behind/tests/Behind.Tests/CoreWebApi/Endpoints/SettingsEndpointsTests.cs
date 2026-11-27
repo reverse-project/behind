@@ -1,5 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Behind.Common.Configuration;
+using Behind.Common.Logging;
+using Behind.Common.Modules;
 using Behind.Core.Common.Configuration;
 using Behind.Core.WebApi.Endpoints;
 using Behind.Core.WebApi.MagicLinks;
@@ -7,6 +10,8 @@ using Behind.Core.WebApi.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 namespace Behind.Tests.CoreWebApi.Endpoints;
 
@@ -70,6 +75,14 @@ public sealed class SettingsEndpointsTests : IDisposable
             await SettingsEndpoints.Get(Catalog, TestLocales.Embedded, Security(readOnly), CancellationToken.None)).Value!;
 
     [Fact]
+    public async Task DiscoveryMatchesItsPublishedResponseSchema()
+    {
+        var response = await Listed();
+        Assert.True(JsonSchemas.IsValid("settings-response-1.0.0",
+            JsonSerializer.SerializeToNode(response, new JsonSerializerOptions(JsonSerializerDefaults.Web))));
+    }
+
+    [Fact]
     public async Task Get_ListsEveryExistingFileAsATab()
     {
         var response = await Listed();
@@ -115,6 +128,83 @@ public sealed class SettingsEndpointsTests : IDisposable
         Assert.Equal(("100", "number", false), (size.Value, size.Type, size.Sensitive));
         Assert.All([issuer, enabled, size], field => Assert.True(field.Editable));
         Assert.All([issuer, enabled, size], field => Assert.Null(field.Action));
+    }
+
+    [Fact]
+    public async Task Get_ShowsMissingDefaultsArraysAndMaskedConnectionMaps()
+    {
+        File.WriteAllText(PathOf("frontend.json"), """{"Frontend":{}}""");
+        File.WriteAllText(PathOf("database.json"), """{"ConnectionStrings":{"Default":"a-secret-value"}}""");
+        var response = await Listed();
+        Assert.Equal(SchedulerConfiguration.DefaultTickSeconds.ToString(),
+            Field(response, "backend.json", "Backend:Scheduler:TickSeconds").Value);
+        Assert.Equal("array", Field(response, "frontend.json", "Frontend:StaticFiles:CompressedMimeTypes").Type);
+        var map = Field(response, "database.json", "ConnectionStrings");
+        Assert.Equal("object", map.Type);
+        Assert.True(map.Sensitive);
+        Assert.DoesNotContain("a-secret-value", map.Value);
+    }
+
+    [Fact]
+    public async Task Update_ModuleSwitchReloadsConfigurationAndPreservesUnknownKeys()
+    {
+        File.WriteAllText(PathOf("backend.json"), """{"Backend":{"Modules":{"other":true}}}""");
+        var catalog = ConfigurationFileCatalog.For(_directory, [], ["forum"]);
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = _directory });
+        builder.AddSerilog();
+        builder.AddReloadableJsonFile("backend.json", false);
+        var configuration = builder.Configuration;
+        var availability = new ModuleAvailability(configuration);
+
+        foreach (var enabled in new[] { false, true })
+        {
+            var reload = ((IConfiguration)configuration).GetReloadToken();
+            var result = await SettingsEndpoints.Update(
+                "backend.json", Update(("Backend:Modules:forum", enabled ? "true" : "false")), catalog,
+                TestLocales.Embedded, Security(), _logger, CancellationToken.None, configuration);
+
+            Assert.IsType<NoContent>(result);
+            Assert.Equal(enabled, (bool?)Read("backend.json")["Backend"]!["Modules"]!["forum"]);
+            Assert.Equal(enabled, availability.IsEnabled("forum"));
+            Assert.True(reload.HasChanged);
+            Assert.True((bool?)Read("backend.json")["Backend"]!["Modules"]!["other"]);
+            Assert.Equal("Information", configuration["Serilog:MinimumLevel:Default"]);
+        }
+    }
+
+    [Fact]
+    public async Task Update_ModuleSwitchPreservesHigherPriorityConfiguration()
+    {
+        var catalog = ConfigurationFileCatalog.For(_directory, [], ["forum"]);
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = _directory });
+        builder.AddSerilog();
+        builder.AddReloadableJsonFile("backend.json", false);
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Backend:Modules:forum"] = "true"
+        });
+
+        var result = await SettingsEndpoints.Update(
+            "backend.json", Update(("Backend:Modules:forum", "false")), catalog,
+            TestLocales.Embedded, Security(), _logger, CancellationToken.None, builder.Configuration);
+
+        Assert.IsType<NoContent>(result);
+        Assert.False((bool?)Read("backend.json")["Backend"]!["Modules"]!["forum"]);
+        Assert.True(new ModuleAvailability(builder.Configuration).IsEnabled("forum"));
+    }
+
+    [Fact]
+    public async Task Update_ModuleSwitchWithoutFileProviderFailsBeforeWriting()
+    {
+        var catalog = ConfigurationFileCatalog.For(_directory, [], ["forum"]);
+        using var configuration = new ConfigurationManager();
+        var original = File.ReadAllText(PathOf("backend.json"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => SettingsEndpoints.Update(
+            "backend.json", Update(("Backend:Modules:forum", "false")), catalog,
+            TestLocales.Embedded, Security(), _logger, CancellationToken.None, configuration));
+
+        Assert.Equal(original, File.ReadAllText(PathOf("backend.json")));
     }
 
     [Fact]
@@ -349,7 +439,7 @@ public sealed class SettingsEndpointsTests : IDisposable
     }
 
     [Fact]
-    public async Task Generate_MissingValueWithoutCreation_IsNotFound()
+    public async Task Generate_MissingSigningKeyCreatesItWithoutReplacingOtherSettings()
     {
         File.WriteAllText(PathOf("security.json"), """{ "Security": { "Jwt": { "Issuer": "x" } } }""");
 
@@ -361,7 +451,9 @@ public sealed class SettingsEndpointsTests : IDisposable
             _logger,
             CancellationToken.None);
 
-        Assert.IsType<NotFound>(result);
+        Assert.IsType<JsonHttpResult<SettingsActionResponse>>(result);
+        Assert.False(string.IsNullOrWhiteSpace((string?)Read("security.json")["Security"]!["Jwt"]!["SigningKey"]));
+        Assert.Equal("x", (string?)Read("security.json")["Security"]!["Jwt"]!["Issuer"]);
     }
 
     [Theory]
@@ -438,6 +530,23 @@ public sealed class SettingsEndpointsTests : IDisposable
         Assert.Equal(
             Some(Now),
             store.Current.Bind(settings => settings.ActualSecret.CreatedAt));
+    }
+
+    [Fact]
+    public async Task Rotate_InitializesMissingMagicLinksAndPreservesConfiguredLimits()
+    {
+        File.WriteAllText(PathOf("security.json"), """{"Security":{"MagicLink":{"RequestLimit":19}}}""");
+        var rotator = Rotator(out var store);
+        var result = await SettingsEndpoints.Rotate("security.json",
+            new SettingsActionRequest("Security:MagicLink:ActualSecret"), Catalog, Security(), rotator,
+            _logger, CancellationToken.None);
+        Assert.IsType<JsonHttpResult<SettingsActionResponse>>(result);
+        var initialized = Assert.Single(store.Current.AsEnumerable());
+        Assert.Equal(Some(Now), initialized.ActualSecret.CreatedAt);
+        Assert.Equal(Some(19), initialized.RequestLimit);
+        Assert.Equal(initialized.ActualSecret.ToConfigurationValue(),
+            (string?)Read("security.json")["Security"]!["MagicLink"]!["ActualSecret"]);
+        Assert.Equal(19, (int?)Read("security.json")["Security"]!["MagicLink"]!["RequestLimit"]);
     }
 
     [Fact]

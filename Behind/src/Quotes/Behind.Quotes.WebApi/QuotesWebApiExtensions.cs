@@ -1,4 +1,5 @@
 using Behind.Common.Modules;
+using Behind.Common.WebApi.Middleware;
 using Behind.Quotes.Database;
 using Behind.Quotes.WebApi.Endpoints;
 using Microsoft.AspNetCore.Builder;
@@ -24,7 +25,8 @@ public static class QuotesWebApiExtensions
     {
         public WebApplication UseQuotes()
         {
-            application.MapQuoteEndpoints();
+            application.MapGroup("").WithMetadata(new ModuleEndpoint(QuotesModule.Descriptor.Key))
+                .MapQuoteEndpoints();
 
             return application;
         }

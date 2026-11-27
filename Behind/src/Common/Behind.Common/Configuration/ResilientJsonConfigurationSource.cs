@@ -20,6 +20,13 @@ public sealed class ResilientJsonConfigurationProvider(ResilientJsonConfiguratio
 {
     private int _loaded;
 
+    public bool IsFor(FileInfo file)
+    {
+        var path = source.FileProvider?.GetFileInfo(source.Path ?? string.Empty).PhysicalPath;
+        return path is not null && string.Equals(Path.GetFullPath(path), file.FullName,
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    }
+
     public override void Load(Stream stream)
     {
         try

@@ -1,5 +1,6 @@
 using Behind.Common;
 using Behind.Common.Database;
+using Behind.Common.Modules;
 using Behind.Core.Database;
 using Behind.Core.Domain;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,17 @@ namespace Behind.Core.WebApi.Endpoints;
 
 public static class MenuResponseExtensions
 {
+    extension(MenuResponse menu)
+    {
+        public MenuResponse Visible(ModuleCatalog modules, ModuleAvailability availability) =>
+            menu with { Items = VisibleItems(menu.Items, modules, availability) };
+    }
+
+    private static IReadOnlyList<MenuItemResponse> VisibleItems(
+        IReadOnlyList<MenuItemResponse> items, ModuleCatalog modules, ModuleAvailability availability) =>
+        [..items.Where(item => availability.IsRouteEnabled(modules, item.Url))
+            .Select(item => item with { Children = VisibleItems(item.Children, modules, availability) })];
+
     public const string BuiltInReason = "built-in";
     public const string UnknownMenuReason = "unknown-menu";
     public const string InvalidParentReason = "invalid-parent";

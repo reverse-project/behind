@@ -16,7 +16,7 @@ namespace Behind.Tests.CoreWebApi.Mcp;
 
 public sealed class ServiceUserEndpointsTests
 {
-    private static (HttpContext Context, UserManagementGate Gate, IAccessQueries Access) Actor()
+    private static (HttpContext Context, UserManagementGate Gate, IAccessQueries Access) Actor(bool developer = false)
     {
         var identity = ServiceUserIdentity.Create(
             new ServiceUserEntry(Guid.NewGuid(), 1, new ServiceUser("actor", "", true)), DateTimeOffset.UtcNow);
@@ -25,7 +25,10 @@ public sealed class ServiceUserEndpointsTests
         sessions.TryFindByIdWithUserId(identity.SessionId, default)
             .Returns(Some<(Session, Guid)>((identity.Session, identity.ServiceUser.Id)));
         var access = Substitute.For<IAccessQueries>();
-        access.GetUserAccess(identity.ServiceUser.Id, default).Returns(new UserAccess([], ["Configuration.Manage", "User.Manage"], []));
+        IReadOnlyList<Grant> grants = developer
+            ? [new("Configuration.Manage"), new("User.Manage"), new(ManagedRole.Developer.RequiredGrant)]
+            : [new("Configuration.Manage"), new("User.Manage")];
+        access.GetUserAccess(identity.ServiceUser.Id, default).Returns(new UserAccess([], grants, []));
         var gate = new UserManagementGate(sessions, access, Substitute.For<IUserManagementQueries>(), AccessCatalog.Core,
             TimeProvider.System, NullLogger<UserManagementGate>.Instance);
         return (context, gate, access);
@@ -80,5 +83,26 @@ public sealed class ServiceUserEndpointsTests
             Options.Create(new SecurityConfiguration { ReadOnlyConfiguration = true }), default);
         Assert.Equal(403, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
         await store.DidNotReceiveWithAnyArgs().Create(default!, default);
+    }
+
+    [Fact]
+    public async Task RestoreDistinguishesStaleVersionsFromMissingServiceUsers()
+    {
+        var (context, gate, _) = Actor(developer: true);
+        var id = Guid.NewGuid();
+        var store = Substitute.For<IServiceUserStore>();
+        store.List(true, default).Returns([new ServiceUserEntry(id, 2, new ServiceUser("agent", "hash", false))]);
+        var security = Options.Create(new SecurityConfiguration());
+
+        var stale = await ServiceUserEndpoints.Restore(id, new ServiceUserVersionRequest(1),
+            context, gate, store, security, default);
+        Assert.Equal(409, Assert.IsAssignableFrom<IStatusCodeHttpResult>(stale).StatusCode);
+        await store.DidNotReceive().Restore(id, 1, default);
+
+        store.List(true, default).Returns([]);
+        var missing = await ServiceUserEndpoints.Restore(id, new ServiceUserVersionRequest(2),
+            context, gate, store, security, default);
+        Assert.Equal(404, Assert.IsAssignableFrom<IStatusCodeHttpResult>(missing).StatusCode);
+        await store.DidNotReceive().Restore(id, 2, default);
     }
 }

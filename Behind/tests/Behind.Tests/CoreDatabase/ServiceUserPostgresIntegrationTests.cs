@@ -34,6 +34,10 @@ public sealed class ServiceUserPostgresIntegrationTests
             .AddInterceptors(new AuditSaveChangesInterceptor(
                 () => new FixedAuditActorProvider(AuditActor.Anonymous), TimeProvider.System))
             .Options;
+        var versioningBuilder = new DbContextOptionsBuilder<VersioningContextPostgres>();
+        versioningBuilder.UseVersioningPostgres(connection);
+        await using var versioning = new VersioningContextPostgres(versioningBuilder.Options);
+        await versioning.Database.MigrateAsync();
         await using var context = new CoreContextPostgres(options);
         if (upgrade)
         {
@@ -92,13 +96,13 @@ public sealed class ServiceUserPostgresIntegrationTests
         Assert.True((await store.Authenticate(rotated.ApiKey, CancellationToken.None)).IsNone());
         Assert.True(await store.Delete(id, 3, CancellationToken.None));
         Assert.False(await context.NewsEntries.AnyAsync(value => EF.Property<Guid>(value, VersionedColumns.Key) == newsId));
-        Assert.True(await store.Restore(id, 3, CancellationToken.None));
+        Assert.True(await store.Restore(id, 4, CancellationToken.None));
         Assert.True(await context.NewsEntries.AnyAsync(value => EF.Property<Guid>(value, VersionedColumns.Key) == newsId));
         var successfulRotation = rotations.Single(result => !result.IsNone()).Match(
             () => throw new InvalidOperationException(), value => value);
         Assert.True((await store.Authenticate(successfulRotation.ApiKey, CancellationToken.None)).IsNone());
-        Assert.True(await store.SetEnabled(id, 4, true, CancellationToken.None));
-        var restored = (await store.Rotate(id, 5, CancellationToken.None)).Match(
+        Assert.True(await store.SetEnabled(id, 5, true, CancellationToken.None));
+        var restored = (await store.Rotate(id, 6, CancellationToken.None)).Match(
             () => throw new InvalidOperationException(), value => value);
         Assert.False((await store.Authenticate(restored.ApiKey, CancellationToken.None)).IsNone());
         Assert.Empty(await context.Database.GetPendingMigrationsAsync());

@@ -60,24 +60,35 @@ public partial class _20261127201542_AddServiceUsers : Migration
             table: "WallOfShameEntries");
 
         migrationBuilder.CreateTable(
-            name: "ServiceUsers",
+            name: "ServiceUserVersions",
             columns: table => new
             {
-                Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                Key = table.Column<Guid>(type: "TEXT", nullable: false),
+                Version = table.Column<long>(type: "INTEGER", nullable: false),
                 Name = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                 ApiKeyHash = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
-                Enabled = table.Column<bool>(type: "INTEGER", nullable: false),
-                Version = table.Column<long>(type: "INTEGER", nullable: false)
+                Enabled = table.Column<bool>(type: "INTEGER", nullable: false)
             },
             constraints: table =>
             {
-                table.PrimaryKey("PK_ServiceUsers", x => x.Id);
+                table.PrimaryKey("PK_ServiceUserVersions", x => new { x.Key, x.Version });
             });
 
         migrationBuilder.CreateIndex(
-            name: "IX_ServiceUsers_Name",
-            table: "ServiceUsers",
+            name: "IX_ServiceUserVersions_Name",
+            table: "ServiceUserVersions",
             column: "Name");
+
+        migrationBuilder.Sql("""
+            CREATE VIEW "ServiceUsers" AS
+            SELECT versioned."Key" AS "Id", versioned."Name", versioned."ApiKeyHash", versioned."Enabled", versioned."Version"
+            FROM "ServiceUserVersions" AS versioned
+            INNER JOIN (
+                SELECT "Key", MAX("Version") AS "Version"
+                FROM "ServiceUserVersions"
+                GROUP BY "Key"
+            ) AS latest ON latest."Key" = versioned."Key" AND latest."Version" = versioned."Version";
+            """);
     }
 
     /// <inheritdoc />
@@ -85,8 +96,8 @@ public partial class _20261127201542_AddServiceUsers : Migration
     {
         EnsureDowngradeBlocked();
 
-        migrationBuilder.DropTable(
-            name: "ServiceUsers");
+        migrationBuilder.Sql("""DROP VIEW "ServiceUsers";""");
+        migrationBuilder.DropTable(name: "ServiceUserVersions");
 
         migrationBuilder.AddForeignKey(
             name: "FK_Articles_Users_AuthorId",

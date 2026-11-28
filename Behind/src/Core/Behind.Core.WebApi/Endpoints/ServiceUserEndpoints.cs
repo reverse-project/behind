@@ -128,9 +128,30 @@ public static class ServiceUserEndpoints
     public static Task<IResult> Restore(
         Guid id, ServiceUserVersionRequest request, HttpContext context, UserManagementGate gate, IServiceUserStore store,
         IOptions<SecurityConfiguration> security, CancellationToken cancellationToken) =>
-        Deleted(context, gate, security, () => request.Version <= 0
-            ? Task.FromResult(false)
-            : store.Restore(id, request.Version, cancellationToken));
+        gate.RunAs(context, async actor =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            if (security.Value.ReadOnlyConfiguration || actor.IsImpersonating || !actor.IsDeveloper)
+            {
+                return TypedResults.StatusCode(StatusCodes.Status403Forbidden);
+            }
+            if (request.Version <= 0)
+            {
+                return TypedResults.BadRequest();
+            }
+            var deleted = await store.List(true, cancellationToken);
+            var user = deleted.SingleOrDefault(entry => entry.Id == id);
+            if (user is null)
+            {
+                return TypedResults.NotFound();
+            }
+            if (user.Version != request.Version)
+            {
+                return TypedResults.Conflict();
+            }
+            return await store.Restore(id, request.Version, cancellationToken)
+                ? TypedResults.NoContent() : TypedResults.Conflict();
+        });
 
     public static Task<IResult> HardDelete(
         Guid id, ServiceUserVersionRequest request, HttpContext context, UserManagementGate gate, IServiceUserStore store,
@@ -146,25 +167,18 @@ public static class ServiceUserEndpoints
             {
                 return TypedResults.BadRequest();
             }
-            if (!(await store.List(true, cancellationToken)).Any(user => user.Id == id && user.Version == request.Version))
+            var deleted = await store.List(true, cancellationToken);
+            var user = deleted.SingleOrDefault(entry => entry.Id == id);
+            if (user is null)
+            {
+                return TypedResults.NotFound();
+            }
+            if (user.Version != request.Version)
             {
                 return TypedResults.Conflict();
             }
             return await store.HardDelete(id, request.Version, cancellationToken)
                 ? TypedResults.NoContent() : TypedResults.Conflict();
-        });
-
-    private static Task<IResult> Deleted(
-        HttpContext context, UserManagementGate gate,
-        IOptions<SecurityConfiguration> security, Func<Task<bool>> action) =>
-        gate.RunAs(context, async actor =>
-        {
-            context.Response.Headers.CacheControl = "no-store";
-            if (security.Value.ReadOnlyConfiguration || actor.IsImpersonating || !actor.IsDeveloper)
-            {
-                return TypedResults.StatusCode(StatusCodes.Status403Forbidden);
-            }
-            return await action() ? TypedResults.NoContent() : TypedResults.NotFound();
         });
 
     private static Task<IResult> Modify(

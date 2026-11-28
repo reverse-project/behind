@@ -64,7 +64,9 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
         var id = Guid.CreateVersion7();
         var key = NewKey(id);
         var user = new ServiceUser(name.Trim(), Hash(key), true);
-        await context.ServiceUsers.AddAsync(user, cancellationToken);
+        await context.ServiceUserVersions.AddAsync(ToVersion(id, 1, user), cancellationToken);
+        await context.Set<ActiveVersion>().AddAsync(new ActiveVersion(nameof(ServiceUser), id.ToString(), 1), cancellationToken);
+        context.ServiceUsers.Add(user);
         context.Entry(user).Property<Guid>("Id").CurrentValue = id;
         context.Entry(user).Property<long>("Version").CurrentValue = 1;
         await context.Set<Dictionary<string, object>>("UserRoles").AddAsync(new Dictionary<string, object>
@@ -105,15 +107,16 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
         await using var transaction = context.Database.CurrentTransaction is null
             ? await context.Database.BeginTransactionAsync(cancellationToken)
             : null;
-        if (!await Lock(id, version, cancellationToken))
+        var current = await context.ServiceUsers.AsNoTracking().SingleOrDefaultAsync(
+            value => EF.Property<Guid>(value, "Id") == id && EF.Property<long>(value, "Version") == version,
+            cancellationToken);
+        if (current is null || !await Lock(id, version, cancellationToken))
         {
             return false;
         }
 
         await context.ReplaceUserAccessAsync(id, roleIds, selection, cancellationToken);
-        var user = await context.ServiceUsers.SingleAsync(
-            value => EF.Property<Guid>(value, "Id") == id, cancellationToken);
-        context.Entry(user).Property<long>("Version").CurrentValue = version + 1;
+        await context.ServiceUserVersions.AddAsync(ToVersion(id, version + 1, current), cancellationToken);
 
         try
         {
@@ -137,15 +140,18 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
         await using var transaction = context.Database.CurrentTransaction is null
             ? await context.Database.BeginTransactionAsync(cancellationToken)
             : null;
-        if (!await Lock(id, version, cancellationToken))
+        var user = await context.ServiceUsers.SingleOrDefaultAsync(
+            value => EF.Property<Guid>(value, "Id") == id && EF.Property<long>(value, "Version") == version,
+            cancellationToken);
+        if (user is null || !await Lock(id, version, cancellationToken))
         {
             return None;
         }
 
-        var user = await context.ServiceUsers.SingleAsync(value => EF.Property<Guid>(value, "Id") == id, cancellationToken);
         var entry = context.Entry(user);
-        await entry.ReloadAsync(cancellationToken);
         var updated = change(user);
+        await context.ServiceUserVersions.AddAsync(ToVersion(id, version + 1, updated), cancellationToken);
+        entry.Property<long>("Version").CurrentValue = version + 1;
         if (delete)
         {
             context.ServiceUsers.Remove(user);
@@ -153,7 +159,7 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
         else
         {
             entry.CurrentValues.SetValues(updated);
-            entry.Property<long>("Version").CurrentValue = version + 1;
+            entry.State = EntityState.Modified;
         }
 
         try
@@ -170,7 +176,7 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
             return None;
         }
 
-        return Some(new ServiceUserEntry(id, delete ? version : version + 1, updated));
+        return Some(new ServiceUserEntry(id, version + 1, updated));
     }
 
     private async Task<bool> ChangeDeletion(Guid id, long version, bool hard, CancellationToken cancellationToken)
@@ -186,13 +192,8 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
             return false;
         }
 
-        var deleted = await context.DeletedRowsAsync(rows, cancellationToken);
-        if (deleted.Count == 0)
-        {
-            return false;
-        }
-
-        var user = deleted.Single();
+        var user = await rows.SingleAsync(cancellationToken);
+        context.Entry(user).Property<long>("Version").CurrentValue = version + 1;
         if (hard)
         {
             if (await context.IsUserReferencedByHistoryAsync(id, cancellationToken))
@@ -200,14 +201,18 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
                 return false;
             }
             await context.RemoveUserAccessAsync(id, cancellationToken);
+            context.ServiceUserVersions.RemoveRange(await context.ServiceUserVersions
+                .Where(value => EF.Property<Guid>(value, VersionedColumns.Key) == id)
+                .ToListAsync(cancellationToken));
+            await context.ClearActiveVersionAsync(nameof(ServiceUser), id.ToString(), cancellationToken);
             context.HardDelete(user);
         }
         else
         {
             await context.RestoreByKeyAsync<ServiceUser>([id], cancellationToken);
-            var entry = context.Entry(user);
-            entry.CurrentValues.SetValues(user with { Enabled = false, ApiKeyHash = Hash(NewKey(id)) });
-            entry.Property<long>("Version").CurrentValue = version + 1;
+            await context.ServiceUserVersions.AddAsync(
+                ToVersion(id, version + 1, user with { Enabled = false, ApiKeyHash = Hash(NewKey(id)) }),
+                cancellationToken);
         }
 
         try
@@ -227,9 +232,14 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
     }
 
     private async Task<bool> Lock(Guid id, long version, CancellationToken cancellationToken) =>
-        await context.ServiceUsers.Where(user => EF.Property<Guid>(user, "Id") == id
-                && EF.Property<long>(user, "Version") == version)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(user => user.Enabled, user => user.Enabled), cancellationToken) == 1;
+        await context.Set<ActiveVersion>()
+            .Where(active => active.EntityType == nameof(ServiceUser)
+                && active.EntityKey == id.ToString() && active.Version == version)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(active => active.Version, active => active.Version + 1),
+                cancellationToken) == 1;
+
+    private static ServiceUserVersion ToVersion(Guid id, long version, ServiceUser user) =>
+        new(new VersionedKey<Guid>(id, version), user.Name, user.ApiKeyHash, user.Enabled);
 
     private static IQueryable<ServiceUserEntry> Project(IQueryable<ServiceUser> users) =>
         users.AsNoTracking().Select(user => new ServiceUserEntry(

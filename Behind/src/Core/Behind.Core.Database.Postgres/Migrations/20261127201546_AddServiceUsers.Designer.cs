@@ -1335,6 +1335,34 @@ partial class _20261127201546_AddServiceUsers
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.ServiceUserVersion", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("uuid");
+
+                b.Property<long>("Version")
+                    .HasColumnType("bigint");
+
+                b.Property<string>("ApiKeyHash")
+                    .IsRequired()
+                    .HasMaxLength(64)
+                    .HasColumnType("character varying(64)");
+
+                b.Property<bool>("Enabled")
+                    .HasColumnType("boolean");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("character varying(500)");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("Name");
+
+                b.ToTable("ServiceUserVersions");
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.Site", b =>
             {
                 b.Property<Guid>("SiteId")
@@ -2063,12 +2091,9 @@ partial class _20261127201546_AddServiceUsers
                     .HasColumnType("character varying(500)");
 
                 b.Property<long>("Version")
-                    .IsConcurrencyToken()
                     .HasColumnType("bigint");
 
-                b.HasIndex("Name");
-
-                b.ToTable("ServiceUsers");
+                b.ToView("ServiceUsers", (string)null);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Article", b =>

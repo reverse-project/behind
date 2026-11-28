@@ -78,6 +78,24 @@ public sealed record ServiceUser : User
         !string.IsNullOrWhiteSpace(name) && name.Trim().Length <= MaxNameLength;
 }
 
+public sealed record ServiceUserVersion
+{
+    public VersionedKey<Guid> Id { get; init; } = default;
+    public string Name { get; init; } = string.Empty;
+
+    [Sensible]
+    public string ApiKeyHash { get; init; } = string.Empty;
+
+    public bool Enabled { get; init; }
+
+    private ServiceUserVersion()
+    {
+    }
+
+    public ServiceUserVersion(VersionedKey<Guid> id, string name, string apiKeyHash, bool enabled) =>
+        (Id, Name, ApiKeyHash, Enabled) = (id, name, apiKeyHash, enabled);
+}
+
 public sealed record SystemUser(Option<IEnumerable<Role>> Roles) : User(Roles);
 
 public sealed record GuestUser(Option<IEnumerable<Role>> Roles) : User(Roles);

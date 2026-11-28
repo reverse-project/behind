@@ -133,6 +133,9 @@ public sealed class McpServerTests
     [InlineData("/service-users/123/rotate", false)]
     [InlineData("/session/elevate/developer", false)]
     [InlineData("/users/123/impersonate", false)]
+    [InlineData("/users/123/impersonate/", false)]
+    [InlineData("/users/123/impersonate///", false)]
+    [InlineData("/users/123/sign/out/", false)]
     public void DispatchPaths_CannotEscapeTheLocalApplicationOrIssueInteractiveCredentials(string path, bool allowed) =>
         Assert.Equal(allowed, McpRequestDispatcher.IsAllowedPath(path));
 }

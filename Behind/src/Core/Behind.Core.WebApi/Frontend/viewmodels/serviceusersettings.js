@@ -14,6 +14,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
         self.key = ko.observable("");
         self.message = ko.observable("");
         self.accessId = ko.observable(null);
+        self.accessVersion = ko.observable(null);
         self.accessLoading = ko.observable(false);
         self.accessCanEdit = ko.observable(false);
         self.availableRoles = ko.observableArray([]);
@@ -45,6 +46,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
         var clearAccess = function () {
             accessGeneration++;
             self.accessId(null);
+            self.accessVersion(null);
             self.accessLoading(false);
             self.accessCanEdit(false);
             self.availableRoles([]);
@@ -149,6 +151,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
                 self.message(result.message || "");
                 if (result.ok) {
                     var data = result.data;
+                    self.accessVersion(data.version);
                     self.accessCanEdit(data.canEdit);
                     self.availableRoles(data.availableRoles);
                     self.selectedRoleIds(data.roles.map(function (role) { return role.id; }));
@@ -170,6 +173,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
             var selection = self.accessEditor.request();
             self.accessLoading(true);
             return settings.saveServiceUserAccess(id, {
+                version: self.accessVersion(),
                 roleIds: self.selectedRoleIds().slice(),
                 grants: selection.grants,
                 restrictions: selection.restrictions

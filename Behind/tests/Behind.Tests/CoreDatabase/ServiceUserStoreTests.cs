@@ -46,9 +46,14 @@ public sealed class ServiceUserStoreTests : IDisposable
         Assert.Equal(id, authenticated.Match(() => Guid.Empty, entry => entry.Id));
         Assert.True((await store.Authenticate(credential.ApiKey + "x", Token)).IsNone());
         Assert.Contains((await context.GetUserAccessAsync(id)).Roles, role => role.Name == BuiltInAccess.Users.Role.Name);
+        var other = (await store.Create("other-agent", Token))
+            .Match(() => throw new InvalidOperationException(), value => value);
+        var otherAuthenticated = await store.Authenticate(other.ApiKey, Token);
+        Assert.Equal(other.User.Id, otherAuthenticated.Match(() => Guid.Empty, entry => entry.Id));
         var rotated = (await store.Rotate(id, 1, Token)).Match(() => throw new InvalidOperationException(), value => value);
         Assert.True((await store.Authenticate(credential.ApiKey, Token)).IsNone());
-        Assert.False((await store.Authenticate(rotated.ApiKey, Token)).IsNone());
+        var rotatedAuthentication = await store.Authenticate(rotated.ApiKey, Token);
+        Assert.Equal(id, rotatedAuthentication.Match(() => Guid.Empty, entry => entry.Id));
         Assert.True((await store.Rotate(id, 1, Token)).IsNone());
         Assert.False(await store.Delete(id, 1, Token));
         Assert.True(await store.SetEnabled(id, 2, false, Token));
@@ -58,13 +63,14 @@ public sealed class ServiceUserStoreTests : IDisposable
         Assert.True((await store.Find(id, Token)).IsNone());
         Assert.True((await store.Authenticate(rotated.ApiKey, Token)).IsNone());
         Assert.Single(await store.List(true, Token));
-        Assert.True(await store.Restore(id, 4, Token));
+        Assert.False(await store.Restore(id, 3, Token));
+        Assert.True(await store.Restore(id, 5, Token));
         Assert.True((await store.Authenticate(rotated.ApiKey, Token)).IsNone());
-        Assert.True(await store.SetEnabled(id, 5, true, Token));
+        Assert.True(await store.SetEnabled(id, 6, true, Token));
         Assert.True((await store.Authenticate(rotated.ApiKey, Token)).IsNone());
-        Assert.True(await store.Delete(id, 6, Token));
-        Assert.True(await store.HardDelete(id, 6, Token));
-        Assert.False(await store.Restore(id, 6, Token));
+        Assert.True(await store.Delete(id, 7, Token));
+        Assert.True(await store.HardDelete(id, 8, Token));
+        Assert.False(await store.Restore(id, 8, Token));
     }
 
     [Fact]
@@ -92,8 +98,12 @@ public sealed class ServiceUserStoreTests : IDisposable
             .Match(() => throw new InvalidOperationException(), value => value);
         var grant = BuiltInAccess.RawDatabaseManage.Grant.Name;
         var restriction = BuiltInAccess.Restrictions[0].Restriction.Name;
-        await new AccessCommands(context).SetUserAccess(credential.User.Id, [BuiltInAccess.Users.Id],
-            new AccessSelection([grant], [restriction]), Token);
+        Assert.True(await store.SetAccess(credential.User.Id, 1, [BuiltInAccess.Users.Id],
+            new AccessSelection([grant], [restriction]), Token));
+        Assert.False(await store.SetAccess(credential.User.Id, 1, [BuiltInAccess.Users.Id],
+            new AccessSelection([], []), Token));
+        Assert.Equal(2, (await store.Find(credential.User.Id, Token))
+            .Match(() => 0, entry => entry.Version));
         var access = await context.GetUserAccessAsync(credential.User.Id, Token);
         Assert.Contains(access.Grants, value => value.Name == grant);
         Assert.Contains(access.Restrictions, value => value.Name == restriction);
@@ -149,7 +159,7 @@ public sealed class ServiceUserStoreTests : IDisposable
         Assert.False(await context.NewsEntries.AnyAsync(value => EF.Property<Guid>(value, VersionedColumns.Key) == newsId));
         if (service)
         {
-            Assert.True(await store.Restore(id, 1, Token));
+            Assert.True(await store.Restore(id, 2, Token));
         }
         else
         {

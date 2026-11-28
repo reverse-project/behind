@@ -25,13 +25,18 @@ public sealed class McpRequestDispatcher(
             return false;
         }
 
+        var normalizedPath = path.TrimEnd('/');
+        if (normalizedPath.Length == 0)
+        {
+            normalizedPath = "/";
+        }
+
         var excluded = new[] { "/mcp", "/service-users", "/sign", "/session", "/sessions", "/impersonation",
             "/subaccounts", "/profile" };
-        return !excluded.Any(prefix => path.Equals(prefix, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
-            && !path.EndsWith("/impersonate", StringComparison.OrdinalIgnoreCase)
-            && !path.EndsWith("/sign/out", StringComparison.OrdinalIgnoreCase)
-            && !path.EndsWith("/sign/out/all", StringComparison.OrdinalIgnoreCase);
+        return !excluded.Any(prefix => normalizedPath.Equals(prefix, StringComparison.OrdinalIgnoreCase)
+            || normalizedPath.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
+            && !normalizedPath.EndsWith("/impersonate", StringComparison.OrdinalIgnoreCase)
+            && !normalizedPath.EndsWith("/sign/out", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<McpApiResponse> Dispatch(
@@ -113,7 +118,7 @@ public sealed class McpRequestDispatcher(
             logger.LogWarning(exception, "MCP API response exceeded its configured limit; the operation may have completed");
             return new(StatusCodes.Status502BadGateway, "Response size limit exceeded. The operation may have completed; do not retry blindly.");
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             logger.LogError(exception, "MCP inner pipeline failed for service user {ServiceUserId} at {Method} {Path}",
                 identity.ServiceUser.Id, method, path);

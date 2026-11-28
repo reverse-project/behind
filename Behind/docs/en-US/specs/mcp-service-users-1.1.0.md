@@ -52,16 +52,17 @@ with 401 and insufficient access with 403. Requests use camel-case JSON.
 | PUT `/service-users/{id}` | `{version,enabled}` | 204 |
 | POST `/service-users/{id}/rotate` | `{version}` | 200 `{user,apiKey}` |
 | GET `/service-users/{id}/access` | none | 200 existing UserAccessResponse |
-| PUT `/service-users/{id}/access` | `{roleIds,grants,restrictions}` | 204 |
+| PUT `/service-users/{id}/access` | `{version,roleIds,grants,restrictions}` | 204 |
 | POST `/service-users/{id}/delete` | `{version}` | 204 |
-| POST `/service-users/{id}/restore` | none | 204 |
-| POST `/service-users/{id}/hard/delete` | none | 204 |
+| POST `/service-users/{id}/restore` | `{version}` | 204 |
+| POST `/service-users/{id}/hard/delete` | `{version}` | 204 |
 
 `user` is `{id,version,name,enabled}`. Invalid names or selections return 400,
 missing resources return 404 where lookup is required, and stale observed
 versions return 409. Deleted listing is developer-only. The Users role remains
 required. Access edits retain the existing no-escalation checks.
-Permanent deletion returns 409 when retained audit history references the user.
+Every write using an observed version returns 409 when that version is stale.
+Permanent deletion also returns 409 when retained audit history references the user.
 
 ## MCP Streamable HTTP
 
@@ -181,9 +182,12 @@ module routes and their API Explorer metadata to expose those operations.
 No database migration, new setting or external service is required.
 
 Run the existing migrations for the installation's flattened SQLite/PostgreSQL
-context before enabling MCP. They add service identities and extend shared
+context before enabling MCP. They add immutable service-user version storage,
+a read view, and extend shared
 user access/audit/authorship references to the User hierarchy while preserving
 existing human users and memberships. TPC polymorphic references cannot have a
 database foreign key to one concrete user table; application identity checks
 remain authoritative. Human-only sign-in credentials remain human-only.
-Deploy backend and frontend together. No package or external service is required.
+`ActiveVersion` is the concurrency pointer for service-user writes. Deploy
+backend and frontend together. No new setting, package or external service is
+required.

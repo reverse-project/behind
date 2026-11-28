@@ -1333,6 +1333,34 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                 b.HasAnnotation("Behind:SoftDeletable", true);
             });
 
+        modelBuilder.Entity("Behind.Core.Domain.ServiceUserVersion", b =>
+            {
+                b.Property<Guid>("Key")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("ApiKeyHash")
+                    .IsRequired()
+                    .HasMaxLength(64)
+                    .HasColumnType("TEXT");
+
+                b.Property<bool>("Enabled")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Key", "Version");
+
+                b.HasIndex("Name");
+
+                b.ToTable("ServiceUserVersions");
+            });
+
         modelBuilder.Entity("Behind.Core.Domain.Site", b =>
             {
                 b.Property<Guid>("SiteId")
@@ -2061,12 +2089,9 @@ partial class CoreContextSqliteModelSnapshot : ModelSnapshot
                     .HasColumnType("TEXT");
 
                 b.Property<long>("Version")
-                    .IsConcurrencyToken()
                     .HasColumnType("INTEGER");
 
-                b.HasIndex("Name");
-
-                b.ToTable("ServiceUsers");
+                b.ToView("ServiceUsers", (string)null);
             });
 
         modelBuilder.Entity("Behind.Core.Domain.Article", b =>

@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -27,12 +28,22 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
     public static void ApplyServiceUser(ModelBuilder modelBuilder) =>
         modelBuilder.Entity<ServiceUser>(builder =>
         {
-            builder.ToTable("ServiceUsers");
+            builder.ToView("ServiceUsers");
             builder.Property(user => user.Name).HasMaxLength(ServiceUser.MaxNameLength).IsRequired();
             builder.Property(user => user.ApiKeyHash).HasMaxLength(64).IsRequired();
             builder.Property(user => user.Enabled).IsRequired();
-            builder.Property<long>("Version").IsConcurrencyToken();
-            builder.HasIndex(user => user.Name);
+            builder.Property<long>("Version").IsRequired();
+        });
+
+    public static void ApplyServiceUserVersions(ModelBuilder modelBuilder) =>
+        modelBuilder.Entity<ServiceUserVersion>(builder =>
+        {
+            builder.ToTable("ServiceUserVersions");
+            builder.HasVersionedKey();
+            builder.Property(version => version.Name).HasMaxLength(ServiceUser.MaxNameLength).IsRequired();
+            builder.Property(version => version.ApiKeyHash).HasMaxLength(64).IsRequired();
+            builder.Property(version => version.Enabled).IsRequired();
+            builder.HasIndex(version => version.Name);
         });
 
     public static void ApplyUserAccess(ModelBuilder modelBuilder)

@@ -30,6 +30,8 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
 
     public DbSet<ServiceUser> ServiceUsers => Set<ServiceUser>();
 
+    public DbSet<ServiceUserVersion> ServiceUserVersions => Set<ServiceUserVersion>();
+
     public DbSet<ContentAgeOption> ContentAgeOptions => Set<ContentAgeOption>();
 
     public DbSet<ContentLocale> ContentLocales => Set<ContentLocale>();
@@ -103,6 +105,7 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         modelBuilder.Entity<ActiveVersion>().ToTable("ActiveVersions", table => table.ExcludeFromMigrations());
         UserConfiguration.ApplyHumanUser(modelBuilder);
         UserConfiguration.ApplyServiceUser(modelBuilder);
+        UserConfiguration.ApplyServiceUserVersions(modelBuilder);
         UserConfiguration.ApplyUserRoles(modelBuilder);
         UserConfiguration.ApplyOidcPersistence(modelBuilder);
         UserConfiguration.ApplyUserAccess(modelBuilder);
@@ -187,10 +190,24 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
         CancellationToken cancellationToken = default
     )
     {
+        await using var transaction = Database.CurrentTransaction is null && ChangeTracker.HasChanges()
+            ? await Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         foreach (var entry in ChangeTracker.Entries<Subaccount>().Where(entry => entry.State == EntityState.Added))
         {
             var id = entry.VersionedId;
             entry.StampVersionedKey(id.Key, id.Version == 0 ? VersionedColumns.FirstVersion : id.Version);
+        }
+
+        foreach (var entry in ChangeTracker.Entries<ServiceUserVersion>().Where(entry => entry.State == EntityState.Added))
+        {
+            entry.StampVersionedKey(entry.Entity.Id.Key, entry.Entity.Id.Version);
+        }
+
+        if (ChangeTracker.Entries<ServiceUserVersion>().Any(entry => entry.State == EntityState.Modified))
+        {
+            throw new InvalidOperationException("Service-user versions are append-only.");
         }
 
         if (ChangeTracker.Entries<Subaccount>().Any(entry =>
@@ -204,17 +221,64 @@ public partial class AbstractCoreContext(DbContextOptions options, ModuleCatalog
                      entry.State == EntityState.Deleted && HardDeletes.IsMarked(entry.Entity)))
         {
             var id = entry.Property<Guid>("Id").CurrentValue;
+            await LockUserRowForAuditAsync(id, cancellationToken);
             if (await this.IsUserReferencedByHistoryAsync(id, cancellationToken))
             {
                 throw new DbUpdateException("A user referenced by audit entries cannot be permanently deleted.");
             }
         }
 
+        await LockAuditReferencesAsync(cancellationToken);
         await this.ExpandCascadingDeletesAsync(cancellationToken);
         var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         HardDeletes.Clear();
         Restores.Clear();
         return saved;
+    }
+
+    public async Task LockAuditReferencesAsync(CancellationToken cancellationToken)
+    {
+        var ids = ChangeTracker.Entries<AuditLogEntry>()
+            .Where(entry => entry.State == EntityState.Added)
+            .SelectMany(entry => new[]
+            {
+                entry.Property<Guid?>("UserId").CurrentValue,
+                entry.Property<Guid?>("BehalfOfId").CurrentValue
+            })
+            .OfType<Guid>()
+            .Distinct()
+            .Order()
+            .ToList();
+
+        foreach (var id in ids)
+        {
+            await LockUserRowForAuditAsync(id, cancellationToken);
+        }
+    }
+
+    private async Task LockUserRowForAuditAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var activeVersions = Set<ActiveVersion>();
+        var entityKey = id.ToString();
+        var serviceUserLocked = await activeVersions
+            .Where(active => active.EntityType == nameof(ServiceUser) && active.EntityKey == entityKey)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(active => active.Version, active => active.Version), cancellationToken);
+        if (serviceUserLocked == 1)
+        {
+            return;
+        }
+
+        var humanUserLocked = await Users.IgnoreQueryFilters()
+            .Where(user => EF.Property<Guid>(user, "Id") == id)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(user => user.HideEmail, user => user.HideEmail), cancellationToken);
+        if (humanUserLocked == 0)
+        {
+            throw new DbUpdateException("An audit entry cannot reference a user that no longer exists.");
+        }
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess) =>

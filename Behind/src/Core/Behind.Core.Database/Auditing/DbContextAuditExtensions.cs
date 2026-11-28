@@ -16,7 +16,7 @@ public static class DbContextAuditExtensions
         )
         {
             var entries = context.ChangeTracker.Entries()
-                .Where(entry => entry.Entity is not AuditLogEntry)
+                .Where(entry => entry.Entity is not AuditLogEntry and not ServiceUserVersion)
                 .Where(entry =>
                     entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted
                     || (entry.State == EntityState.Unchanged && entry.IsRestored))

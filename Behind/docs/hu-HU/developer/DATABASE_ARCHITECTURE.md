@@ -282,36 +282,21 @@ builder.OwnsOne(u => u.Email, navigationBuilder =>
 
 ### Öröklési stratégiák
 
-A Behind a User aggregátumhoz **Table-Per-Hierarchy (TPH)** stratégiát használ:
+A Behind a User aggregátumhoz **Table-Per-Concrete-Type (TPC)** stratégiát használ:
 
 ```csharp
-// A User aggregátumban
-public abstract record User(Option<IEnumerable<Role>> Roles)
-{
-    public Guid Id { get; init; }
-    public DateTime CreatedAt { get; init; }
-}
+public abstract record User(Option<IEnumerable<Role>> Roles);
+public sealed record HumanUser : User;
+public sealed record ServiceUser : User;
 
-public sealed record HumanUser : User { }
-public sealed record SystemUser : User { }
-public sealed record GuestUser : User { }
-public sealed record BannedUser : User { }
-
-// Egyetlen Users tábla UserType diszkriminátor oszloppal
-// Előnyök:
-// - Egyszerű lekérdezések
-// - Könnyű szűrés
-// - Ismert, korlátozott hierarchiához megfelelő
-//
-// Hátrányok:
-// - Null értékű oszlopok az egyes típusokhoz
-// - Az egyetlen tábla nagyra nőhet
+// A HumanUser a Users, a ServiceUser pedig a ServiceUsers táblába kerül.
+modelBuilder.Entity<User>().UseTpcMappingStrategy();
 ```
 
 **Mikor melyiket használja: TPH, TPT vagy TPC**:
-- **TPH** - Kevés típus, hasonló lekérdezések ✓ A Behindban ezt használjuk
+- **TPH** - Kevés típus, hasonló lekérdezések
 - **TPT** - Sok speciális típus, specifikus lekérdezések
-- **TPC** - Nagyon eltérő típusok, ritkán együtt lekérdezve
+- **TPC** - Külön táblák az egyes konkrét típusokhoz ✓ A Behindban ezt használjuk
 
 ## Repository megvalósítása
 

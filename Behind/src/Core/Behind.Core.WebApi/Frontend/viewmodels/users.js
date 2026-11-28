@@ -8,6 +8,7 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
 
     return function UsersViewModel() {
         var self = this;
+        var refreshGeneration = 0;
 
         self.isSignedIn = session.isSignedIn;
         self.canManage = ko.pureComputed(function () {
@@ -216,8 +217,10 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
         };
 
         self.refresh = function () {
+            var current = ++refreshGeneration;
             if (!self.canManage()) {
                 self.users([]);
+                self.busy(false);
                 return Promise.resolve();
             }
 
@@ -231,6 +234,10 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 deleted: self.showDeleted()
             })
                 .then(function (result) {
+                    if (current !== refreshGeneration || !self.canManage()) {
+                        return undefined;
+                    }
+
                     self.message(result.message);
 
                     if (!result.ok) {
@@ -250,7 +257,9 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                     return undefined;
                 })
                 .finally(function () {
-                    self.busy(false);
+                    if (current === refreshGeneration) {
+                        self.busy(false);
+                    }
                 });
         };
 
@@ -270,7 +279,9 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
                 if (allowed) {
                     self.refresh();
                 } else {
+                    refreshGeneration++;
                     self.users([]);
+                    self.busy(false);
                     self.serviceUsers.invalidate();
                 }
                 if (allowed && self.canReadConfiguration()) {

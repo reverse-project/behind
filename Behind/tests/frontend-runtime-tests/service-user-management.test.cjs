@@ -73,7 +73,7 @@ test("independent access editor saves roles, grants and restrictions and ignores
     await view.load();
     const first = view.openAccess({ id: "first" });
     const second = view.openAccess({ id: "second" });
-    const response = { canEdit: true, availableRoles: [{ id: "role" }], roles: [{ id: "role" }],
+    const response = { version: 7, canEdit: true, availableRoles: [{ id: "role" }], roles: [{ id: "role" }],
         availableGrants: ["User.Read"], grants: ["User.Read"], restrictions: ["User.Delete"] };
     pending[1][1]({ ok: true, data: response });
     await second;
@@ -82,7 +82,9 @@ test("independent access editor saves roles, grants and restrictions and ignores
     assert.equal(view.accessId(), "second");
     assert.equal(view.canSaveAccess(), true);
     await view.saveAccess();
-    assert.deepEqual(calls, [["second", { roleIds: ["role"], grants: ["User.Read"], restrictions: ["User.Delete"] }]]);
+    assert.deepEqual(calls, [["second", {
+        version: 7, roleIds: ["role"], grants: ["User.Read"], restrictions: ["User.Delete"]
+    }]]);
     view.invalidate();
     assert.equal(view.accessId(), null);
 });
@@ -248,4 +250,92 @@ test("service-user tabs require configuration read and actions require managemen
     assert.equal(userAdmin.view.serviceUsers.canManage(), false);
     assert.match(fs.readFileSync(path.join(core, "views/users.html"), "utf8"), /users\.tab\.serviceUsers/);
     assert.doesNotMatch(fs.readFileSync(path.join(core, "views/settings.html"), "utf8"), /<section[^>]*with: serviceUsers/);
+});
+
+test("user administration discards pending loads when management permission is revoked", async () => {
+    let resolveUsers;
+    let Page;
+    const canManage = ko.observable(true);
+    const session = {
+        isSignedIn: ko.observable(true),
+        grants: ko.observable([]),
+        hasGrant: grant => grant === "User.Manage" && canManage()
+    };
+    const auth = {
+        loadUsers: () => new Promise(resolve => {
+            resolveUsers = resolve;
+        })
+    };
+    const createPager = () => ({
+        page: ko.observable(1),
+        isOutOfRange: () => false,
+        update() {},
+        clampIfOutOfRange() {}
+    });
+    const createLetterPager = () => ({
+        selected: ko.observable(""),
+        update() {}
+    });
+    const ServiceUsersViewModel = function () {
+        this.loaded = ko.observable(false);
+        this.busy = ko.observable(false);
+        this.message = ko.observable("");
+        this.load = () => Promise.resolve();
+        this.invalidate = () => {};
+        this.dispose = () => {};
+    };
+    vm.runInNewContext(fs.readFileSync(path.join(core, "viewmodels/users.js"), "utf8"), {
+        define(names, factory) {
+            Page = factory(
+                ko, auth, session, createPager, createLetterPager,
+                { label: item => item.name, href: id => "#/user/" + id },
+                { t: key => key, banReason: reason => reason },
+                function () {}, ServiceUsersViewModel
+            );
+        },
+        Promise,
+        window: {
+            addEventListener() {},
+            removeEventListener() {},
+            confirm: () => true,
+            location: { hash: "" }
+        }
+    });
+
+    const view = new Page();
+    const activating = view.activate();
+    canManage(false);
+    resolveUsers({
+        ok: true,
+        message: "",
+        data: {
+            letters: [],
+            users: {
+                items: [{
+                    id: "id",
+                    name: "Automation",
+                    emails: [],
+                    emailConfirmed: true,
+                    permissions: {
+                        canConfirmEmail: false,
+                        canUnsetPin: false,
+                        canModerate: false,
+                        canDelete: false,
+                        canManageDeleted: false,
+                        canImpersonate: false,
+                        canChangeAdministrator: false,
+                        canChangeDeveloper: false
+                    },
+                    roles: [],
+                    isCurrent: false,
+                    ban: null,
+                    isDeleted: false
+                }]
+            }
+        }
+    });
+    await activating;
+
+    assert.equal(view.users().length, 0);
+    assert.equal(view.busy(), false);
 });

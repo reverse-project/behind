@@ -25,7 +25,7 @@ function setup(files, readOnly = false) {
     const deps = {
         ko, 'models/settings': settings, 'models/session': { isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: () => grants() },
         'models/i18n': { t: key => key }, 'viewmodels/emailsettings': Editor, 'viewmodels/loggingsettings': Editor,
-        'viewmodels/opentelemetrysettings': Editor, 'viewmodels/oidcsettings': Editor, 'viewmodels/forwardedheaderssettings': Editor,'viewmodels/serviceusersettings': Editor
+        'viewmodels/opentelemetrysettings': Editor, 'viewmodels/oidcsettings': Editor, 'viewmodels/forwardedheaderssettings': Editor
     };
     let Settings;
     vm.runInNewContext(fs.readFileSync(path.join(core, 'viewmodels/settings.js'), 'utf8'), {

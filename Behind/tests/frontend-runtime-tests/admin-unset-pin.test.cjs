@@ -32,7 +32,19 @@ test("administrators confirm PIN removal and the refreshed row hides the action"
         "models/letterpager": () => ({ selected: () => "", update() {} }),
         "models/user": { label: () => "Target", href: () => "" },
         "models/i18n": { t: (key, args) => [key, args] },
-        "viewmodels/useraccess": function () {}
+        "viewmodels/useraccess": function () {},
+        "viewmodels/serviceusers": function () {
+            this.canManage = ko.observable(false);
+            this.load = () => Promise.resolve();
+            this.invalidate = () => this.canManage(false);
+            this.dispose = this.invalidate;
+        },
+        "viewmodels/serviceusers": function () {
+            this.canManage = ko.observable(false);
+            this.load = () => Promise.resolve();
+            this.invalidate = () => this.canManage(false);
+            this.dispose = this.invalidate;
+        }
     };
     let Users;
     vm.runInNewContext(fs.readFileSync(path.join(frontend, "viewmodels/users.js"), "utf8"), {

@@ -1,4 +1,4 @@
-define(["ko", "models/auth", "models/session", "models/pager", "models/letterpager", "models/user", "models/i18n", "viewmodels/useraccess"], function (ko, auth, session, createPager, createLetterPager, user, i18n, UserAccessViewModel) {
+define(["ko", "models/auth", "models/session", "models/pager", "models/letterpager", "models/user", "models/i18n", "viewmodels/useraccess", "viewmodels/serviceusers"], function (ko, auth, session, createPager, createLetterPager, user, i18n, UserAccessViewModel, ServiceUsersViewModel) {
     var pageSize = 10;
 
     var roleDefinitions = [
@@ -13,6 +13,21 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
         self.canManage = ko.pureComputed(function () {
             return session.hasGrant("User.Manage");
         });
+        self.canManageConfiguration = ko.pureComputed(function () {
+            return session.hasGrant("Configuration.Manage");
+        });
+        self.canReadConfiguration = ko.pureComputed(function () {
+            return session.hasGrant("Configuration.Read");
+        });
+        self.serviceUsers = new ServiceUsersViewModel(ko.pureComputed(function () {
+            return self.canManage() && self.canManageConfiguration();
+        }));
+        self.canViewServiceUsers = ko.pureComputed(function () {
+            return self.canManage() && self.canReadConfiguration()
+                && (self.serviceUsers.loaded() || self.serviceUsers.busy() || self.serviceUsers.message() !== "");
+        });
+        self.selectedTab = ko.observable("users");
+        self.text = i18n.t;
         self.canViewDeleted = ko.pureComputed(function () {
             return session.hasGrant("RawDatabase.Manage");
         });
@@ -245,19 +260,53 @@ define(["ko", "models/auth", "models/session", "models/pager", "models/letterpag
         };
 
         self.activate = function () {
-            self.canViewDeleted.subscribe(function (allowed) {
+            var deletedSubscription = self.canViewDeleted.subscribe(function (allowed) {
                 if (!allowed && self.showDeleted()) {
                     self.showDeleted(false);
                 }
             });
 
-            self.canManage.subscribe(function (allowed) {
+            var manageSubscription = self.canManage.subscribe(function (allowed) {
                 if (allowed) {
                     self.refresh();
+                } else {
+                    self.users([]);
+                    self.serviceUsers.invalidate();
+                }
+                if (allowed && self.canReadConfiguration()) {
+                    self.serviceUsers.load();
                 }
             });
 
-            return self.refresh();
+            var serviceUserSubscription = self.canViewServiceUsers.subscribe(function (allowed) {
+                if (!allowed && self.selectedTab() === "serviceUsers") {
+                    self.selectedTab("users");
+                }
+            });
+            var configurationReadSubscription = self.canReadConfiguration.subscribe(function () {
+                if (self.canManage() && self.canReadConfiguration()) {
+                    self.serviceUsers.load();
+                } else {
+                    self.serviceUsers.invalidate();
+                }
+            });
+            var onNavigation = function () {
+                deletedSubscription.dispose();
+                manageSubscription.dispose();
+                serviceUserSubscription.dispose();
+                configurationReadSubscription.dispose();
+                self.serviceUsers.dispose();
+                window.removeEventListener("hashchange", onNavigation);
+            };
+            window.addEventListener("hashchange", onNavigation);
+
+            var loading = [self.refresh()];
+            if (self.canManage() && self.canReadConfiguration()) {
+                loading.push(self.serviceUsers.load());
+            } else {
+                self.serviceUsers.invalidate();
+            }
+            return Promise.all(loading);
         };
     };
 });

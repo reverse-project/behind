@@ -56,7 +56,7 @@ async function main() {
         ko, "models/settings": settings, "models/session": session, "models/i18n": i18n,
         "viewmodels/emailsettings": stub, "viewmodels/loggingsettings": stub,
         "viewmodels/opentelemetrysettings": stub, "viewmodels/forwardedheaderssettings": stub,
-        "viewmodels/serviceusersettings": stub, "viewmodels/oidcsettings": Oidc
+        "viewmodels/oidcsettings": Oidc
     });
     const page = new Settings();
     await page.refresh();

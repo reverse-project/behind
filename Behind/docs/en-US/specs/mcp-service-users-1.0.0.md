@@ -31,7 +31,7 @@ body before it is wrapped in a JSON-RPC response.
 `AllowedOrigins` defaults to an empty array. Requests without Origin are allowed;
 a supplied Origin must match one configured origin exactly.
 
-The backend Settings tab exposes these controls and service-user management.
+The User Administration page exposes service-user management in its Service users tab. The backend Settings tab continues to expose the configuration controls.
 Configuration.Read permits discovery. Configuration.Manage and User.Manage
 permit creation, access changes, key rotation and enable/disable.
 Configuration.Manage and User.Delete permit soft deletion. Restore and permanent

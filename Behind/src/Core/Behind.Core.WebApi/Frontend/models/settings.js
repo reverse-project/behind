@@ -6,8 +6,7 @@ define(["models/http", "models/i18n"], function (http, i18n) {
         400: "settings.error.400",
         401: "settings.error.401",
         403: "settings.error.403",
-        404: "settings.error.404",
-        409: "settings.serviceUsers.conflict"
+        404: "settings.error.404"
     };
 
     var readOnlyMessage = "settings.error.readOnly";
@@ -102,34 +101,6 @@ define(["models/http", "models/i18n"], function (http, i18n) {
         saveOidc: function (request) {
             return http.put(filePath("security.json", "oidc"), request).then(function (response) {
                 return response.ok ? success(i18n.t("settings.oidc.saved")) : failure(response);
-            });
-        },
-
-        loadServiceUsers: function (deleted) {
-            return http.get("/service-users?deleted=" + (deleted ? "true" : "false")).then(function (response) {
-                return response.ok ? success("", response.data) : failure(response);
-            });
-        },
-
-        serviceUserAction: function (action, id, request) {
-            var path = "/service-users" + (id ? "/" + encodeURIComponent(id) : "");
-            if (action !== "create" && action !== "update") {
-                path += "/" + action;
-            }
-            return (action === "update" ? http.put(path, request) : http.post(path, request)).then(function (response) {
-                return response.ok ? success("", response.data) : failure(response);
-            });
-        },
-
-        loadServiceUserAccess: function (id) {
-            return http.get("/service-users/" + encodeURIComponent(id) + "/access").then(function (response) {
-                return response.ok ? success("", response.data) : failure(response);
-            });
-        },
-
-        saveServiceUserAccess: function (id, request) {
-            return http.put("/service-users/" + encodeURIComponent(id) + "/access", request).then(function (response) {
-                return response.ok ? success("", response.data) : failure(response);
             });
         },
 

@@ -1,5 +1,5 @@
-define(["ko", "models/settings", "models/i18n", "models/access", "models/modules"], function (ko, settings, i18n, access, modules) {
-    return function ServiceUserSettings(canEdit) {
+define(["ko", "models/serviceusers", "models/i18n", "models/access", "models/modules"], function (ko, serviceUsers, i18n, access, modules) {
+    return function ServiceUsersViewModel(canEdit) {
         var self = this;
         var generation = 0;
         var accessGeneration = 0;
@@ -35,7 +35,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
             return canEdit() && self.loaded() && !self.busy() && self.canDelete();
         });
         self.canDevelop = ko.pureComputed(function () {
-            return canEdit() && self.loaded() && !self.busy() && self.isDeveloper();
+            return self.canWrite() && self.isDeveloper();
         });
         self.canCreate = ko.pureComputed(function () {
             return self.canWrite() && !!self.name().trim();
@@ -72,7 +72,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
             self.key("");
             self.loaded(false);
             self.busy(true);
-            return settings.loadServiceUsers(self.deleted()).then(function (result) {
+            return serviceUsers.load(self.deleted()).then(function (result) {
                 if (current !== generation) {
                     return;
                 }
@@ -106,7 +106,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
             self.key("");
             self.busy(true);
             self.message("");
-            return settings.serviceUserAction(action, user && user.id, request).then(function (result) {
+            return serviceUsers.action(action, user && user.id, request).then(function (result) {
                 if (current !== generation) {
                     return;
                 }
@@ -143,7 +143,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
             self.accessId(user.id);
             self.accessLoading(true);
             var current = accessGeneration;
-            return settings.loadServiceUserAccess(user.id).then(function (result) {
+            return serviceUsers.loadAccess(user.id).then(function (result) {
                 if (current !== accessGeneration) {
                     return;
                 }
@@ -172,7 +172,7 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
             var current = accessGeneration;
             var selection = self.accessEditor.request();
             self.accessLoading(true);
-            return settings.saveServiceUserAccess(id, {
+            return serviceUsers.saveAccess(id, {
                 version: self.accessVersion(),
                 roleIds: self.selectedRoleIds().slice(),
                 grants: selection.grants,
@@ -183,7 +183,20 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
                     self.message(result.message || "");
                     if (result.ok) {
                         self.accessId(null);
-                        return self.openAccess({ id: id });
+                        var secret = self.key();
+                        var refreshing = self.load();
+                        var currentGeneration = generation;
+                        return refreshing.then(function () {
+                            if (generation !== currentGeneration) {
+                                return;
+                            }
+                            if (secret && canEdit()) {
+                                self.key(secret);
+                            }
+                            if (self.loaded()) {
+                                return self.openAccess({ id: id });
+                            }
+                        });
                     }
                 }
             }).catch(function () {
@@ -202,16 +215,16 @@ define(["ko", "models/settings", "models/i18n", "models/access", "models/modules
             return act("update", user, { version: user.version, enabled: !user.enabled }, self.canWrite);
         };
         self.rotate = function (user) {
-            return act("rotate", user, { version: user.version }, self.canWrite, "settings.serviceUsers.confirmRotate");
+            return act("rotate", user, { version: user.version }, self.canWrite, "users.serviceUsers.confirmRotate");
         };
         self.remove = function (user) {
-            return act("delete", user, { version: user.version }, self.canRemove, "settings.serviceUsers.confirmDelete");
+            return act("delete", user, { version: user.version }, self.canRemove, "users.serviceUsers.confirmDelete");
         };
         self.restore = function (user) {
-            return act("restore", user, { version: user.version }, self.canDevelop, "settings.serviceUsers.confirmRestore");
+            return act("restore", user, { version: user.version }, self.canDevelop, "users.serviceUsers.confirmRestore");
         };
         self.hardDelete = function (user) {
-            return act("hard/delete", user, { version: user.version }, self.canDevelop, "settings.serviceUsers.confirmHardDelete");
+            return act("hard/delete", user, { version: user.version }, self.canDevelop, "users.serviceUsers.confirmHardDelete");
         };
     };
 });

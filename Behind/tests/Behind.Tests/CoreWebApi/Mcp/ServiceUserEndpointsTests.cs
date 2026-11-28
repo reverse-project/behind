@@ -86,6 +86,22 @@ public sealed class ServiceUserEndpointsTests
     }
 
     [Fact]
+    public async Task ListDisablesManagementActionsForReadOnlyConfiguration()
+    {
+        var (context, gate, _) = Actor(developer: true);
+        var store = Substitute.For<IServiceUserStore>();
+        store.List(false, default).Returns([]);
+
+        var result = await ServiceUserEndpoints.List(context, gate, store,
+            Options.Create(new SecurityConfiguration { ReadOnlyConfiguration = true }), default);
+
+        var list = Assert.IsType<Ok<ServiceUserListResponse>>(result);
+        Assert.False(list.Value!.CanManage);
+        Assert.False(list.Value.CanDelete);
+        Assert.True(list.Value.IsDeveloper);
+    }
+
+    [Fact]
     public async Task RestoreDistinguishesStaleVersionsFromMissingServiceUsers()
     {
         var (context, gate, _) = Actor(developer: true);

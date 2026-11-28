@@ -30,7 +30,7 @@ JSON-RPC-válaszba csomagolás előtt.
 Az `AllowedOrigins` alapértéke üres tömb. Origin nélküli kérés elfogadható;
 a megadott Originnek pontosan egyeznie kell egy engedélyezett értékkel.
 
-A backend Beállítások lapján találhatók a kapcsolók és az identitások kezelése.
+A szolgáltatásfelhasználók a Felhasználó-adminisztráció Szolgáltatásfelhasználók lapján kezelhetők. A backend Beállítások lapján továbbra is a konfigurációs kapcsolók találhatók.
 Olvasáshoz Configuration.Read szükséges. Létrehozás, hozzáférésszerkesztés,
 kulcscsere és engedélyezés: Configuration.Manage és User.Manage.
 Törlés: Configuration.Manage és User.Delete. Visszaállítás és végleges törlés:

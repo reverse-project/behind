@@ -45,8 +45,8 @@ public static class ServiceUserEndpoints
     }
 
     public static Task<IResult> List(
-        HttpContext context, UserManagementGate gate, IServiceUserStore store, CancellationToken cancellationToken,
-        bool deleted = false) =>
+        HttpContext context, UserManagementGate gate, IServiceUserStore store,
+        IOptions<SecurityConfiguration> security, CancellationToken cancellationToken, bool deleted = false) =>
         gate.RunAs(context, async actor =>
         {
             context.Response.Headers.CacheControl = "no-store";
@@ -57,9 +57,11 @@ public static class ServiceUserEndpoints
             var users = await store.List(deleted, cancellationToken);
             return TypedResults.Ok(new ServiceUserListResponse(
                 users.Select(ToResponse).ToList(),
-                !actor.IsImpersonating && actor.Access.Holds(GrantName.Of(GrantArea.Configuration, GrantAction.Manage))
+                !security.Value.ReadOnlyConfiguration && !actor.IsImpersonating
+                    && actor.Access.Holds(GrantName.Of(GrantArea.Configuration, GrantAction.Manage))
                     && actor.Access.Holds(GrantName.Of(GrantArea.User, GrantAction.Manage)),
-                !actor.IsImpersonating && actor.Access.Holds(GrantName.Of(GrantArea.Configuration, GrantAction.Manage))
+                !security.Value.ReadOnlyConfiguration && !actor.IsImpersonating
+                    && actor.Access.Holds(GrantName.Of(GrantArea.Configuration, GrantAction.Manage))
                     && actor.CanDeleteUsers,
                 actor.IsDeveloper && !actor.IsImpersonating));
         });

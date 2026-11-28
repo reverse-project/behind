@@ -3,6 +3,7 @@
     "version": "1.0.3",
     "date": "2026-11-21",
     "changes": [
+      { "type": "changed", "text": "Service-user management is now a dedicated tab in User Administration instead of appearing in Settings." },
       { "type": "fixed", "text": "Documentation distinguishes a missing source directory from an unset one instead of reporting both as unconfigured." },
       { "type": "fixed", "text": "OpenAPI and MCP API schema discovery no longer fail when exporting the email confirmation request's optional Guid. Existing confirmation JSON and omitted email-id behavior are preserved." },
       { "type": "added", "text": "MCP automatically discovers JSON tools from every installed, enabled module, including management, moderation and lifecycle operations. Tool schemas use API route, query and JSON-body metadata; calls retain normal service-user permissions, while binary transfers remain excluded." },

@@ -1,4 +1,4 @@
-define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings", "viewmodels/opentelemetrysettings", "viewmodels/oidcsettings", "viewmodels/forwardedheaderssettings", "viewmodels/serviceusersettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor, OpenTelemetrySettingsEditor, OidcSettingsEditor, ForwardedHeadersSettings, ServiceUserSettings) {
+define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/emailsettings", "viewmodels/loggingsettings", "viewmodels/opentelemetrysettings", "viewmodels/oidcsettings", "viewmodels/forwardedheaderssettings"], function (ko, settings, session, i18n, EmailSettingsEditor, LoggingSettingsEditor, OpenTelemetrySettingsEditor, OidcSettingsEditor, ForwardedHeadersSettings) {
     var emailEditor = "email";
     var loggingEditor = "logging";
 
@@ -375,7 +375,6 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
         self.openTelemetry = new OpenTelemetrySettingsEditor(self.canEdit);
         self.forwarded = new ForwardedHeadersSettings(self.canEdit);
         self.oidc = new OidcSettingsEditor(self.canEdit);
-        self.serviceUsers = new ServiceUserSettings(self.canEdit);
         self.canSaveAppSettings = ko.pureComputed(function () {
             return self.canEdit() && self.selected() !== null && self.selected().isValid() && self.logging.canSave() && self.openTelemetry.canSave();
         });
@@ -487,11 +486,9 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
         var loadEditor = function (skipOidc) {
             if (!self.isBackendSelected()) {
                 self.forwarded.invalidate();
-                self.serviceUsers.invalidate();
             }
             if (self.isBackendSelected() && !skipOidc) {
-                return Promise.all([self.forwarded.load(), self.serviceUsers.load()]).then(function (results) {
-                    var result = results[0];
+                return self.forwarded.load().then(function (result) {
                     if (!result.ok) {
                         self.message(result.message);
                     }
@@ -704,12 +701,9 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
 
         self.activate = function () {
             var viewSubscription;
-            var manageSubscription;
             var onNavigation = function () {
                 loadGeneration++;
-                self.serviceUsers.dispose();
                 viewSubscription.dispose();
-                manageSubscription.dispose();
                 window.removeEventListener("hashchange", onNavigation);
             };
             window.addEventListener("hashchange", onNavigation);
@@ -720,15 +714,6 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
                     loadGeneration++;
                     self.busy(false);
                     self.forwarded.invalidate();
-                    self.serviceUsers.invalidate();
-                }
-            });
-            manageSubscription = self.canManage.subscribe(function (allowed) {
-                if (!allowed) {
-                    self.serviceUsers.invalidate();
-                    if (self.canView() && self.isBackendSelected()) {
-                        self.serviceUsers.load();
-                    }
                 }
             });
 

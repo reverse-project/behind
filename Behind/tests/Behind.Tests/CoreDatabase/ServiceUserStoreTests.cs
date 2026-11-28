@@ -41,7 +41,9 @@ public sealed class ServiceUserStoreTests : IDisposable
         Assert.Equal("agent", credential.User.User.Name);
         Assert.Equal(Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(credential.ApiKey))), credential.User.User.ApiKeyHash);
         Assert.DoesNotContain(credential.User.User.ApiKeyHash, JsonSerializer.Serialize(credential.User.User));
-        Assert.False((await store.Authenticate(credential.ApiKey, Token)).IsNone());
+        var authenticated = await store.Authenticate(credential.ApiKey, Token);
+        Assert.False(authenticated.IsNone());
+        Assert.Equal(id, authenticated.Match(() => Guid.Empty, entry => entry.Id));
         Assert.True((await store.Authenticate(credential.ApiKey + "x", Token)).IsNone());
         Assert.Contains((await context.GetUserAccessAsync(id)).Roles, role => role.Name == BuiltInAccess.Users.Role.Name);
         var rotated = (await store.Rotate(id, 1, Token)).Match(() => throw new InvalidOperationException(), value => value);
@@ -56,13 +58,13 @@ public sealed class ServiceUserStoreTests : IDisposable
         Assert.True((await store.Find(id, Token)).IsNone());
         Assert.True((await store.Authenticate(rotated.ApiKey, Token)).IsNone());
         Assert.Single(await store.List(true, Token));
-        Assert.True(await store.Restore(id, Token));
+        Assert.True(await store.Restore(id, 4, Token));
         Assert.True((await store.Authenticate(rotated.ApiKey, Token)).IsNone());
         Assert.True(await store.SetEnabled(id, 5, true, Token));
         Assert.True((await store.Authenticate(rotated.ApiKey, Token)).IsNone());
         Assert.True(await store.Delete(id, 6, Token));
-        Assert.True(await store.HardDelete(id, Token));
-        Assert.False(await store.Restore(id, Token));
+        Assert.True(await store.HardDelete(id, 6, Token));
+        Assert.False(await store.Restore(id, 6, Token));
     }
 
     [Fact]
@@ -115,7 +117,7 @@ public sealed class ServiceUserStoreTests : IDisposable
             await seed.SaveChangesAsync();
         }
         Assert.True(await store.Delete(id, 1, Token));
-        Assert.False(await store.HardDelete(id, Token));
+        Assert.False(await store.HardDelete(id, 2, Token));
         Assert.Single(await store.List(true, Token));
     }
 
@@ -147,7 +149,7 @@ public sealed class ServiceUserStoreTests : IDisposable
         Assert.False(await context.NewsEntries.AnyAsync(value => EF.Property<Guid>(value, VersionedColumns.Key) == newsId));
         if (service)
         {
-            Assert.True(await store.Restore(id, Token));
+            Assert.True(await store.Restore(id, 1, Token));
         }
         else
         {

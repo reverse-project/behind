@@ -28,6 +28,12 @@ public sealed record UpdateServiceUserRequest([property: JsonRequired] long Vers
 /// <summary>The observed service identity version for a destructive or credential operation.</summary>
 public sealed record ServiceUserVersionRequest([property: JsonRequired] long Version);
 
+public sealed record ServiceUserAccessRequest(
+    [property: JsonRequired] long Version,
+    [property: JsonRequired] IReadOnlyList<Guid> RoleIds,
+    [property: JsonRequired] IReadOnlyList<string> Grants,
+    [property: JsonRequired] IReadOnlyList<string> Restrictions);
+
 public static class ServiceUserEndpoints
 {
     public static async Task<IResult> Get(
@@ -120,12 +126,14 @@ public static class ServiceUserEndpoints
         });
 
     public static Task<IResult> Restore(
-        Guid id, HttpContext context, UserManagementGate gate, IServiceUserStore store,
+        Guid id, ServiceUserVersionRequest request, HttpContext context, UserManagementGate gate, IServiceUserStore store,
         IOptions<SecurityConfiguration> security, CancellationToken cancellationToken) =>
-        Deleted(context, gate, security, () => store.Restore(id, cancellationToken));
+        Deleted(context, gate, security, () => request.Version <= 0
+            ? Task.FromResult(false)
+            : store.Restore(id, request.Version, cancellationToken));
 
     public static Task<IResult> HardDelete(
-        Guid id, HttpContext context, UserManagementGate gate, IServiceUserStore store,
+        Guid id, ServiceUserVersionRequest request, HttpContext context, UserManagementGate gate, IServiceUserStore store,
         IOptions<SecurityConfiguration> security, CancellationToken cancellationToken) =>
         gate.RunAs(context, async actor =>
         {
@@ -134,11 +142,16 @@ public static class ServiceUserEndpoints
             {
                 return TypedResults.StatusCode(StatusCodes.Status403Forbidden);
             }
-            if (!(await store.List(true, cancellationToken)).Any(user => user.Id == id))
+            if (request.Version <= 0)
             {
-                return TypedResults.NotFound();
+                return TypedResults.BadRequest();
             }
-            return await store.HardDelete(id, cancellationToken) ? TypedResults.NoContent() : TypedResults.Conflict();
+            if (!(await store.List(true, cancellationToken)).Any(user => user.Id == id && user.Version == request.Version))
+            {
+                return TypedResults.Conflict();
+            }
+            return await store.HardDelete(id, request.Version, cancellationToken)
+                ? TypedResults.NoContent() : TypedResults.Conflict();
         });
 
     private static Task<IResult> Deleted(
@@ -183,7 +196,8 @@ public static class ServiceUserEndpoints
         gate.RunAs(context, async actor =>
         {
             context.Response.Headers.CacheControl = "no-store";
-            if (await store.Find(id, cancellationToken) == None)
+            var found = await store.Find(id, cancellationToken);
+            if (found == None)
             {
                 return TypedResults.NotFound();
             }
@@ -192,15 +206,20 @@ public static class ServiceUserEndpoints
                 && actor.Access.Holds(GrantName.Of(GrantArea.Configuration, GrantAction.Manage))
                 && actor.Access.Holds(GrantName.Of(GrantArea.User, GrantAction.Manage))
                 && actor.CanGrant(current.CalculatedGrants);
-            return TypedResults.Ok(current.ToResponse(id, canEdit, await roles.ListRoles(cancellationToken), actor.Catalog));
+            var version = found.Match(() => 0L, entry => entry.Version);
+            return TypedResults.Ok(current.ToResponse(id, canEdit, await roles.ListRoles(cancellationToken), actor.Catalog, version));
         });
 
     public static Task<IResult> SetAccess(
-        Guid id, UserAccessEndpoints.UserAccessRequest request, HttpContext context, UserManagementGate gate,
+        Guid id, ServiceUserAccessRequest request, HttpContext context, UserManagementGate gate,
         IServiceUserStore store, IAccessQueries access, IRoleQueries roles, IAccessCommands commands,
         IOptions<SecurityConfiguration> security, CancellationToken cancellationToken) =>
         Modify(id, context, gate, store, access, security, cancellationToken, async actor =>
         {
+            if (request.Version <= 0)
+            {
+                return TypedResults.BadRequest();
+            }
             if (request.RoleIds is null || request.Grants is null || request.Restrictions is null)
             {
                 return TypedResults.BadRequest();
@@ -219,7 +238,10 @@ public static class ServiceUserEndpoints
             {
                 return TypedResults.StatusCode(StatusCodes.Status403Forbidden);
             }
-            await commands.SetUserAccess(id, roleIds, selection, cancellationToken);
+            if (!await store.SetAccess(id, request.Version, roleIds, selection, cancellationToken))
+            {
+                return TypedResults.Conflict();
+            }
             return TypedResults.NoContent();
         });
 

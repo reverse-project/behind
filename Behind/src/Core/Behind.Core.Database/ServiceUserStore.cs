@@ -91,9 +91,45 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
     public async Task<bool> Delete(Guid id, long version, CancellationToken cancellationToken) =>
         (await Change(id, version, user => user, true, cancellationToken)).Match(() => false, _ => true);
 
-    public Task<bool> Restore(Guid id, CancellationToken cancellationToken) => ChangeDeletion(id, false, cancellationToken);
+    public Task<bool> Restore(Guid id, long version, CancellationToken cancellationToken) => ChangeDeletion(id, version, false, cancellationToken);
 
-    public Task<bool> HardDelete(Guid id, CancellationToken cancellationToken) => ChangeDeletion(id, true, cancellationToken);
+    public Task<bool> HardDelete(Guid id, long version, CancellationToken cancellationToken) => ChangeDeletion(id, version, true, cancellationToken);
+
+    public async Task<bool> SetAccess(
+        Guid id,
+        long version,
+        IReadOnlyCollection<Guid> roleIds,
+        AccessSelection selection,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = context.Database.CurrentTransaction is null
+            ? await context.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+        if (!await Lock(id, version, cancellationToken))
+        {
+            return false;
+        }
+
+        await context.ReplaceUserAccessAsync(id, roleIds, selection, cancellationToken);
+        var user = await context.ServiceUsers.SingleAsync(
+            value => EF.Property<Guid>(value, "Id") == id, cancellationToken);
+        context.Entry(user).Property<long>("Version").CurrentValue = version + 1;
+
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            context.ChangeTracker.Clear();
+            return false;
+        }
+    }
 
     private async Task<Option<ServiceUserEntry>> Change(
         Guid id, long version, Func<ServiceUser, ServiceUser> change, bool delete, CancellationToken cancellationToken)
@@ -137,7 +173,7 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
         return Some(new ServiceUserEntry(id, delete ? version : version + 1, updated));
     }
 
-    private async Task<bool> ChangeDeletion(Guid id, bool hard, CancellationToken cancellationToken)
+    private async Task<bool> ChangeDeletion(Guid id, long version, bool hard, CancellationToken cancellationToken)
     {
         await using var transaction = context.Database.CurrentTransaction is null
             ? await context.Database.BeginTransactionAsync(cancellationToken)
@@ -145,7 +181,7 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
         using var scope = context.SoftDelete.IncludeDeleted();
         var rows = context.ServiceUsers.Where(user => EF.Property<Guid>(user, "Id") == id);
         var found = await Project(rows).ToListAsync(cancellationToken);
-        if (found.Count == 0 || !await Lock(id, found[0].Version, cancellationToken))
+        if (found.Count == 0 || found[0].Version != version || !await Lock(id, version, cancellationToken))
         {
             return false;
         }
@@ -171,7 +207,7 @@ public sealed class ServiceUserStore(AbstractCoreContext context, TimeProvider t
             await context.RestoreByKeyAsync<ServiceUser>([id], cancellationToken);
             var entry = context.Entry(user);
             entry.CurrentValues.SetValues(user with { Enabled = false, ApiKeyHash = Hash(NewKey(id)) });
-            entry.Property<long>("Version").CurrentValue = found[0].Version + 1;
+            entry.Property<long>("Version").CurrentValue = version + 1;
         }
 
         try

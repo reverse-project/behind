@@ -29,7 +29,9 @@ public sealed class McpRequestDispatcher(
             "/subaccounts", "/profile" };
         return !excluded.Any(prefix => path.Equals(prefix, StringComparison.OrdinalIgnoreCase)
             || path.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
-            && !path.EndsWith("/impersonate", StringComparison.OrdinalIgnoreCase);
+            && !path.EndsWith("/impersonate", StringComparison.OrdinalIgnoreCase)
+            && !path.EndsWith("/sign/out", StringComparison.OrdinalIgnoreCase)
+            && !path.EndsWith("/sign/out/all", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<McpApiResponse> Dispatch(
@@ -110,6 +112,13 @@ public sealed class McpRequestDispatcher(
         {
             logger.LogWarning(exception, "MCP API response exceeded its configured limit; the operation may have completed");
             return new(StatusCodes.Status502BadGateway, "Response size limit exceeded. The operation may have completed; do not retry blindly.");
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "MCP inner pipeline failed for service user {ServiceUserId} at {Method} {Path}",
+                identity.ServiceUser.Id, method, path);
+            return new(StatusCodes.Status500InternalServerError,
+                "{\"title\":\"An internal server error occurred while processing the MCP tool call.\",\"status\":500}");
         }
         finally
         {

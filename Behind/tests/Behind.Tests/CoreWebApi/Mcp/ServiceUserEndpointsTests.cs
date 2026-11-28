@@ -65,7 +65,7 @@ public sealed class ServiceUserEndpointsTests
         roles.ListRoles(default).Returns([new IRoleQueries.RoleResult(BuiltInAccess.Users.Id, BuiltInAccess.Users.Role)]);
         var commands = Substitute.For<IAccessCommands>();
         var result = await ServiceUserEndpoints.SetAccess(entry.Id,
-            new UserAccessEndpoints.UserAccessRequest([BuiltInAccess.Users.Id], ["News.Write"], []),
+            new ServiceUserAccessRequest(1, [BuiltInAccess.Users.Id], ["News.Write"], []),
             context, gate, store, access, roles, commands, Options.Create(new SecurityConfiguration()), default);
         Assert.Equal(403, Assert.IsType<StatusCodeHttpResult>(result).StatusCode);
         await commands.DidNotReceiveWithAnyArgs().SetUserAccess(default, default!, default!, default);

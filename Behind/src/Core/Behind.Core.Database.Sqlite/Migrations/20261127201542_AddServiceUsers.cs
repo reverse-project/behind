@@ -83,6 +83,8 @@ public partial class _20261127201542_AddServiceUsers : Migration
     /// <inheritdoc />
     protected override void Down(MigrationBuilder migrationBuilder)
     {
+        EnsureDowngradeBlocked();
+
         migrationBuilder.DropTable(
             name: "ServiceUsers");
 
@@ -179,4 +181,8 @@ public partial class _20261127201542_AddServiceUsers : Migration
             principalColumn: "Id",
             onDelete: ReferentialAction.Cascade);
     }
+
+    private static void EnsureDowngradeBlocked() =>
+        throw new InvalidOperationException(
+            "Downgrading service users is blocked because service identities and their references cannot be remapped safely.");
 }

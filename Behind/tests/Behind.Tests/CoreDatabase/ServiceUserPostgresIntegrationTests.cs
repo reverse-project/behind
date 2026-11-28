@@ -92,7 +92,7 @@ public sealed class ServiceUserPostgresIntegrationTests
         Assert.True((await store.Authenticate(rotated.ApiKey, CancellationToken.None)).IsNone());
         Assert.True(await store.Delete(id, 3, CancellationToken.None));
         Assert.False(await context.NewsEntries.AnyAsync(value => EF.Property<Guid>(value, VersionedColumns.Key) == newsId));
-        Assert.True(await store.Restore(id, CancellationToken.None));
+        Assert.True(await store.Restore(id, 3, CancellationToken.None));
         Assert.True(await context.NewsEntries.AnyAsync(value => EF.Property<Guid>(value, VersionedColumns.Key) == newsId));
         var successfulRotation = rotations.Single(result => !result.IsNone()).Match(
             () => throw new InvalidOperationException(), value => value);

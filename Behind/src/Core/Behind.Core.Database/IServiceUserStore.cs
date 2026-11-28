@@ -16,6 +16,12 @@ public interface IServiceUserStore
     Task<Option<ServiceUserCredential>> Rotate(Guid id, long version, CancellationToken cancellationToken);
     Task<bool> SetEnabled(Guid id, long version, bool enabled, CancellationToken cancellationToken);
     Task<bool> Delete(Guid id, long version, CancellationToken cancellationToken);
-    Task<bool> Restore(Guid id, CancellationToken cancellationToken);
-    Task<bool> HardDelete(Guid id, CancellationToken cancellationToken);
+    Task<bool> Restore(Guid id, long version, CancellationToken cancellationToken);
+    Task<bool> HardDelete(Guid id, long version, CancellationToken cancellationToken);
+    Task<bool> SetAccess(
+        Guid id,
+        long version,
+        IReadOnlyCollection<Guid> roleIds,
+        AccessSelection selection,
+        CancellationToken cancellationToken);
 }

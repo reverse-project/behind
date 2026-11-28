@@ -280,6 +280,7 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
         self.files = ko.observableArray([]);
         self.selected = ko.observable(null);
         self.generated = ko.observable(null);
+        var loadGeneration = 0;
 
         self.hasMessage = ko.pureComputed(function () {
             return self.message() !== "";
@@ -295,7 +296,12 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
                 "serilog:writeto": "settings.serilog.sinks",
                 "serilog:auditto": "settings.serilog.auditSinks",
                 "serilog:filter": "settings.serilog.filters",
-                "serilog:destructure": "settings.serilog.destructure"
+                "serilog:destructure": "settings.serilog.destructure",
+                "backend:accounts:serviceuser": "settings.serviceUsers.accountSwitch",
+                "backend:mcp:enabled": "settings.serviceUsers.mcpEnabled",
+                "backend:mcp:maxrequestbytes": "settings.serviceUsers.maxRequest",
+                "backend:mcp:maxresponsebytes": "settings.serviceUsers.maxResponse",
+                "backend:mcp:allowedorigins": "settings.serviceUsers.origins"
             };
             var label = labels[field.path.toLowerCase()];
             var row = {
@@ -324,11 +330,23 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
                 return row.structured ? row.structured.current() : row.value();
             });
             row.valid = ko.pureComputed(function () {
+                var path = field.path.toLowerCase();
+                if (path === "backend:mcp:maxrequestbytes" || path === "backend:mcp:maxresponsebytes") {
+                    var number = Number(row.value());
+                    return String(row.value()).trim() !== "" && Number.isInteger(number) && number > 0 && number <= 2147483647;
+                }
                 if (!row.isStructured) {
                     return true;
                 }
                 try {
                     var parsed = JSON.parse(row.current());
+                    if (path === "backend:mcp:allowedorigins") {
+                        return row.structured.valid() && Array.isArray(parsed) && parsed.every(function (origin) {
+                            if (typeof origin !== "string" || !/^https?:\/\/[^/?#\\\s]+$/i.test(origin)) { return false; }
+                            var url = new URL(origin);
+                            return (url.protocol === "http:" || url.protocol === "https:") && !url.username && !url.password;
+                        });
+                    }
                     return row.structured.valid() && (row.type === "array" ? Array.isArray(parsed) : parsed !== null && typeof parsed === "object" && !Array.isArray(parsed));
                 } catch (error) {
                     return false;
@@ -511,8 +529,12 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
 
         self.load = function (skipOidc) {
             var current = self.selected() ? self.selected().name : null;
+            var generation = ++loadGeneration;
 
             return settings.load().then(function (result) {
+                if (generation !== loadGeneration || !self.canView()) {
+                    return;
+                }
                 self.failed(!result.ok);
 
                 if (!result.ok) {
@@ -678,10 +700,19 @@ define(["ko", "models/settings", "models/session", "models/i18n", "viewmodels/em
         };
 
         self.activate = function () {
-            self.canView.subscribe(function (allowed) {
+            var viewSubscription;
+            var onNavigation = function () {
+                loadGeneration++;
+                viewSubscription.dispose();
+                window.removeEventListener("hashchange", onNavigation);
+            };
+            window.addEventListener("hashchange", onNavigation);
+            viewSubscription = self.canView.subscribe(function (allowed) {
                 if (allowed) {
                     self.refresh();
                 } else {
+                    loadGeneration++;
+                    self.busy(false);
                     self.forwarded.invalidate();
                 }
             });

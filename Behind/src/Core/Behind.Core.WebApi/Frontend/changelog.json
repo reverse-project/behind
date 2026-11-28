@@ -3,6 +3,11 @@
     "version": "1.0.3",
     "date": "2026-11-21",
     "changes": [
+      { "type": "changed", "text": "Service-user management is now a dedicated tab in User Administration instead of appearing in Settings." },
+      { "type": "fixed", "text": "Documentation distinguishes a missing source directory from an unset one instead of reporting both as unconfigured." },
+      { "type": "fixed", "text": "OpenAPI and MCP API schema discovery no longer fail when exporting the email confirmation request's optional Guid. Existing confirmation JSON and omitted email-id behavior are preserved." },
+      { "type": "added", "text": "MCP automatically discovers JSON tools from every installed, enabled module, including management, moderation and lifecycle operations. Tool schemas use API route, query and JSON-body metadata; calls retain normal service-user permissions, while binary transfers remain excluded." },
+      { "type": "added", "text": "An opt-in HTTP/JSON-RPC MCP server lets AI agents call application JSON APIs using independent service users with their own roles and grants. Settings manages MCP availability, allowed origins, and request and response size limits. User Administration manages service users, their access, one-time bearer keys, rotation, and deletion." },
       { "type": "changed", "text": "Disabled module grants and restrictions are hidden in role, user, session and profile views while saved selections remain available after reactivation." },
       { "type": "changed", "text": "Settings offers structured Serilog sinks, enrichers and arguments and easier collection editing while preserving custom values and masked secrets." },
       { "type": "added", "text": "Reloadable module kill switches in backend.json block disabled module APIs and assets and hide their navigation, pages and widgets while preserving stored data." },

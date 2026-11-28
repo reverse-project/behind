@@ -24,6 +24,16 @@ public sealed class TestDbContextFactory : IDisposable
         // Create the schema once on the shared connection
         using var ctx = CreateContext();
         ctx.Database.EnsureCreated();
+        ctx.Database.ExecuteSqlRaw("""
+            CREATE VIEW "ServiceUsers" AS
+            SELECT versioned."Key" AS "Id", versioned."Name", versioned."ApiKeyHash", versioned."Enabled", versioned."Version"
+            FROM "ServiceUserVersions" AS versioned
+            INNER JOIN (
+                SELECT "Key", MAX("Version") AS "Version"
+                FROM "ServiceUserVersions"
+                GROUP BY "Key"
+            ) AS latest ON latest."Key" = versioned."Key" AND latest."Version" = versioned."Version";
+            """);
 
         using var versioning = CreateVersioningContext();
         versioning.GetService<IRelationalDatabaseCreator>().CreateTables();

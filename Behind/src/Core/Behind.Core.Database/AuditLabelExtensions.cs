@@ -98,7 +98,13 @@ public static class AuditLabelExtensions
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return users.Select(user => user with { Label = user.Id.ToUserLabel(user.Label) }).ToList();
+            var services = await context.ServiceUsers
+                .Where(user => ids.Contains(EF.Property<Guid>(user, "Id")))
+                .Select(user => new Named(EF.Property<Guid>(user, "Id"), user.Name))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return users.Concat(services).Select(user => user with { Label = user.Id.ToUserLabel(user.Label) }).ToList();
         }
 
         private async Task<IReadOnlyList<Named>> NamedAsync(List<Guid> ids, CancellationToken cancellationToken) =>

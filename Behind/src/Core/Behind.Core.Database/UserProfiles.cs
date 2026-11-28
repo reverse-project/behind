@@ -16,8 +16,14 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
             .Select(user => new { Id = EF.Property<Guid>(user, "Id"), user.DisplayName, user.ProfilePictureId })
             .AsNoTracking().ToListAsync(cancellationToken);
 
+        var services = await context.ServiceUsers.Where(user => ids.Contains(EF.Property<Guid>(user, "Id")))
+            .Select(user => new { Id = EF.Property<Guid>(user, "Id"), user.Name })
+            .AsNoTracking().ToListAsync(cancellationToken);
+
         return users.Select(user => new IModuleUsers.Profile(
-            user.Id, user.Id.ToUserLabel(user.DisplayName), user.ProfilePictureId)).ToList();
+                user.Id, user.Id.ToUserLabel(user.DisplayName), user.ProfilePictureId))
+            .Concat(services.Select(user => new IModuleUsers.Profile(user.Id, user.Id.ToUserLabel(user.Name), null)))
+            .ToList();
     }
 
     public sealed record Details(DateOnly? Birthday, bool HideEmail, bool IsChild = false);
@@ -112,7 +118,25 @@ public sealed class UserProfiles(AbstractCoreContext context, IModuleFiles files
 
         if (user is null)
         {
-            return null;
+            var service = await context.ServiceUsers
+                .Where(value => EF.Property<Guid>(value, "Id") == userId)
+                .Select(value => value.Name)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(cancellationToken);
+            if (service is null)
+            {
+                return null;
+            }
+
+            var serviceKey = userId.ToString().ToLowerInvariant();
+            var created = await context.AuditLogEntries
+                .Where(entry => entry.EntityName == nameof(User) && entry.EntityKey == serviceKey
+                    && entry.Action == new AuditLogEntry.Created())
+                .Select(entry => (DateTimeOffset?)entry.Timestamp)
+                .MinAsync(cancellationToken);
+            var access = await context.GetUserAccessAsync(userId, cancellationToken);
+            return new PublicProfile(userId, userId.ToUserLabel(service), null, null, created, null,
+                access.Roles.Select(role => role.Name).Order().ToList());
         }
 
         var userKey = userId.ToString().ToLowerInvariant();

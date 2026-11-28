@@ -15,6 +15,8 @@ Ez a kézikönyv azt ismerteti, hogy a Behind webalkalmazásban jelenleg mit teh
 
 ## Adminisztrátoroknak és fejlesztőknek
 
+- **[Szolgáltatásfelhasználók és AI-ügynökök](./managing-service-users.md)** - önálló szolgáltatásidentitások, bearer kulcsok, MCP-beállítások és automatikus moduleszközök.
+
 - **[Kapcsolatűrlapok és beérkezett kérések](./managing-contact.md)** - űrlapok és címzettek beállítása, olvasottnak jelölés, e-mail-újrapróbálás és rekordok törlése.
 
 - **[Adminisztráció](./administration.md)** - az Adminisztráció oldal és az, hogy kik láthatják.

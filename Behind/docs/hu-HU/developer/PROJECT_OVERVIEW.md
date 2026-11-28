@@ -1,5 +1,12 @@
 # Projekt áttekintés
 
+A Core választható, állapotmentes HTTP/JSON-RPC MCP végpontot biztosít AI-ügynököknek.
+Az önálló ServiceUser identitások visszavonható bearer kulccsal hitelesítenek,
+saját szerepköreikkel és engedélyeikkel. A backend Beállítások felülete vezérli
+az elérhetőséget és a kezelést. Az MCP automatikusan felderíti a telepített,
+engedélyezett modulok JSON-műveleteit. Lásd
+[MCP](../specs/mcp-service-users-1.1.0.md).
+
 ## Közös gyorsítótár
 
 A Core minden gazdánál, a webhelyeknél is regisztrálja a Common.WebApi HybridCache
@@ -499,3 +506,11 @@ nyilvános menük és elrendezések csak aktív modulokat mutatnak. Minden modul
 `ModuleEndpoint` csoportmetaadattal képezi le API-jait; a közös middleware tiltja
 a kikapcsolt API-kat és frontend-fájlokat. A Beállítások a hiányzó konfigurációs
 tulajdonságokat és a telepített modulok kapcsolóit is mutatja.
+Az MCP minden `tools/list` kéréskor az aktív modul-katalógusból és az API Explorer
+metaadataiból olvassa be a JSON-műveleteket. A JSON-műveletek, köztük a kezelési
+és életciklus-műveletek, engedélyszűrés nélkül jelennek meg; a hívásokat a
+szokásos middleware egyszer hajtja végre, a szolgáltatásfelhasználó aktuális
+jogosultságaival. A modul letiltásakor az eszközei eltűnnek. A multipart
+feltöltés és a bináris letöltés kimarad; a végpontválasz-metaadatoknak a JSON DTO-t
+`.Produces<T>()` formában kell megadniuk, a nem JSON-válaszokat pedig el kell
+határolniuk.

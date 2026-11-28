@@ -35,4 +35,5 @@ public sealed record UserAccessResponse(
     IReadOnlyList<string> Grants,
     IReadOnlyList<string> Restrictions,
     IReadOnlyList<string> CalculatedGrants,
-    IReadOnlyList<string> AvailableGrants);
+    IReadOnlyList<string> AvailableGrants,
+    long Version = 0);

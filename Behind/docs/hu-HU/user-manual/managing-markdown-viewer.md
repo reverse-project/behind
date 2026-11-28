@@ -26,6 +26,8 @@ A modul a `markdownviewer.json` fájlban állítható, amelynek saját füle van
 
 A relatív könyvtárakat az alkalmazás mappájához képest értelmezi. A módosítás azonnal érvénybe lép, az alkalmazást nem kell újraindítani. Éles környezetben használjon abszolút útvonalakat vagy a konténerbe csatolt könyvtárakat.
 
+A forráskönyvtárnak már léteznie kell, és az alkalmazásnak hozzá kell férnie. Ha hiányzik, a dokumentációs oldal ezt külön jelzi a be nem állított útvonaltól. Ellenőrizze a kiszolgáló által látott útvonalat, beleértve a konténerek csatolásait is.
+
 ## A dokumentáció olvasása
 
 Az oldal egy navigációban listázza a forráskönyvtár dokumentumait (az almappákkal együtt; a rejtett fájlokat, mappákat és a szimbolikus hivatkozásokat figyelmen kívül hagyja). A navigáció feletti cím a kezdőoldal (a **DefaultDocument**), és nem szerepel újra a listában. Minden legfelső szintű mappa egy szakasz: a nevét a kezdődokumentumban a mappa `README.md` fájljára mutató hivatkozás szövege adja (például **Fejlesztői dokumentáció** és **Felhasználói kézikönyv**), egyébként a `README.md` címe, egyébként a mappa neve. A szakasz a `README.md` fájlra mutat, utána a mappa többi dokumentuma következik. A generált statikus oldalak ugyanezt a navigációt használják. A dokumentum címe az első `# címsora`, vagy a fájlneve. Más `.md` fájlokra mutató hivatkozások a megjelenítőben nyílnak meg, a dokumentumok melletti képek (`png`, `jpg`, `gif`, `webp`, `svg`, `ico`) megjelennek, az ugyanazon oldali címsorokra mutató hivatkozások odagörgetnek. A Markdown fájlban lévő nyers HTML szövegként jelenik meg, a nem biztonságos hivatkozásokat eltávolítja.

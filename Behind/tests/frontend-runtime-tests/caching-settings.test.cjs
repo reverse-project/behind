@@ -31,6 +31,7 @@ test("caching tab edits provider and key without resubmitting its masked connect
     const session = { isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: () => true };
     function Editor() {
         this.invalidate = () => {};
+        this.key = ko.observable("");
         this.load = async () => ({ ok: true });
         this.canSave = ko.observable(true);
     }

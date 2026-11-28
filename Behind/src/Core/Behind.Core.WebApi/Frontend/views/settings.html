@@ -415,6 +415,7 @@
         <form data-bind="with: selected, submit: save, visible: isFieldTabSelected">
             <p class="alert alert-info" data-bind="visible: name === 'caching.json', t: 'settings.caching.help'">Caching changes require a restart. Choose Memory or RedisCompatible. Key selects a masked value in ConnectionStrings; missing connections use memory only.</p>
             <p class="alert alert-info" data-bind="visible: name === 'backend.json', t: 'settings.modules.notice'"></p>
+            <p class="alert alert-info" data-bind="visible: name === 'backend.json', t: 'settings.serviceUsers.originHelp'"></p>
             <div data-bind="foreach: sections">
                 <fieldset class="mb-4">
                     <legend class="h6 text-body-secondary" data-bind="text: title"></legend>

@@ -50,6 +50,52 @@ public sealed record HumanUser : User
     }
 }
 
+public sealed record ServiceUser : User
+{
+    public const string EntityType = nameof(User);
+    public const int MaxNameLength = DisplayNameExtensions.MaxLength;
+
+    public string Name { get; init; } = string.Empty;
+
+    [Sensible]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string ApiKeyHash { get; init; } = string.Empty;
+
+    public bool Enabled { get; init; }
+
+    public ServiceUser() : base(None)
+    {
+    }
+
+    public ServiceUser(string name, string apiKeyHash, bool enabled) : base(None)
+    {
+        Name = name;
+        ApiKeyHash = apiKeyHash;
+        Enabled = enabled;
+    }
+
+    public static bool IsValidName(string name) =>
+        !string.IsNullOrWhiteSpace(name) && name.Trim().Length <= MaxNameLength;
+}
+
+public sealed record ServiceUserVersion
+{
+    public VersionedKey<Guid> Id { get; init; } = default;
+    public string Name { get; init; } = string.Empty;
+
+    [Sensible]
+    public string ApiKeyHash { get; init; } = string.Empty;
+
+    public bool Enabled { get; init; }
+
+    private ServiceUserVersion()
+    {
+    }
+
+    public ServiceUserVersion(VersionedKey<Guid> id, string name, string apiKeyHash, bool enabled) =>
+        (Id, Name, ApiKeyHash, Enabled) = (id, name, apiKeyHash, enabled);
+}
+
 public sealed record SystemUser(Option<IEnumerable<Role>> Roles) : User(Roles);
 
 public sealed record GuestUser(Option<IEnumerable<Role>> Roles) : User(Roles);

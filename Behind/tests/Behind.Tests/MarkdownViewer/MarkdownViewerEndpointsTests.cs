@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
+using Behind.Common.Configuration;
 using Behind.MarkdownViewer.Common;
 using Behind.MarkdownViewer.WebApi;
 using Behind.MarkdownViewer.WebApi.Endpoints;
@@ -70,7 +71,9 @@ public sealed class MarkdownViewerEndpointsTests : IAsyncLifetime
     {
         var response = await _client.GetFromJsonAsync<JsonNode>("/markdownviewer/documents");
 
+        Assert.True(JsonSchemas.IsValid("markdown-documents-response-1.1.0", response));
         Assert.True((bool)response!["configured"]!);
+        Assert.Empty(response["errors"]!.AsArray());
         Assert.Equal("Docs", (string)response["title"]!);
         Assert.Equal("README.md", (string)response["defaultDocument"]!);
         Assert.Empty(response["locales"]!.AsArray());
@@ -98,7 +101,22 @@ public sealed class MarkdownViewerEndpointsTests : IAsyncLifetime
 
         var response = await _client.GetFromJsonAsync<JsonNode>("/markdownviewer/documents");
 
+        Assert.True(JsonSchemas.IsValid("markdown-documents-response-1.1.0", response));
         Assert.False((bool)response!["configured"]!);
+        Assert.Equal(["source-not-configured"], response["errors"]!.AsArray().Select(item => (string)item!));
+        Assert.Empty(response["entries"]!.AsArray());
+    }
+
+    [Fact]
+    public async Task List_WithAMissingSourceDirectory_ReportsThatItIsMissing()
+    {
+        _configuration = _configuration with { SourceDirectory = Path.Combine(_bed.Root, "missing") };
+
+        var response = await _client.GetFromJsonAsync<JsonNode>("/markdownviewer/documents");
+
+        Assert.True(JsonSchemas.IsValid("markdown-documents-response-1.1.0", response));
+        Assert.False((bool)response!["configured"]!);
+        Assert.Equal(["source-missing"], response["errors"]!.AsArray().Select(item => (string)item!));
         Assert.Empty(response["entries"]!.AsArray());
     }
 

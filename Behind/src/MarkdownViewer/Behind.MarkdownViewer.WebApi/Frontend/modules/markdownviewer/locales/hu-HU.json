@@ -5,6 +5,7 @@
     "markdownviewer.administration": "Dokumentáció",
     "markdownviewer.title": "Dokumentáció",
     "markdownviewer.notConfigured": "A dokumentáció még nem érhető el. A fejlesztőnek be kell állítania a forráskönyvtárat a beállításokban.",
+    "markdownviewer.sourceMissing": "A dokumentáció forráskönyvtára nem létezik a kiszolgálón. A fejlesztőnek ellenőriznie kell a beállításokat és a könyvtárat.",
     "markdownviewer.empty": "Még nincsenek dokumentumok.",
     "markdownviewer.back": "Vissza az adminisztrációhoz",
     "markdownviewer.signInToManage": "a dokumentáció előállításához.",

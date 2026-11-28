@@ -1,5 +1,12 @@
 # Domain Model Design
 
+## Service users
+
+`ServiceUser` is a separate sealed `User` subtype, like `HumanUser`, with a Guid
+EF shadow key and no id property on the record. It has its own roles, grants and
+restrictions, not its creator's. Credential hashes are sensitive and never API
+fields. See [MCP/service-user contract](../specs/mcp-service-users-1.1.0.md).
+
 ## Private conversations and user reports
 
 Private content and mailbox/block state are separate immutable versioned records. Reading or deleting affects only the current user's mailbox. User and role recipients may be hidden; hidden identities and private replies must be excluded before projection, counting and paging. A system reply is private to its author, original sender and dedicated moderators. Group membership can change without rewriting history.
@@ -128,7 +135,6 @@ Behind.Core.Domain/
 ```csharp
 public abstract record User(Option<IEnumerable<Role>> Roles)
 {
-    public Guid Id { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; init; }
     public string ConcurrencyToken { get; init; }

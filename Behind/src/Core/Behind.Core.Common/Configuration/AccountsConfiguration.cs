@@ -21,4 +21,6 @@ public sealed record AccountsConfiguration
     public bool EmailTwoFactor { get; init; } = true;
 
     public bool SubaccountSwitch { get; init; } = true;
+
+    public bool ServiceUser { get; init; }
 }

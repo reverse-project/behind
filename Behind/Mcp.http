@@ -1,0 +1,148 @@
+@baseUrl = http://localhost:5000
+@administratorJwt = replace-with-your-session-jwt
+@serviceKey = replace-with-the-once-revealed-key
+@serviceId = 00000000-0000-0000-0000-000000000000
+@boardId = 00000000-0000-0000-0000-000000000000
+@version = 1
+
+### List service identities
+GET {{baseUrl}}/service-users
+Authorization: Bearer {{administratorJwt}}
+
+### Create an independent identity
+POST {{baseUrl}}/service-users
+Authorization: Bearer {{administratorJwt}}
+Content-Type: application/json
+
+{"name":"Content assistant"}
+
+### Read the created resource at its Location
+GET {{baseUrl}}/service-users/{{serviceId}}
+Authorization: Bearer {{administratorJwt}}
+
+### Read its own access
+GET {{baseUrl}}/service-users/{{serviceId}}/access
+Authorization: Bearer {{administratorJwt}}
+
+### Set access using role ids returned by the access endpoint
+PUT {{baseUrl}}/service-users/{{serviceId}}/access
+Authorization: Bearer {{administratorJwt}}
+Content-Type: application/json
+
+{"roleIds":["00000000-0000-0000-0000-000000000000"],"grants":[],"restrictions":[]}
+
+### Disable at the observed version
+PUT {{baseUrl}}/service-users/{{serviceId}}
+Authorization: Bearer {{administratorJwt}}
+Content-Type: application/json
+
+{"version":{{version}},"enabled":false}
+
+### Rotate the key
+POST {{baseUrl}}/service-users/{{serviceId}}/rotate
+Authorization: Bearer {{administratorJwt}}
+Content-Type: application/json
+
+{"version":{{version}}}
+
+### Soft delete
+POST {{baseUrl}}/service-users/{{serviceId}}/delete
+Authorization: Bearer {{administratorJwt}}
+Content-Type: application/json
+
+{"version":{{version}}}
+
+### Restore as developer
+POST {{baseUrl}}/service-users/{{serviceId}}/restore
+Authorization: Bearer {{administratorJwt}}
+
+### Permanently delete as developer
+POST {{baseUrl}}/service-users/{{serviceId}}/hard/delete
+Authorization: Bearer {{administratorJwt}}
+
+### MCP initialize
+POST {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"Example agent","version":"1.0"}}}
+
+### MCP initialized notification: 202
+POST {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2025-11-25
+
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+
+### MCP tool discovery
+POST {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2025-11-25
+
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+
+### Discover enabled module tools, such as forum_get_posts and forum_post_posts
+POST {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2025-11-25
+
+{"jsonrpc":"2.0","id":6,"method":"tools/list"}
+
+### Query published forum posts with a typed query object
+POST {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2025-11-25
+
+{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"forum_get_posts","arguments":{"query":{"boardId":"{{boardId}}","page":1}}}}
+
+### Create a forum topic through the JSON request body
+POST {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2025-11-25
+
+{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"forum_post_posts","arguments":{"body":{"boardId":"{{boardId}}","title":"MCP example topic","body":"Created through the authenticated forum module tool."}}}}
+
+### Read published news under this service user's own permissions
+POST {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2025-11-25
+
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"api_request","arguments":{"method":"GET","path":"/news","query":{"page":"1"}}}}
+
+### Discover application JSON API request shapes
+POST {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2025-11-25
+
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"api_schema"}}
+
+### Server streams are unsupported: 405 when enabled and authenticated
+GET {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+Accept: text/event-stream
+
+### Transport sessions are unsupported: 405
+DELETE {{baseUrl}}/mcp
+Authorization: Bearer {{serviceKey}}
+
+### Missing credentials: 401 when enabled
+POST {{baseUrl}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":4,"method":"ping"}

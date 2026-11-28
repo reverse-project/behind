@@ -22,7 +22,7 @@ public sealed class DownloadConfiguration : IEntityTypeConfiguration<Download>
         builder.Property<Guid>(FileIdProperty).IsRequired();
 
         builder.Property<Guid>(UploadedByIdProperty).IsRequired();
-        builder.HasOne<HumanUser>()
+        builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(UploadedByIdProperty)
             .OnDelete(DeleteBehavior.Cascade);

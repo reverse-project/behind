@@ -15,6 +15,19 @@ public sealed class AuditLogEntryLabelsTests : IDisposable
     public void Dispose() => _factory.Dispose();
 
     [Fact]
+    public async Task ResolveLabels_UsesServiceUserName()
+    {
+        await using var context = _factory.CreateContext();
+        var id = Guid.NewGuid();
+        var service = new ServiceUser("Current", "hash", true);
+        await context.ServiceUsers.AddAsync(service);
+        context.Entry(service).Property<Guid>("Id").CurrentValue = id;
+        await context.SaveChangesAsync();
+        var labels = await new AuditLogEntryQueries(context, []).ResolveLabels([id]);
+        Assert.Equal(id.ToUserLabel("Current"), labels.Label(id.ToString()));
+    }
+
+    [Fact]
     public async Task ResolveLabels_NoIdentifiers_ReturnsNoLabels()
     {
         await using var ctx = _factory.CreateContext();

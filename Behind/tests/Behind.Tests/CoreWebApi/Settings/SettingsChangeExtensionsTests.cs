@@ -32,6 +32,25 @@ public sealed class SettingsChangeExtensionsTests
             planned => planned);
 
     [Fact]
+    public void McpDefaultsAreExposedAndEditableWhenMissing()
+    {
+        var root = JsonNode.Parse("""{"Backend":{}}""")!.AsObject();
+        var fields = KnownSettings.Fields(root, "backend.json", []);
+        Assert.False(fields.Single(field => field.Path == "Backend:Accounts:ServiceUser").Value.GetValue<bool>());
+        Assert.False(fields.Single(field => field.Path == "Backend:Mcp:Enabled").Value.GetValue<bool>());
+        Assert.Equal(new McpConfiguration().MaxRequestBytes, fields.Single(field => field.Path == "Backend:Mcp:MaxRequestBytes").Value.GetValue<int>());
+        Assert.Empty(fields.Single(field => field.Path == "Backend:Mcp:AllowedOrigins").Value.AsArray());
+        Assert.NotEqual(None, root.PlanChanges("backend.json", Values(("Backend:Accounts:ServiceUser", "true"),
+            ("Backend:Mcp:MaxRequestBytes", "10"), ("Backend:Mcp:AllowedOrigins", """["https://example.com"]"""))));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Mcp:MaxRequestBytes", "0"))));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Mcp:MaxResponseBytes", "1.5"))));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Mcp:AllowedOrigins", """["https://example.com/"]"""))));
+        Assert.Equal(None, root.PlanChanges("backend.json", Values(("Backend:Mcp:AllowedOrigins", """["*",42]"""))));
+        Assert.Equal(None, JsonNode.Parse("""{"Backend":{"Mcp":"invalid"}}""")!.AsObject()
+            .PlanChanges("backend.json", Values(("Backend:Mcp:Enabled", "true"))));
+    }
+
+    [Fact]
     public void PlanChanges_AcceptsValuesOfTheSameType()
     {
         var planned = Planned(Security, ("Security:Jwt:Issuer", "\"you\""), ("Security:Elevation:Enabled", "false"), ("Security:MagicLink:RequestLimit", "9"));

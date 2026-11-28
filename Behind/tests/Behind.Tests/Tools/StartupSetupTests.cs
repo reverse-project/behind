@@ -234,6 +234,11 @@ public sealed class StartupSetupTests : IDisposable
         Assert.Equal(new DownloadsConfiguration(), Bind<DownloadsConfiguration>(BackendPath, DownloadsConfiguration.SectionName));
         Assert.Equal(new CommentsConfiguration(), Bind<CommentsConfiguration>(BackendPath, CommentsConfiguration.SectionName));
         Assert.Equal(new AccountsConfiguration(), Bind<AccountsConfiguration>(BackendPath, AccountsConfiguration.SectionName));
+        var mcp = Bind<McpConfiguration>(BackendPath, McpConfiguration.SectionName);
+        Assert.False(mcp.Enabled);
+        Assert.Equal(new McpConfiguration().MaxRequestBytes, mcp.MaxRequestBytes);
+        Assert.Equal(new McpConfiguration().MaxResponseBytes, mcp.MaxResponseBytes);
+        Assert.Empty(mcp.AllowedOrigins);
         Assert.Equal(new SchedulerConfiguration(), Bind<SchedulerConfiguration>(BackendPath, SchedulerConfiguration.SectionName));
         var forwarded = Bind<ForwardedHeadersConfiguration>(BackendPath, ForwardedHeadersConfiguration.SectionName);
         Assert.False(forwarded.Enabled);

@@ -61,7 +61,6 @@ public static class DatabaseServiceExtensions
             where TVersioning : AbstractVersioningContext
             where TMigrator : class, ICoreDatabaseMigrator
         {
-            services.TryAddSingleton(TimeProvider.System);
             services.TryAddScoped<IAuditActorProvider, AutonomousAuditActorProvider>();
             services.TryAddScoped<Func<IAuditActorProvider>>(provider =>
                 provider.GetRequiredService<IAuditActorProvider>);
@@ -124,6 +123,7 @@ public static class DatabaseServiceExtensions
             where TMigrator : class, ICoreDatabaseMigrator
         {
             services.AddAccessCatalog();
+            services.TryAddSingleton(TimeProvider.System);
             services.AddDbContext<TCore>((serviceProvider, options) =>
             {
                 extend(options, serviceProvider);
@@ -141,6 +141,7 @@ public static class DatabaseServiceExtensions
             services.AddScoped<AbstractVersioningContext>(serviceProvider =>
                 serviceProvider.GetRequiredService<TVersioning>());
             services.AddScoped<AbstractCoreContext>(serviceProvider => serviceProvider.GetRequiredService<TCore>());
+            services.AddScoped<IServiceUserStore, ServiceUserStore>();
             services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<TCore>());
             services.AddScoped<ICoreDatabaseMigrator, TMigrator>();
 

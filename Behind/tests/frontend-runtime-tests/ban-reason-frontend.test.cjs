@@ -71,6 +71,12 @@ test("wall and management rows translate built-in reasons without reloading or c
         "models/user": { href: id => "#/user/" + id, label: item => item.displayName },
         "models/session": { isSignedIn: ko.observable(true), hasGrant: () => true, grants: ko.observable([]) },
         "viewmodels/useraccess": function () {},
+        "viewmodels/serviceusers": function () {
+            this.canManage = ko.observable(false);
+            this.load = () => Promise.resolve();
+            this.invalidate = () => this.canManage(false);
+            this.dispose = this.invalidate;
+        },
         "models/auth": { loadUsers: async () => ({ ok: true, message: "", data: {
             letters: [], users: { ...data, items: data.items.map(item => ({
                 ...item, emails: [], roles: [], permissions: {}, ban: { reason: item.reason }

@@ -26,7 +26,7 @@ public sealed class ConfigurationSchemaTests : IDisposable
     [InlineData("AuditSearchMaxCandidates")]
     public void AuditSearchBudgets_HaveNumericSchemaAndPreserveDefaultsWhenOmitted(string property)
     {
-        Assert.Equal("configuration-1.7.0", ConfigurationSchema.Name);
+        Assert.Equal("configuration-1.8.0", ConfigurationSchema.Name);
         Assert.True(ConfigurationSchema.IsValid(JsonNode.Parse("""{"Backend":{}}""")));
         var root = new JsonObject { ["Backend"] = new JsonObject { [property] = 10000 } };
         Assert.True(ConfigurationSchema.IsValid(root));
@@ -38,6 +38,21 @@ public sealed class ConfigurationSchemaTests : IDisposable
         Assert.False(ConfigurationSchema.IsValid(root));
         Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxEntries);
         Assert.Equal(10000, new BackendConfiguration().AuditSearchMaxCandidates);
+    }
+
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(1048576, true)]
+    [InlineData(0, false)]
+    [InlineData(-1, false)]
+    public void McpPayloadBudgetsRequirePositiveIntegers(int bytes, bool valid)
+    {
+        var configuration = JsonNode.Parse("""
+            {"Backend":{"Accounts":{"ServiceUser":true},"Mcp":{"Enabled":true,"AllowedOrigins":["https://agents.example"]}}}
+            """)!;
+        configuration["Backend"]!["Mcp"]!["MaxRequestBytes"] = bytes;
+        configuration["Backend"]!["Mcp"]!["MaxResponseBytes"] = bytes;
+        Assert.Equal(valid, ConfigurationSchema.IsValid(configuration));
     }
 
     [Theory]

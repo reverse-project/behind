@@ -32,6 +32,7 @@ public class AccountsConfigurationTests
         Assert.True(configuration.Passkey);
         Assert.True(configuration.EmailTwoFactor);
         Assert.True(configuration.SubaccountSwitch);
+        Assert.False(configuration.ServiceUser);
     }
 
     [Fact]
@@ -42,6 +43,7 @@ public class AccountsConfigurationTests
         Assert.True(configuration.SignIn);
         Assert.False(configuration.SignUp);
         Assert.False(Bind(new() { ["Backend:Accounts:SignIn"] = "false" }).SignIn);
+        Assert.True(Bind(new() { ["Backend:Accounts:ServiceUser"] = "true" }).ServiceUser);
     }
 
     [Theory]

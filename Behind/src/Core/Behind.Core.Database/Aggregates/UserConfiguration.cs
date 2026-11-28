@@ -1,3 +1,4 @@
+using Behind.Common.Database;
 using Behind.Core.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -24,6 +25,27 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             builder.HasIndex(h => h.DisplayName);
         });
 
+    public static void ApplyServiceUser(ModelBuilder modelBuilder) =>
+        modelBuilder.Entity<ServiceUser>(builder =>
+        {
+            builder.ToView("ServiceUsers");
+            builder.Property(user => user.Name).HasMaxLength(ServiceUser.MaxNameLength).IsRequired();
+            builder.Property(user => user.ApiKeyHash).HasMaxLength(64).IsRequired();
+            builder.Property(user => user.Enabled).IsRequired();
+            builder.Property<long>("Version").IsRequired();
+        });
+
+    public static void ApplyServiceUserVersions(ModelBuilder modelBuilder) =>
+        modelBuilder.Entity<ServiceUserVersion>(builder =>
+        {
+            builder.ToTable("ServiceUserVersions");
+            builder.HasVersionedKey();
+            builder.Property(version => version.Name).HasMaxLength(ServiceUser.MaxNameLength).IsRequired();
+            builder.Property(version => version.ApiKeyHash).HasMaxLength(64).IsRequired();
+            builder.Property(version => version.Enabled).IsRequired();
+            builder.HasIndex(version => version.Name);
+        });
+
     public static void ApplyUserAccess(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity("UserGrants", ug =>
@@ -33,7 +55,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
             ug.HasKey("UserId", "GrantId");
 
-            ug.HasOne(typeof(HumanUser))
+            ug.HasOne(typeof(User))
                 .WithMany()
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade);
@@ -51,7 +73,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
             ur.HasKey("UserId", "RestrictionId");
 
-            ur.HasOne(typeof(HumanUser))
+            ur.HasOne(typeof(User))
                 .WithMany()
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade);
@@ -105,7 +127,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                 .HasForeignKey("RoleId")
                 .OnDelete(DeleteBehavior.Cascade);
 
-            ur.HasOne(typeof(HumanUser))
+            ur.HasOne(typeof(User))
                 .WithMany()
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade);

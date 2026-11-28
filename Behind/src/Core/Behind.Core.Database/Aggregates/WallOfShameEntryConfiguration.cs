@@ -22,14 +22,14 @@ public sealed class WallOfShameEntryConfiguration : IEntityTypeConfiguration<Wal
 
         builder.Ignore(w => w.User);
         builder.Property<Guid>("UserId").IsRequired();
-        builder.HasOne<HumanUser>()
+        builder.HasOne<User>()
             .WithMany()
             .HasForeignKey("UserId")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Ignore(w => w.GivenBy);
         builder.Property<Guid>("GivenById").IsRequired();
-        builder.HasOne<HumanUser>()
+        builder.HasOne<User>()
             .WithMany()
             .HasForeignKey("GivenById")
             .OnDelete(DeleteBehavior.ClientNoAction);

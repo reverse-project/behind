@@ -40,7 +40,8 @@ public static class RoleManagementResponseExtensions
             Guid userId,
             bool canEdit,
             IReadOnlyList<IRoleQueries.RoleResult> allRoles,
-            AccessCatalog catalog)
+            AccessCatalog catalog,
+            long version = 0)
         {
             var assigned = access.Roles.Select(role => role.Name).ToHashSet(StringComparer.Ordinal);
 
@@ -52,7 +53,8 @@ public static class RoleManagementResponseExtensions
                 access.Grants.Names,
                 access.Restrictions.Names,
                 access.CalculatedGrants.Names,
-                catalog.GrantNames);
+                catalog.GrantNames,
+                version);
         }
     }
 }

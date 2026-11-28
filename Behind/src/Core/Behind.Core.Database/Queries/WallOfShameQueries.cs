@@ -28,14 +28,24 @@ public sealed class WallOfShameQueries(AbstractCoreContext context) : IWallOfSha
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
-        var active = context.WallOfShameEntries.ActiveAt(now);
+        var active = context.WallOfShameEntries.ActiveAt(now)
+            .Where(entry => context.Users.Any(user =>
+                                EF.Property<Guid>(user, "Id") == EF.Property<Guid>(entry, "UserId"))
+                            || context.ServiceUsers.Any(user =>
+                                EF.Property<Guid>(user, "Id") == EF.Property<Guid>(entry, "UserId")));
         var total = await active.LongCountAsync(cancellationToken);
 
         var rows = await flipper.Apply(
                 from entry in context.NewestBans(active)
-                join user in context.Users
-                    on EF.Property<Guid>(entry, "UserId") equals EF.Property<Guid>(user, "Id")
-                select new ShamedRow(EF.Property<Guid>(user, "Id"), user.DisplayName, entry.Reason, EF.Property<DateTimeOffset?>(entry, "ExpiresAt")))
+                select new ShamedRow(
+                    EF.Property<Guid>(entry, "UserId"),
+                    context.Users.Where(user => EF.Property<Guid>(user, "Id") == EF.Property<Guid>(entry, "UserId"))
+                        .Select(user => user.DisplayName).FirstOrDefault()
+                    ?? context.ServiceUsers.Where(user => EF.Property<Guid>(user, "Id") == EF.Property<Guid>(entry, "UserId"))
+                        .Select(user => user.Name).FirstOrDefault()
+                    ?? string.Empty,
+                    entry.Reason,
+                    EF.Property<DateTimeOffset?>(entry, "ExpiresAt")))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 

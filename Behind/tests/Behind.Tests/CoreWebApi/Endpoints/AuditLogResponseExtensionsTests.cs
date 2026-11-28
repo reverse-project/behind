@@ -24,6 +24,17 @@ public class AuditLogResponseExtensionsTests
     }
 
     [Fact]
+    public void ServiceActorsHaveTheirOwnPublicLabelAndNoCreatorEmail()
+    {
+        var id = Guid.NewGuid();
+        var actor = new ServiceUser("Agent", "private-hash", true).ToActor(id);
+        Assert.Equal("ServiceUser", actor.Kind);
+        Assert.Equal(id.ToUserLabel("Agent"), actor.Label);
+        Assert.Equal(id, actor.Id);
+        Assert.Empty(actor.Emails);
+    }
+
+    [Fact]
     public void ToChanges_UpdatedListsEveryDifferenceAsText()
     {
         var changes = new AuditLogEntry.Updated(

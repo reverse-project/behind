@@ -75,9 +75,11 @@ public static class ForumRoutesExtensions
                 .WithSummary("Soft-delete an unassigned forum board category.")
                 .Produces(204).Produces(404).Produces(409).RequireAuthorization(ForumNames.Manage);
             forum.MapGet("/manage/users", ForumEndpoints.Rules)
-                .WithSummary("List user moderation overrides.").RequireAuthorization(ForumNames.Manage);
+                .WithSummary("List user moderation overrides.").RequireAuthorization(ForumNames.Manage)
+                .Produces(200, contentType: "application/json");
             forum.MapPost("/manage/users", ForumEndpoints.SaveRule)
-                .WithSummary("Set a user moderation override when enabled.").RequireAuthorization(ForumNames.Manage);
+                .WithSummary("Set a user moderation override when enabled.").RequireAuthorization(ForumNames.Manage)
+                .Produces<VersionedSavedResponse>();
             MapLifecycle<ForumBoardCategory>(forum, "/categories", ForumNames.Manage, false);
             MapLifecycle<ForumBoard>(forum, "/boards", ForumNames.Manage);
             MapLifecycle<ForumPost>(forum, "/posts", ForumNames.Moderate, false);

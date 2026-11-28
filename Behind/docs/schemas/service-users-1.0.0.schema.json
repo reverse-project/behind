@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Behind service user management 1.0.0",
+  "oneOf": [
+    { "$ref": "#/$defs/User" },
+    { "$ref": "#/$defs/Credential" },
+    { "$ref": "#/$defs/List" },
+    { "$ref": "#/$defs/Create" },
+    { "$ref": "#/$defs/Update" },
+    { "$ref": "#/$defs/Version" },
+    { "$ref": "#/$defs/AccessRequest" },
+    { "$ref": "#/$defs/AccessResponse" }
+  ],
+  "$defs": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "version": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "enabled": { "type": "boolean" }
+      },
+      "required": ["id", "version", "name", "enabled"],
+      "additionalProperties": false
+    },
+    "Credential": {
+      "type": "object",
+      "properties": {
+        "user": { "$ref": "#/$defs/User" },
+        "apiKey": { "type": "string", "pattern": "^behind_[0-9a-f]{32}_[A-Za-z0-9_-]{43}$" }
+      },
+      "required": ["user", "apiKey"],
+      "additionalProperties": false
+    },
+    "List": {
+      "type": "object",
+      "properties": {
+        "users": { "type": "array", "items": { "$ref": "#/$defs/User" } },
+        "canManage": { "type": "boolean" },
+        "canDelete": { "type": "boolean" },
+        "isDeveloper": { "type": "boolean" }
+      },
+      "required": ["users", "canManage", "canDelete", "isDeveloper"],
+      "additionalProperties": false
+    },
+    "Create": {
+      "type": "object",
+      "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 500 } },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "Update": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "integer", "minimum": 1 },
+        "enabled": { "type": "boolean" }
+      },
+      "required": ["version", "enabled"],
+      "additionalProperties": false
+    },
+    "Version": {
+      "type": "object",
+      "properties": { "version": { "type": "integer", "minimum": 1 } },
+      "required": ["version"],
+      "additionalProperties": false
+    },
+    "AccessRequest": {
+      "type": "object",
+      "properties": {
+        "roleIds": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+        "grants": { "type": "array", "items": { "type": "string" } },
+        "restrictions": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["roleIds", "grants", "restrictions"],
+      "additionalProperties": false
+    },
+    "Role": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string" },
+        "grants": { "type": "array", "items": { "type": "string" } },
+        "restrictions": { "type": "array", "items": { "type": "string" } },
+        "isRequired": { "type": "boolean" }
+      },
+      "required": ["id", "name", "grants", "restrictions", "isRequired"],
+      "additionalProperties": false
+    },
+    "AccessResponse": {
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "format": "uuid" },
+        "canEdit": { "type": "boolean" },
+        "roles": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "availableRoles": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "grants": { "type": "array", "items": { "type": "string" } },
+        "restrictions": { "type": "array", "items": { "type": "string" } },
+        "calculatedGrants": { "type": "array", "items": { "type": "string" } },
+        "availableGrants": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["userId", "canEdit", "roles", "availableRoles", "grants", "restrictions", "calculatedGrants", "availableGrants"],
+      "additionalProperties": false
+    }
+  }
+}

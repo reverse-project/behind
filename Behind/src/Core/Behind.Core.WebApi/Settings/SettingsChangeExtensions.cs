@@ -39,7 +39,8 @@ public static class SettingsChangeExtensions
                 && !ForwardedHeadersSettings.IsManagedPath(path)
                 && (!string.Equals(file, ConfigurationFileCatalog.AppSettingsFile, StringComparison.OrdinalIgnoreCase)
                     || !KnownSettings.IsManagedAppSettingsPath(path))
-                && allowedModule && CachingSettings.IsValid(file, path, incoming);
+                && allowedModule && CachingSettings.IsValid(file, path, incoming)
+                && McpSettings.IsValid(file, path, incoming);
             var keepsSecret = path.IsSensitiveConfigurationPath && incoming.IsBlank;
             var field = known.FirstOrDefault(field => string.Equals(field.Path, path, StringComparison.OrdinalIgnoreCase));
             var existing = KnownSettings.FindNode(root, path) ?? field?.Value;

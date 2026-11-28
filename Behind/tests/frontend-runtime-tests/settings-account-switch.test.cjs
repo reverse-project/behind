@@ -33,6 +33,7 @@ test("password sign-in switch follows server state and saves both boolean values
     };
     function Editor() {
         this.invalidate = () => {};
+        this.key = ko.observable("");
         this.load = async () => ({ ok: true });
         this.canSave = ko.observable(true);
     }
@@ -84,6 +85,7 @@ test("structured values reject invalid JSON and module saves reload only after s
         const session = { isSignedIn: ko.observable(true), grants: ko.observable([]), hasGrant: () => true };
         function Editor() {
             this.invalidate = () => {};
+        this.key = ko.observable("");
             this.load = async () => ({ ok: true });
             this.canSave = ko.observable(true);
         }

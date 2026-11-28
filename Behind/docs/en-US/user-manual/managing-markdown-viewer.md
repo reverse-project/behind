@@ -26,6 +26,8 @@ The module is configured in `markdownviewer.json`, which has its own tab on the 
 
 Relative directories are resolved against the folder of the application. A change applies immediately, the application does not need to be restarted. Use absolute paths, or paths mounted into the container, in production.
 
+The source directory must already exist and be accessible to the application. If it is missing, the documentation page reports this separately from an unset path. Check the path as seen by the server, including container mounts.
+
 ## Reading the documentation
 
 The page lists the documents of the source directory (sub folders included, hidden files and folders and symbolic links are ignored) in a navigation. The title above the navigation is the home page (the **DefaultDocument**) and is not listed again. Every top level folder is a section: its name is the text of the link to the folder's `README.md` in the home document (for example **Developer documentation** and **User manual**), otherwise the title of that `README.md`, otherwise the folder name. The section links to its `README.md`, followed by the other documents of the folder. The generated static pages use the same navigation. The title of a document is its first `# heading`, or its file name. Links to other `.md` files open them in the viewer, images next to the documents (`png`, `jpg`, `gif`, `webp`, `svg`, `ico`) are shown, and links to headings of the same page scroll to them. Raw HTML inside a Markdown file is shown as text and unsafe links are removed.

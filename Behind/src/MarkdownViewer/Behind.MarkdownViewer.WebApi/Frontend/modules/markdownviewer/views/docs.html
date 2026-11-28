@@ -1,6 +1,7 @@
 <section class="behind-wide">
     <div class="alert alert-info" role="alert" data-bind="visible: message() !== '', text: message"></div>
-    <div class="alert alert-warning" role="alert" data-bind="visible: !configured(), t: 'markdownviewer.notConfigured'">The documentation is not available yet. A developer has to set the source directory in the settings.</div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: !configured() && !sourceMissing(), t: 'markdownviewer.notConfigured'">The documentation is not available yet. A developer has to set the source directory in the settings.</div>
+    <div class="alert alert-warning" role="alert" data-bind="visible: !configured() && sourceMissing(), t: 'markdownviewer.sourceMissing'">The documentation source directory does not exist on the server. A developer has to check the settings and directory.</div>
     <div class="alert alert-secondary" role="status" data-bind="visible: fallbackNotice() !== '', text: fallbackNotice"></div>
     <p class="text-body-secondary" data-bind="visible: configured() && !hasEntries(), t: 'markdownviewer.empty'">There are no documents yet.</p>
     <div class="row" data-bind="visible: hasEntries">

@@ -10,6 +10,7 @@ using Behind.Common.WebApi.Handlers;
 using Behind.Common.WebApi.Infrastructure.Localization;
 using Behind.Common.WebApi.Infrastructure.StaticFiles;
 using Behind.Common.WebApi.Middleware;
+using Behind.Common.WebApi.Mcp;
 using Behind.Common.WebApi.Security;
 using Behind.Core.Common.Configuration;
 using Behind.Core.Database;
@@ -33,6 +34,7 @@ using Behind.Core.WebApi.Oidc;
 using Behind.Core.WebApi.Scheduling;
 using Behind.Core.WebApi.Settings;
 using Behind.Core.WebApi.Layouts;
+using Behind.Core.WebApi.Mcp;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -92,6 +94,8 @@ public static class WebApiExtensions
             builder.Services.Configure<AccountsConfiguration>(
                 builder.Configuration.GetSection(AccountsConfiguration.SectionName)
             );
+            builder.Services.Configure<McpConfiguration>(
+                builder.Configuration.GetSection(McpConfiguration.SectionName));
             builder.Services.Configure<CommentsConfiguration>(
                 builder.Configuration.GetSection(CommentsConfiguration.SectionName)
             );
@@ -237,7 +241,12 @@ public static class WebApiExtensions
             builder.Services.AddScoped<IRoleCommands, RoleCommands>();
             builder.Services.AddScoped<IAccessQueries, AccessQueries>();
             builder.Services.AddScoped<IAccessCommands, AccessCommands>();
-            builder.Services.AddScoped<ISessionQueries, SessionQueries>();
+            builder.Services.AddScoped<SessionQueries>();
+            builder.Services.AddScoped<ISessionQueries, McpSessionQueries>();
+            builder.Services.AddScoped<IServiceUserStore, ServiceUserStore>();
+            builder.Services.AddScoped<IMcpServer, McpServer>();
+            builder.Services.AddScoped<IModuleMcpToolCatalog, ModuleMcpToolCatalog>();
+            builder.Services.AddScoped<IMcpRequestDispatcher, McpRequestDispatcher>();
             builder.Services.AddScoped<ISessionCommands, SessionCommands>();
             builder.Services.AddScoped<IUserManagementQueries, UserManagementQueries>();
             builder.Services.AddScoped<IWallOfShameQueries, WallOfShameQueries>();
@@ -345,6 +354,7 @@ public static class WebApiExtensions
             application.UseCorrelationId();
             application.UseRequestLogging();
             application.UseExceptionHandler(_ => { });
+            application.UseMiddleware<McpMiddleware>();
             application.UseRouting();
             application.UseMiddleware<ModuleAvailabilityMiddleware>();
             application.UseStaticFrontend(EmbeddedFrontend.CreateFileProvider(
@@ -352,6 +362,7 @@ public static class WebApiExtensions
                 application.Services.GetRequiredService<ModuleCatalog>()));
             application.UseETag();
             application.MapOpenApi();
+            application.MapMcp();
 
             application.MapGet("/config", ConfigEndpoint.ExecuteGet)
                 .RequireAuthorization(GrantName.Of(GrantArea.Configuration, GrantAction.Read));

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Behind.Common.Logging;
 using Behind.Common.WebApi.Middleware;
 using Behind.Core.Common.Configuration;
@@ -22,7 +23,13 @@ public sealed class SignUpEndpoints
         CaptchaResponse? Captcha = null) : ICaptchaRequest;
 
     public sealed record ConfirmEmailRequest(
-        [property: Required] Guid UserId, [property: Required] string Token, Guid EmailId = default);
+        [property: Required] Guid UserId, [property: Required] string Token, Guid EmailId)
+    {
+        [JsonConstructor]
+        public ConfirmEmailRequest(Guid UserId, string Token) : this(UserId, Token, Guid.Empty)
+        {
+        }
+    }
 
     public sealed record ResendConfirmationRequest(
         [property: Required, DataType(DataType.EmailAddress)] string Email,

@@ -28,6 +28,7 @@ public static class KnownSettings
     {
         ["Backend"] = new BackendConfiguration(),
         ["Backend:Accounts"] = new AccountsConfiguration(),
+        ["Backend:Mcp"] = new McpConfiguration(),
         ["Backend:Comments"] = new CommentsConfiguration(),
         ["Backend:ContentRestrictions"] = new ContentRestrictionsConfiguration(),
         ["Backend:Downloads"] = new DownloadsConfiguration(),
@@ -96,7 +97,40 @@ public static class KnownSettings
             }
         }
 
+        if (string.Equals(file, ConfigurationFileCatalog.BackendFile, StringComparison.OrdinalIgnoreCase))
+        {
+            AddMcpFields(result, root);
+        }
+
         return result;
+    }
+
+    private static void AddMcpFields(List<Field> fields, JsonObject root)
+    {
+        var defaults = new Dictionary<string, object>
+        {
+            ["Backend:Accounts:ServiceUser"] = new AccountsConfiguration().ServiceUser,
+            ["Backend:Mcp:Enabled"] = new McpConfiguration().Enabled,
+            ["Backend:Mcp:MaxRequestBytes"] = new McpConfiguration().MaxRequestBytes,
+            ["Backend:Mcp:MaxResponseBytes"] = new McpConfiguration().MaxResponseBytes,
+            ["Backend:Mcp:AllowedOrigins"] = new McpConfiguration().AllowedOrigins
+        };
+        foreach (var (path, fallback) in defaults)
+        {
+            if (fields.Any(field => field.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
+                || !CanTraverse(root, path.Split(':')[..^1]))
+            {
+                continue;
+            }
+            var actual = ActualPath(root, path);
+            var current = FindNode(root, actual);
+            var expected = JsonSerializer.SerializeToNode(fallback)!;
+            if (current is null || Matches(current, expected is JsonArray ? "array"
+                : fallback is bool ? "boolean" : "integer"))
+            {
+                fields.Add(new Field(actual, current?.DeepClone() ?? expected));
+            }
+        }
     }
 
     public static JsonNode? FindNode(JsonObject root, string path)
